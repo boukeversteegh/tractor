@@ -11,7 +11,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     false_of, float_of, int_of, name_of, range_of, span_of, string_of, text_of, true_of,
 };
-use crate::tree::types::{AccessSegment, ByteRange, SyntaxTree, Modifiers};
+use crate::tree::types::{AccessSegment, ByteRange, SyntaxTree, Modifiers, Marker};
 
 pub fn lower_ruby_root(root: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(root);
@@ -139,7 +139,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 SyntaxTree::SimpleStatement {
                     element_name: "string",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children,
                     range, span,
                 }
@@ -152,7 +152,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "nil" => SyntaxTree::SimpleStatement {
             element_name: "nil",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: Vec::new(),
             range, span,
         },
@@ -160,14 +160,14 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 
         // ----- Symbols -------------------------------------------------
         "simple_symbol" | "hash_key_symbol" => simple_statement(node, "symbol", source),
-        "delimited_symbol" => simple_statement_marked(node, "symbol", &["delimited"], source),
+        "delimited_symbol" => simple_statement_marked(node, "symbol", vec![Marker::implicit("delimited")], source),
 
         // ----- Module / class / method ---------------------------------
-        "module" => ruby_method(node, "module", &[], source),
-        "class" => ruby_method(node, "class", &[], source),
-        "singleton_class" => ruby_method(node, "class", &["singleton"], source),
-        "method" => ruby_method(node, "method", &[], source),
-        "singleton_method" => ruby_method(node, "method", &["singleton"], source),
+        "module" => ruby_method(node, "module", Vec::new(), source),
+        "class" => ruby_method(node, "class", Vec::new(), source),
+        "singleton_class" => ruby_method(node, "class", vec![Marker::implicit("singleton")], source),
+        "method" => ruby_method(node, "method", Vec::new(), source),
+        "singleton_method" => ruby_method(node, "method", vec![Marker::implicit("singleton")], source),
         "lambda" => simple_statement(node, "lambda", source),
 
         // ----- Parameters ----------------------------------------------
@@ -180,7 +180,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         SyntaxTree::SimpleStatement {
                             element_name: "parameter",
                             modifiers: Modifiers::default(),
-                            extra_markers: &[],
+                            extra_markers: Vec::new(),
                             children: vec![name_of(c, source)],
                             range: range_of(c),
                             span: span_of(c),
@@ -196,13 +196,13 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 range, span,
             }
         }
-        "block_parameter" => simple_statement_marked(node, "parameter", &["block"], source),
-        "splat_parameter" => simple_statement_marked(node, "parameter", &["splat"], source),
-        "hash_splat_parameter" => simple_statement_marked(node, "parameter", &["kwsplat"], source),
-        "keyword_parameter" => ruby_param_with_value(node, &["keyword"], source),
-        "optional_parameter" => ruby_param_with_value(node, &["default"], source),
-        "forward_parameter" => simple_statement_marked(node, "parameter", &["forward"], source),
-        "destructured_parameter" => simple_statement_marked(node, "parameter", &["destructured"], source),
+        "block_parameter" => simple_statement_marked(node, "parameter", vec![Marker::implicit("block")], source),
+        "splat_parameter" => simple_statement_marked(node, "parameter", vec![Marker::implicit("splat")], source),
+        "hash_splat_parameter" => simple_statement_marked(node, "parameter", vec![Marker::implicit("kwsplat")], source),
+        "keyword_parameter" => ruby_param_with_value(node, vec![Marker::implicit("keyword")], source),
+        "optional_parameter" => ruby_param_with_value(node, vec![Marker::implicit("default")], source),
+        "forward_parameter" => simple_statement_marked(node, "parameter", vec![Marker::implicit("forward")], source),
+        "destructured_parameter" => simple_statement_marked(node, "parameter", vec![Marker::implicit("destructured")], source),
 
         // ----- Control flow --------------------------------------------
         // Ruby `if cond then x elsif c2 then y else z end` is nested in
@@ -223,9 +223,9 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "if_guard" => simple_statement(node, "if", source),
         "unless_guard" => simple_statement(node, "unless", source),
         "begin" => simple_statement(node, "begin", source),
-        "begin_block" => simple_statement_marked(node, "block", &["begin"], source),
-        "end_block" => simple_statement_marked(node, "block", &["end"], source),
-        "do_block" => simple_statement_marked(node, "block", &["do"], source),
+        "begin_block" => simple_statement_marked(node, "block", vec![Marker::implicit("begin")], source),
+        "end_block" => simple_statement_marked(node, "block", vec![Marker::implicit("end")], source),
+        "do_block" => simple_statement_marked(node, "block", vec![Marker::implicit("do")], source),
         "rescue" => simple_statement(node, "rescue", source),
         "rescue_modifier" => simple_statement(node, "rescue", source),
         "ensure" => simple_statement(node, "ensure", source),
@@ -315,7 +315,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     op_marker: marker,
                     op_range: op_byte_range,
                     operand: Box::new(lower_node(o, source)),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     range, span,
                 },
                 _ => simple_statement(node, "unary", source),
@@ -381,11 +381,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: slot,
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![SyntaxTree::SimpleStatement {
                         element_name: "expression",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![inner],
                         range: range_of(*c),
                         span: span_of(*c),
@@ -397,7 +397,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "ternary",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -406,25 +406,25 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "array" => simple_statement(node, "array", source),
         "hash" => simple_statement(node, "hash", source),
         "pair" => simple_statement(node, "pair", source),
-        "string_array" => simple_statement_marked(node, "array", &["string"], source),
-        "symbol_array" => simple_statement_marked(node, "array", &["symbol"], source),
-        "chained_string" => simple_statement_marked(node, "string", &["concatenated"], source),
+        "string_array" => simple_statement_marked(node, "array", vec![Marker::implicit("string")], source),
+        "symbol_array" => simple_statement_marked(node, "array", vec![Marker::implicit("symbol")], source),
+        "chained_string" => simple_statement_marked(node, "string", vec![Marker::implicit("concatenated")], source),
         "interpolation" => simple_statement(node, "interpolation", source),
         "element_reference" => simple_statement(node, "index", source),
-        "scope_resolution" => simple_statement_marked(node, "member", &["static"], source),
+        "scope_resolution" => simple_statement_marked(node, "member", vec![Marker::implicit("static")], source),
 
         // ----- Patterns ------------------------------------------------
         "pattern" => simple_statement(node, "pattern", source),
-        "alternative_pattern" => simple_statement_marked(node, "pattern", &["alternative"], source),
-        "array_pattern" => simple_statement_marked(node, "pattern", &["array"], source),
-        "as_pattern" => simple_statement_marked(node, "pattern", &["as"], source),
-        "expression_reference_pattern" => simple_statement_marked(node, "pattern", &["expression"], source),
-        "find_pattern" => simple_statement_marked(node, "pattern", &["find"], source),
-        "hash_pattern" => simple_statement_marked(node, "pattern", &["hash"], source),
-        "keyword_pattern" => simple_statement_marked(node, "pattern", &["keyword"], source),
-        "match_pattern" => simple_statement_marked(node, "pattern", &["match"], source),
-        "test_pattern" => simple_statement_marked(node, "pattern", &["test"], source),
-        "variable_reference_pattern" => simple_statement_marked(node, "pattern", &["variable"], source),
+        "alternative_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("alternative")], source),
+        "array_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("array")], source),
+        "as_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("as")], source),
+        "expression_reference_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("expression")], source),
+        "find_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("find")], source),
+        "hash_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("hash")], source),
+        "keyword_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("keyword")], source),
+        "match_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("match")], source),
+        "test_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("test")], source),
+        "variable_reference_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("variable")], source),
         "parenthesized_pattern" => SyntaxTree::Inline {
             children: lower_children(node, source),
             list_name: None,
@@ -437,11 +437,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             list_name: Some("arguments"),
             range, span,
         },
-        "splat_argument" => simple_statement_marked(node, "spread", &["list"], source),
-        "hash_splat_argument" => simple_statement_marked(node, "spread", &["dict"], source),
-        "block_argument" => simple_statement_marked(node, "argument", &["block"], source),
-        "forward_argument" => simple_statement_marked(node, "argument", &["forward"], source),
-        "hash_splat_nil" => simple_statement_marked(node, "spread", &["nil"], source),
+        "splat_argument" => simple_statement_marked(node, "spread", vec![Marker::implicit("list")], source),
+        "hash_splat_argument" => simple_statement_marked(node, "spread", vec![Marker::implicit("dict")], source),
+        "block_argument" => simple_statement_marked(node, "argument", vec![Marker::implicit("block")], source),
+        "forward_argument" => simple_statement_marked(node, "argument", vec![Marker::implicit("forward")], source),
+        "hash_splat_nil" => simple_statement_marked(node, "spread", vec![Marker::implicit("nil")], source),
 
         // ----- Structural wrappers (flatten) ---------------------------
         "body_statement" | "block_body" | "parenthesized_statements"
@@ -479,7 +479,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         // ----- Misc ----------------------------------------------------
         "rest_assignment" => simple_statement(node, "spread", source),
         "right_assignment_list" => simple_statement(node, "right", source),
-        "destructured_left_assignment" => simple_statement_marked(node, "left", &["destructured"], source),
+        "destructured_left_assignment" => simple_statement_marked(node, "left", vec![Marker::implicit("destructured")], source),
         // `operator` is a tree-sitter node for `def +(other)` style
         // operator method names. Lower as `<name>` so the method's name
         // child stays a name leaf.
@@ -492,7 +492,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 /// Lower a Ruby keyword/optional parameter with `<name>` + `<value>` slots.
 fn ruby_param_with_value(
     node: &RawNode,
-    extra_markers: &'static [&'static str],
+    extra_markers: Vec<crate::tree::types::Marker>,
     source: &str,
 ) -> SyntaxTree {
     let span = span_of(node);
@@ -508,7 +508,7 @@ fn ruby_param_with_value(
         children.push(SyntaxTree::SimpleStatement {
             element_name: "value",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![inner],
             range: range_of(v),
             span: span_of(v),
@@ -551,7 +551,7 @@ fn lower_ruby_if(node: &RawNode, element_name: &'static str, source: &str) -> Sy
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range,
         span,
@@ -573,7 +573,7 @@ fn flatten_ruby_elsif_chain(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "else_if",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range,
         span,
@@ -619,11 +619,11 @@ fn ruby_while_until(node: &RawNode, element_name: &'static str, source: &str) ->
         children.push(SyntaxTree::SimpleStatement {
             element_name: "condition",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![SyntaxTree::SimpleStatement {
                 element_name: "expression",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children: vec![inner],
                 range: range_of(c),
                 span: span_of(c),
@@ -640,7 +640,7 @@ fn ruby_while_until(node: &RawNode, element_name: &'static str, source: &str) ->
         children.push(SyntaxTree::SimpleStatement {
             element_name: "body",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: body_children,
             range: range_of(b),
             span: span_of(b),
@@ -649,7 +649,7 @@ fn ruby_while_until(node: &RawNode, element_name: &'static str, source: &str) ->
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -675,11 +675,11 @@ fn ruby_for(node: &RawNode, source: &str) -> SyntaxTree {
         children.push(SyntaxTree::SimpleStatement {
             element_name: "value",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![SyntaxTree::SimpleStatement {
                 element_name: "expression",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children: vec![inner_ir],
                 range: range_of(inner),
                 span: span_of(inner),
@@ -696,7 +696,7 @@ fn ruby_for(node: &RawNode, source: &str) -> SyntaxTree {
         children.push(SyntaxTree::SimpleStatement {
             element_name: "body",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: body_children,
             range: range_of(b),
             span: span_of(b),
@@ -705,7 +705,7 @@ fn ruby_for(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "for",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -715,7 +715,7 @@ fn ruby_for(node: &RawNode, source: &str) -> SyntaxTree {
 fn ruby_method(
     node: &RawNode,
     element_name: &'static str,
-    extra_markers: &'static [&'static str],
+    extra_markers: Vec<crate::tree::types::Marker>,
     source: &str,
 ) -> SyntaxTree {
     let span = span_of(node);
@@ -732,7 +732,7 @@ fn ruby_method(
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "body",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: merge_ruby_line_comments(body_children, source),
                     range: range_of(c),
                     span: span_of(c),
@@ -756,7 +756,7 @@ fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) ->
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range: range_of(node),
         span: span_of(node),
@@ -766,7 +766,7 @@ fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) ->
 fn simple_statement_marked(
     node: &RawNode,
     element_name: &'static str,
-    extra_markers: &'static [&'static str],
+    extra_markers: Vec<crate::tree::types::Marker>,
     source: &str,
 ) -> SyntaxTree {
     let children: Vec<SyntaxTree> = node.named_children().map(|c| lower_node(c, source)).collect();
@@ -842,13 +842,13 @@ fn lower_ruby_range(node: &RawNode, source: &str) -> SyntaxTree {
     let range = range_of(node);
     // Operator token is anonymous (`..` or `...`); inclusivity is
     // distinguished by the operator length.
-    let kind: &'static [&'static str] = match node
+    let kind: Vec<crate::tree::types::Marker> = match node
         .children()
         .find(|c| !c.is_named() && matches!(c.utf8_text(source), ".." | "..."))
         .map(|c| c.utf8_text(source))
     {
-        Some("...") => &["exclusive"],
-        Some("..") | _ => &["inclusive"],
+        Some("...") => vec![Marker::implicit("exclusive")],
+        Some("..") | _ => vec![Marker::implicit("inclusive")],
     };
     let begin = node.child_by_field_name("begin");
     let end = node.child_by_field_name("end");
@@ -858,7 +858,7 @@ fn lower_ruby_range(node: &RawNode, source: &str) -> SyntaxTree {
         children.push(SyntaxTree::SimpleStatement {
             element_name: "from",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![inner],
             range: range_of(b),
             span: span_of(b),
@@ -869,7 +869,7 @@ fn lower_ruby_range(node: &RawNode, source: &str) -> SyntaxTree {
         children.push(SyntaxTree::SimpleStatement {
             element_name: "to",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![inner],
             range: range_of(e),
             span: span_of(e),

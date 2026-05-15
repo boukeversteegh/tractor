@@ -273,8 +273,8 @@ fn render_tree_class(
         else { unreachable!() };
     let node = element(xot, kind, *span);
     xot.append(parent, node)?;
-    for marker in modifiers.marker_names() {
-        let m = element(xot, marker, *span);
+    for (marker, marker_span) in modifiers.markers_with_spans() {
+        let m = element(xot, marker, marker_span.unwrap_or(*span));
         xot.append(node, m)?;
     }
     // Source-order children: decorators, name, generic items
@@ -734,8 +734,8 @@ fn render_tree_lambda(
         else { unreachable!() };
     let node = element(xot, "lambda", *span);
     xot.append(parent, node)?;
-    for marker in modifiers.marker_names() {
-        let m = element(xot, marker, *span);
+    for (marker, marker_span) in modifiers.markers_with_spans() {
+        let m = element(xot, marker, marker_span.unwrap_or(*span));
         xot.append(node, m)?;
     }
     let mut order: Vec<&SyntaxTree> = Vec::new();
@@ -778,8 +778,8 @@ fn render_tree_function(
         else { unreachable!() };
     let node = element(xot, element_name, *span);
     xot.append(parent, node)?;
-    for marker in modifiers.marker_names() {
-        let m = element(xot, marker, Span::point(span.line, span.column));
+    for (marker, marker_span) in modifiers.markers_with_spans() {
+        let m = element(xot, marker, marker_span.unwrap_or_else(|| Span::point(span.line, span.column)));
         xot.append(node, m)?;
     }
     let mut order: Vec<&SyntaxTree> = Vec::new();
@@ -819,12 +819,12 @@ fn render_tree_parameter(
         }
         ParamKind::Regular => {}
     }
-    for marker in modifiers.marker_names() {
-        let m = element(xot, marker, *span);
+    for (marker, marker_span) in modifiers.markers_with_spans() {
+        let m = element(xot, marker, marker_span.unwrap_or(*span));
         xot.append(node, m)?;
     }
-    for marker in *extra_markers {
-        let m = element(xot, marker, *span);
+    for marker in extra_markers.iter() {
+        let m = element(xot, marker.name, marker.span);
         xot.append(node, m)?;
     }
     #[derive(Clone, Copy)]
@@ -876,8 +876,8 @@ fn render_tree_variable(
     let SyntaxTree::Variable { element_name, modifiers, decorators, type_ann, name, value, range, span } = tree
         else { unreachable!() };
     let node = element(xot, element_name, *span);
-    for marker in modifiers.marker_names() {
-        let m = element(xot, marker, *span);
+    for (marker, marker_span) in modifiers.markers_with_spans() {
+        let m = element(xot, marker, marker_span.unwrap_or(*span));
         xot.append(node, m)?;
     }
     xot.append(parent, node)?;
@@ -1129,8 +1129,8 @@ fn render_tree_unary(
         else { unreachable!() };
     let node = element(xot, "unary", *span);
     xot.append(parent, node)?;
-    for marker in *extra_markers {
-        let m = element(xot, marker, Span::point(span.line, span.column));
+    for marker in extra_markers.iter() {
+        let m = element(xot, marker.name, marker.span);
         xot.append(node, m)?;
     }
     let operand_range = operand.range();
@@ -1177,26 +1177,14 @@ fn render_tree_return(
     let SyntaxTree::Return { value, range, span } = tree else { unreachable!() };
     let node = element(xot, "return", *span);
     xot.append(parent, node)?;
+    // Lowering pre-wraps the value in `<expression>` host(s) — for an
+    // Inline value, each child is already wrapped. The renderer just
+    // walks what's there, emitting source-anchored gap text.
     if let Some(v) = value {
-        let vr = v.range();
-        emit_gap(xot, node, source, range.start, vr.start)?;
-        if let SyntaxTree::Inline { children, .. } = v.as_ref() {
-            let mut cursor = vr.start;
-            for c in children {
-                let cr = c.range();
-                emit_gap(xot, node, source, cursor, cr.start)?;
-                let expr = element(xot, "expression", c.span());
-                xot.append(node, expr)?;
-                render_to_xot(xot, expr, c, source)?;
-                cursor = cr.end;
-            }
-            emit_gap(xot, node, source, cursor, vr.end)?;
-        } else {
-            let expr = element(xot, "expression", v.span());
-            xot.append(node, expr)?;
-            render_to_xot(xot, expr, v, source)?;
-        }
-        emit_gap(xot, node, source, vr.end, range.end)?;
+        let children = std::slice::from_ref(v.as_ref());
+        render_with_gaps(xot, node, source, *range, children, |xot, parent, child| {
+            render_to_xot(xot, parent, child, source).map(|_| ())
+        })?;
     } else {
         emit_gap(xot, node, source, range.start, range.end)?;
     }
@@ -1730,12 +1718,12 @@ fn render_tree_simple_statement(
         else { unreachable!() };
     let node = element(xot, element_name, *span);
     xot.append(parent, node)?;
-    for marker in modifiers.marker_names() {
-        let m = element(xot, marker, *span);
+    for (marker, marker_span) in modifiers.markers_with_spans() {
+        let m = element(xot, marker, marker_span.unwrap_or(*span));
         xot.append(node, m)?;
     }
-    for marker in *extra_markers {
-        let m = element(xot, marker, *span);
+    for marker in extra_markers.iter() {
+        let m = element(xot, marker.name, marker.span);
         xot.append(node, m)?;
     }
     render_with_gaps(xot, node, source, *range, children, |xot, parent, child| {
@@ -1889,8 +1877,8 @@ fn render_tree_enum(
         else { unreachable!() };
     let node = element(xot, "enum", *span);
     xot.append(parent, node)?;
-    for marker in modifiers.marker_names() {
-        let m = element(xot, marker, *span);
+    for (marker, marker_span) in modifiers.markers_with_spans() {
+        let m = element(xot, marker, marker_span.unwrap_or(*span));
         xot.append(node, m)?;
     }
     let mut order: Vec<&SyntaxTree> = Vec::new();
@@ -1937,8 +1925,8 @@ fn render_tree_property(
         else { unreachable!() };
     let node = element(xot, "property", *span);
     xot.append(parent, node)?;
-    for marker in modifiers.marker_names() {
-        let m = element(xot, marker, *span);
+    for (marker, marker_span) in modifiers.markers_with_spans() {
+        let m = element(xot, marker, marker_span.unwrap_or(*span));
         xot.append(node, m)?;
     }
     // Slot-tagged ordering mirrors `render_tree_parameter` /
@@ -1999,8 +1987,8 @@ fn render_tree_accessor(
     let SyntaxTree::Accessor { modifiers, kind, body, range, span } = tree else { unreachable!() };
     let node = element(xot, kind, *span);
     xot.append(parent, node)?;
-    for marker in modifiers.marker_names() {
-        let m = element(xot, marker, *span);
+    for (marker, marker_span) in modifiers.markers_with_spans() {
+        let m = element(xot, marker, marker_span.unwrap_or(*span));
         xot.append(node, m)?;
     }
     if let Some(b) = body {
@@ -2025,8 +2013,8 @@ fn render_tree_constructor(
         else { unreachable!() };
     let node = element(xot, "constructor", *span);
     xot.append(parent, node)?;
-    for marker in modifiers.marker_names() {
-        let m = element(xot, marker, *span);
+    for (marker, marker_span) in modifiers.markers_with_spans() {
+        let m = element(xot, marker, marker_span.unwrap_or(*span));
         xot.append(node, m)?;
     }
     let mut order: Vec<&SyntaxTree> = Vec::new();

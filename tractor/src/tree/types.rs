@@ -136,6 +136,160 @@ pub struct ByteRange {
     pub anchored: bool,
 }
 
+/// Source-locatable boolean flag carried on a variant.
+///
+/// The tree represents shape-deciding attributes (`async`, `static`,
+/// `public`, `inclusive`, `from`, …) as typed fields, not as marker
+/// nodes. `Flag` is the carrier: `Off` means the attribute is unset;
+/// `On { range, span }` means it's set and the source positions point
+/// at the corresponding keyword (or are zero-width for implicit
+/// defaults that have no keyword in the source).
+///
+/// The XML projection emits an empty `<flag_name/>` element for every
+/// `On` flag, using the carried `span` for `line` / `column` /
+/// `end_line` / `end_column` attributes. The JSON projection emits
+/// `"flag_name": true`. The tree itself has no notion of "marker" —
+/// that's purely an XML-side rendering choice.
+///
+/// **Anchored vs. implicit.** When the source has a literal keyword
+/// (`async def f`), the flag carries the keyword's actual byte range
+/// and span (`range.anchored = true`). When the flag is set
+/// implicitly (e.g. Python's default-public access on a class member
+/// with no access keyword), the range is zero-width and synthetic
+/// (`ByteRange::synthetic_empty()`); the span is a `point` derived
+/// from context, typically the parent declaration's start position.
+/// Consumers that need to know which is which can check
+/// `range.is_anchored()`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Flag {
+    /// Flag is unset. No XML element / JSON key emitted.
+    #[default]
+    Off,
+    /// Flag is set, carrying source-position metadata.
+    On { range: ByteRange, span: Span },
+}
+
+impl Flag {
+    /// True iff the flag is `On`.
+    pub const fn is_set(&self) -> bool {
+        matches!(self, Self::On { .. })
+    }
+
+    /// Source span if set, `None` otherwise.
+    pub const fn span(&self) -> Option<Span> {
+        match self {
+            Self::Off => None,
+            Self::On { span, .. } => Some(*span),
+        }
+    }
+
+    /// Source byte-range if set, `None` otherwise.
+    pub const fn range(&self) -> Option<ByteRange> {
+        match self {
+            Self::Off => None,
+            Self::On { range, .. } => Some(*range),
+        }
+    }
+
+    /// Construct an `On` flag anchored to a source keyword token.
+    /// Used by lowerings that locate the keyword's CST node.
+    pub const fn anchored(range: ByteRange, span: Span) -> Self {
+        Self::On { range, span }
+    }
+
+    /// Construct an `On` flag with no corresponding source keyword
+    /// (implicit default). The span is a width-0 point.
+    pub const fn implicit_at(line: u32, column: u32) -> Self {
+        Self::On {
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(line, column),
+        }
+    }
+
+    /// Migration helper: behaves like a `bool` from a caller that
+    /// hasn't yet been upgraded to provide positions. `true` produces
+    /// a synthetic, position-less `On`; the renderer then synthesises
+    /// a span from context (matches the pre-`Flag` behaviour).
+    ///
+    /// New code should prefer [`Flag::anchored`] (keyword from source)
+    /// or [`Flag::implicit_at`] (implicit default at a known point).
+    pub const fn from_bool(value: bool) -> Self {
+        if value {
+            Self::On {
+                range: ByteRange::synthetic_empty(),
+                span: Span::point(0, 0),
+            }
+        } else {
+            Self::Off
+        }
+    }
+}
+
+impl From<bool> for Flag {
+    fn from(value: bool) -> Self {
+        Self::from_bool(value)
+    }
+}
+
+/// A named flag with source-position metadata, used for the
+/// per-variant marker set that doesn't fit into the shared
+/// [`Modifiers`] struct. Examples: `<from/>` on a `yield`,
+/// `<inclusive/>` on a Ruby range, `<group/>` on a TypeScript import.
+///
+/// Equivalent in semantics to a `Flag::On` plus a name: presence in
+/// the variant's `extra_markers: Vec<Marker>` field means the flag is
+/// set; the XML projection emits an empty `<{name}/>` element at the
+/// carried `span`.
+///
+/// **Anchored vs implicit.** Same convention as [`Flag`]: when the
+/// source has a keyword (e.g. `from` in `yield from x`), use
+/// [`Marker::anchored`] with the keyword's byte range and span. When
+/// the marker is implicit / synthesised (the variant lifts a marker
+/// that doesn't appear in source), use [`Marker::implicit`] with a
+/// width-0 synthetic position.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Marker {
+    pub name: &'static str,
+    pub range: ByteRange,
+    pub span: Span,
+}
+
+impl Marker {
+    /// Construct a marker anchored to a source token (e.g. a
+    /// keyword). XML emits `<name/>` with line/column matching the
+    /// token's source position.
+    pub const fn anchored(name: &'static str, range: ByteRange, span: Span) -> Self {
+        Self { name, range, span }
+    }
+
+    /// Construct a marker without a corresponding source token
+    /// (synthesised by the lowering). XML emits `<name/>` with a
+    /// width-0 position. Callers that have a meaningful synthetic
+    /// position should use [`Marker::implicit_at`] instead.
+    pub const fn implicit(name: &'static str) -> Self {
+        Self {
+            name,
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(0, 0),
+        }
+    }
+
+    /// Construct an implicit marker at a specific source point.
+    pub const fn implicit_at(name: &'static str, line: u32, column: u32) -> Self {
+        Self {
+            name,
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(line, column),
+        }
+    }
+}
+
+impl From<&'static str> for Marker {
+    fn from(name: &'static str) -> Self {
+        Self::implicit(name)
+    }
+}
+
 impl ByteRange {
     /// Range produced from real parser output. `anchored: true`.
     pub const fn new(start: u32, end: u32) -> Self {
@@ -361,7 +515,7 @@ pub enum SyntaxTree {
         /// Extra markers placed on the `<unary>` element itself
         /// (NOT on `<op>`). Used for `<prefix/>` on `++x`/`--x` to
         /// distinguish from postfix forms.
-        extra_markers: &'static [&'static str],
+        extra_markers: Vec<Marker>,
         range: ByteRange,
         span: Span,
     },
@@ -537,7 +691,7 @@ pub enum SyntaxTree {
         /// imperative pipeline attaches as siblings of anonymous-keyword
         /// text (Principle: every keyword in an element's text must
         /// have a corresponding marker sibling).
-        extra_markers: &'static [&'static str],
+        extra_markers: Vec<Marker>,
         children: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
@@ -734,7 +888,7 @@ pub enum SyntaxTree {
     /// (`<public/>`, `<private/>`, `<readonly/>`, `<override/>`).
     Parameter {
         kind: ParamKind,
-        extra_markers: &'static [&'static str],
+        extra_markers: Vec<Marker>,
         modifiers: Modifiers,
         name: Box<SyntaxTree>,                  // SyntaxTree::Name
         type_ann: Option<Box<SyntaxTree>>,      // <type>...</type>
@@ -1251,58 +1405,58 @@ pub struct Modifiers {
     /// modifiers (Python, JavaScript before private fields).
     pub access: Option<Access>,
     /// `static` — bound to the type, not instances.
-    pub static_: bool,
+    pub static_: Flag,
     /// `abstract` — must be overridden / has no implementation.
-    pub abstract_: bool,
+    pub abstract_: Flag,
     /// `sealed` (C#) / `final class` (Java) — cannot be inherited.
-    pub sealed: bool,
+    pub sealed: Flag,
     /// `virtual` (C#) — overridable but not abstract.
-    pub virtual_: bool,
+    pub virtual_: Flag,
     /// `override` — overrides a base member.
-    pub override_: bool,
+    pub override_: Flag,
     /// `readonly` (C# field) / `final` (Java field) — cannot be
     /// reassigned after initialization.
-    pub readonly: bool,
+    pub readonly: Flag,
     /// `partial` (C#) — definition split across multiple files.
-    pub partial: bool,
+    pub partial: Flag,
     /// `async` — async function/method.
-    pub async_: bool,
+    pub async_: Flag,
     /// `const` — compile-time constant.
-    pub const_: bool,
+    pub const_: Flag,
     /// `extern` (C#) — implementation external (DllImport etc.).
-    pub extern_: bool,
+    pub extern_: Flag,
     /// `unsafe` (C#) — relaxes safety checks.
-    pub unsafe_: bool,
+    pub unsafe_: Flag,
     /// `volatile` (C#/Java) — non-cacheable reads/writes.
-    pub volatile: bool,
+    pub volatile: Flag,
     /// `new` (C#) — explicitly hides an inherited member.
-    pub new_: bool,
+    pub new_: Flag,
     /// `required` (C# 11) — must be assigned during object init.
-    pub required: bool,
+    pub required: Flag,
     /// `final` (Java field/method/class) — renders as `<final/>`
     /// marker. Distinct from C#'s `readonly` (same semantics, different
     /// wire name) so each language's tests see the marker the
     /// imperative pipeline produced.
-    pub final_: bool,
+    pub final_: Flag,
     /// `synchronized` (Java method) — renders as `<synchronized/>`.
-    pub synchronized_: bool,
+    pub synchronized_: Flag,
     /// `transient` (Java field) — exclude from serialization.
-    pub transient: bool,
+    pub transient: Flag,
     /// `native` (Java method) — implementation supplied by the JVM.
-    pub native: bool,
+    pub native: Flag,
     /// `strictfp` (Java) — strict floating-point.
-    pub strictfp: bool,
+    pub strictfp: Flag,
     /// `default` (Java interface method) — has a default body.
-    pub default: bool,
+    pub default: Flag,
     /// `get` (TypeScript / JS class accessor) — `get foo() {...}` —
     /// renders as `<get/>` marker on the method.
-    pub getter: bool,
+    pub getter: Flag,
     /// `set` (TypeScript / JS class accessor) — `set foo(v) {...}` —
     /// renders as `<set/>` marker on the method.
-    pub setter: bool,
+    pub setter: Flag,
     /// `*` (TypeScript / JS generator function) — renders as
     /// `<generator/>` marker on the method/function.
-    pub generator: bool,
+    pub generator: Flag,
 }
 
 impl Modifiers {
@@ -1310,70 +1464,87 @@ impl Modifiers {
     /// no markers at all.
     pub fn is_empty(&self) -> bool {
         self.access.is_none()
-            && !self.static_ && !self.abstract_ && !self.sealed
-            && !self.virtual_ && !self.override_ && !self.readonly
-            && !self.partial && !self.async_ && !self.const_
-            && !self.extern_ && !self.unsafe_ && !self.volatile
-            && !self.new_ && !self.required
+            && !self.static_.is_set() && !self.abstract_.is_set() && !self.sealed.is_set()
+            && !self.virtual_.is_set() && !self.override_.is_set() && !self.readonly.is_set()
+            && !self.partial.is_set() && !self.async_.is_set() && !self.const_.is_set()
+            && !self.extern_.is_set() && !self.unsafe_.is_set() && !self.volatile.is_set()
+            && !self.new_.is_set() && !self.required.is_set()
     }
 
     /// Marker names this modifier set should emit, in stable order
     /// (access first, then alphabetical-ish for predictability).
     /// Used by the renderer to produce zero-width markers.
     pub fn marker_names(&self) -> Vec<&'static str> {
-        let mut names: Vec<&'static str> = Vec::new();
+        self.markers_with_spans().into_iter().map(|(n, _)| n).collect()
+    }
+
+    /// Same as [`marker_names`](Self::marker_names) but also carries
+    /// each marker's source span (from the `Flag`'s anchored keyword
+    /// position, or the synthetic point for implicit defaults).
+    /// Used by the XML renderer to position each empty `<flag/>`
+    /// element at the keyword's source location.
+    pub fn markers_with_spans(&self) -> Vec<(&'static str, Option<Span>)> {
+        let mut out: Vec<(&'static str, Option<Span>)> = Vec::new();
         if let Some(a) = self.access {
-            for n in a.marker_names() { names.push(n); }
+            for n in a.marker_names() { out.push((n, None)); }
         }
         // Source order — matches Java/C# canonical declaration:
         // access  abstract  static  final/readonly  ... .
         // Tests assert ordinal positions (`*[1][self::public]`,
         // `*[2][self::abstract]`), so the order is observable.
-        if self.abstract_ { names.push("abstract"); }
-        if self.static_   { names.push("static"); }
-        if self.virtual_  { names.push("virtual"); }
-        if self.override_ { names.push("override"); }
-        if self.sealed    { names.push("sealed"); }
-        if self.final_    { names.push("final"); }
-        if self.readonly  { names.push("readonly"); }
-        if self.partial   { names.push("partial"); }
-        if self.async_    { names.push("async"); }
-        if self.const_    { names.push("const"); }
-        if self.extern_   { names.push("extern"); }
-        if self.unsafe_   { names.push("unsafe"); }
-        if self.volatile  { names.push("volatile"); }
-        if self.new_      { names.push("new"); }
-        if self.required  { names.push("required"); }
-        if self.synchronized_ { names.push("synchronized"); }
-        if self.transient { names.push("transient"); }
-        if self.native    { names.push("native"); }
-        if self.strictfp  { names.push("strictfp"); }
-        if self.default   { names.push("default"); }
-        if self.getter    { names.push("get"); }
-        if self.setter    { names.push("set"); }
-        if self.generator { names.push("generator"); }
-        names
+        let pairs: [(&Flag, &'static str); 23] = [
+            (&self.abstract_,      "abstract"),
+            (&self.static_,        "static"),
+            (&self.virtual_,       "virtual"),
+            (&self.override_,      "override"),
+            (&self.sealed,         "sealed"),
+            (&self.final_,         "final"),
+            (&self.readonly,       "readonly"),
+            (&self.partial,        "partial"),
+            (&self.async_,         "async"),
+            (&self.const_,         "const"),
+            (&self.extern_,        "extern"),
+            (&self.unsafe_,        "unsafe"),
+            (&self.volatile,       "volatile"),
+            (&self.new_,           "new"),
+            (&self.required,       "required"),
+            (&self.synchronized_,  "synchronized"),
+            (&self.transient,      "transient"),
+            (&self.native,         "native"),
+            (&self.strictfp,       "strictfp"),
+            (&self.default,        "default"),
+            (&self.getter,         "get"),
+            (&self.setter,         "set"),
+            (&self.generator,      "generator"),
+        ];
+        for (flag, name) in pairs {
+            if flag.is_set() {
+                out.push((name, flag.span()));
+            }
+        }
+        out
     }
 
     /// Flip a modifier flag from text input. Returns Err for unknown
     /// names. Used by the eventual `tractor modify --set foo=true`
     /// CLI surface.
     pub fn set_flag(&mut self, name: &str, value: bool) -> Result<(), &'static str> {
+        let flag = Flag::from_bool(value);
         match name {
-            "static"   => self.static_ = value,
-            "abstract" => self.abstract_ = value,
-            "sealed"   => self.sealed = value,
-            "virtual"  => self.virtual_ = value,
-            "override" => self.override_ = value,
-            "readonly" => self.readonly = value,
-            "partial"  => self.partial = value,
-            "async"    => self.async_ = value,
-            "const"    => self.const_ = value,
-            "extern"   => self.extern_ = value,
-            "unsafe"   => self.unsafe_ = value,
-            "volatile" => self.volatile = value,
-            "new"      => self.new_ = value,
-            "required" => self.required = value,
+            "static"   => self.static_ = flag,
+            "abstract" => self.abstract_ = flag,
+            "sealed"   => self.sealed = flag,
+            "virtual"  => self.virtual_ = flag,
+            "override" => self.override_ = flag,
+            "readonly" => self.readonly = flag,
+            "partial"  => self.partial = flag,
+            "async"    => self.async_ = flag,
+            "const"    => self.const_ = flag,
+            "extern"   => self.extern_ = flag,
+            "unsafe"   => self.unsafe_ = flag,
+            "volatile" => self.volatile = flag,
+            "new"      => self.new_ = flag,
+            "required" => self.required = flag,
             _ => return Err("unknown modifier flag"),
         }
         Ok(())
@@ -1631,6 +1802,9 @@ impl SyntaxTree {
         if matches!(self, SyntaxTree::Expression { .. }) {
             return self;
         }
+        if matches!(&self, SyntaxTree::SimpleStatement { element_name: "expression", .. }) {
+            return self;
+        }
         let range = self.range();
         let span = self.span();
         SyntaxTree::Expression {
@@ -1639,6 +1813,20 @@ impl SyntaxTree {
             range,
             span,
         }
+    }
+
+    /// Wrap this tree in `<expression>` host(s), threading through
+    /// `Inline` so each child of an `Inline` is wrapped individually.
+    /// Used at lowering sites whose value position may be a multi-value
+    /// `Inline` (e.g. `return a, b`, multi-target assign). Idempotent.
+    pub fn wrap_expression_inline_aware(self) -> SyntaxTree {
+        if let SyntaxTree::Inline { children, list_name, range, span } = self {
+            let wrapped = children.into_iter()
+                .map(|c| c.wrap_expression())
+                .collect();
+            return SyntaxTree::Inline { children: wrapped, list_name, range, span };
+        }
+        self.wrap_expression()
     }
 
     /// Wrap this tree in a `<extends><type>...</type></extends>`
@@ -1658,7 +1846,7 @@ impl SyntaxTree {
         SyntaxTree::SimpleStatement {
             element_name: "extends",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![self.wrap_type()],
             range,
             span,
@@ -1687,7 +1875,7 @@ impl SyntaxTree {
         SyntaxTree::SimpleStatement {
             element_name: "type",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![self],
             range,
             span,

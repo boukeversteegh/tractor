@@ -79,6 +79,9 @@ pub enum TractorNode {
     // Chain inversion (iter 243): `[access]` distinguishes
     // member-access chains from object literals (both <object>).
     Access,
+    // Conditional-type slot wrappers (Principle #19 — role-named
+    // slots disambiguate the four typed children of `T extends X ? Y : Z`).
+    Left, Right, Then,
 }
 
 impl TractorNode {

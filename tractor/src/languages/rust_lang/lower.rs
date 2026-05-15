@@ -16,7 +16,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     float_of, int_of, name_of, range_of, span_of, string_of, text_of,
 };
-use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, ParamKind, Span};
+use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Marker, ParamKind, Span};
 
 /// Lower a Rust tree-sitter root node to [`SyntaxTree`].
 pub fn lower_rust_root(root: &RawNode, source: &str) -> SyntaxTree {
@@ -157,7 +157,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 
         // `_` wildcard pattern (unnamed token, but reachable via the
         // pattern field of let_declaration / match_arm / etc.).
-        "_" => simple_statement_marked(node, "pattern", &["wildcard"], source),
+        "_" => simple_statement_marked(node, "pattern", vec![Marker::implicit("wildcard")], source),
 
         // `'a` lifetime — emit `<lifetime>` with `<name>` leaf inside.
         // The inner identifier text is the lifetime name without the
@@ -171,7 +171,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "lifetime",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -186,22 +186,22 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "integer_literal" => int_of(node, source),
         "float_literal" => float_of(node, source),
         "string_literal" => string_of(node, source),
-        "raw_string_literal" => simple_statement_marked(node, "string", &["raw"], source),
+        "raw_string_literal" => simple_statement_marked(node, "string", vec![Marker::implicit("raw")], source),
         "char_literal" => simple_statement(node, "char", source),
         "byte_literal" => string_of(node, source),
         "boolean_literal" => SyntaxTree::SimpleStatement {
             element_name: "bool",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: Vec::new(),
             range,
             span,
         },
-        "negative_literal" => simple_statement_marked(node, "literal", &["negative"], source),
+        "negative_literal" => simple_statement_marked(node, "literal", vec![Marker::implicit("negative")], source),
         "unit_expression" => SyntaxTree::SimpleStatement {
             element_name: "literal",
             modifiers: Modifiers::default(),
-            extra_markers: &["unit"],
+            extra_markers: vec![Marker::implicit("unit")],
             children: Vec::new(),
             range,
             span,
@@ -237,7 +237,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::Inline { children, list_name: None, range, span }
         }
         // `extern crate alloc;`.
-        "extern_crate_declaration" => simple_statement_marked(node, "use", &["extern"], source),
+        "extern_crate_declaration" => simple_statement_marked(node, "use", vec![Marker::implicit("extern")], source),
 
         // ----- Items: struct / enum / trait / impl / function / type --
         "struct_item" => rust_decl(node, "struct", source),
@@ -270,7 +270,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         children.push(SyntaxTree::SimpleStatement {
                             element_name: "body",
                             modifiers: Modifiers::default(),
-                            extra_markers: &[],
+                            extra_markers: Vec::new(),
                             children: merge_rust_line_comments(body_children, source),
                             range: range_of(c),
                             span: span_of(c),
@@ -280,7 +280,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 }
                 children.push(lower_node(c, source));
             }
-            let extra_markers: &'static [&'static str] = if is_pub { &["pub"] } else { &["private"] };
+            let extra_markers: Vec<crate::tree::types::Marker> = if is_pub { vec![Marker::implicit("pub")] } else { vec![Marker::implicit("private")] };
             SyntaxTree::SimpleStatement {
                 element_name: "trait",
                 modifiers: Modifiers::default(),
@@ -304,7 +304,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         children.push(SyntaxTree::SimpleStatement {
                             element_name: "implements",
                             modifiers: Modifiers::default(),
-                            extra_markers: &[],
+                            extra_markers: Vec::new(),
                             children: vec![typed],
                             range: range_of(c),
                             span: span_of(c),
@@ -328,7 +328,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         children.push(SyntaxTree::SimpleStatement {
                             element_name: "body",
                             modifiers: Modifiers::default(),
-                            extra_markers: &[],
+                            extra_markers: Vec::new(),
                             children: merge_rust_line_comments(body_children, source),
                             range: range_of(c),
                             span: span_of(c),
@@ -341,7 +341,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "impl",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -379,7 +379,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     }
                 }
             }
-            let extra_markers: &'static [&'static str] = if is_pub { &["pub"] } else { &["private"] };
+            let extra_markers: Vec<crate::tree::types::Marker> = if is_pub { vec![Marker::implicit("pub")] } else { vec![Marker::implicit("private")] };
             SyntaxTree::SimpleStatement {
                 element_name: "alias",
                 modifiers: Modifiers::default(),
@@ -410,7 +410,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "pub",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![q.clone()],
                     range, span,
                 });
@@ -428,7 +428,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         children.push(SyntaxTree::SimpleStatement {
                             element_name: "body",
                             modifiers: Modifiers::default(),
-                            extra_markers: &[],
+                            extra_markers: Vec::new(),
                             children: merge_rust_line_comments(body_children, source),
                             range: range_of(c),
                             span: span_of(c),
@@ -438,10 +438,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 }
                 children.push(lower_node(c, source));
             }
-            let extra_markers: &'static [&'static str] = match (&pub_qual, is_pub) {
-                (Some(_), _) => &[],
-                (None, true) => &["pub"],
-                (None, false) => &["private"],
+            let extra_markers: Vec<crate::tree::types::Marker> = match (&pub_qual, is_pub) {
+                (Some(_), _) => Vec::new(),
+                (None, true) => vec![Marker::implicit("pub")],
+                (None, false) => vec![Marker::implicit("private")],
             };
             SyntaxTree::SimpleStatement {
                 element_name: "mod",
@@ -451,11 +451,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 range, span,
             }
         }
-        "macro_definition" => simple_statement_marked(node, "macro", &["definition"], source),
+        "macro_definition" => simple_statement_marked(node, "macro", vec![Marker::implicit("definition")], source),
         "macro_rule" => simple_statement(node, "arm", source),
         "macro_invocation" => simple_statement(node, "macro", source),
-        "associated_type" => simple_statement_marked(node, "type", &["associated"], source),
-        "type_binding" => simple_statement_marked(node, "type", &["associated"], source),
+        "associated_type" => simple_statement_marked(node, "type", vec![Marker::implicit("associated")], source),
+        "type_binding" => simple_statement_marked(node, "type", vec![Marker::implicit("associated")], source),
 
         // Visibility modifier — handled inside rust_decl. If we see one
         // standalone (orphaned), emit Inline so source bytes survive.
@@ -512,7 +512,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     }
                 }
             }
-            let extra_markers: &'static [&'static str] = if is_pub { &["pub"] } else { &[] };
+            let extra_markers: Vec<crate::tree::types::Marker> = if is_pub { vec![Marker::implicit("pub")] } else { Vec::new() };
             SyntaxTree::SimpleStatement {
                 element_name: "field",
                 modifiers: Modifiers::default(),
@@ -529,7 +529,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "body",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children: merge_rust_line_comments(body_children, source),
                 range, span,
             }
@@ -548,11 +548,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![SyntaxTree::SimpleStatement {
                         element_name: "expression",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![inner],
                         range: range_of(v),
                         span: span_of(v),
@@ -564,14 +564,14 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "field",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
         }
         "shorthand_field_initializer" => simple_statement(node, "field", source),
         "field_initializer_list" => simple_statement(node, "body", source),
-        "base_field_initializer" => simple_statement_marked(node, "field", &["base"], source),
+        "base_field_initializer" => simple_statement_marked(node, "field", vec![Marker::implicit("base")], source),
 
         // ----- Parameters ----------------------------------------------
         "parameter" => {
@@ -598,14 +598,14 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "parameter",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
         }
-        "self_parameter" => simple_statement_marked(node, "parameter", &["self"], source),
-        "variadic_parameter" => simple_statement_marked(node, "parameter", &["variadic"], source),
-        "const_parameter" => simple_statement_marked(node, "parameter", &["const"], source),
+        "self_parameter" => simple_statement_marked(node, "parameter", vec![Marker::implicit("self")], source),
+        "variadic_parameter" => simple_statement_marked(node, "parameter", vec![Marker::implicit("variadic")], source),
+        "const_parameter" => simple_statement_marked(node, "parameter", vec![Marker::implicit("const")], source),
         "parameters" | "closure_parameters" => SyntaxTree::Inline {
             children: lower_children(node, source),
             list_name: Some("parameters"),
@@ -625,7 +625,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 None => SyntaxTree::SimpleStatement {
                     element_name: "lifetime",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: Vec::new(),
                     range, span,
                 },
@@ -653,25 +653,25 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "extends",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
         }
-        "higher_ranked_trait_bound" => simple_statement_marked(node, "bound", &["higher"], source),
-        "removed_trait_bound" => simple_statement_marked(node, "bound", &["optional"], source),
+        "higher_ranked_trait_bound" => simple_statement_marked(node, "bound", vec![Marker::implicit("higher")], source),
+        "removed_trait_bound" => simple_statement_marked(node, "bound", vec![Marker::implicit("optional")], source),
         "constrained_type_parameter" => simple_statement(node, "generic", source),
         "optional_type_parameter" => simple_statement(node, "generic", source),
 
         // ----- Type-shape grammar --------------------------------------
-        "abstract_type" => simple_statement_marked(node, "type", &["abstract"], source),
-        "array_type" => simple_statement_marked(node, "type", &["array"], source),
-        "tuple_type" => simple_statement_marked(node, "type", &["tuple"], source),
-        "unit_type" => simple_statement_marked(node, "type", &["unit"], source),
-        "never_type" => simple_statement_marked(node, "type", &["never"], source),
-        "function_type" => simple_statement_marked(node, "type", &["function"], source),
-        "dynamic_type" => simple_statement_marked(node, "type", &["dynamic"], source),
-        "pointer_type" => simple_statement_marked(node, "type", &["pointer"], source),
+        "abstract_type" => simple_statement_marked(node, "type", vec![Marker::implicit("abstract")], source),
+        "array_type" => simple_statement_marked(node, "type", vec![Marker::implicit("array")], source),
+        "tuple_type" => simple_statement_marked(node, "type", vec![Marker::implicit("tuple")], source),
+        "unit_type" => simple_statement_marked(node, "type", vec![Marker::implicit("unit")], source),
+        "never_type" => simple_statement_marked(node, "type", vec![Marker::implicit("never")], source),
+        "function_type" => simple_statement_marked(node, "type", vec![Marker::implicit("function")], source),
+        "dynamic_type" => simple_statement_marked(node, "type", vec![Marker::implicit("dynamic")], source),
+        "pointer_type" => simple_statement_marked(node, "type", vec![Marker::implicit("pointer")], source),
         "reference_type" => {
             // `&T` / `&mut T` / `&'a T` — emit `<type[borrowed]>` (with
             // `<mut/>` marker if `mut` keyword present) and wrap the
@@ -693,8 +693,8 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     wrap_in_type_if_leaf(inner_ir, range_of(c), span_of(c))
                 })
                 .collect();
-            let extra_markers: &'static [&'static str] =
-                if has_mut { &["borrowed", "mut"] } else { &["borrowed"] };
+            let extra_markers: Vec<crate::tree::types::Marker> =
+                if has_mut { vec![Marker::implicit("borrowed"), Marker::implicit("mut")] } else { vec![Marker::implicit("borrowed")] };
             SyntaxTree::SimpleStatement {
                 element_name: "type",
                 modifiers: Modifiers::default(),
@@ -703,7 +703,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 range, span,
             }
         }
-        "bounded_type" => simple_statement_marked(node, "type", &["bounded"], source),
+        "bounded_type" => simple_statement_marked(node, "type", vec![Marker::implicit("bounded")], source),
         "generic_type" => {
             // `Foo<T, U>` / `std::collections::HashMap<String, T>` —
             // collapse the type name into a single `<name>full text</name>`
@@ -740,13 +740,13 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "type",
                 modifiers: Modifiers::default(),
-                extra_markers: &["generic"],
+                extra_markers: vec![Marker::implicit("generic")],
                 children,
                 range, span,
             }
         }
         "generic_type_with_turbofish" => {
-            simple_statement_marked(node, "type", &["turbofish"], source)
+            simple_statement_marked(node, "type", vec![Marker::implicit("turbofish")], source)
         }
         "qualified_type" => SyntaxTree::Inline {
             children: lower_children(node, source),
@@ -785,11 +785,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![SyntaxTree::SimpleStatement {
                         element_name: "expression",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![inner],
                         range: range_of(v),
                         span: span_of(v),
@@ -798,7 +798,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     span: span_of(v),
                 });
             }
-            let extra_markers: &'static [&'static str] = if has_mut { &["mut"] } else { &[] };
+            let extra_markers: Vec<crate::tree::types::Marker> = if has_mut { vec![Marker::implicit("mut")] } else { Vec::new() };
             SyntaxTree::SimpleStatement {
                 element_name: "let",
                 modifiers: Modifiers::default(),
@@ -843,7 +843,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             return SyntaxTree::SimpleStatement {
                                 element_name: "expression",
                                 modifiers: Modifiers::default(),
-                                extra_markers: &["try"],
+                                extra_markers: vec![Marker::implicit("try")],
                                 children: vec![lower_node(o, source)],
                                 range, span,
                             };
@@ -852,7 +852,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     SyntaxTree::SimpleStatement {
                         element_name: "expression",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![lower_node(i, source)],
                         range, span,
                     }
@@ -875,10 +875,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         // wrap an inner block — inline the inner block's children
         // directly under the marker-tagged outer block to avoid
         // `<block[async]><block>...</block></block>` nesting.
-        "async_block" => rust_marked_block(node, "block", &["async"], source),
-        "const_block" => rust_marked_block(node, "block", &["const"], source),
-        "try_block" => rust_marked_block(node, "block", &["try"], source),
-        "gen_block" => rust_marked_block(node, "block", &["gen"], source),
+        "async_block" => rust_marked_block(node, "block", vec![Marker::implicit("async")], source),
+        "const_block" => rust_marked_block(node, "block", vec![Marker::implicit("const")], source),
+        "try_block" => rust_marked_block(node, "block", vec![Marker::implicit("try")], source),
+        "gen_block" => rust_marked_block(node, "block", vec![Marker::implicit("gen")], source),
         "unsafe_block" => simple_statement(node, "unsafe", source),
         "declaration_list" => SyntaxTree::Inline {
             children: lower_children(node, source),
@@ -905,11 +905,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![SyntaxTree::SimpleStatement {
                         element_name: "expression",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![inner],
                         range: range_of(v),
                         span: span_of(v),
@@ -926,7 +926,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "body",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: body_children,
                     range: range_of(b),
                     span: span_of(b),
@@ -935,7 +935,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "match",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -952,7 +952,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![inner],
                     range: range_of(v),
                     span: span_of(v),
@@ -961,7 +961,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "arm",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -982,7 +982,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         children.push(SyntaxTree::SimpleStatement {
                             element_name: "condition",
                             modifiers: Modifiers::default(),
-                            extra_markers: &[],
+                            extra_markers: Vec::new(),
                             children: vec![lower_node(c, source)],
                             range: range_of(c),
                             span: span_of(c),
@@ -995,7 +995,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "pattern",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -1022,11 +1022,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             children.push(SyntaxTree::SimpleStatement {
                                 element_name: "value",
                                 modifiers: Modifiers::default(),
-                                extra_markers: &[],
+                                extra_markers: Vec::new(),
                                 children: vec![SyntaxTree::SimpleStatement {
                                     element_name: "expression",
                                     modifiers: Modifiers::default(),
-                                    extra_markers: &[],
+                                    extra_markers: Vec::new(),
                                     children: vec![inner],
                                     range: range_of(c),
                                     span: span_of(c),
@@ -1053,7 +1053,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "for",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -1070,11 +1070,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         children.push(SyntaxTree::SimpleStatement {
                             element_name: "condition",
                             modifiers: Modifiers::default(),
-                            extra_markers: &[],
+                            extra_markers: Vec::new(),
                             children: vec![SyntaxTree::SimpleStatement {
                                 element_name: "expression",
                                 modifiers: Modifiers::default(),
-                                extra_markers: &[],
+                                extra_markers: Vec::new(),
                                 children: vec![inner],
                                 range: range_of(c),
                                 span: span_of(c),
@@ -1100,7 +1100,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "while",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -1120,7 +1120,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "loop",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -1210,7 +1210,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 None => SyntaxTree::Unknown { kind: "call_expression(missing)".to_string(), range, span },
             }
         }
-        "generic_function" => simple_statement_marked(node, "call", &["generic"], source),
+        "generic_function" => simple_statement_marked(node, "call", vec![Marker::implicit("generic")], source),
         "index_expression" => {
             // `expr[index]` — fold into SyntaxTree::Access if expr is a chain.
             let kids: Vec<&RawNode> = node.named_children().collect();
@@ -1277,11 +1277,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![SyntaxTree::SimpleStatement {
                         element_name: "expression",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![inner],
                         range: range_of(v),
                         span: span_of(v),
@@ -1297,7 +1297,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "cast",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -1330,7 +1330,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         SyntaxTree::SimpleStatement {
                             element_name: "from",
                             modifiers: Modifiers::default(),
-                            extra_markers: &[],
+                            extra_markers: Vec::new(),
                             children: vec![inner],
                             range: range_of(*c),
                             span: span_of(*c),
@@ -1339,7 +1339,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     Some(_) => SyntaxTree::SimpleStatement {
                         element_name: "to",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![inner],
                         range: range_of(*c),
                         span: span_of(*c),
@@ -1348,7 +1348,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 };
                 children.push(tree);
             }
-            let extra_markers: &'static [&'static str] = if inclusive { &["inclusive"] } else { &["exclusive"] };
+            let extra_markers: Vec<crate::tree::types::Marker> = if inclusive { vec![Marker::implicit("inclusive")] } else { vec![Marker::implicit("exclusive")] };
             SyntaxTree::SimpleStatement {
                 element_name: "range",
                 modifiers: Modifiers::default(),
@@ -1366,24 +1366,24 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         },
 
         // ----- Patterns ------------------------------------------------
-        "captured_pattern" => simple_statement_marked(node, "pattern", &["capture"], source),
-        "generic_pattern" => simple_statement_marked(node, "pattern", &["generic"], source),
-        "reference_pattern" => simple_statement_marked(node, "pattern", &["ref"], source),
-        "remaining_field_pattern" => simple_statement_marked(node, "pattern", &["rest"], source),
-        "slice_pattern" => simple_statement_marked(node, "pattern", &["slice"], source),
-        "tuple_pattern" => simple_statement_marked(node, "pattern", &["tuple"], source),
+        "captured_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("capture")], source),
+        "generic_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("generic")], source),
+        "reference_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("ref")], source),
+        "remaining_field_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("rest")], source),
+        "slice_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("slice")], source),
+        "tuple_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("tuple")], source),
         "tuple_struct_pattern" => SyntaxTree::Inline {
             children: lower_children(node, source),
             list_name: None,
             range,
             span,
         },
-        "token_binding_pattern" => simple_statement_marked(node, "pattern", &["binding"], source),
-        "field_pattern" => simple_statement_marked(node, "pattern", &["field"], source),
-        "or_pattern" => simple_statement_marked(node, "pattern", &["or"], source),
-        "mut_pattern" => simple_statement_marked(node, "pattern", &["mut"], source),
-        "ref_pattern" => simple_statement_marked(node, "pattern", &["ref"], source),
-        "struct_pattern" => simple_statement_marked(node, "pattern", &["struct"], source),
+        "token_binding_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("binding")], source),
+        "field_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("field")], source),
+        "or_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("or")], source),
+        "mut_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("mut")], source),
+        "ref_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("ref")], source),
+        "struct_pattern" => simple_statement_marked(node, "pattern", vec![Marker::implicit("struct")], source),
         "range_pattern" => {
             // `0..=9` / `0..9` inside a pattern.
             let text = &source[range.start as usize..range.end as usize];
@@ -1406,7 +1406,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     Some(op) if (c.start_byte() as u32) < op => SyntaxTree::SimpleStatement {
                         element_name: "from",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![inner],
                         range: range_of(*c),
                         span: span_of(*c),
@@ -1414,7 +1414,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     Some(_) => SyntaxTree::SimpleStatement {
                         element_name: "to",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![inner],
                         range: range_of(*c),
                         span: span_of(*c),
@@ -1423,7 +1423,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 };
                 children.push(tree);
             }
-            let extra_markers: &'static [&'static str] = if inclusive { &["inclusive"] } else { &["exclusive"] };
+            let extra_markers: Vec<crate::tree::types::Marker> = if inclusive { vec![Marker::implicit("inclusive")] } else { vec![Marker::implicit("exclusive")] };
             SyntaxTree::SimpleStatement {
                 element_name: "range",
                 modifiers: Modifiers::default(),
@@ -1465,7 +1465,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 
         // ----- Attributes ----------------------------------------------
         "attribute_item" => simple_statement(node, "attribute", source),
-        "inner_attribute_item" => simple_statement_marked(node, "attribute", &["inner"], source),
+        "inner_attribute_item" => simple_statement_marked(node, "attribute", vec![Marker::implicit("inner")], source),
         "attribute" => SyntaxTree::Inline {
             children: lower_children(node, source),
             list_name: None,
@@ -1474,7 +1474,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         },
 
         // ----- Foreign / extern blocks ---------------------------------
-        "foreign_mod_item" => simple_statement_marked(node, "mod", &["foreign", "extern"], source),
+        "foreign_mod_item" => simple_statement_marked(node, "mod", vec![Marker::implicit("foreign"), Marker::implicit("extern")], source),
 
         // ----- Crate marker --------------------------------------------
         "crate" => name_of(node, source),
@@ -1508,16 +1508,16 @@ fn lower_rust_use(node: &RawNode, source: &str) -> SyntaxTree {
         Some(a) => lower_rust_use_inner(a, source, &mut markers),
         None => Vec::new(),
     };
-    let extra_markers: &'static [&'static str] = match markers.as_slice() {
-        [] => &[],
-        ["reexport"] => &["reexport"],
-        ["wildcard"] => &["wildcard"],
-        ["group"] => &["group"],
-        ["alias"] => &["alias"],
-        ["reexport", "group"] | ["group", "reexport"] => &["reexport", "group"],
-        ["reexport", "wildcard"] | ["wildcard", "reexport"] => &["reexport", "wildcard"],
-        ["reexport", "alias"] | ["alias", "reexport"] => &["reexport", "alias"],
-        _ => &[],
+    let extra_markers: Vec<crate::tree::types::Marker> = match markers.as_slice() {
+        [] => Vec::new(),
+        ["reexport"] => vec![Marker::implicit("reexport")],
+        ["wildcard"] => vec![Marker::implicit("wildcard")],
+        ["group"] => vec![Marker::implicit("group")],
+        ["alias"] => vec![Marker::implicit("alias")],
+        ["reexport", "group"] | ["group", "reexport"] => vec![Marker::implicit("reexport"), Marker::implicit("group")],
+        ["reexport", "wildcard"] | ["wildcard", "reexport"] => vec![Marker::implicit("reexport"), Marker::implicit("wildcard")],
+        ["reexport", "alias"] | ["alias", "reexport"] => vec![Marker::implicit("reexport"), Marker::implicit("alias")],
+        _ => Vec::new(),
     };
     SyntaxTree::SimpleStatement {
         element_name: "use",
@@ -1567,7 +1567,7 @@ fn lower_rust_use_inner(
                     vec![SyntaxTree::SimpleStatement {
                         element_name: "path",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: segments,
                         range, span,
                     }]
@@ -1610,7 +1610,7 @@ fn lower_rust_use_inner(
                     Some(SyntaxTree::SimpleStatement {
                         element_name: "path",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: path_segments.iter().map(clone_ir).collect(),
                         range: r, span: s,
                     })
@@ -1619,10 +1619,10 @@ fn lower_rust_use_inner(
                     combined.push(p);
                 }
                 combined.extend(inner_children);
-                let inner_extra: &'static [&'static str] = match item_markers.as_slice() {
-                    [] => &[],
-                    ["alias"] => &["alias"],
-                    _ => &[],
+                let inner_extra: Vec<crate::tree::types::Marker> = match item_markers.as_slice() {
+                    [] => Vec::new(),
+                    ["alias"] => vec![Marker::implicit("alias")],
+                    _ => Vec::new(),
                 };
                 inner_uses.push(SyntaxTree::SimpleStatement {
                     element_name: "use",
@@ -1657,7 +1657,7 @@ fn lower_rust_use_inner(
                 out.push(SyntaxTree::SimpleStatement {
                     element_name: "aliased",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![inner],
                     range: r, span: s,
                 });
@@ -1697,7 +1697,7 @@ fn split_path_and_leaf(scope: &RawNode, segments: Vec<SyntaxTree>, _source: &str
         SyntaxTree::SimpleStatement {
             element_name: "path",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: segs,
             range: path_range,
             span: path_span,
@@ -1718,7 +1718,7 @@ fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) ->
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range: range_of(node),
         span: span_of(node),
@@ -1728,7 +1728,7 @@ fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) ->
 fn simple_statement_marked(
     node: &RawNode,
     element_name: &'static str,
-    extra_markers: &'static [&'static str],
+    extra_markers: Vec<crate::tree::types::Marker>,
     source: &str,
 ) -> SyntaxTree {
     let children: Vec<SyntaxTree> = node
@@ -1761,7 +1761,7 @@ fn wrap_in_type_if_leaf(inner: SyntaxTree, range: ByteRange, span: Span) -> Synt
         SyntaxTree::Name { .. } => SyntaxTree::SimpleStatement {
             element_name: "type",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![inner],
             range, span,
         },
@@ -1775,7 +1775,7 @@ fn wrap_in_type_if_leaf(inner: SyntaxTree, range: ByteRange, span: Span) -> Synt
 fn rust_marked_block(
     node: &RawNode,
     element_name: &'static str,
-    extra_markers: &'static [&'static str],
+    extra_markers: Vec<crate::tree::types::Marker>,
     source: &str,
 ) -> SyntaxTree {
     let mut children: Vec<SyntaxTree> = Vec::new();
@@ -1810,7 +1810,7 @@ fn rename_block_as_body(block: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "body",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children: merge_rust_line_comments(children, source),
         range: range_of(block),
         span: span_of(block),
@@ -1833,7 +1833,7 @@ fn rust_if_expression(node: &RawNode, source: &str) -> SyntaxTree {
         children.push(SyntaxTree::SimpleStatement {
             element_name: "condition",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![lower_node(c, source)],
             range: range_of(c),
             span: span_of(c),
@@ -1843,7 +1843,7 @@ fn rust_if_expression(node: &RawNode, source: &str) -> SyntaxTree {
         children.push(SyntaxTree::SimpleStatement {
             element_name: "then",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![lower_node(c, source)],
             range: range_of(c),
             span: span_of(c),
@@ -1865,7 +1865,7 @@ fn rust_if_expression(node: &RawNode, source: &str) -> SyntaxTree {
                     else_if_children.push(SyntaxTree::SimpleStatement {
                         element_name: "condition",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![lower_node(c, source)],
                         range: range_of(c),
                         span: span_of(c),
@@ -1875,7 +1875,7 @@ fn rust_if_expression(node: &RawNode, source: &str) -> SyntaxTree {
                     else_if_children.push(SyntaxTree::SimpleStatement {
                         element_name: "then",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![lower_node(c, source)],
                         range: range_of(c),
                         span: span_of(c),
@@ -1884,7 +1884,7 @@ fn rust_if_expression(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "else_if",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: else_if_children,
                     range: range_of(a),
                     span: span_of(a),
@@ -1895,7 +1895,7 @@ fn rust_if_expression(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "else",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![lower_node(i, source)],
                     range: range_of(a),
                     span: span_of(a),
@@ -1911,7 +1911,7 @@ fn rust_if_expression(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "if",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range,
         span,
@@ -1966,7 +1966,7 @@ fn classify_rust_visibility(node: &RawNode, source: &str) -> RustVis {
                 SyntaxTree::SimpleStatement {
                     element_name: "in",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![],
                     range: range_of(c),
                     span: span_of(c),
@@ -1983,7 +1983,7 @@ fn classify_rust_visibility(node: &RawNode, source: &str) -> RustVis {
                 SyntaxTree::SimpleStatement {
                     element_name,
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![],
                     range: range_of(c),
                     span: span_of(c),
@@ -2013,7 +2013,7 @@ fn rust_function(node: &RawNode, source: &str) -> SyntaxTree {
         children.push(SyntaxTree::SimpleStatement {
             element_name: "pub",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![pub_inner],
             range,
             span,
@@ -2044,7 +2044,7 @@ fn rust_function(node: &RawNode, source: &str) -> SyntaxTree {
                         children.push(SyntaxTree::SimpleStatement {
                             element_name: "body",
                             modifiers: Modifiers::default(),
-                            extra_markers: &[],
+                            extra_markers: Vec::new(),
                             children: merge_rust_line_comments(body_children, source),
                             range: range_of(c),
                             span: span_of(c),
@@ -2056,10 +2056,10 @@ fn rust_function(node: &RawNode, source: &str) -> SyntaxTree {
             }
         }
     }
-    let extra_markers: &'static [&'static str] = match &vis {
-        RustVis::Private => &["private"],
-        RustVis::Pub => &["pub"],
-        RustVis::PubQualified(_) => &[],
+    let extra_markers: Vec<crate::tree::types::Marker> = match &vis {
+        RustVis::Private => vec![Marker::implicit("private")],
+        RustVis::Pub => vec![Marker::implicit("pub")],
+        RustVis::PubQualified(_) => Vec::new(),
     };
     SyntaxTree::SimpleStatement {
         element_name: "function",
@@ -2088,11 +2088,11 @@ fn rust_decl(node: &RawNode, element_name: &'static str, source: &str) -> Syntax
             has_mut = true;
         }
     }
-    let extra_markers: &'static [&'static str] = match (is_pub, has_mut) {
-        (true, true) => &["pub", "mut"],
-        (true, false) => &["pub"],
-        (false, true) => &["private", "mut"],
-        (false, false) => &["private"],
+    let extra_markers: Vec<crate::tree::types::Marker> = match (is_pub, has_mut) {
+        (true, true) => vec![Marker::implicit("pub"), Marker::implicit("mut")],
+        (true, false) => vec![Marker::implicit("pub")],
+        (false, true) => vec![Marker::implicit("private"), Marker::implicit("mut")],
+        (false, false) => vec![Marker::implicit("private")],
     };
     let children: Vec<SyntaxTree> = node
         .named_children()

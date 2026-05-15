@@ -1356,8 +1356,8 @@ fn static_marker_via_modifiers_mutation() {
     }
     let class = find_class(&mut tree).expect("SyntaxTree::Class");
     if let tractor::tree::SyntaxTree::Class { modifiers, .. } = class {
-        assert!(!modifiers.static_, "should not be static initially");
-        modifiers.static_ = true;
+        assert!(!modifiers.static_.is_set(), "should not be static initially");
+        modifiers.static_ = tractor::tree::types::Flag::from_bool(true);
     }
 
     fn render_view(tree: &tractor::tree::SyntaxTree, src: &str) -> String {
@@ -1383,17 +1383,17 @@ fn modifiers_set_flag_api() {
     assert!(m.is_empty());
 
     m.set_flag("static", true).unwrap();
-    assert!(m.static_);
+    assert!(m.static_.is_set());
 
     m.set_flag("abstract", true).unwrap();
     m.set_flag("sealed", true).unwrap();
-    assert!(m.abstract_ && m.sealed);
+    assert!(m.abstract_.is_set() && m.sealed.is_set());
 
     let err = m.set_flag("nonexistent", true);
     assert!(err.is_err(), "unknown flag must Err");
 
     m.set_flag("static", false).unwrap();
-    assert!(!m.static_);
+    assert!(!m.static_.is_set());
 }
 
 // ---------------------------------------------------------------------------

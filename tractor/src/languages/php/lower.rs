@@ -11,7 +11,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     float_of, int_of, name_of, null_of, range_of, span_of, string_of, text_of,
 };
-use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Span};
+use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Marker, Span};
 
 pub fn lower_php_root(root: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(root);
@@ -134,7 +134,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::SimpleStatement {
                                 element_name: "interpolation",
                                 modifiers: Modifiers::default(),
-                                extra_markers: &[],
+                                extra_markers: Vec::new(),
                                 children: vec![inner],
                                 range: range_of(c),
                                 span: span_of(c),
@@ -147,17 +147,17 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "string",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
         }
-        "heredoc" => simple_statement_marked(node, "string", &["heredoc"], source),
-        "nowdoc" | "nowdoc_string" => simple_statement_marked(node, "string", &["nowdoc"], source),
+        "heredoc" => simple_statement_marked(node, "string", vec![Marker::implicit("heredoc")], source),
+        "nowdoc" | "nowdoc_string" => simple_statement_marked(node, "string", vec![Marker::implicit("nowdoc")], source),
         "boolean" => SyntaxTree::SimpleStatement {
             element_name: "bool",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: Vec::new(),
             range, span,
         },
@@ -165,7 +165,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "comment" => SyntaxTree::Comment { leading: false, trailing: false, range, span },
 
         // ----- PHP tag -------------------------------------------------
-        "php_tag" => simple_statement_marked(node, "tag", &["open"], source),
+        "php_tag" => simple_statement_marked(node, "tag", vec![Marker::implicit("open")], source),
         "text" => SyntaxTree::Inline {
             children: Vec::new(),
             list_name: None,
@@ -213,7 +213,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "interface_declaration" => php_class_like(node, source, "interface"),
         "trait_declaration" => php_class_like(node, source, "trait"),
         "enum_declaration" => php_class_like(node, source, "enum"),
-        "anonymous_class" => simple_statement_marked(node, "class", &["anonymous"], source),
+        "anonymous_class" => simple_statement_marked(node, "class", vec![Marker::implicit("anonymous")], source),
         "base_clause" => simple_statement(node, "extends", source),
         "class_interface_clause" => simple_statement(node, "implements", source),
         "method_declaration" => php_method_declaration(node, source),
@@ -241,7 +241,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "const",
                 modifiers,
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -279,8 +279,8 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         },
 
         // ----- Functions / parameters ---------------------------------
-        "function_definition" => php_function_definition(node, source, "function", &[]),
-        "anonymous_function" => php_function_definition(node, source, "function", &["anonymous"]),
+        "function_definition" => php_function_definition(node, source, "function", Vec::new()),
+        "anonymous_function" => php_function_definition(node, source, "function", vec![Marker::implicit("anonymous")]),
         "arrow_function" => php_arrow_function(node, source),
         "anonymous_function_use_clause" => SyntaxTree::Inline {
             children: lower_children(node, source),
@@ -293,7 +293,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             range, span,
         },
         "simple_parameter" => simple_statement(node, "parameter", source),
-        "variadic_parameter" => simple_statement_marked(node, "parameter", &["variadic"], source),
+        "variadic_parameter" => simple_statement_marked(node, "parameter", vec![Marker::implicit("variadic")], source),
         "property_promotion_parameter" => {
             // Constructor promotion: `public readonly int $x` —
             // lift the visibility / readonly modifiers onto the
@@ -307,7 +307,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "parameter",
                 modifiers,
-                extra_markers: &["promoted"],
+                extra_markers: vec![Marker::implicit("promoted")],
                 children,
                 range, span,
             }
@@ -316,11 +316,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         // ----- Types ---------------------------------------------------
         "named_type" => simple_statement(node, "type", source),
         "primitive_type" => simple_statement(node, "type", source),
-        "optional_type" => simple_statement_marked(node, "type", &["optional"], source),
-        "union_type" => simple_statement_marked(node, "type", &["union"], source),
-        "intersection_type" => simple_statement_marked(node, "type", &["intersection"], source),
-        "bottom_type" => simple_statement_marked(node, "type", &["bottom"], source),
-        "disjunctive_normal_form_type" => simple_statement_marked(node, "type", &["disjunctive"], source),
+        "optional_type" => simple_statement_marked(node, "type", vec![Marker::implicit("optional")], source),
+        "union_type" => simple_statement_marked(node, "type", vec![Marker::implicit("union")], source),
+        "intersection_type" => simple_statement_marked(node, "type", vec![Marker::implicit("intersection")], source),
+        "bottom_type" => simple_statement_marked(node, "type", vec![Marker::implicit("bottom")], source),
+        "disjunctive_normal_form_type" => simple_statement_marked(node, "type", vec![Marker::implicit("disjunctive")], source),
         "type_list" => simple_statement(node, "types", source),
         "cast_type" => simple_statement(node, "type", source),
 
@@ -333,7 +333,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "default_statement" => simple_statement(node, "default", source),
         "match_expression" => php_match_expression(node, source),
         "match_conditional_expression" => simple_statement(node, "arm", source),
-        "match_default_expression" => simple_statement_marked(node, "arm", &["default"], source),
+        "match_default_expression" => simple_statement_marked(node, "arm", vec![Marker::implicit("default")], source),
         "for_statement" => php_for_statement(node, source),
         "foreach_statement" => php_foreach_statement(node, source),
         "while_statement" => php_while_statement(node, source),
@@ -353,7 +353,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "try",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -372,7 +372,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "catch",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -390,7 +390,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "finally",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range, span,
             }
@@ -488,7 +488,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 None => SyntaxTree::Unknown { kind: "function_call_expression(missing)".to_string(), range, span },
             }
         }
-        "scoped_call_expression" => simple_statement_marked(node, "call", &["static"], source),
+        "scoped_call_expression" => simple_statement_marked(node, "call", vec![Marker::implicit("static")], source),
         // `$obj->method(args)` — fold into SyntaxTree::Access with a Call
         // segment carrying the method name. tree-sitter PHP fields:
         // object, name, arguments.
@@ -560,9 +560,9 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 _ => simple_statement(node, "member", source),
             }
         }
-        "scoped_property_access_expression" => simple_statement_marked(node, "member", &["static"], source),
-        "nullsafe_member_access_expression" => simple_statement_marked(node, "member", &["nullsafe"], source),
-        "class_constant_access_expression" => simple_statement_marked(node, "member", &["static"], source),
+        "scoped_property_access_expression" => simple_statement_marked(node, "member", vec![Marker::implicit("static")], source),
+        "nullsafe_member_access_expression" => simple_statement_marked(node, "member", vec![Marker::implicit("nullsafe")], source),
+        "class_constant_access_expression" => simple_statement_marked(node, "member", vec![Marker::implicit("static")], source),
         "subscript_expression" => {
             // `$arr[0]` — fold into `SyntaxTree::Access { receiver, segments: [Index] }`
             // so single-step bracket access produces the same
@@ -625,7 +625,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             range, span,
         },
         "variadic_unpacking" => simple_statement(node, "spread", source),
-        "variadic_placeholder" => simple_statement_marked(node, "argument", &["variadic"], source),
+        "variadic_placeholder" => simple_statement_marked(node, "argument", vec![Marker::implicit("variadic")], source),
         "parenthesized_expression" => SyntaxTree::Inline {
             children: lower_children(node, source),
             list_name: None,
@@ -643,14 +643,14 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         },
 
         // ----- Variables -----------------------------------------------
-        "function_static_declaration" => simple_statement_marked(node, "variable", &["static"], source),
+        "function_static_declaration" => simple_statement_marked(node, "variable", vec![Marker::implicit("static")], source),
         "static_variable_declaration" => SyntaxTree::Inline {
             children: lower_children(node, source),
             list_name: None,
             range, span,
         },
-        "global_declaration" => simple_statement_marked(node, "variable", &["global"], source),
-        "dynamic_variable_name" => simple_statement_marked(node, "variable", &["dynamic"], source),
+        "global_declaration" => simple_statement_marked(node, "variable", vec![Marker::implicit("global")], source),
+        "dynamic_variable_name" => simple_statement_marked(node, "variable", vec![Marker::implicit("dynamic")], source),
 
         // ----- Strings / interpolation ---------------------------------
         "text_interpolation" => simple_statement(node, "interpolation", source),
@@ -701,7 +701,7 @@ fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) ->
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range: range_of(node),
         span: span_of(node),
@@ -727,7 +727,7 @@ fn lower_php_throw(node: &RawNode, source: &str) -> SyntaxTree {
         vec![SyntaxTree::SimpleStatement {
             element_name: "expression",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: inner,
             range: expr_range,
             span,
@@ -736,7 +736,7 @@ fn lower_php_throw(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "throw",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range,
         span,
@@ -746,7 +746,7 @@ fn lower_php_throw(node: &RawNode, source: &str) -> SyntaxTree {
 fn simple_statement_marked(
     node: &RawNode,
     element_name: &'static str,
-    extra_markers: &'static [&'static str],
+    extra_markers: Vec<crate::tree::types::Marker>,
     source: &str,
 ) -> SyntaxTree {
     let children: Vec<SyntaxTree> = node.named_children().map(|c| lower_node(c, source)).collect();
@@ -771,11 +771,11 @@ fn wrap_condition(inner: SyntaxTree, range: ByteRange, span: Span) -> SyntaxTree
     SyntaxTree::SimpleStatement {
         element_name: "condition",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children: vec![SyntaxTree::SimpleStatement {
             element_name: "expression",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![inner],
             range, span,
         }],
@@ -794,7 +794,7 @@ fn body_of(block: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "body",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children: merge_php_line_comments(body_children, source),
         range: range_of(block),
         span: span_of(block),
@@ -899,7 +899,7 @@ fn php_unary_op_expression(node: &RawNode, source: &str) -> SyntaxTree {
             op_marker: marker,
             op_range: op_byte_range,
             operand: Box::new(lower_node(o, source)),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             range, span,
         },
         _ => simple_statement(node, "unary", source),
@@ -920,7 +920,7 @@ fn php_error_suppression(node: &RawNode, source: &str) -> SyntaxTree {
             op_marker: "suppress",
             op_range: op_byte_range,
             operand: Box::new(lower_node(o, source)),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             range, span,
         },
         None => simple_statement(node, "unary", source),
@@ -946,7 +946,7 @@ fn php_update_expression(node: &RawNode, source: &str) -> SyntaxTree {
         "--" => "decrement",
         _ => "",
     };
-    let extra_markers: &'static [&'static str] = if was_prefix { &["prefix"] } else { &[] };
+    let extra_markers: Vec<crate::tree::types::Marker> = if was_prefix { vec![Marker::implicit("prefix")] } else { Vec::new() };
     match operand {
         Some(o) if !marker.is_empty() => SyntaxTree::Unary {
             op_text,
@@ -1004,7 +1004,7 @@ fn php_if_statement(node: &RawNode, source: &str) -> SyntaxTree {
         children.push(SyntaxTree::SimpleStatement {
             element_name: "then",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![body],
             range: range_of(b),
             span: span_of(b),
@@ -1029,7 +1029,7 @@ fn php_if_statement(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "if",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -1051,11 +1051,11 @@ fn php_else_clause(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "else",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children: vec![SyntaxTree::SimpleStatement {
             element_name: "body",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: inner,
             range, span,
         }],
@@ -1081,7 +1081,7 @@ fn php_else_if_clause(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "else_if",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -1104,7 +1104,7 @@ fn php_while_statement(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "while",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -1127,7 +1127,7 @@ fn php_do_statement(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "do",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -1151,7 +1151,7 @@ fn php_use_group(node: &RawNode, source: &str) -> SyntaxTree {
             children.push(SyntaxTree::SimpleStatement {
                 element_name: "path",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children: vec![inner],
                 range: range_of(c),
                 span: span_of(c),
@@ -1164,7 +1164,7 @@ fn php_use_group(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "use",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![lower_node(clause, source)],
                     range: range_of(clause),
                     span: span_of(clause),
@@ -1177,7 +1177,7 @@ fn php_use_group(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "use",
         modifiers: Modifiers::default(),
-        extra_markers: &["group"],
+        extra_markers: vec![Marker::implicit("group")],
         children,
         range,
         span,
@@ -1200,11 +1200,11 @@ fn php_for_statement(node: &RawNode, source: &str) -> SyntaxTree {
             children.push(SyntaxTree::SimpleStatement {
                 element_name: "condition",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children: vec![SyntaxTree::SimpleStatement {
                     element_name: "expression",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![inner],
                     range: range_of(c),
                     span: span_of(c),
@@ -1219,7 +1219,7 @@ fn php_for_statement(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "for",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -1249,11 +1249,11 @@ fn php_foreach_statement(node: &RawNode, source: &str) -> SyntaxTree {
         children.push(SyntaxTree::SimpleStatement {
             element_name: "right",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![SyntaxTree::SimpleStatement {
                 element_name: "expression",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children: vec![iter_inner],
                 range: range_of(iter_node),
                 span: span_of(iter_node),
@@ -1265,11 +1265,11 @@ fn php_foreach_statement(node: &RawNode, source: &str) -> SyntaxTree {
         children.push(SyntaxTree::SimpleStatement {
             element_name: "left",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![SyntaxTree::SimpleStatement {
                 element_name: "expression",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children: vec![bind_inner],
                 range: range_of(bind_node),
                 span: span_of(bind_node),
@@ -1286,7 +1286,7 @@ fn php_foreach_statement(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "foreach",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -1313,7 +1313,7 @@ fn php_switch_statement(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "switch",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -1339,7 +1339,7 @@ fn php_match_expression(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "match",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -1374,25 +1374,25 @@ fn php_modifiers(node: &RawNode, source: &str, default_public: bool) -> Modifier
                 // "presence absent" — only flag if the node has text.
                 let text = text_of(c, source);
                 if text.trim() == "static" {
-                    m.static_ = true;
+                    m.static_ = crate::tree::types::Flag::anchored(range_of(c), span_of(c));
                 }
             }
             "final_modifier" => {
                 let text = text_of(c, source);
                 if text.trim() == "final" {
-                    m.final_ = true;
+                    m.final_ = crate::tree::types::Flag::anchored(range_of(c), span_of(c));
                 }
             }
             "abstract_modifier" => {
                 let text = text_of(c, source);
                 if text.trim() == "abstract" {
-                    m.abstract_ = true;
+                    m.abstract_ = crate::tree::types::Flag::anchored(range_of(c), span_of(c));
                 }
             }
             "readonly_modifier" => {
                 let text = text_of(c, source);
                 if text.trim() == "readonly" {
-                    m.readonly = true;
+                    m.readonly = crate::tree::types::Flag::anchored(range_of(c), span_of(c));
                 }
             }
             _ => {}
@@ -1437,7 +1437,7 @@ fn php_method_declaration(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "method",
         modifiers,
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -1472,7 +1472,7 @@ fn php_property_declaration(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "field",
         modifiers,
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -1497,7 +1497,7 @@ fn php_class_like(
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers,
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }
@@ -1509,7 +1509,7 @@ fn php_function_definition(
     node: &RawNode,
     source: &str,
     element_name: &'static str,
-    extra_markers: &'static [&'static str],
+    extra_markers: Vec<crate::tree::types::Marker>,
 ) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
@@ -1546,7 +1546,7 @@ fn php_arrow_function(node: &RawNode, source: &str) -> SyntaxTree {
             children.push(SyntaxTree::SimpleStatement {
                 element_name: "body",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children: vec![inner],
                 range: range_of(c),
                 span: span_of(c),
@@ -1558,7 +1558,7 @@ fn php_arrow_function(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "arrow",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range, span,
     }

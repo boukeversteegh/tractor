@@ -36,6 +36,8 @@ pub enum TractorNode {
     True, False, Nil,
     #[strum(serialize = "self")]
     Self_,
+    #[strum(serialize = "super")]
+    Super_,
     // Identifiers
     Name, Constant, Comment, Type,
     // Comment markers

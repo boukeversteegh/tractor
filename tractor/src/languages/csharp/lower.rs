@@ -24,7 +24,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     float_of, int_of, name_of, null_of, range_of, span_of, string_of, text_of,
 };
-use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, ParamKind, Span};
+use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Marker, ParamKind, Span};
 
 // Parent-map context. `RawNode` is a parent-less tree (the tree-sitter
 // `Node::parent()` API does not map cleanly to an owned, borrowed-
@@ -197,7 +197,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             // Pick up parameter modifiers (`ref`/`out`/`in`/`params`/`this`)
             // from any `modifier` child. Each becomes an empty marker
             // sibling on the rendered `<parameter>`.
-            let extra_markers: &'static [&'static str] = {
+            let extra_markers: Vec<crate::tree::types::Marker> = {
                 let mut found: Vec<&'static str> = Vec::new();
                 for c in node.named_children() {
                     if c.kind() == "modifier" {
@@ -214,13 +214,13 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     }
                 }
                 match found.as_slice() {
-                    []          => &[],
-                    ["ref"]     => &["ref"],
-                    ["out"]     => &["out"],
-                    ["in"]      => &["in"],
-                    ["params"]  => &["params"],
-                    ["this"]    => &["this"],
-                    _           => &[],
+                    []          => Vec::new(),
+                    ["ref"]     => vec![Marker::implicit("ref")],
+                    ["out"]     => vec![Marker::implicit("out")],
+                    ["in"]      => vec![Marker::implicit("in")],
+                    ["params"]  => vec![Marker::implicit("params")],
+                    ["this"]    => vec![Marker::implicit("this")],
+                    _           => Vec::new(),
                 }
             };
             SyntaxTree::Parameter {
@@ -856,7 +856,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "return_statement" => {
             let value = node.named_children().next();
             SyntaxTree::Return {
-                value: value.map(|v| Box::new(lower_node(v, source))),
+                value: value.map(|v| Box::new(lower_node(v, source).wrap_expression_inline_aware())),
                 range, span,
             }
         }
@@ -920,7 +920,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "block",
                 modifiers: Modifiers::default(),
-                extra_markers: &["unsafe"],
+                extra_markers: vec![Marker::implicit("unsafe")],
                 children,
                 range, span,
             }
@@ -960,7 +960,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "from",
                 modifiers: Modifiers::default(),
-                extra_markers: &["in"],
+                extra_markers: vec![Marker::implicit("in")],
                 children,
                 range, span,
             }
@@ -968,7 +968,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "where_clause"                  => simple_statement(node, "where",      source),
         "select_clause"                 => simple_statement(node, "select",     source),
         "order_by_clause"               => simple_statement(node, "order",      source),
-        "join_clause"                   => simple_statement_marked(node, "join", &["in"], source),
+        "join_clause"                   => simple_statement_marked(node, "join", vec![Marker::implicit("in")], source),
         "group_clause"                  => simple_statement(node, "group",      source),
         "let_clause"                    => simple_statement(node, "let",        source),
         "query_expression"              => simple_statement(node, "query",      source),
@@ -994,7 +994,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "attribute",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range,
                 span,
@@ -1032,7 +1032,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "constructor_initializer"       => simple_statement(node, "initializer",source),
         "calling_convention"            => simple_statement(node, "calling",    source),
         "explicit_interface_specifier"  => simple_statement(node, "interface",  source),
-        "ref_expression"                => simple_statement_marked(node, "expression", &["ref"], source),
+        "ref_expression"                => simple_statement_marked(node, "expression", vec![Marker::implicit("ref")], source),
         "shebang_directive"             => simple_statement(node, "shebang",    source),
         "member_binding_expression"     => simple_statement(node, "member",     source),
         "element_binding_expression"    => simple_statement(node, "index",      source),
@@ -1043,20 +1043,20 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         // `<type><name>var</name></type>` for query consistency with
         // `predefined_type`.
         "implicit_type" => name_of(node, source),
-        "tuple_type"                    => simple_statement_marked(node, "type", &["tuple"], source),
-        "array_type"                    => simple_statement_marked(node, "type", &["array"], source),
-        "nullable_type"                 => simple_statement_marked(node, "type", &["nullable"], source),
-        "ref_type"                      => simple_statement_marked(node, "type", &["ref"], source),
-        "scoped_type"                   => simple_statement_marked(node, "type", &["scoped"], source),
+        "tuple_type"                    => simple_statement_marked(node, "type", vec![Marker::implicit("tuple")], source),
+        "array_type"                    => simple_statement_marked(node, "type", vec![Marker::implicit("array")], source),
+        "nullable_type"                 => simple_statement_marked(node, "type", vec![Marker::implicit("nullable")], source),
+        "ref_type"                      => simple_statement_marked(node, "type", vec![Marker::implicit("ref")], source),
+        "scoped_type"                   => simple_statement_marked(node, "type", vec![Marker::implicit("scoped")], source),
         "function_pointer_type"         => simple_statement(node, "type",       source),
         // Array / collection creation — render as <new>. stackalloc
         // forms additionally carry a `<stackalloc/>` marker; anonymous
         // object creation carries `<anonymous/>`.
         "array_creation_expression"          => simple_statement(node, "new",   source),
         "implicit_array_creation_expression" => simple_statement(node, "new",   source),
-        "anonymous_object_creation_expression" => simple_statement_marked(node, "new", &["anonymous"], source),
-        "stackalloc_expression"              => simple_statement_marked(node, "new", &["stackalloc"], source),
-        "implicit_stackalloc_expression"     => simple_statement_marked(node, "new", &["stackalloc"], source),
+        "anonymous_object_creation_expression" => simple_statement_marked(node, "new", vec![Marker::implicit("anonymous")], source),
+        "stackalloc_expression"              => simple_statement_marked(node, "new", vec![Marker::implicit("stackalloc")], source),
+        "implicit_stackalloc_expression"     => simple_statement_marked(node, "new", vec![Marker::implicit("stackalloc")], source),
         // String interpolation — render as <string>.
         "interpolated_string_expression"     => simple_statement(node, "string",source),
         // Pattern-matching expressions / statements.
@@ -1073,16 +1073,16 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         // Each pattern shape carries a kind marker so XPath queries
         // can distinguish `<pattern[constant]>` from `<pattern[declaration]>`
         // etc. (Principle #15: stable shape markers.)
-        "constant_pattern"          => simple_statement_marked(node, "pattern", &["constant"], source),
-        "declaration_pattern"       => simple_statement_marked(node, "pattern", &["declaration"], source),
-        "recursive_pattern"         => simple_statement_marked(node, "pattern", &["recursive"], source),
-        "relational_pattern"        => simple_statement_marked(node, "pattern", &["relational"], source),
-        "tuple_pattern"             => simple_statement_marked(node, "pattern", &["tuple"], source),
-        "and_pattern"               => simple_statement_marked(node, "pattern", &["and"], source),
-        "or_pattern"                => simple_statement_marked(node, "pattern", &["or"],  source),
-        "negated_pattern"           => simple_statement_marked(node, "pattern", &["negated"], source),
-        "list_pattern"              => simple_statement_marked(node, "pattern", &["list"], source),
-        "var_pattern"               => simple_statement_marked(node, "pattern", &["var"], source),
+        "constant_pattern"          => simple_statement_marked(node, "pattern", vec![Marker::implicit("constant")], source),
+        "declaration_pattern"       => simple_statement_marked(node, "pattern", vec![Marker::implicit("declaration")], source),
+        "recursive_pattern"         => simple_statement_marked(node, "pattern", vec![Marker::implicit("recursive")], source),
+        "relational_pattern"        => simple_statement_marked(node, "pattern", vec![Marker::implicit("relational")], source),
+        "tuple_pattern"             => simple_statement_marked(node, "pattern", vec![Marker::implicit("tuple")], source),
+        "and_pattern"               => simple_statement_marked(node, "pattern", vec![Marker::implicit("and")], source),
+        "or_pattern"                => simple_statement_marked(node, "pattern", vec![Marker::implicit("or")],  source),
+        "negated_pattern"           => simple_statement_marked(node, "pattern", vec![Marker::implicit("negated")], source),
+        "list_pattern"              => simple_statement_marked(node, "pattern", vec![Marker::implicit("list")], source),
+        "var_pattern"               => simple_statement_marked(node, "pattern", vec![Marker::implicit("var")], source),
         "type_pattern"              => simple_statement(node, "pattern", source),
         "property_pattern_clause"   => simple_statement(node, "properties", source),
         "subpattern"                => simple_statement(node, "subpattern", source),
@@ -1093,7 +1093,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         // Variance keywords `in`/`out` appear as unnamed children in the
         // type_parameter; surface them as `<in/>` / `<out/>` markers.
         "type_parameter" => {
-            let variance: &'static [&'static str] = {
+            let variance: Vec<crate::tree::types::Marker> = {
                 let mut found: Option<&'static str> = None;
                 for c in node.children() {
                     if !c.is_named() {
@@ -1107,9 +1107,9 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     }
                 }
                 match found {
-                    Some("in")  => &["in"],
-                    Some("out") => &["out"],
-                    _ => &[],
+                    Some("in")  => vec![Marker::implicit("in")],
+                    Some("out") => vec![Marker::implicit("out")],
+                    _ => Vec::new(),
                 }
             };
             simple_statement_marked(node, "generic", variance, source)
@@ -1302,8 +1302,12 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let mut modifiers = Modifiers::default();
             for c in node.children() {
                 if !c.is_named() {
-                    { let t = c.utf8_text(source);
-                        if t == "async" { modifiers.async_ = true; }
+                    let t = c.utf8_text(source);
+                    if t == "async" {
+                        modifiers.async_ = crate::tree::types::Flag::anchored(
+                            range_of(c),
+                            span_of(c),
+                        );
                     }
                 }
             }
@@ -1322,7 +1326,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         let ps = span_of(p);
                         vec![SyntaxTree::Parameter {
                             kind: ParamKind::Regular,
-                            extra_markers: &[],
+                            extra_markers: Vec::new(),
                             modifiers: Modifiers::default(),
                             name: Box::new(name_of(p, source)),
                             type_ann: None,
@@ -1589,7 +1593,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "bool",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children: Vec::new(),
                 range,
                 span,
@@ -1838,7 +1842,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         op_marker: marker,
                         op_range,
                         operand: Box::new(lower_node(o, source)),
-                        extra_markers: &["postfix"],
+                        extra_markers: vec![Marker::implicit("postfix")],
                         range,
                         span,
                     },
@@ -1956,9 +1960,9 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             // `<prefix/>` marker only for `++`/`--` (which have a
             // postfix counterpart). Bare `-x`/`!x`/`~x` are
             // unambiguously prefix; the marker would just be noise.
-            let extra_markers: &'static [&'static str] = match op_text.as_str() {
-                "++" | "--" => &["prefix"],
-                _ => &[],
+            let extra_markers: Vec<crate::tree::types::Marker> = match op_text.as_str() {
+                "++" | "--" => vec![Marker::implicit("prefix")],
+                _ => Vec::new(),
             };
             match (operand, op_marker(&op_text)) {
                 (Some(o), Some(marker)) => SyntaxTree::Unary {
@@ -2003,8 +2007,11 @@ fn lower_csharp_modifiers(
     source: &str,
     default_access: Option<Access>,
 ) -> Modifiers {
-    let words: Vec<&str> = node.named_children()
+    use crate::tree::types::Flag;
+    let modifier_nodes: Vec<&RawNode> = node.named_children()
         .filter(|c| c.kind() == "modifier")
+        .collect();
+    let words: Vec<&str> = modifier_nodes.iter()
         .map(|c| c.utf8_text(source))
         .collect();
 
@@ -2030,24 +2037,27 @@ fn lower_csharp_modifiers(
         }
     }
 
-    // Boolean flags. `protected` / `internal` / `private` consumed
-    // above for access; not flagged separately.
-    for w in &words {
-        match *w {
-            "static"   => m.static_   = true,
-            "abstract" => m.abstract_ = true,
-            "sealed"   => m.sealed    = true,
-            "virtual"  => m.virtual_  = true,
-            "override" => m.override_ = true,
-            "readonly" => m.readonly  = true,
-            "partial"  => m.partial   = true,
-            "async"    => m.async_    = true,
-            "const"    => m.const_    = true,
-            "extern"   => m.extern_   = true,
-            "unsafe"   => m.unsafe_   = true,
-            "volatile" => m.volatile  = true,
-            "new"      => m.new_      = true,
-            "required" => m.required  = true,
+    // Boolean flags carry the source-position of their keyword. The
+    // XML projection uses these spans to position each empty marker
+    // element where the keyword appeared in the source.
+    for n in &modifier_nodes {
+        let text = n.utf8_text(source);
+        let flag = Flag::anchored(range_of(n), span_of(n));
+        match text {
+            "static"   => m.static_   = flag,
+            "abstract" => m.abstract_ = flag,
+            "sealed"   => m.sealed    = flag,
+            "virtual"  => m.virtual_  = flag,
+            "override" => m.override_ = flag,
+            "readonly" => m.readonly  = flag,
+            "partial"  => m.partial   = flag,
+            "async"    => m.async_    = flag,
+            "const"    => m.const_    = flag,
+            "extern"   => m.extern_   = flag,
+            "unsafe"   => m.unsafe_   = flag,
+            "volatile" => m.volatile  = flag,
+            "new"      => m.new_      = flag,
+            "required" => m.required  = flag,
             // access keywords already handled above.
             "public" | "private" | "protected" | "internal" | "file" => {}
             _ => {} // unknown — ignored for now.
@@ -2223,7 +2233,7 @@ fn lower_csharp_throw(node: &RawNode, source: &str) -> SyntaxTree {
         vec![SyntaxTree::SimpleStatement {
             element_name: "expression",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: inner,
             range: expr_range,
             span,
@@ -2232,7 +2242,7 @@ fn lower_csharp_throw(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "throw",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range,
         span,
@@ -2251,7 +2261,7 @@ fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) ->
             children.push(maybe_wrap_field(field_name, inner));
         }
     }
-    SyntaxTree::SimpleStatement { element_name, modifiers, extra_markers: &[], children, range, span }
+    SyntaxTree::SimpleStatement { element_name, modifiers, extra_markers: Vec::new(), children, range, span }
 }
 
 /// Lower `event_field_declaration` as `SyntaxTree::Variable` with
@@ -2312,7 +2322,7 @@ fn lower_event_field_declaration(node: &RawNode, source: &str) -> SyntaxTree {
 fn simple_statement_marked(
     node: &RawNode,
     element_name: &'static str,
-    extra_markers: &'static [&'static str],
+    extra_markers: Vec<crate::tree::types::Marker>,
     source: &str,
 ) -> SyntaxTree {
     let span = span_of(node);
@@ -2429,7 +2439,7 @@ fn translate_csharp_constraint(
         return Some(SyntaxTree::SimpleStatement {
             element_name: "extends",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: vec![type_ir],
             range: zero,
             span,
@@ -2455,7 +2465,7 @@ fn empty_csharp_marker(element_name: &'static str, range: ByteRange, span: Span)
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children: Vec::new(),
         range,
         span,

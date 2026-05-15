@@ -7,9 +7,9 @@ class[@line="2" and @column="1" and @end_line="7" and @end_column="2" and @id="3
       └─ ... (72 children)
 
 tests/integration/sample.cs:9
-class[@line="9" and @column="1" and @end_line="14" and @end_column="2" and @id="51"]/
-  ├─ public[@line="9" and @column="1" and @end_line="14" and @end_column="2" and @id="51"]
+class[@line="9" and @column="1" and @end_line="14" and @end_column="2" and @id="54"]/
+  ├─ public[@line="9" and @column="1" and @end_line="14" and @end_column="2" and @id="54"]
   ├─ "public class"
-  ├─ name[@line="9" and @column="14" and @end_line="9" and @end_column="21" and @id="52"] = "Greeter"
-  └─ body[@line="10" and @column="1" and @end_line="14" and @end_column="2" and @id="53"]/
+  ├─ name[@line="9" and @column="14" and @end_line="9" and @end_column="21" and @id="55"] = "Greeter"
+  └─ body[@line="10" and @column="1" and @end_line="14" and @end_column="2" and @id="56"]/
       └─ ... (45 children)

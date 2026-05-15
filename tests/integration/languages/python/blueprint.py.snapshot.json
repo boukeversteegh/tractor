@@ -929,7 +929,7 @@
         },
         {
           "expression": {
-            "names": [
+            "nodes": [
               "squares",
               "pairs",
               "uniq",
@@ -1067,7 +1067,7 @@
         },
         {
           "expression": {
-            "names": [
+            "nodes": [
               "first",
               "greeting",
               "doubled",
@@ -1194,7 +1194,7 @@
         },
         {
           "expression": {
-            "names": [
+            "nodes": [
               "matched",
               "result",
               "flag",

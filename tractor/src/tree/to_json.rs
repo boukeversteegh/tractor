@@ -218,8 +218,8 @@ impl<'a> Renderer<'a> {
                 shape.singleton("right", self.wrap_expression_host(right));
             }
             SyntaxTree::Unary { op_text, op_marker, operand, extra_markers, .. } => {
-                for m in *extra_markers {
-                    shape.flag(m);
+                for m in extra_markers.iter() {
+                    shape.flag(m.name);
                 }
                 shape.singleton("op", self.op_value(op_text, op_marker));
                 self.add_singleton_or_text(shape, operand);
@@ -346,8 +346,8 @@ impl<'a> Renderer<'a> {
             }
             SyntaxTree::SimpleStatement { children, modifiers, extra_markers, .. } => {
                 self.add_modifier_flags(shape, modifiers);
-                for m in *extra_markers {
-                    shape.flag(m);
+                for m in extra_markers.iter() {
+                    shape.flag(m.name);
                 }
                 self.add_children(shape, children);
             }
@@ -440,8 +440,8 @@ impl<'a> Renderer<'a> {
                 for m in modifiers.marker_names() {
                     shape.flag(m);
                 }
-                for m in *extra_markers {
-                    shape.flag(m);
+                for m in extra_markers.iter() {
+                    shape.flag(m.name);
                 }
                 if let Some(t) = type_ann {
                     shape.singleton("type", self.render_as_type(t));

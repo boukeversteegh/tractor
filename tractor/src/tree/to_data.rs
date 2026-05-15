@@ -291,8 +291,8 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
                 _ => {}
             }
             push_modifier_flags(&mut pairs, modifiers, *range, *span);
-            for m in *extra_markers {
-                pairs.push(make_flag(m, *range, *span));
+            for m in extra_markers.iter() {
+                pairs.push(make_flag(m.name, m.range, m.span));
             }
             if let Some(t) = type_ann {
                 pairs.push(make_pair("type", project(t, source), t.range(), t.span()));
@@ -318,8 +318,8 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
         } => {
             let mut pairs: Vec<DataTree> = Vec::new();
             push_modifier_flags(&mut pairs, modifiers, *range, *span);
-            for m in *extra_markers {
-                pairs.push(make_flag(m, *range, *span));
+            for m in extra_markers.iter() {
+                pairs.push(make_flag(m.name, m.range, m.span));
             }
             pairs.extend(collect_member_pairs(children, source));
             DataTree::Mapping { pairs, range: *range, span: *span }
@@ -449,8 +449,8 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
         // ----- Unary — op + extra-marker flags + operand.
         SyntaxTree::Unary { op_text, op_marker, operand, extra_markers, range, span, .. } => {
             let mut pairs: Vec<DataTree> = Vec::new();
-            for m in *extra_markers {
-                pairs.push(make_flag(m, *range, *span));
+            for m in extra_markers.iter() {
+                pairs.push(make_flag(m.name, m.range, m.span));
             }
             pairs.push(make_pair("op", make_op_mapping(op_text, op_marker, *range, *span), *range, *span));
             pairs.push(make_pair("operand", project(operand, source), operand.range(), operand.span()));

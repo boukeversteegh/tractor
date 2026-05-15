@@ -19,7 +19,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     false_of, float_of, int_of, name_of, null_of, range_of, span_of, string_of, text_of, true_of,
 };
-use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, ParamKind, Span};
+use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Marker, ParamKind, Span};
 
 // Parent-map context (see csharp's lower.rs for the rationale).
 thread_local! {
@@ -100,7 +100,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "void_type" => SyntaxTree::SimpleStatement {
             element_name: "type",
             modifiers: Modifiers::default(),
-            extra_markers: &["void"],
+            extra_markers: vec![Marker::implicit("void")],
             children: vec![name_of(node, source)],
             range,
             span,
@@ -176,7 +176,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                                 SyntaxTree::SimpleStatement {
                                     element_name: "type",
                                     modifiers: Modifiers::default(),
-                                    extra_markers: &[],
+                                    extra_markers: Vec::new(),
                                     children: vec![inner],
                                     range: range_of(n),
                                     span: span_of(n),
@@ -185,7 +185,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             bases.push(SyntaxTree::SimpleStatement {
                                 element_name: "implements",
                                 modifiers: Modifiers::default(),
-                                extra_markers: &[],
+                                extra_markers: Vec::new(),
                                 children: vec![type_inner],
                                 range: range_of(n),
                                 span: span_of(n),
@@ -349,10 +349,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 }
                 None
             });
-            let extra_markers: &'static [&'static str] = if is_spread {
-                &["variadic"]
+            let extra_markers: Vec<crate::tree::types::Marker> = if is_spread {
+                vec![Marker::implicit("variadic")]
             } else {
-                &[]
+                Vec::new()
             };
             let modifiers = lower_java_modifiers(node, source, None);
             let _ = modifiers;
@@ -452,7 +452,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "return_statement" => {
             let value = node.named_children().next();
             SyntaxTree::Return {
-                value: value.map(|v| Box::new(lower_node(v, source))),
+                value: value.map(|v| Box::new(lower_node(v, source).wrap_expression_inline_aware())),
                 range,
                 span,
             }
@@ -562,7 +562,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     children.push(SyntaxTree::SimpleStatement {
                         element_name: "type",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![inner],
                         range: range_of(t),
                         span: span_of(t),
@@ -577,7 +577,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![*expr.inner],
                     range: range_of(v),
                     span: span_of(v),
@@ -589,7 +589,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "foreach",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range,
                 span,
@@ -672,7 +672,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let leading = source[range.start as usize..range.end as usize].trim_start();
             let prefix = leading.trim_start_matches("import").trim_start();
             if prefix.starts_with("static") {
-                simple_statement_marked(node, "import", &["static"], source)
+                simple_statement_marked(node, "import", vec![Marker::implicit("static")], source)
             } else {
                 simple_statement(node, "import", source)
             }
@@ -699,7 +699,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "annotation",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range,
                 span,
@@ -750,12 +750,12 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             match operand_node {
                 Some(o) => {
                     let is_postfix = op_range.start >= range_of(o).end;
-                    let extra_markers: &'static [&'static str] = if is_postfix {
-                        &["postfix"]
+                    let extra_markers: Vec<crate::tree::types::Marker> = if is_postfix {
+                        vec![Marker::implicit("postfix")]
                     } else if matches!(op_text.as_str(), "++" | "--") {
-                        &["prefix"]
+                        vec![Marker::implicit("prefix")]
                     } else {
-                        &[]
+                        Vec::new()
                     };
                     match op_marker(&op_text) {
                         Some(marker) => SyntaxTree::Unary {
@@ -1030,7 +1030,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     SyntaxTree::SimpleStatement {
                         element_name: "type",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![inner_ir],
                         range: r,
                         span: s,
@@ -1039,7 +1039,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "extends",
                     modifiers: Modifiers::default(),
-                    extra_markers: &[],
+                    extra_markers: Vec::new(),
                     children: vec![typed],
                     range: range_of(tb),
                     span: span_of(tb),
@@ -1048,14 +1048,14 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "generic",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range,
                 span,
             }
         }
 
-        "array_type" => simple_statement_marked(node, "type", &["array"], source),
+        "array_type" => simple_statement_marked(node, "type", vec![Marker::implicit("array")], source),
 
         // Comments.
         "line_comment" | "block_comment" => SyntaxTree::Comment {
@@ -1131,7 +1131,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "arm",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range,
                 span,
@@ -1212,12 +1212,12 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             // sitter exposes the keyword as the first unnamed child;
             // detect by source-text prefix.
             let leading = source[range.start as usize..range.end as usize].trim_start();
-            let marker: &'static [&'static str] = if leading.starts_with("this") {
-                &["this"]
+            let marker: Vec<crate::tree::types::Marker> = if leading.starts_with("this") {
+                vec![Marker::implicit("this")]
             } else if leading.starts_with("super") {
-                &["super"]
+                vec![Marker::implicit("super")]
             } else {
-                &[]
+                Vec::new()
             };
             // Walk the argument_list children directly so they sit as
             // call args (matches the imperative `<call>` shape).
@@ -1271,7 +1271,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "array",
                 modifiers: Modifiers::default(),
-                extra_markers: &["literal"],
+                extra_markers: vec![Marker::implicit("literal")],
                 children,
                 range,
                 span,
@@ -1353,7 +1353,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "block",
                 modifiers: Modifiers::default(),
-                extra_markers: &["static"],
+                extra_markers: vec![Marker::implicit("static")],
                 children,
                 range,
                 span,
@@ -1367,7 +1367,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "this" => SyntaxTree::SimpleStatement {
             element_name: "this",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: Vec::new(),
             range,
             span,
@@ -1375,7 +1375,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "super" => SyntaxTree::SimpleStatement {
             element_name: "super",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: Vec::new(),
             range,
             span,
@@ -1428,7 +1428,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     children.push(SyntaxTree::SimpleStatement {
                         element_name: "type",
                         modifiers: Modifiers::default(),
-                        extra_markers: &[],
+                        extra_markers: Vec::new(),
                         children: vec![inner],
                         range: range_of(t),
                         span: span_of(t),
@@ -1441,7 +1441,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::SimpleStatement {
                 element_name: "pattern",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children,
                 range,
                 span,
@@ -1580,7 +1580,7 @@ fn build_throws_target(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "throws",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children: vec![type_slot],
         range,
         span,
@@ -1660,7 +1660,7 @@ fn lower_java_multi_declarator(
             children.push(SyntaxTree::SimpleStatement {
                 element_name: "type",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children: vec![inner],
                 range: range_of(t),
                 span: span_of(t),
@@ -1681,7 +1681,7 @@ fn lower_java_multi_declarator(
             decl_children.push(SyntaxTree::SimpleStatement {
                 element_name: "value",
                 modifiers: Modifiers::default(),
-                extra_markers: &[],
+                extra_markers: Vec::new(),
                 children: vec![*inner.inner],
                 range: range_of(v),
                 span: span_of(v),
@@ -1690,7 +1690,7 @@ fn lower_java_multi_declarator(
         children.push(SyntaxTree::SimpleStatement {
             element_name: "declarator",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: decl_children,
             range: range_of(*d),
             span: span_of(*d),
@@ -1703,7 +1703,7 @@ fn lower_java_multi_declarator(
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers,
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children: {
             let mut all: Vec<SyntaxTree> = decorators;
             all.extend(children);
@@ -1777,25 +1777,27 @@ fn lower_java_modifiers(
     if let Some(da) = default_access {
         m.access = Some(da);
     }
+    use crate::tree::types::Flag;
     for c in node.named_children() {
         if c.kind() != "modifiers" {
             continue;
         }
         for tok in c.children() {
             let text = text_of(tok, source);
+            let flag = Flag::anchored(range_of(tok), span_of(tok));
             match text.as_str() {
                 "public" => m.access = Some(Access::Public),
                 "private" => m.access = Some(Access::Private),
                 "protected" => m.access = Some(Access::Protected),
-                "static" => m.static_ = true,
-                "final" => m.final_ = true,
-                "abstract" => m.abstract_ = true,
-                "synchronized" => m.synchronized_ = true,
-                "native" => m.native = true,
-                "volatile" => m.volatile = true,
-                "transient" => m.transient = true,
-                "strictfp" => m.strictfp = true,
-                "default" => m.default = true,
+                "static" => m.static_ = flag,
+                "final" => m.final_ = flag,
+                "abstract" => m.abstract_ = flag,
+                "synchronized" => m.synchronized_ = flag,
+                "native" => m.native = flag,
+                "volatile" => m.volatile = flag,
+                "transient" => m.transient = flag,
+                "strictfp" => m.strictfp = flag,
+                "default" => m.default = flag,
                 _ => {}
             }
         }
@@ -1913,7 +1915,7 @@ fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) ->
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range,
         span,
@@ -1939,7 +1941,7 @@ fn lower_java_throw(node: &RawNode, source: &str) -> SyntaxTree {
         vec![SyntaxTree::SimpleStatement {
             element_name: "expression",
             modifiers: Modifiers::default(),
-            extra_markers: &[],
+            extra_markers: Vec::new(),
             children: inner,
             range: expr_range,
             span,
@@ -1948,7 +1950,7 @@ fn lower_java_throw(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "throw",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: Vec::new(),
         children,
         range,
         span,
@@ -1959,7 +1961,7 @@ fn lower_java_throw(node: &RawNode, source: &str) -> SyntaxTree {
 fn simple_statement_marked(
     node: &RawNode,
     element_name: &'static str,
-    extra_markers: &'static [&'static str],
+    extra_markers: Vec<crate::tree::types::Marker>,
     source: &str,
 ) -> SyntaxTree {
     let span = span_of(node);
