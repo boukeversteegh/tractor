@@ -275,7 +275,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             };
             match (left, right) {
                 (Some(l), Some(r)) => SyntaxTree::Assign {
-                    targets: vec![l],
+                    targets: vec![l.wrap_expression()],
                     type_annotation: None,
                     op_text,
                     op_range,

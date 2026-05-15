@@ -849,7 +849,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
             match (left, right) {
                 (Some(l), Some(r)) => SyntaxTree::Assign {
-                    targets: vec![lower_node(l, source)],
+                    targets: vec![lower_node(l, source).wrap_expression()],
                     type_annotation: None,
                     op_text,
                     op_range,

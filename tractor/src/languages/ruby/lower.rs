@@ -799,7 +799,7 @@ fn lower_ruby_assignment(node: &RawNode, source: &str) -> SyntaxTree {
     let right = node.child_by_field_name("right");
     let (op_text, op_range) = ruby_locate_assign_eq(node, source, left, right);
     SyntaxTree::Assign {
-        targets: left.map(|n| vec![lower_node(n, source)]).unwrap_or_default(),
+        targets: left.map(|n| vec![lower_node(n, source).wrap_expression()]).unwrap_or_default(),
         type_annotation: None,
         op_text,
         op_range,
@@ -820,7 +820,7 @@ fn lower_ruby_operator_assignment(node: &RawNode, source: &str) -> SyntaxTree {
     let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
     let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
     SyntaxTree::Assign {
-        targets: left.map(|n| vec![lower_node(n, source)]).unwrap_or_default(),
+        targets: left.map(|n| vec![lower_node(n, source).wrap_expression()]).unwrap_or_default(),
         type_annotation: None,
         op_text,
         op_range,

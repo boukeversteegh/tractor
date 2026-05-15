@@ -174,24 +174,22 @@ fn render_tree_assign(
     let node = element(xot, "assign", *span);
     xot.append(parent, node)?;
 
-    // <left><expression>...</expression>... </left> — each
-    // target wrapped in an <expression> host, in source order.
+    // <left>...</left> — each target is pre-wrapped in `<expression>`
+    // at lowering, so the renderer just emits the slot wrapper and
+    // delegates rendering. Lifting the slot wrapper itself into the
+    // tree is deferred to a later slice.
     let left_node = element(xot, "left", *span);
     xot.append(node, left_node)?;
-    // Compute left's source range from first to last target.
     let left_range = if let (Some(first), Some(last)) = (targets.first(), targets.last()) {
         ByteRange::new(first.range().start, last.range().end)
     } else {
         ByteRange::empty_at(range.start)
     };
-    // Pre-target gap inside <left> (typically empty).
     let mut cursor = left_range.start;
     for t in targets {
         let tr = t.range();
         emit_gap(xot, left_node, source, cursor, tr.start)?;
-        let expr = element(xot, "expression", t.span());
-        xot.append(left_node, expr)?;
-        render_to_xot(xot, expr, t, source)?;
+        render_to_xot(xot, left_node, t, source)?;
         cursor = tr.end;
     }
     emit_gap(xot, left_node, source, cursor, left_range.end)?;

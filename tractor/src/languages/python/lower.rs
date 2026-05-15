@@ -1011,7 +1011,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let (op_text, op_range) = locate_assign_eq(node, source, left, type_ann, right);
             SyntaxTree::Assign {
                 targets: match left {
-                    Some(n) => lower_assign_side(n, source),
+                    Some(n) => lower_assign_side(n, source).into_iter().map(SyntaxTree::wrap_expression).collect(),
                     None => vec![],
                 },
                 type_annotation: type_ann.map(|t| Box::new(lower_type_slot(t, source))),
@@ -1037,7 +1037,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let op_markers = augmented_op_markers(&op_text);
             SyntaxTree::Assign {
                 targets: match left {
-                    Some(n) => lower_assign_side(n, source),
+                    Some(n) => lower_assign_side(n, source).into_iter().map(SyntaxTree::wrap_expression).collect(),
                     None => vec![],
                 },
                 type_annotation: None,

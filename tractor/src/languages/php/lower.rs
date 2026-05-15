@@ -974,7 +974,7 @@ fn php_assignment(node: &RawNode, source: &str) -> SyntaxTree {
     let op_marker_text = php_assign_op_marker(&op_text);
     match (left_node, right_node) {
         (Some(l), Some(r)) => SyntaxTree::Assign {
-            targets: vec![lower_node(l, source)],
+            targets: vec![lower_node(l, source).wrap_expression()],
             type_annotation: None,
             op_text,
             op_range,
