@@ -1829,6 +1829,61 @@ impl SyntaxTree {
         self.wrap_expression()
     }
 
+    /// Pre-wrap a value-position subtree in a named slot wrapper:
+    /// `SimpleStatement(slot_name, [Expression(self)])`. The inner
+    /// `<expression>` host (Principle #15) wraps the value, and the
+    /// outer `<{slot_name}>` element (e.g. `<left>`, `<right>`,
+    /// `<condition>`, `<value>`) is the structural slot the parent
+    /// expects.
+    ///
+    /// Used by `Binary`, `Assign`, `For`, `If`, `While`, `Ternary`,
+    /// `ExceptHandler`, `Parameter`, `TypeAlias` lowerings to lift
+    /// renderer-side slot synthesis into the tree.
+    ///
+    /// `Inline` values are threaded through: each child is wrapped
+    /// in `<expression>` first, then the whole `Inline` becomes the
+    /// slot's children (one slot wrapping a flat list).
+    pub fn wrap_slot(self, slot_name: &'static str) -> SyntaxTree {
+        let wrapped = self.wrap_expression_inline_aware();
+        let range = wrapped.range();
+        let span = wrapped.span();
+        // If the wrapped value is an `Inline`, hoist its children
+        // directly under the slot wrapper so they render as siblings
+        // (rather than nested under the slot via `<inline>`).
+        let children = if let SyntaxTree::Inline { children: inner, .. } = wrapped {
+            inner
+        } else {
+            vec![wrapped]
+        };
+        SyntaxTree::SimpleStatement {
+            element_name: slot_name,
+            modifiers: Modifiers::default(),
+            extra_markers: Vec::new(),
+            children,
+            range,
+            span,
+        }
+    }
+
+    /// Inverse of [`wrap_slot`]: if `self` is a slot wrapper
+    /// `SimpleStatement(_, [Expression(inner)])`, return `inner`.
+    /// Otherwise return `self`. The Expression host is also peeled.
+    ///
+    /// Used by JSON / DataTree projections that historically operated
+    /// on the bare operand (ergonomic flat shape) — they call this
+    /// to skip past the structural slot wrapper added by lowering.
+    pub fn unwrap_slot(&self) -> &SyntaxTree {
+        if let SyntaxTree::SimpleStatement { children, .. } = self {
+            if children.len() == 1 {
+                if let SyntaxTree::Expression { inner, marker: None, .. } = &children[0] {
+                    return inner.as_ref();
+                }
+                return &children[0];
+            }
+        }
+        self
+    }
+
     /// Wrap this tree in a `<extends><type>...</type></extends>`
     /// host so the renderer doesn't have to. Idempotent —
     /// already-wrapped shapes (`SimpleStatement{element_name:

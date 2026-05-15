@@ -213,9 +213,13 @@ impl<'a> Renderer<'a> {
                 self.add_access_chain(shape, receiver, segments);
             }
             SyntaxTree::Binary { left, op_text, op_marker, right, .. } => {
-                shape.singleton("left", self.wrap_expression_host(left));
+                // Lowering pre-wraps left / right in `<left>` / `<right>`
+                // slot SimpleStatements; the JSON view operates on the
+                // bare operand for ergonomic shape — unwrap past the
+                // slot + `<expression>` host.
+                shape.singleton("left", self.wrap_expression_host(left.unwrap_slot()));
                 shape.singleton("op", self.op_value(op_text, op_marker));
-                shape.singleton("right", self.wrap_expression_host(right));
+                shape.singleton("right", self.wrap_expression_host(right.unwrap_slot()));
             }
             SyntaxTree::Unary { op_text, op_marker, operand, extra_markers, .. } => {
                 for m in extra_markers.iter() {

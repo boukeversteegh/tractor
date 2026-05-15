@@ -1582,18 +1582,16 @@
                       "plus": true
                     },
                     "right": {
-                      "node": {
-                        "condition": {
-                          "left": "label",
-                          "op": {
-                            "text": "==",
-                            "equal": true
-                          },
-                          "right": "kind"
+                      "condition": {
+                        "left": "label",
+                        "op": {
+                          "text": "==",
+                          "equal": true
                         },
-                        "then": 0,
-                        "else": 1
-                      }
+                        "right": "kind"
+                      },
+                      "then": 0,
+                      "else": 1
                     }
                   },
                   "op": {
@@ -2314,21 +2312,19 @@
                         "plus": true
                       },
                       "right": {
-                        "node": {
-                          "left": {
-                            "access": true,
-                            "receiver": "asArr",
-                            "member": {
-                              "optional": true,
-                              "name": "Length"
-                            }
-                          },
-                          "op": {
-                            "text": "??",
-                            "null_coalesce": true
-                          },
-                          "right": 0
-                        }
+                        "left": {
+                          "access": true,
+                          "receiver": "asArr",
+                          "member": {
+                            "optional": true,
+                            "name": "Length"
+                          }
+                        },
+                        "op": {
+                          "text": "??",
+                          "null_coalesce": true
+                        },
+                        "right": 0
                       }
                     }
                   }

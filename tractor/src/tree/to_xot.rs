@@ -1090,13 +1090,13 @@ fn render_tree_binary(
         else { unreachable!() };
     let node = element(xot, element_name, *span);
     xot.append(parent, node)?;
+    // Lowering pre-wraps left/right as `<left><expression>...</expression></left>`
+    // (and same for right) — see `SyntaxTree::wrap_slot`. The renderer
+    // walks what's there + synthesises the `<op>` element (lifting op
+    // synthesis into the tree is deferred to a later slice).
     let left_range = left.range();
     emit_gap(xot, node, source, range.start, left_range.start)?;
-    let left_slot = element(xot, "left", left.span());
-    xot.append(node, left_slot)?;
-    let left_expr = element(xot, "expression", left.span());
-    xot.append(left_slot, left_expr)?;
-    render_to_xot(xot, left_expr, left, source)?;
+    render_to_xot(xot, node, left, source)?;
     emit_gap(xot, node, source, left_range.end, op_range.start)?;
     let op_node = element(xot, "op", Span::point(span.line, span.column));
     xot.append(node, op_node)?;
@@ -1109,11 +1109,7 @@ fn render_tree_binary(
         .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
     let right_range = right.range();
     emit_gap(xot, node, source, op_range.end, right_range.start)?;
-    let right_slot = element(xot, "right", right.span());
-    xot.append(node, right_slot)?;
-    let right_expr = element(xot, "expression", right.span());
-    xot.append(right_slot, right_expr)?;
-    render_to_xot(xot, right_expr, right, source)?;
+    render_to_xot(xot, node, right, source)?;
     emit_gap(xot, node, source, right_range.end, range.end)?;
     Ok(node)
 }

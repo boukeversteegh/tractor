@@ -976,13 +976,11 @@
             "right": {
               "left": {
                 "left": {
-                  "node": {
-                    "op": {
-                      "text": "not",
-                      "not": true
-                    },
-                    "operand": "flag"
-                  }
+                  "op": {
+                    "text": "not",
+                    "not": true
+                  },
+                  "operand": "flag"
                 },
                 "op": {
                   "text": "&&",

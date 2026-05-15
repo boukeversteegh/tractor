@@ -433,13 +433,19 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
         // boolean flag (e.g. `{ text: "+", plus: true }`). Operands
         // are projected directly without an `<expression>` wrapper
         // (the wrapper has no JSON role per the design).
+        //
+        // Lowering pre-wraps left / right in `<left>`/`<right>` slot
+        // SimpleStatements (see `SyntaxTree::wrap_slot`); unwrap to
+        // project the operand directly.
         SyntaxTree::Binary { left, op_text, op_marker, right, range, span, .. }
         | SyntaxTree::Comparison { left, op_text, op_marker, right, range, span, .. } => {
+            let l = left.unwrap_slot();
+            let r = right.unwrap_slot();
             DataTree::Mapping {
                 pairs: vec![
-                    make_pair("left", project(left, source), left.range(), left.span()),
+                    make_pair("left", project(l, source), l.range(), l.span()),
                     make_pair("op", make_op_mapping(op_text, op_marker, *range, *span), *range, *span),
-                    make_pair("right", project(right, source), right.range(), right.span()),
+                    make_pair("right", project(r, source), r.range(), r.span()),
                 ],
                 range: *range,
                 span: *span,
