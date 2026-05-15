@@ -1,4 +1,10 @@
 //! Build script to capture git information and dependency versions at compile time
+//! AND to regenerate the variant-blind reflection metadata over
+//! `SyntaxTree` (see `build_codegen.rs`). Both steps run on every
+//! cargo build; both use `write_if_changed` semantics so unchanged
+//! sources produce no file writes.
+
+mod build_codegen;
 
 use std::collections::HashMap;
 use std::env;
@@ -8,6 +14,10 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
+    // Variant-blind reflection metadata for SyntaxTree. Auto-emitted
+    // every build; output is committed for inspection.
+    build_codegen::generate();
+
     // Re-run build script if git HEAD changes or Cargo.lock changes
     println!("cargo:rerun-if-changed=../.git/HEAD");
     println!("cargo:rerun-if-changed=../.git/index");

@@ -1,10 +1,10 @@
-// DO NOT EDIT — regenerate via `task gen:metadata`.
+// DO NOT EDIT — emitted by `tractor/build.rs` on every build.
 // Source: SyntaxTree enum in tractor/src/tree/syntax/types.rs.
 //
 // Variant-blind reflection metadata that drives the XML and JSON
 // renderers' mechanical walks (`to_xot.rs`, `to_json.rs`). Rules
 // are derived from field types only — no per-variant special cases.
-// See `tractor/src/bin/gen_metadata.rs`.
+// See `tractor/build_codegen.rs`.
 
 #![cfg(feature = "native")]
 

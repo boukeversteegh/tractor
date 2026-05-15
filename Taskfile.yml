@@ -117,15 +117,10 @@ tasks:
       - task: gen:kinds
       - git diff --exit-code -- tractor/src/languages/*/kinds.rs
 
-  gen:metadata:
-    desc: Regenerate variant-blind reflection metadata (element_name_of, flags_of) for SyntaxTree
-    cmds:
-      - cargo run --release -p tractor --bin gen-metadata
-
   verify:gen-metadata:
-    desc: Regenerate metadata and verify there is no diff (CI check)
+    desc: Build (which regenerates the SyntaxTree metadata) and verify nothing changed (CI check)
     cmds:
-      - task: gen:metadata
+      - cargo build -p tractor
       - git diff --exit-code -- tractor/src/tree/syntax/metadata.generated.rs
 
   test:snapshots:

@@ -1,23 +1,23 @@
-//! Generate variant-blind reflection metadata for `SyntaxTree`.
+//! Build-time codegen for the variant-blind reflection metadata over
+//! `SyntaxTree`. Invoked from `build.rs`.
 //!
 //! Reads `tractor/src/tree/syntax/types.rs`, parses the `SyntaxTree`
-//! enum with `syn`, and emits
+//! enum with `syn`, and writes
 //! `tractor/src/tree/syntax/metadata.generated.rs` containing two
 //! accessors consumed by the variant-blind walkers in `to_xot.rs`
-//! and `to_json.rs`:
+//! and `to_json.rs`.
 //!
-//! - `element_name_of(&SyntaxTree) -> Option<&'static str>` — the XML
-//!   element name for this node (`None` means "no wrapper element;
-//!   inline children at parent").
-//! - `flags_of(&SyntaxTree) -> Vec<Marker>` — the empty-element marker
-//!   children (modifiers, named flags, extra markers).
+//! Output is committed to source control so reviewers can see exactly
+//! what the codegen produced and debuggers can step into real line
+//! numbers. `write_if_changed` keeps cargo idempotent — a build is a
+//! no-op when the enum hasn't changed.
 //!
-//! No `#[shape(...)]` attribute DSL: the codegen reads the field types
-//! directly. Rules (mechanical, no per-variant overrides):
+//! Rules (mechanical, no per-variant overrides):
 //!
 //! Element name:
-//! - If a variant has a field named `element_name`, `kind`, or
-//!   `wrapper` of string-like type: use that field's value.
+//! - If a variant has a field named `element_name`, `wrapper`, or
+//!   `kind` of `&'static str` / `String` type: use that field's
+//!   value.
 //! - Else if the variant is `Inline` or `Skip`: `None` (no wrapper).
 //! - Else: snake_case of the variant identifier.
 //!
@@ -26,27 +26,30 @@
 //! - `extra_markers: Vec<Marker>` → emit each.
 //! - Any `Flag`-typed field → emit a marker named after the field with
 //!   any trailing underscore stripped (`async_` → `async`).
-//!
-//! Output is committed; CI runs `task verify:gen-metadata` to enforce
-//! freshness.
 
 use std::fs;
 use std::path::Path;
 
-use anyhow::{anyhow, Context, Result};
 use quote::ToTokens;
 use syn::{Fields, Item, ItemEnum, Variant};
 
-const INPUT: &str = "tractor/src/tree/syntax/types.rs";
-const OUTPUT: &str = "tractor/src/tree/syntax/metadata.generated.rs";
+const INPUT: &str = "src/tree/syntax/types.rs";
+const OUTPUT: &str = "src/tree/syntax/metadata.generated.rs";
 
-fn main() -> Result<()> {
+/// Run the codegen. Called from `build.rs::main`.
+pub fn generate() {
+    // build.rs runs with CWD = tractor/, so the relative paths above
+    // resolve correctly. Tell cargo to re-run only when the source
+    // enum changes — keeps incremental builds fast.
+    println!("cargo:rerun-if-changed={}", INPUT);
+    println!("cargo:rerun-if-changed=build_codegen.rs");
+
     let src = fs::read_to_string(INPUT)
-        .with_context(|| format!("reading {}", INPUT))?;
+        .unwrap_or_else(|e| panic!("reading {}: {}", INPUT, e));
     let file: syn::File = syn::parse_file(&src)
-        .with_context(|| format!("parsing {} as Rust", INPUT))?;
+        .unwrap_or_else(|e| panic!("parsing {}: {}", INPUT, e));
     let enum_item = find_enum(&file, "SyntaxTree")
-        .ok_or_else(|| anyhow!("SyntaxTree enum not found in {}", INPUT))?;
+        .unwrap_or_else(|| panic!("SyntaxTree enum not found in {}", INPUT));
 
     let mut out = String::new();
     out.push_str(HEADER);
@@ -54,19 +57,17 @@ fn main() -> Result<()> {
     out.push('\n');
     out.push_str(&render_flags_of(enum_item));
 
-    write_if_changed(OUTPUT, &out)?;
-    println!("{} ({} variants)", OUTPUT, enum_item.variants.len());
-    Ok(())
+    write_if_changed(OUTPUT, &out);
 }
 
 const HEADER: &str = "\
-// DO NOT EDIT — regenerate via `task gen:metadata`.
+// DO NOT EDIT — emitted by `tractor/build.rs` on every build.
 // Source: SyntaxTree enum in tractor/src/tree/syntax/types.rs.
 //
 // Variant-blind reflection metadata that drives the XML and JSON
 // renderers' mechanical walks (`to_xot.rs`, `to_json.rs`). Rules
 // are derived from field types only — no per-variant special cases.
-// See `tractor/src/bin/gen_metadata.rs`.
+// See `tractor/build_codegen.rs`.
 
 #![cfg(feature = \"native\")]
 
@@ -83,8 +84,6 @@ fn find_enum<'a>(file: &'a syn::File, name: &str) -> Option<&'a ItemEnum> {
 }
 
 /// Stringify a `syn::Type` with no whitespace, for pattern matching.
-/// e.g. `Box<SyntaxTree>`, `Option<Box<SyntaxTree>>`, `Vec<SyntaxTree>`,
-/// `Vec<Marker>`, `Modifiers`, `Flag`, `&'staticstr`.
 fn type_str(ty: &syn::Type) -> String {
     let s = ty.to_token_stream().to_string();
     s.chars().filter(|c| !c.is_whitespace()).collect()
@@ -106,7 +105,6 @@ fn snake_case(pascal: &str) -> String {
     out
 }
 
-/// Look up a named field on a variant.
 fn find_field<'a>(v: &'a Variant, name: &str) -> Option<&'a syn::Field> {
     if let Fields::Named(named) = &v.fields {
         named.named.iter().find(|f| {
@@ -132,8 +130,7 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
     );
     for v in &en.variants {
         let name = v.ident.to_string();
-        let arm = element_arm(&name, v);
-        out.push_str(&arm);
+        out.push_str(&element_arm(&name, v));
     }
     out.push_str(
         "    }
@@ -143,17 +140,10 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
     out
 }
 
-/// One `element_name_of` match arm. Picks the rule:
-///  - `element_name: &'static str` / `wrapper: &'static str` /
-///    `kind: &'static str` / `kind: String` → use field value.
-///  - `Inline` / `Skip` → None.
-///  - Otherwise → snake_case of variant name.
 fn element_arm(name: &str, v: &Variant) -> String {
     if name == "Inline" || name == "Skip" {
         return format!("        SyntaxTree::{} {{ .. }} => None,\n", name);
     }
-    // Field-driven element name. Order matters: prefer explicit
-    // `element_name`, then `wrapper`, then `kind`.
     for cand in ["element_name", "wrapper", "kind"] {
         if let Some(field) = find_field(v, cand) {
             let ty = type_str(&field.ty);
@@ -197,8 +187,7 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
 ",
     );
     for v in &en.variants {
-        let arm = flags_arm(v);
-        out.push_str(&arm);
+        out.push_str(&flags_arm(v));
     }
     out.push_str(
         "    }
@@ -209,11 +198,6 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
     out
 }
 
-/// Build the bindings/body for one `flags_of` match arm. The arm
-/// inspects each field by *type*, not by name:
-///  - `Modifiers` → expand `markers_with_spans()`.
-///  - `Flag` → emit a `Marker` named after the field.
-///  - `Vec<Marker>` → push each entry.
 fn flags_arm(v: &Variant) -> String {
     let name = v.ident.to_string();
     let mut bindings: Vec<String> = Vec::new();
@@ -265,13 +249,10 @@ fn flags_arm(v: &Variant) -> String {
         }
     }
 
-    // Empty arm — no flag-bearing fields. Use the wildcard binding
-    // form so we don't have a long list of `_` placeholders.
     if bindings.is_empty() {
         return format!("        SyntaxTree::{} {{ .. }} => {{}}\n", name);
     }
 
-    // Bind `span` only if a Modifier or Flag arm needs it as fallback.
     if needs_span {
         bindings.push("span".to_string());
     }
@@ -294,16 +275,17 @@ fn strip_trailing_underscore(s: &str) -> String {
     }
 }
 
-fn write_if_changed(path: &str, content: &str) -> Result<()> {
+fn write_if_changed(path: &str, content: &str) {
     if let Ok(existing) = fs::read_to_string(path) {
         if existing == content {
-            return Ok(());
+            return;
         }
     }
     if let Some(parent) = Path::new(path).parent() {
-        fs::create_dir_all(parent)?;
+        fs::create_dir_all(parent).unwrap_or_else(|e| {
+            panic!("creating parent dir for {}: {}", path, e)
+        });
     }
-    fs::write(path, content)?;
-    Ok(())
+    fs::write(path, content)
+        .unwrap_or_else(|e| panic!("writing {}: {}", path, e));
 }
-

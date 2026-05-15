@@ -22,11 +22,6 @@ name = "gen-kinds"
 path = "src/bin/gen_kinds.rs"
 required-features = ["native"]
 
-[[bin]]
-name = "gen-metadata"
-path = "src/bin/gen_metadata.rs"
-required-features = ["native"]
-
 [features]
 default = ["native"]
 native = [
@@ -115,10 +110,6 @@ once_cell = "1.19"
 strum.workspace = true
 strum_macros.workspace = true
 
-# Codegen helpers (read by the gen-walker binary; not used at runtime)
-syn = { version = "2", features = ["full", "extra-traits"] }
-proc-macro2 = "1"
-quote = "1"
 
 # Native-only utilities
 atty = { workspace = true, optional = true }
@@ -134,6 +125,14 @@ console_error_panic_hook = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile = "3"
+
+# Used by `build.rs` + `build_codegen.rs` to emit
+# `src/tree/syntax/metadata.generated.rs` from the SyntaxTree enum.
+# Not pulled into the runtime crate.
+[build-dependencies]
+syn = { version = "2", features = ["full", "extra-traits"] }
+proc-macro2 = "1"
+quote = "1"
 
 # WASM requires getrandom with wasm_js feature
 [target.'cfg(target_arch = "wasm32")'.dependencies]
