@@ -566,9 +566,8 @@ fn render_tree_foreach(
         emit_gap(xot, node, source, cursor, cr.start)?;
         match slot {
             Slot::Type(_) => {
-                let t = element(xot, "type", inner.span());
-                xot.append(node, t)?;
-                render_to_xot(xot, t, inner, source)?;
+                // Lowering wraps via `wrap_type()` (P1).
+                render_to_xot(xot, node, inner, source)?;
             }
             Slot::Target(_) => {
                 let slot_el = element(xot, "left", inner.span());
@@ -618,22 +617,9 @@ fn render_tree_field_wrap(
         }
         return Ok(node);
     }
-    // Skip the wrap entirely if the inner already produces an element
-    // of the same name — avoids `<X><X>...</X></X>` double-nesting.
-    let inner_already_emits_wrapper = match (*wrapper, inner.as_ref()) {
-        ("body", SyntaxTree::Body { .. }) => true,
-        ("type", SyntaxTree::GenericType { .. }) => true,
-        ("type", SyntaxTree::SimpleStatement { element_name: "type", .. }) => true,
-        ("name", SyntaxTree::SimpleStatement { element_name: "name", .. }) => true,
-        _ => false,
-    };
-    if inner_already_emits_wrapper {
-        let ir_range = inner.range();
-        emit_gap(xot, parent, source, range.start, ir_range.start)?;
-        let inner_node = render_to_xot(xot, parent, inner, source)?;
-        emit_gap(xot, parent, source, ir_range.end, range.end)?;
-        return Ok(inner_node);
-    }
+    // Tree shape is final (P1): lowering decides whether to construct
+    // FieldWrap or pass the bare wrapper-emitting inner directly. The
+    // renderer marshals whatever's in the tree.
     let node = element(xot, wrapper, *span);
     xot.append(parent, node)?;
     let ir_range = inner.range();
@@ -862,9 +848,9 @@ fn render_tree_parameter(
                 render_to_xot(xot, node, inner, source)?;
             }
             Slot::Type(_) => {
-                let type_el = element(xot, "type", inner.span());
-                xot.append(node, type_el)?;
-                render_to_xot(xot, type_el, inner, source)?;
+                // Lowering wraps via `wrap_type()` (P1). Renderer
+                // renders what's there.
+                render_to_xot(xot, node, inner, source)?;
             }
             Slot::Default(_) => {
                 let val = element(xot, "value", inner.span());

@@ -2492,6 +2492,7 @@ fn maybe_wrap_field(field_name: Option<&str>, inner: SyntaxTree) -> SyntaxTree {
         ("name", SyntaxTree::Name { .. })
             | ("type", SyntaxTree::SimpleStatement { element_name: "type", .. })
             | ("type", SyntaxTree::GenericType { .. })
+            | ("body", SyntaxTree::Body { .. })
     );
     if already_wrapped {
         return inner;

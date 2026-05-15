@@ -1676,6 +1676,7 @@ impl SyntaxTree {
             &self,
             SyntaxTree::GenericType { .. }
                 | SyntaxTree::SimpleStatement { element_name: "type", .. }
+                | SyntaxTree::SimpleStatement { element_name: "predicate", .. }
                 | SyntaxTree::FieldWrap { wrapper: "type", .. }
         );
         if already_typed {

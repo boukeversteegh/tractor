@@ -540,7 +540,7 @@
           "destructor": {
             "name": "EntityBase",
             "parameters": [],
-            "node": {
+            "body": {
               "comment": "/* finalizer */"
             }
           },
@@ -1292,33 +1292,31 @@
               },
               {
                 "using": {
-                  "nodes": [
-                    {
-                      "type": {
-                        "name": "var"
-                      },
-                      "name": "inner",
-                      "value": {
-                        "type": {
-                          "names": [
-                            "System",
-                            "IO",
-                            "MemoryStream"
-                          ]
-                        }
-                      }
+                  "node": {
+                    "type": {
+                      "name": "var"
                     },
-                    {
-                      "node": {
-                        "access": true,
-                        "receiver": "inner",
-                        "call": {
-                          "name": "WriteByte",
-                          "node": 1
-                        }
+                    "name": "inner",
+                    "value": {
+                      "type": {
+                        "names": [
+                          "System",
+                          "IO",
+                          "MemoryStream"
+                        ]
                       }
                     }
-                  ]
+                  },
+                  "body": {
+                    "node": {
+                      "access": true,
+                      "receiver": "inner",
+                      "call": {
+                        "name": "WriteByte",
+                        "node": 1
+                      }
+                    }
+                  }
                 },
                 "throw": {
                   "expression": {
@@ -2975,7 +2973,7 @@
               "destructor": {
                 "name": "Container",
                 "parameters": [],
-                "node": {
+                "body": {
                   "comment": "/* finalizer */"
                 }
               },

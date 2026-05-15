@@ -984,11 +984,9 @@
       },
       "returns": {
         "type": {
-          "predicate": {
-            "name": "v",
-            "type": {
-              "name": "Shape"
-            }
+          "name": "v",
+          "type": {
+            "name": "Shape"
           }
         }
       },
@@ -1193,12 +1191,10 @@
       },
       "returns": {
         "type": {
-          "predicate": {
-            "asserts": true,
-            "name": "x",
-            "type": {
-              "name": "number"
-            }
+          "asserts": true,
+          "name": "x",
+          "type": {
+            "name": "number"
           }
         }
       },

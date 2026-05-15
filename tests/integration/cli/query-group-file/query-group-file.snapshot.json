@@ -11,7 +11,7 @@
             "public": true,
             "name": "Calculator",
             "body": {
-              "$truncated": 78
+              "$truncated": 72
             }
           }
         },
@@ -22,7 +22,7 @@
             "public": true,
             "name": "Greeter",
             "body": {
-              "$truncated": 47
+              "$truncated": 45
             }
           }
         }

@@ -90,7 +90,7 @@ module/
   │   ├─ generic/type/name = "T"
   │   ├─ parameter/
   │   │   ├─ name = "v"
-  │   │   └─ type/type/name = "T"
+  │   │   └─ type/name = "T"
   │   ├─ returns/type/name = "T"
   │   └─ body/return/expression/name = "v"
   ├─ class/
@@ -108,16 +108,16 @@ module/
   │   ├─ name = "annotated"
   │   ├─ parameter/
   │   │   ├─ name = "x"
-  │   │   └─ type/type/name = "int"
+  │   │   └─ type/name = "int"
   │   ├─ parameter/
   │   │   ├─ name = "y"
-  │   │   ├─ type/type[generic]/
+  │   │   ├─ type[generic]/
   │   │   │   ├─ name = "Optional"
   │   │   │   └─ type/name = "str"
   │   │   └─ value/expression/none = "None"
   │   ├─ parameter/
   │   │   ├─ name = "z"
-  │   │   ├─ type/type[union]/
+  │   │   ├─ type[union]/
   │   │   │   ├─ type[generic]/
   │   │   │   │   ├─ name = "list"
   │   │   │   │   └─ type/name = "int"
@@ -169,7 +169,7 @@ module/
   │   ├─ name = "async_work"
   │   ├─ parameter/
   │   │   ├─ name = "url"
-  │   │   └─ type/type/name = "str"
+  │   │   └─ type/name = "str"
   │   ├─ returns/type/name = "bytes"
   │   └─ body/with[async]/
   │       ├─ as/
@@ -288,7 +288,7 @@ module/
   │       │   ├─ parameter/name = "self"
   │       │   ├─ parameter/
   │       │   │   ├─ name = "name"
-  │       │   │   └─ type/type/name = "str"
+  │       │   │   └─ type/name = "str"
   │       │   └─ body/assign/
   │       │       ├─ left/expression/object[access and self]/member/name = "name"
   │       │       ├─ op = "="

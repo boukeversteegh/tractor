@@ -4,7 +4,7 @@ class[@line="2" and @column="1" and @end_line="7" and @end_column="2" and @id="3
   ├─ "public class"
   ├─ name[@line="2" and @column="14" and @end_line="2" and @end_column="24" and @id="4"] = "Calculator"
   └─ body[@line="3" and @column="1" and @end_line="7" and @end_column="2" and @id="5"]/
-      └─ ... (78 children)
+      └─ ... (72 children)
 
 tests/integration/sample.cs:9
 class[@line="9" and @column="1" and @end_line="14" and @end_column="2" and @id="51"]/
@@ -12,4 +12,4 @@ class[@line="9" and @column="1" and @end_line="14" and @end_column="2" and @id="
   ├─ "public class"
   ├─ name[@line="9" and @column="14" and @end_line="9" and @end_column="21" and @id="52"] = "Greeter"
   └─ body[@line="10" and @column="1" and @end_line="14" and @end_column="2" and @id="53"]/
-      └─ ... (47 children)
+      └─ ... (45 children)

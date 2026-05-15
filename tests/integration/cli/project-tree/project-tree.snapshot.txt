@@ -4,11 +4,11 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ method[public]/
-      │   └─ ... (25 children)
+      │   └─ ... (23 children)
       ├─ method[public]/
-      │   └─ ... (25 children)
+      │   └─ ... (23 children)
       ├─ method[public]/
-      │   └─ ... (25 children)
+      │   └─ ... (23 children)
       └─ "}"
 class[public]/
   ├─ "public class"
@@ -16,9 +16,9 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ method[public]/
-      │   └─ ... (20 children)
+      │   └─ ... (19 children)
       ├─ method[public]/
-      │   └─ ... (20 children)
+      │   └─ ... (19 children)
       ├─ method[public]/
       │   └─ ... (4 children)
       └─ "}"

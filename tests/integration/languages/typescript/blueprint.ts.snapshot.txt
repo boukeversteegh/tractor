@@ -46,7 +46,7 @@ program/
   │           ├─ name = "describe"
   │           ├─ parameter[required]/
   │           │   ├─ name = "prefix"
-  │           │   └─ type/type/name = "string"
+  │           │   └─ type/name = "string"
   │           └─ returns/type/name = "string"
   ├─ export/alias/
   │   ├─ name = "Point"
@@ -77,7 +77,7 @@ program/
   │   └─ type[function]/
   │       ├─ parameter[required]/
   │       │   ├─ name = "input"
-  │       │   └─ type/type/name = "T"
+  │       │   └─ type/name = "T"
   │       └─ returns/type/name = "T"
   ├─ export/alias/
   │   ├─ name = "Partialized"
@@ -134,10 +134,10 @@ program/
   │       │   ├─ name = "constructor"
   │       │   ├─ parameter[public and required]/
   │       │   │   ├─ name = "name"
-  │       │   │   └─ type/type/name = "string"
+  │       │   │   └─ type/name = "string"
   │       │   ├─ parameter[private and readonly and optional]/
   │       │   │   ├─ name = "seed"
-  │       │   │   └─ type/type/name = "number"
+  │       │   │   └─ type/name = "number"
   │       │   └─ body/block = "{}"
   │       ├─ method[public and abstract]/
   │       │   ├─ name = "render"
@@ -154,7 +154,7 @@ program/
   │       │   ├─ name = "primary"
   │       │   ├─ parameter[required]/
   │       │   │   ├─ name = "value"
-  │       │   │   └─ type/type/name = "T"
+  │       │   │   └─ type/name = "T"
   │       │   └─ body/block/expression/object[access]/
   │       │       ├─ this = "this"
   │       │       └─ member/
@@ -167,10 +167,10 @@ program/
   │           ├─ name = "store"
   │           ├─ parameter[required]/
   │           │   ├─ name = "key"
-  │           │   └─ type/type/name = "string"
+  │           │   └─ type/name = "string"
   │           ├─ parameter[required]/
   │           │   ├─ name = "value"
-  │           │   └─ type/type/name = "T"
+  │           │   └─ type/name = "T"
   │           ├─ returns/type/name = "void"
   │           └─ body/block/expression/object[access]/
   │               ├─ this = "this"
@@ -198,10 +198,10 @@ program/
   │       │   ├─ name = "constructor"
   │       │   ├─ parameter[required]/
   │       │   │   ├─ name = "name"
-  │       │   │   └─ type/type/name = "string"
+  │       │   │   └─ type/name = "string"
   │       │   ├─ parameter[private and required]/
   │       │   │   ├─ name = "items"
-  │       │   │   ├─ type/type[array]/name = "T"
+  │       │   │   ├─ type[array]/name = "T"
   │       │   │   └─ value/expression/list[literal] = "[]"
   │       │   └─ body/block/
   │       │       ├─ expression/call/
@@ -265,10 +265,10 @@ program/
   │           ├─ name = "loadAll"
   │           ├─ parameter[required]/
   │           │   ├─ name = "urls"
-  │           │   └─ type/type[array]/name = "string"
+  │           │   └─ type[array]/name = "string"
   │           ├─ parameter[required]/
   │           │   ├─ rest/name = "extra"
-  │           │   └─ type/type[array]/name = "string"
+  │           │   └─ type[array]/name = "string"
   │           ├─ returns/type[generic]/
   │           │   ├─ name = "Promise"
   │           │   └─ type/type[array]/name = "T"
@@ -302,8 +302,8 @@ program/
   │   ├─ name = "isShape"
   │   ├─ parameter[required]/
   │   │   ├─ name = "v"
-  │   │   └─ type/type/name = "unknown"
-  │   ├─ returns/type/predicate/
+  │   │   └─ type/name = "unknown"
+  │   ├─ returns/predicate/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "Shape"
   │   └─ body/block/return/expression/binary/
@@ -329,10 +329,10 @@ program/
   │   └─ value/expression/arrow/
   │       ├─ parameter[required]/
   │       │   ├─ name = "parts"
-  │       │   └─ type/type/name = "TemplateStringsArray"
+  │       │   └─ type/name = "TemplateStringsArray"
   │       ├─ parameter[required]/
   │       │   ├─ rest/name = "vals"
-  │       │   └─ type/type[array]/name = "unknown"
+  │       │   └─ type[array]/name = "unknown"
   │       └─ value/expression/object[access]/
   │           ├─ name = "parts"
   │           └─ call/
@@ -363,14 +363,14 @@ program/
   │   │       └─ name = "string"
   │   ├─ parameter[required]/
   │   │   ├─ name = "input"
-  │   │   └─ type/type/name = "T"
+  │   │   └─ type/name = "T"
   │   ├─ parameter[required]/
   │   │   ├─ pattern[object]/
   │   │   │   ├─ pair/
   │   │   │   │   ├─ name = "scale"
   │   │   │   │   └─ number = "1"
   │   │   │   └─ name = "label"
-  │   │   ├─ type/type[object]/
+  │   │   ├─ type[object]/
   │   │   │   ├─ property[optional]/
   │   │   │   │   ├─ name = "scale"
   │   │   │   │   └─ type/name = "number"
@@ -425,7 +425,7 @@ program/
   │   ├─ name = "controlFlow"
   │   ├─ parameter[required]/
   │   │   ├─ name = "n"
-  │   │   └─ type/type/name = "number"
+  │   │   └─ type/name = "number"
   │   ├─ returns/type/name = "Status"
   │   └─ body/block/
   │       ├─ variable[let]/
@@ -519,7 +519,7 @@ program/
   │   └─ value/expression/arrow/
   │       ├─ parameter[required]/
   │       │   ├─ name = "xs"
-  │       │   └─ type/type[array]/name = "U"
+  │       │   └─ type[array]/name = "U"
   │       ├─ returns/type[union]/
   │       │   ├─ name = "U"
   │       │   └─ type[literal]/name = "undefined"
@@ -548,7 +548,7 @@ program/
   │   └─ value/expression/arrow/
   │       ├─ parameter[required]/
   │       │   ├─ name = "x"
-  │       │   └─ type/type/name = "number"
+  │       │   └─ type/name = "number"
   │       ├─ returns/type/name = "number"
   │       └─ body/block/return/expression/binary/
   │           ├─ left/expression/name = "x"
@@ -603,7 +603,7 @@ program/
   │   ├─ name = "externalThing"
   │   ├─ parameter[required]/
   │   │   ├─ name = "name"
-  │   │   └─ type/type/name = "string"
+  │   │   └─ type/name = "string"
   │   └─ returns/type/name = "void"
   ├─ declare/namespace/
   │   ├─ name = "SideEffect"
@@ -616,7 +616,7 @@ program/
   │   └─ type[constructor]/
   │       ├─ parameter[required]/
   │       │   ├─ name = "input"
-  │       │   └─ type/type/name = "string"
+  │       │   └─ type/name = "string"
   │       └─ name = "Status"
   ├─ alias/
   │   ├─ name = "Identity"
@@ -643,10 +643,10 @@ program/
   │   └─ type[tuple]/
   │       ├─ type/parameter[required]/
   │       │   ├─ name = "head"
-  │       │   └─ type/type/name = "number"
+  │       │   └─ type/name = "number"
   │       └─ type/parameter[optional]/
   │           ├─ name = "tail"
-  │           └─ type/type/name = "string"
+  │           └─ type/name = "string"
   ├─ comment[leading] = "// Old-style cast (`<T>expr`) — type assertion."
   ├─ variable[const]/
   │   ├─ name = "asserted"
@@ -672,8 +672,8 @@ program/
   │   ├─ name = "isNumber"
   │   ├─ parameter[required]/
   │   │   ├─ name = "x"
-  │   │   └─ type/type/name = "unknown"
-  │   ├─ returns/type/predicate[asserts]/
+  │   │   └─ type/name = "unknown"
+  │   ├─ returns/predicate[asserts]/
   │   │   ├─ name = "x"
   │   │   └─ type/name = "number"
   │   └─ body/block/if/
@@ -707,7 +707,7 @@ program/
   │   ├─ name = "MetaCtor"
   │   ├─ parameter[required]/
   │   │   ├─ this = "this"
-  │   │   └─ type/type/name = "unknown"
+  │   │   └─ type/name = "unknown"
   │   └─ body/block/return/expression/binary/
   │       ├─ left/expression/object[access]/
   │       │   ├─ name = "new.target"
@@ -734,7 +734,7 @@ program/
   │   ├─ name = "controlOdds"
   │   ├─ parameter[required]/
   │   │   ├─ name = "value"
-  │   │   └─ type/type/name = "number"
+  │   │   └─ type/name = "number"
   │   ├─ returns/type/name = "number"
   │   └─ body/block/
   │       ├─ variable[let]/
@@ -814,7 +814,7 @@ program/
   │   │   │   └─ pair/
   │   │   │       ├─ name = "b"
   │   │   │       └─ name = "bb"
-  │   │   └─ type/type[object]/
+  │   │   └─ type[object]/
   │   │       ├─ property[optional]/
   │   │       │   ├─ name = "a"
   │   │       │   └─ type/name = "number"
@@ -826,7 +826,7 @@ program/
   │   │   │   ├─ name = "c"
   │   │   │   ├─ value/expression/number = "0"
   │   │   │   └─ rest/name = "rest"
-  │   │   └─ type/type[array]/name = "number"
+  │   │   └─ type[array]/name = "number"
   │   ├─ returns/type/name = "number"
   │   └─ body/block/return/expression/binary/
   │       ├─ left/expression/binary/
