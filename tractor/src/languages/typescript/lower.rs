@@ -2119,7 +2119,37 @@ fn lower_ts_import_statement(node: &RawNode, source: &str) -> SyntaxTree {
     let range = range_of(node);
     let children: Vec<SyntaxTree> = node
         .named_children()
-        .map(|c| lower_node(c, source))
+        .map(|c| {
+            // Detect the import path string and lower it to
+            // `<path>./x</path>` (Atom leaf, quotes stripped) instead of
+            // `<string>"./x"</string>` — the path is a module reference,
+            // not a value-namespace string (Z1 + Principle #14).
+            if c.kind() == "string" {
+                let raw_range = range_of(&c);
+                let raw = text_of_str(&c, source);
+                let stripped = strip_string_quotes(raw).to_string();
+                // Shrink the range by the leading/trailing quote so the
+                // anchored-source slicer emits the stripped text, not the
+                // quoted form.
+                let bytes = raw.as_bytes();
+                let has_quotes = bytes.len() >= 2
+                    && matches!(bytes[0], b'"' | b'\'' | b'`')
+                    && bytes[0] == bytes[bytes.len() - 1];
+                let inner_range = if has_quotes {
+                    ByteRange { start: raw_range.start + 1, end: raw_range.end - 1, anchored: true }
+                } else {
+                    raw_range
+                };
+                SyntaxTree::Atom {
+                    element_name: "path",
+                    text: stripped,
+                    range: inner_range,
+                    span: span_of(&c),
+                }
+            } else {
+                lower_node(c, source)
+            }
+        })
         .collect();
     let kind = classify_ts_import(node);
     SyntaxTree::SimpleStatement {
@@ -2130,6 +2160,24 @@ fn lower_ts_import_statement(node: &RawNode, source: &str) -> SyntaxTree {
         range,
         span,
     }
+}
+
+fn text_of_str<'a>(node: &RawNode, source: &'a str) -> &'a str {
+    let r = range_of(node);
+    &source[r.start as usize..r.end as usize]
+}
+
+fn strip_string_quotes(raw: &str) -> &str {
+    let bytes = raw.as_bytes();
+    let n = bytes.len();
+    if n >= 2 {
+        let first = bytes[0];
+        let last = bytes[n - 1];
+        if (first == b'"' && last == b'"') || (first == b'\'' && last == b'\'') || (first == b'`' && last == b'`') {
+            return &raw[1..n - 1];
+        }
+    }
+    raw
 }
 
 fn classify_ts_import(node: &RawNode) -> Vec<crate::tree::types::Marker> {
