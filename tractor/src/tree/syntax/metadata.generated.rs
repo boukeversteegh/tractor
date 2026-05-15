@@ -21,10 +21,11 @@ use super::types::{
 /// kinds so the return type ties to the tree.
 pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
     match tree {
-        SyntaxTree::Module { element_name, .. } => Some(*element_name),
+        SyntaxTree::Module { .. } => Some("module"),
         SyntaxTree::Expression { .. } => Some("expression"),
         SyntaxTree::Access { .. } => Some("access"),
-        SyntaxTree::Binary { element_name, .. } => Some(*element_name),
+        SyntaxTree::Binary { .. } => Some("binary"),
+        SyntaxTree::Logical { .. } => Some("logical"),
         SyntaxTree::Unary { .. } => Some("unary"),
         SyntaxTree::Tuple { .. } => Some("tuple"),
         SyntaxTree::List { .. } => Some("list"),
@@ -46,7 +47,8 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
         SyntaxTree::FieldWrap { wrapper, .. } => Some(*wrapper),
         SyntaxTree::SimpleStatement { element_name, .. } => Some(*element_name),
         SyntaxTree::Try { .. } => Some("try"),
-        SyntaxTree::ExceptHandler { kind, .. } => Some(*kind),
+        SyntaxTree::Except { .. } => Some("except"),
+        SyntaxTree::Catch { .. } => Some("catch"),
         SyntaxTree::TypeAlias { .. } => Some("type_alias"),
         SyntaxTree::KeywordArgument { .. } => Some("keyword_argument"),
         SyntaxTree::ListSplat { .. } => Some("list_splat"),
@@ -54,8 +56,12 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
         SyntaxTree::Ternary { .. } => Some("ternary"),
         SyntaxTree::ObjectCreation { .. } => Some("object_creation"),
         SyntaxTree::Lambda { .. } => Some("lambda"),
-        SyntaxTree::Function { element_name, .. } => Some(*element_name),
-        SyntaxTree::Class { kind, .. } => Some(*kind),
+        SyntaxTree::Function { .. } => Some("function"),
+        SyntaxTree::Method { .. } => Some("method"),
+        SyntaxTree::Class { .. } => Some("class"),
+        SyntaxTree::Struct { .. } => Some("struct"),
+        SyntaxTree::Interface { .. } => Some("interface"),
+        SyntaxTree::Record { .. } => Some("record"),
         SyntaxTree::Body { .. } => Some("body"),
         SyntaxTree::Parameter { .. } => Some("parameter"),
         SyntaxTree::Skip { .. } => None,
@@ -89,7 +95,9 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
         SyntaxTree::Constructor { .. } => Some("constructor"),
         SyntaxTree::Using { .. } => Some("using"),
         SyntaxTree::Namespace { .. } => Some("namespace"),
-        SyntaxTree::Variable { element_name, .. } => Some(*element_name),
+        SyntaxTree::Variable { .. } => Some("variable"),
+        SyntaxTree::Field { .. } => Some("field"),
+        SyntaxTree::Event { .. } => Some("event"),
         SyntaxTree::Is { .. } => Some("is"),
         SyntaxTree::Cast { .. } => Some("cast"),
         SyntaxTree::Null { .. } => Some("null"),
@@ -113,6 +121,7 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
         SyntaxTree::Expression { .. } => {}
         SyntaxTree::Access { .. } => {}
         SyntaxTree::Binary { .. } => {}
+        SyntaxTree::Logical { .. } => {}
         SyntaxTree::Unary { extra_markers, .. } => {
             for m in extra_markers { out.push(*m); }
 
@@ -147,7 +156,8 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
 
         }
         SyntaxTree::Try { .. } => {}
-        SyntaxTree::ExceptHandler { .. } => {}
+        SyntaxTree::Except { .. } => {}
+        SyntaxTree::Catch { .. } => {}
         SyntaxTree::TypeAlias { .. } => {}
         SyntaxTree::KeywordArgument { .. } => {}
         SyntaxTree::ListSplat { .. } => {}
@@ -174,7 +184,47 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
             }
 
         }
+        SyntaxTree::Method { modifiers, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(Marker {
+                    name: mname,
+                    range: ByteRange::synthetic_empty(),
+                    span: mspan.unwrap_or(*span),
+                });
+            }
+
+        }
         SyntaxTree::Class { modifiers, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(Marker {
+                    name: mname,
+                    range: ByteRange::synthetic_empty(),
+                    span: mspan.unwrap_or(*span),
+                });
+            }
+
+        }
+        SyntaxTree::Struct { modifiers, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(Marker {
+                    name: mname,
+                    range: ByteRange::synthetic_empty(),
+                    span: mspan.unwrap_or(*span),
+                });
+            }
+
+        }
+        SyntaxTree::Interface { modifiers, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(Marker {
+                    name: mname,
+                    range: ByteRange::synthetic_empty(),
+                    span: mspan.unwrap_or(*span),
+                });
+            }
+
+        }
+        SyntaxTree::Record { modifiers, span, .. } => {
             for (mname, mspan) in modifiers.markers_with_spans() {
                 out.push(Marker {
                     name: mname,
@@ -273,6 +323,26 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
             }
 
         }
+        SyntaxTree::Field { modifiers, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(Marker {
+                    name: mname,
+                    range: ByteRange::synthetic_empty(),
+                    span: mspan.unwrap_or(*span),
+                });
+            }
+
+        }
+        SyntaxTree::Event { modifiers, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(Marker {
+                    name: mname,
+                    range: ByteRange::synthetic_empty(),
+                    span: mspan.unwrap_or(*span),
+                });
+            }
+
+        }
         SyntaxTree::Is { .. } => {}
         SyntaxTree::Cast { .. } => {}
         SyntaxTree::Null { .. } => {}
@@ -292,6 +362,7 @@ pub fn range_of(tree: &SyntaxTree) -> ByteRange {
         SyntaxTree::Expression { range, .. } => *range,
         SyntaxTree::Access { range, .. } => *range,
         SyntaxTree::Binary { range, .. } => *range,
+        SyntaxTree::Logical { range, .. } => *range,
         SyntaxTree::Unary { range, .. } => *range,
         SyntaxTree::Tuple { range, .. } => *range,
         SyntaxTree::List { range, .. } => *range,
@@ -313,7 +384,8 @@ pub fn range_of(tree: &SyntaxTree) -> ByteRange {
         SyntaxTree::FieldWrap { range, .. } => *range,
         SyntaxTree::SimpleStatement { range, .. } => *range,
         SyntaxTree::Try { range, .. } => *range,
-        SyntaxTree::ExceptHandler { range, .. } => *range,
+        SyntaxTree::Except { range, .. } => *range,
+        SyntaxTree::Catch { range, .. } => *range,
         SyntaxTree::TypeAlias { range, .. } => *range,
         SyntaxTree::KeywordArgument { range, .. } => *range,
         SyntaxTree::ListSplat { range, .. } => *range,
@@ -322,7 +394,11 @@ pub fn range_of(tree: &SyntaxTree) -> ByteRange {
         SyntaxTree::ObjectCreation { range, .. } => *range,
         SyntaxTree::Lambda { range, .. } => *range,
         SyntaxTree::Function { range, .. } => *range,
+        SyntaxTree::Method { range, .. } => *range,
         SyntaxTree::Class { range, .. } => *range,
+        SyntaxTree::Struct { range, .. } => *range,
+        SyntaxTree::Interface { range, .. } => *range,
+        SyntaxTree::Record { range, .. } => *range,
         SyntaxTree::Body { range, .. } => *range,
         SyntaxTree::Parameter { range, .. } => *range,
         SyntaxTree::Skip { range, .. } => *range,
@@ -357,6 +433,8 @@ pub fn range_of(tree: &SyntaxTree) -> ByteRange {
         SyntaxTree::Using { range, .. } => *range,
         SyntaxTree::Namespace { range, .. } => *range,
         SyntaxTree::Variable { range, .. } => *range,
+        SyntaxTree::Field { range, .. } => *range,
+        SyntaxTree::Event { range, .. } => *range,
         SyntaxTree::Is { range, .. } => *range,
         SyntaxTree::Cast { range, .. } => *range,
         SyntaxTree::Null { range, .. } => *range,
@@ -375,6 +453,7 @@ pub fn span_of(tree: &SyntaxTree) -> Span {
         SyntaxTree::Expression { span, .. } => *span,
         SyntaxTree::Access { span, .. } => *span,
         SyntaxTree::Binary { span, .. } => *span,
+        SyntaxTree::Logical { span, .. } => *span,
         SyntaxTree::Unary { span, .. } => *span,
         SyntaxTree::Tuple { span, .. } => *span,
         SyntaxTree::List { span, .. } => *span,
@@ -396,7 +475,8 @@ pub fn span_of(tree: &SyntaxTree) -> Span {
         SyntaxTree::FieldWrap { span, .. } => *span,
         SyntaxTree::SimpleStatement { span, .. } => *span,
         SyntaxTree::Try { span, .. } => *span,
-        SyntaxTree::ExceptHandler { span, .. } => *span,
+        SyntaxTree::Except { span, .. } => *span,
+        SyntaxTree::Catch { span, .. } => *span,
         SyntaxTree::TypeAlias { span, .. } => *span,
         SyntaxTree::KeywordArgument { span, .. } => *span,
         SyntaxTree::ListSplat { span, .. } => *span,
@@ -405,7 +485,11 @@ pub fn span_of(tree: &SyntaxTree) -> Span {
         SyntaxTree::ObjectCreation { span, .. } => *span,
         SyntaxTree::Lambda { span, .. } => *span,
         SyntaxTree::Function { span, .. } => *span,
+        SyntaxTree::Method { span, .. } => *span,
         SyntaxTree::Class { span, .. } => *span,
+        SyntaxTree::Struct { span, .. } => *span,
+        SyntaxTree::Interface { span, .. } => *span,
+        SyntaxTree::Record { span, .. } => *span,
         SyntaxTree::Body { span, .. } => *span,
         SyntaxTree::Parameter { span, .. } => *span,
         SyntaxTree::Skip { span, .. } => *span,
@@ -440,6 +524,8 @@ pub fn span_of(tree: &SyntaxTree) -> Span {
         SyntaxTree::Using { span, .. } => *span,
         SyntaxTree::Namespace { span, .. } => *span,
         SyntaxTree::Variable { span, .. } => *span,
+        SyntaxTree::Field { span, .. } => *span,
+        SyntaxTree::Event { span, .. } => *span,
         SyntaxTree::Is { span, .. } => *span,
         SyntaxTree::Cast { span, .. } => *span,
         SyntaxTree::Null { span, .. } => *span,
@@ -492,6 +578,10 @@ pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
             }
         }
         SyntaxTree::Binary { left, right, .. } => {
+            v.push(left);
+            v.push(right);
+        }
+        SyntaxTree::Logical { left, right, .. } => {
             v.push(left);
             v.push(right);
         }
@@ -576,7 +666,13 @@ pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
             if let Some(__t) = else_body { v.push(__t); }
             if let Some(__t) = finally_body { v.push(__t); }
         }
-        SyntaxTree::ExceptHandler { type_target, binding, filter, body, .. } => {
+        SyntaxTree::Except { type_target, binding, filter, body, .. } => {
+            if let Some(__t) = type_target { v.push(__t); }
+            if let Some(__t) = binding { v.push(__t); }
+            if let Some(__t) = filter { v.push(__t); }
+            v.push(body);
+        }
+        SyntaxTree::Catch { type_target, binding, filter, body, .. } => {
             if let Some(__t) = type_target { v.push(__t); }
             if let Some(__t) = binding { v.push(__t); }
             if let Some(__t) = filter { v.push(__t); }
@@ -620,7 +716,40 @@ pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
             v.extend(throws.iter());
             if let Some(__t) = body { v.push(__t); }
         }
+        SyntaxTree::Method { decorators, name, generics, parameters, returns, throws, body, .. } => {
+            v.extend(decorators.iter());
+            v.push(name);
+            v.extend(generics.iter());
+            v.extend(parameters.iter());
+            if let Some(__t) = returns { v.push(__t); }
+            v.extend(throws.iter());
+            if let Some(__t) = body { v.push(__t); }
+        }
         SyntaxTree::Class { decorators, name, generics, bases, where_clauses, body, .. } => {
+            v.extend(decorators.iter());
+            v.push(name);
+            v.extend(generics.iter());
+            v.extend(bases.iter());
+            v.extend(where_clauses.iter());
+            v.push(body);
+        }
+        SyntaxTree::Struct { decorators, name, generics, bases, where_clauses, body, .. } => {
+            v.extend(decorators.iter());
+            v.push(name);
+            v.extend(generics.iter());
+            v.extend(bases.iter());
+            v.extend(where_clauses.iter());
+            v.push(body);
+        }
+        SyntaxTree::Interface { decorators, name, generics, bases, where_clauses, body, .. } => {
+            v.extend(decorators.iter());
+            v.push(name);
+            v.extend(generics.iter());
+            v.extend(bases.iter());
+            v.extend(where_clauses.iter());
+            v.push(body);
+        }
+        SyntaxTree::Record { decorators, name, generics, bases, where_clauses, body, .. } => {
             v.extend(decorators.iter());
             v.push(name);
             v.extend(generics.iter());
@@ -731,6 +860,18 @@ pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
             v.push(name);
             if let Some(__e) = value { v.push(&__e.inner); }
         }
+        SyntaxTree::Field { decorators, type_ann, name, value, .. } => {
+            v.extend(decorators.iter());
+            if let Some(__t) = type_ann { v.push(__t); }
+            v.push(name);
+            if let Some(__e) = value { v.push(&__e.inner); }
+        }
+        SyntaxTree::Event { decorators, type_ann, name, value, .. } => {
+            v.extend(decorators.iter());
+            if let Some(__t) = type_ann { v.push(__t); }
+            v.push(name);
+            if let Some(__e) = value { v.push(&__e.inner); }
+        }
         SyntaxTree::Is { value, type_target, .. } => {
             v.push(value);
             v.push(type_target);
@@ -761,6 +902,7 @@ pub fn span_mut_of(tree: &mut SyntaxTree) -> &mut Span {
         SyntaxTree::Expression { span, .. } => span,
         SyntaxTree::Access { span, .. } => span,
         SyntaxTree::Binary { span, .. } => span,
+        SyntaxTree::Logical { span, .. } => span,
         SyntaxTree::Unary { span, .. } => span,
         SyntaxTree::Tuple { span, .. } => span,
         SyntaxTree::List { span, .. } => span,
@@ -782,7 +924,8 @@ pub fn span_mut_of(tree: &mut SyntaxTree) -> &mut Span {
         SyntaxTree::FieldWrap { span, .. } => span,
         SyntaxTree::SimpleStatement { span, .. } => span,
         SyntaxTree::Try { span, .. } => span,
-        SyntaxTree::ExceptHandler { span, .. } => span,
+        SyntaxTree::Except { span, .. } => span,
+        SyntaxTree::Catch { span, .. } => span,
         SyntaxTree::TypeAlias { span, .. } => span,
         SyntaxTree::KeywordArgument { span, .. } => span,
         SyntaxTree::ListSplat { span, .. } => span,
@@ -791,7 +934,11 @@ pub fn span_mut_of(tree: &mut SyntaxTree) -> &mut Span {
         SyntaxTree::ObjectCreation { span, .. } => span,
         SyntaxTree::Lambda { span, .. } => span,
         SyntaxTree::Function { span, .. } => span,
+        SyntaxTree::Method { span, .. } => span,
         SyntaxTree::Class { span, .. } => span,
+        SyntaxTree::Struct { span, .. } => span,
+        SyntaxTree::Interface { span, .. } => span,
+        SyntaxTree::Record { span, .. } => span,
         SyntaxTree::Body { span, .. } => span,
         SyntaxTree::Parameter { span, .. } => span,
         SyntaxTree::Skip { span, .. } => span,
@@ -826,6 +973,8 @@ pub fn span_mut_of(tree: &mut SyntaxTree) -> &mut Span {
         SyntaxTree::Using { span, .. } => span,
         SyntaxTree::Namespace { span, .. } => span,
         SyntaxTree::Variable { span, .. } => span,
+        SyntaxTree::Field { span, .. } => span,
+        SyntaxTree::Event { span, .. } => span,
         SyntaxTree::Is { span, .. } => span,
         SyntaxTree::Cast { span, .. } => span,
         SyntaxTree::Null { span, .. } => span,
@@ -857,6 +1006,10 @@ pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
             }
         }
         SyntaxTree::Binary { left, right, .. } => {
+            v.push(left.as_mut());
+            v.push(right.as_mut());
+        }
+        SyntaxTree::Logical { left, right, .. } => {
             v.push(left.as_mut());
             v.push(right.as_mut());
         }
@@ -941,7 +1094,13 @@ pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
             if let Some(__t) = else_body { v.push(__t.as_mut()); }
             if let Some(__t) = finally_body { v.push(__t.as_mut()); }
         }
-        SyntaxTree::ExceptHandler { type_target, binding, filter, body, .. } => {
+        SyntaxTree::Except { type_target, binding, filter, body, .. } => {
+            if let Some(__t) = type_target { v.push(__t.as_mut()); }
+            if let Some(__t) = binding { v.push(__t.as_mut()); }
+            if let Some(__t) = filter { v.push(__t.as_mut()); }
+            v.push(body.as_mut());
+        }
+        SyntaxTree::Catch { type_target, binding, filter, body, .. } => {
             if let Some(__t) = type_target { v.push(__t.as_mut()); }
             if let Some(__t) = binding { v.push(__t.as_mut()); }
             if let Some(__t) = filter { v.push(__t.as_mut()); }
@@ -985,7 +1144,40 @@ pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
             v.extend(throws.iter_mut());
             if let Some(__t) = body { v.push(__t.as_mut()); }
         }
+        SyntaxTree::Method { decorators, name, generics, parameters, returns, throws, body, .. } => {
+            v.extend(decorators.iter_mut());
+            v.push(name.as_mut());
+            v.extend(generics.iter_mut());
+            v.extend(parameters.iter_mut());
+            if let Some(__t) = returns { v.push(__t.as_mut()); }
+            v.extend(throws.iter_mut());
+            if let Some(__t) = body { v.push(__t.as_mut()); }
+        }
         SyntaxTree::Class { decorators, name, generics, bases, where_clauses, body, .. } => {
+            v.extend(decorators.iter_mut());
+            v.push(name.as_mut());
+            v.extend(generics.iter_mut());
+            v.extend(bases.iter_mut());
+            v.extend(where_clauses.iter_mut());
+            v.push(body.as_mut());
+        }
+        SyntaxTree::Struct { decorators, name, generics, bases, where_clauses, body, .. } => {
+            v.extend(decorators.iter_mut());
+            v.push(name.as_mut());
+            v.extend(generics.iter_mut());
+            v.extend(bases.iter_mut());
+            v.extend(where_clauses.iter_mut());
+            v.push(body.as_mut());
+        }
+        SyntaxTree::Interface { decorators, name, generics, bases, where_clauses, body, .. } => {
+            v.extend(decorators.iter_mut());
+            v.push(name.as_mut());
+            v.extend(generics.iter_mut());
+            v.extend(bases.iter_mut());
+            v.extend(where_clauses.iter_mut());
+            v.push(body.as_mut());
+        }
+        SyntaxTree::Record { decorators, name, generics, bases, where_clauses, body, .. } => {
             v.extend(decorators.iter_mut());
             v.push(name.as_mut());
             v.extend(generics.iter_mut());
@@ -1091,6 +1283,18 @@ pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
             v.extend(children.iter_mut());
         }
         SyntaxTree::Variable { decorators, type_ann, name, value, .. } => {
+            v.extend(decorators.iter_mut());
+            if let Some(__t) = type_ann { v.push(__t.as_mut()); }
+            v.push(name.as_mut());
+            if let Some(__e) = value { v.push(&mut __e.inner); }
+        }
+        SyntaxTree::Field { decorators, type_ann, name, value, .. } => {
+            v.extend(decorators.iter_mut());
+            if let Some(__t) = type_ann { v.push(__t.as_mut()); }
+            v.push(name.as_mut());
+            if let Some(__e) = value { v.push(&mut __e.inner); }
+        }
+        SyntaxTree::Event { decorators, type_ann, name, value, .. } => {
             v.extend(decorators.iter_mut());
             if let Some(__t) = type_ann { v.push(__t.as_mut()); }
             v.push(name.as_mut());

@@ -423,18 +423,13 @@ impl QuoteStyle {
 pub enum SyntaxTree {
     // ----- Containers -----------------------------------------------------
 
-    /// `<module>` / `<unit>` / `<program>` — top-level program. The
-    /// CST root for languages that have one. Children are
-    /// statement-or-declaration tree. `element_name` lets each language
-    /// pick its own name to match the existing pipeline:
-    /// - Python: `"module"`
-    /// - C# / TypeScript: `"unit"` or `"program"` (TBD per language)
-    /// - Java: `"program"`
-    /// Cross-language unification of this name is a Principle #5
-    /// audit candidate but requires the existing pipeline's choice
-    /// per language to be revisited; we keep parity for now.
+    /// `<module>` — top-level program. The CST root for languages
+    /// that have one. Children are statement-or-declaration tree.
+    /// Per-language naming (Python "module" / C# "unit" / Java
+    /// "program") is intentionally dropped in favor of a uniform
+    /// `<module>` element across all code languages; the per-language
+    /// lookup layer (C9) can re-introduce native names later.
     Module {
-        element_name: &'static str,
         children: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
@@ -490,11 +485,19 @@ pub enum SyntaxTree {
     /// The two `{gap}`s are whitespace between `left`/`op`/`right` in
     /// the source, derived from `op_range` and the operands' ranges.
     Binary {
-        /// Element name. "binary" for arithmetic / bitwise / shift /
-        /// comparison; "logical" for short-circuit boolean (`and`,
-        /// `or`). Lets the renderer emit the right outer element
-        /// without changing shape.
-        element_name: &'static str,
+        op_text: String,
+        op_marker: &'static str,
+        op_range: ByteRange,
+        left: Box<SyntaxTree>,
+        right: Box<SyntaxTree>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<logical>` short-circuit boolean expression (`a and b`, `a || b`).
+    /// Same shape as [`SyntaxTree::Binary`]; sibling variant so the
+    /// element name follows the variant tag mechanically.
+    Logical {
         op_text: String,
         op_marker: &'static str,
         op_range: ByteRange,
@@ -715,8 +718,19 @@ pub enum SyntaxTree {
     /// `type_target` is the exception type; `binding` is the variable
     /// (`as e` / `Exception ex`); `filter` is C#'s `when (cond)`;
     /// `body` is the handler block.
-    ExceptHandler {
-        kind: &'static str,            // "except" | "catch"
+    /// `<except>` (Python) — single Python-style exception handler.
+    Except {
+        type_target: Option<Box<SyntaxTree>>,
+        binding: Option<Box<SyntaxTree>>,
+        filter: Option<Box<SyntaxTree>>,
+        body: Box<SyntaxTree>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<catch>` (C# / Java / JS) — single catch clause. Same shape
+    /// as [`SyntaxTree::Except`]; sibling variant.
+    Catch {
         type_target: Option<Box<SyntaxTree>>,
         binding: Option<Box<SyntaxTree>>,
         filter: Option<Box<SyntaxTree>>,
@@ -812,27 +826,29 @@ pub enum SyntaxTree {
     /// `abstract`, etc. as exhaustive flags. Python sets only
     /// `async_`; C# sets many more.
     Function {
-        /// Element name. "function" for Python `def`; "method" for
-        /// C# `method_declaration` (matching the imperative pipeline's
-        /// `Method` rename). Cross-language asymmetry is intentional —
-        /// users query `<method>` in C# and `<function>` in Python.
-        element_name: &'static str,
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
-        name: Box<SyntaxTree>,                  // SyntaxTree::Name
-        /// Generic type parameters (each is a [`SyntaxTree::TypeParameter`]).
-        /// Empty `Vec` means no generics — the renderer iterates the
-        /// items directly with no `Generic` wrapper node.
+        name: Box<SyntaxTree>,
         generics: Vec<SyntaxTree>,
-        parameters: Vec<SyntaxTree>,            // each SyntaxTree::Parameter / SyntaxTree::PositionalSeparator / SyntaxTree::KeywordSeparator
-        returns: Option<Box<SyntaxTree>>,       // SyntaxTree::Returns
-        /// `throws E1, E2` clause on Java method declarations. Each
-        /// entry is the lowering of one exception-type target and
-        /// renders as `<throws>/<type>/<name>` (Principle #18 — name
-        /// the relationship after the operator, one sibling per
-        /// target). Empty for languages without checked exceptions.
+        parameters: Vec<SyntaxTree>,
+        returns: Option<Box<SyntaxTree>>,
         throws: Vec<SyntaxTree>,
-        body: Option<Box<SyntaxTree>>,          // SyntaxTree::Body — None for abstract / interface methods
+        body: Option<Box<SyntaxTree>>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<method>` — instance / static method on a class. Same shape
+    /// as [`SyntaxTree::Function`]; sibling variant.
+    Method {
+        modifiers: Modifiers,
+        decorators: Vec<SyntaxTree>,
+        name: Box<SyntaxTree>,
+        generics: Vec<SyntaxTree>,
+        parameters: Vec<SyntaxTree>,
+        returns: Option<Box<SyntaxTree>>,
+        throws: Vec<SyntaxTree>,
+        body: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
     },
@@ -849,16 +865,56 @@ pub enum SyntaxTree {
     /// Flipping any flag swaps the corresponding marker by
     /// construction.
     Class {
-        kind: &'static str,            // "class" | "struct" | "interface" | "record"
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
         name: Box<SyntaxTree>,
         /// Generic type parameters (each is a [`SyntaxTree::TypeParameter`]).
-        /// Empty `Vec` means no generics. The renderer iterates items
-        /// directly with no `Generic` wrapper node.
         generics: Vec<SyntaxTree>,
         bases: Vec<SyntaxTree>,                 // each is a base expression
         where_clauses: Vec<SyntaxTree>,         // C# `where T : ...` constraints (other languages: empty)
+        body: Box<SyntaxTree>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<struct>` — C# struct declaration. Same shape as `Class`;
+    /// distinct variant so the element name follows the variant tag
+    /// mechanically (no string discriminator).
+    Struct {
+        modifiers: Modifiers,
+        decorators: Vec<SyntaxTree>,
+        name: Box<SyntaxTree>,
+        generics: Vec<SyntaxTree>,
+        bases: Vec<SyntaxTree>,
+        where_clauses: Vec<SyntaxTree>,
+        body: Box<SyntaxTree>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<interface>` — C# / Java / TypeScript interface. Same shape
+    /// as `Class`; sibling variant.
+    Interface {
+        modifiers: Modifiers,
+        decorators: Vec<SyntaxTree>,
+        name: Box<SyntaxTree>,
+        generics: Vec<SyntaxTree>,
+        bases: Vec<SyntaxTree>,
+        where_clauses: Vec<SyntaxTree>,
+        body: Box<SyntaxTree>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<record>` — C# / Java record declaration. Same shape as
+    /// `Class`; sibling variant.
+    Record {
+        modifiers: Modifiers,
+        decorators: Vec<SyntaxTree>,
+        name: Box<SyntaxTree>,
+        generics: Vec<SyntaxTree>,
+        bases: Vec<SyntaxTree>,
+        where_clauses: Vec<SyntaxTree>,
         body: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
@@ -1155,9 +1211,14 @@ pub enum SyntaxTree {
 
     /// `<accessor>` — one of `get`, `set`, `init` inside a property's
     /// `{ ... }`. Body is optional (auto-implemented properties have
-    /// no body).
+    /// no body). Kept as a single variant because three of the four
+    /// possible Rust variant names (`Set` in particular) would
+    /// collide with sibling variants (`SyntaxTree::Set` is the
+    /// collection-literal variant). XML still emits `<get>` /
+    /// `<set>` / `<init>` via the discriminator-field rule until C9
+    /// per-language naming retires this last special case.
     Accessor {
-        modifiers: Modifiers,              // Some accessors have their own access modifier
+        modifiers: Modifiers,
         kind: &'static str,                // "get" | "set" | "init"
         body: Option<Box<SyntaxTree>>,
         range: ByteRange,
@@ -1202,20 +1263,37 @@ pub enum SyntaxTree {
         span: Span,
     },
 
-    /// `<variable>` — `var x = value;` / `int x = value;` /
-    /// `int x;`. Used for local variable declarations and class
-    /// fields. Renders
+    /// `<variable>` — local variable declaration `var x = value;` /
+    /// `int x;`. Renders
     /// `<variable>[<type>...</type>]<name>...</name>[value-expr]</variable>`.
     Variable {
-        /// Element name. "variable" for local declarations; "field"
-        /// for class-level field declarations. C# uses both; Python
-        /// uses neither (assignments take a different tree path).
-        element_name: &'static str,
-        /// Access + flag modifiers. Empty for locals (their modifiers
-        /// like `const` are very limited); fields use them fully.
         modifiers: Modifiers,
-        /// Attributes/decorators on the declaration (C# `[Attr]` for
-        /// fields, future Java annotations). Empty for locals.
+        decorators: Vec<SyntaxTree>,
+        type_ann: Option<Box<SyntaxTree>>,
+        name: Box<SyntaxTree>,
+        value: Option<Expression>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<field>` — class-level field declaration. Same shape as
+    /// [`SyntaxTree::Variable`]; sibling variant for the distinct
+    /// semantic concept (member scope, can carry full modifiers).
+    Field {
+        modifiers: Modifiers,
+        decorators: Vec<SyntaxTree>,
+        type_ann: Option<Box<SyntaxTree>>,
+        name: Box<SyntaxTree>,
+        value: Option<Expression>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<event>` — C# event declaration. Same shape as
+    /// [`SyntaxTree::Field`]; sibling variant for the distinct C#
+    /// `event` member concept.
+    Event {
+        modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
         type_ann: Option<Box<SyntaxTree>>,
         name: Box<SyntaxTree>,
@@ -2011,6 +2089,86 @@ impl SyntaxTree {
 }
 
 impl SyntaxTree {
+    /// Construct a `Binary` or `Logical` variant from a discriminator
+    /// string. Transitional helper for lowering sites that still pick
+    /// the variant via the legacy `"binary"` / `"logical"`
+    /// `element_name` value.
+    #[inline]
+    pub fn binary_or_logical(
+        element_name: &'static str,
+        op_text: String,
+        op_marker: &'static str,
+        op_range: ByteRange,
+        left: Box<SyntaxTree>,
+        right: Box<SyntaxTree>,
+        range: ByteRange,
+        span: Span,
+    ) -> SyntaxTree {
+        match element_name {
+            "logical" => SyntaxTree::Logical { op_text, op_marker, op_range, left, right, range, span },
+            _ => SyntaxTree::Binary { op_text, op_marker, op_range, left, right, range, span },
+        }
+    }
+
+    /// Construct a `Function` or `Method` variant. Transitional
+    /// helper used by lowering sites that still pick the variant via
+    /// the legacy `"function"` / `"method"` `element_name` value.
+    #[inline]
+    pub fn function_or_method(
+        element_name: &'static str,
+        modifiers: Modifiers,
+        decorators: Vec<SyntaxTree>,
+        name: Box<SyntaxTree>,
+        generics: Vec<SyntaxTree>,
+        parameters: Vec<SyntaxTree>,
+        returns: Option<Box<SyntaxTree>>,
+        throws: Vec<SyntaxTree>,
+        body: Option<Box<SyntaxTree>>,
+        range: ByteRange,
+        span: Span,
+    ) -> SyntaxTree {
+        match element_name {
+            "method" => SyntaxTree::Method { modifiers, decorators, name, generics, parameters, returns, throws, body, range, span },
+            _ => SyntaxTree::Function { modifiers, decorators, name, generics, parameters, returns, throws, body, range, span },
+        }
+    }
+
+    /// Construct a `Variable`, `Field`, or `Event` variant.
+    #[inline]
+    pub fn variable_or_field(
+        element_name: &'static str,
+        modifiers: Modifiers,
+        decorators: Vec<SyntaxTree>,
+        type_ann: Option<Box<SyntaxTree>>,
+        name: Box<SyntaxTree>,
+        value: Option<Expression>,
+        range: ByteRange,
+        span: Span,
+    ) -> SyntaxTree {
+        match element_name {
+            "field" => SyntaxTree::Field { modifiers, decorators, type_ann, name, value, range, span },
+            "event" => SyntaxTree::Event { modifiers, decorators, type_ann, name, value, range, span },
+            _ => SyntaxTree::Variable { modifiers, decorators, type_ann, name, value, range, span },
+        }
+    }
+
+    /// Construct an `Except` or `Catch` variant.
+    #[inline]
+    pub fn except_or_catch(
+        kind: &'static str,
+        type_target: Option<Box<SyntaxTree>>,
+        binding: Option<Box<SyntaxTree>>,
+        filter: Option<Box<SyntaxTree>>,
+        body: Box<SyntaxTree>,
+        range: ByteRange,
+        span: Span,
+    ) -> SyntaxTree {
+        match kind {
+            "catch" => SyntaxTree::Catch { type_target, binding, filter, body, range, span },
+            _ => SyntaxTree::Except { type_target, binding, filter, body, range, span },
+        }
+    }
+
     /// Direct tree children, in source order. Delegates to the
     /// generated `children_of` accessor in `metadata_generated`.
     /// Excludes synthetic render-time wrappers and modifier markers —

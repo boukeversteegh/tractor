@@ -29,7 +29,6 @@ pub fn lower_typescript_root(root: &RawNode, source: &str) -> SyntaxTree {
     let range = range_of(root);
     match root.kind() {
         "program" => SyntaxTree::Module {
-            element_name: "program",
             children: merge_ts_line_comments(lower_children(root, source), source),
             range,
             span,
@@ -187,33 +186,33 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 Some(tpl) => tpl.named_children().map(|c| lower_node(c, source)).collect(),
                 None => Vec::new(),
             };
-            SyntaxTree::Class {
-                kind,
-                modifiers,
-                decorators: extract_ts_decorators(node, source),
-                name: Box::new(match name_node {
-                    Some(n) => name_of(n, source),
-                    None => SyntaxTree::Unknown {
-                        kind: format!("{}(missing name)", kind),
-                        range,
-                        span,
-                    },
-                }),
-                generics,
-                bases,
-                where_clauses: Vec::new(),
-                body: Box::new(match body_node {
-                    Some(b) => lower_block_like(b, source),
-                    None => SyntaxTree::Body {
-                        children: Vec::new(),
-                        pass_only: false,
-                        block_wrap: false,
-                        range: ByteRange::empty_at(range.end),
-                        span,
-                    },
-                }),
-                range,
-                span,
+            let decorators = extract_ts_decorators(node, source);
+            let name = Box::new(match name_node {
+                Some(n) => name_of(n, source),
+                None => SyntaxTree::Unknown {
+                    kind: format!("{}(missing name)", kind),
+                    range,
+                    span,
+                },
+            });
+            let body = Box::new(match body_node {
+                Some(b) => lower_block_like(b, source),
+                None => SyntaxTree::Body {
+                    children: Vec::new(),
+                    pass_only: false,
+                    block_wrap: false,
+                    range: ByteRange::empty_at(range.end),
+                    span,
+                },
+            });
+            let where_clauses = Vec::new();
+            match kind {
+                "interface" => SyntaxTree::Interface {
+                    modifiers, decorators, name, generics, bases, where_clauses, body, range, span,
+                },
+                _ => SyntaxTree::Class {
+                    modifiers, decorators, name, generics, bases, where_clauses, body, range, span,
+                },
             }
         }
 
@@ -269,26 +268,19 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 Some(tp) => tp.named_children().map(|c| lower_node(c, source)).collect(),
                 None => Vec::new(),
             };
-            SyntaxTree::Function {
-                element_name,
-                modifiers,
-                decorators: extract_ts_decorators(node, source),
-                name: Box::new(match name_node {
-                    Some(n) => name_of(n, source),
-                    None => SyntaxTree::Unknown {
-                        kind: format!("{}(missing name)", element_name),
-                        range,
-                        span,
-                    },
-                }),
-                generics,
-                parameters,
-                returns,
-                throws: Vec::new(),
-                body,
-                range,
-                span,
-            }
+            let decorators = extract_ts_decorators(node, source);
+            let name = Box::new(match name_node {
+                Some(n) => name_of(n, source),
+                None => SyntaxTree::Unknown {
+                    kind: format!("{}(missing name)", element_name),
+                    range,
+                    span,
+                },
+            });
+            SyntaxTree::function_or_method(
+                element_name, modifiers, decorators, name, generics, parameters,
+                returns, Vec::new(), body, range, span,
+            )
         }
 
         "arrow_function" => {
@@ -474,8 +466,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             // TS class fields default to `public`.
             let modifiers = lower_ts_modifiers(node, source, Some(Access::Public));
             let value_ir = value_node.map(|v| crate::tree::Expression::wrap(lower_node(v, source)));
-            SyntaxTree::Variable {
-                element_name: "field",
+            SyntaxTree::Field {
                 modifiers,
                 decorators: extract_ts_decorators(node, source),
                 type_ann: type_node.map(|t| {
@@ -782,7 +773,6 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
             match (left, right, op_marker(&op_text)) {
                 (Some(l), Some(r), Some(marker)) => SyntaxTree::Binary {
-                    element_name: "binary",
                     op_text,
                     op_marker: marker,
                     op_range,

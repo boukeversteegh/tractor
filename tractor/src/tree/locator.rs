@@ -67,7 +67,6 @@ mod tests {
     #[test]
     fn find_child_by_id() {
         let mut t = SyntaxTree::Module {
-            element_name: "module",
             children: vec![
                 SyntaxTree::Name {
                     text: "a".to_string(),

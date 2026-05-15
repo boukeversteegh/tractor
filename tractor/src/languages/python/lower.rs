@@ -31,7 +31,6 @@ pub fn lower_python_root(root: &RawNode, source: &str) -> SyntaxTree {
     let range = range_of(root);
     match root.kind() {
         "module" => SyntaxTree::Module {
-            element_name: "module",
             children: merge_python_line_comments(lower_children(root, source), source),
             range,
             span,
@@ -286,7 +285,6 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
             match (left, right, op_marker(&op_text)) {
                 (Some(l), Some(r), Some(marker)) => SyntaxTree::Binary {
-                    element_name: "binary",
                     op_text,
                     op_marker: marker,
                     op_range,
@@ -554,8 +552,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 _     => "and",  // fallback
             };
             match (left, right) {
-                (Some(l), Some(r)) => SyntaxTree::Binary {
-                    element_name: "logical",
+                (Some(l), Some(r)) => SyntaxTree::Logical {
                     op_text,
                     op_marker: marker,
                     op_range,
@@ -1488,8 +1485,7 @@ fn lower_python_except_clause(node: &RawNode, source: &str) -> SyntaxTree {
             _ => {}
         }
     }
-    SyntaxTree::ExceptHandler {
-        kind: "except",
+    SyntaxTree::Except {
         type_target,
         binding,
         filter: None,
@@ -1612,7 +1608,6 @@ fn lower_function(node: &RawNode, source: &str, is_async: bool, decorators: Vec<
     let body: Option<Box<SyntaxTree>> = body_node.map(|b| Box::new(lower_block(b, source)));
 
     SyntaxTree::Function {
-        element_name: "function",
         modifiers: Modifiers {
             async_: crate::tree::types::Flag::from_bool(is_async),
             ..Modifiers::default()
@@ -1676,7 +1671,6 @@ fn lower_class(node: &RawNode, source: &str, decorators: Vec<SyntaxTree>) -> Syn
     set_python_class_member_visibility(&mut body, source);
 
     SyntaxTree::Class {
-        kind: "class",
         // Python: no access modifiers, no static/abstract/etc on class.
         modifiers: Modifiers::default(),
         decorators, name, generics, bases, where_clauses: Vec::new(), body, range, span,

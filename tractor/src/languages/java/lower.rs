@@ -51,7 +51,6 @@ fn lower_java_root_inner(root: &RawNode, source: &str) -> SyntaxTree {
     let range = range_of(root);
     match root.kind() {
         "program" => SyntaxTree::Module {
-            element_name: "program",
             children: merge_java_line_comments(lower_children(root, source), source),
             range,
             span,
@@ -196,33 +195,35 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     }
                 }
             }
-            SyntaxTree::Class {
-                kind,
-                modifiers,
-                decorators,
-                name: Box::new(match name_node {
-                    Some(n) => name_of(n, source),
-                    None => SyntaxTree::Unknown {
-                        kind: format!("{}(missing name)", kind),
-                        range,
-                        span,
-                    },
-                }),
-                generics,
-                bases,
-                where_clauses: Vec::new(),
-                body: Box::new(match body_node {
-                    Some(b) => lower_block_like(b, source),
-                    None => SyntaxTree::Body {
-                        children: Vec::new(),
-                        pass_only: false,
-                        block_wrap: false,
-                        range: ByteRange::empty_at(range.end),
-                        span,
-                    },
-                }),
-                range,
-                span,
+            let name = Box::new(match name_node {
+                Some(n) => name_of(n, source),
+                None => SyntaxTree::Unknown {
+                    kind: format!("{}(missing name)", kind),
+                    range,
+                    span,
+                },
+            });
+            let body = Box::new(match body_node {
+                Some(b) => lower_block_like(b, source),
+                None => SyntaxTree::Body {
+                    children: Vec::new(),
+                    pass_only: false,
+                    block_wrap: false,
+                    range: ByteRange::empty_at(range.end),
+                    span,
+                },
+            });
+            let where_clauses = Vec::new();
+            match kind {
+                "interface" => SyntaxTree::Interface {
+                    modifiers, decorators, name, generics, bases, where_clauses, body, range, span,
+                },
+                "record" => SyntaxTree::Record {
+                    modifiers, decorators, name, generics, bases, where_clauses, body, range, span,
+                },
+                _ => SyntaxTree::Class {
+                    modifiers, decorators, name, generics, bases, where_clauses, body, range, span,
+                },
             }
         }
 
@@ -296,30 +297,46 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             // Function render skips emitting `<body>` when None
             // (matches imperative shape `<method[abstract]>` only).
             let body: Option<Box<SyntaxTree>> = body_node.map(|b| Box::new(lower_block_like(b, source)));
-            let element_name: &'static str = if node.kind() == "constructor_declaration" {
-                "constructor"
+            let is_constructor = node.kind() == "constructor_declaration";
+            let element_kind = if is_constructor { "constructor" } else { "method" };
+            let name = Box::new(match name_node {
+                Some(n) => name_of(n, source),
+                None => SyntaxTree::Unknown {
+                    kind: format!("{}(missing name)", element_kind),
+                    range,
+                    span,
+                },
+            });
+            if is_constructor {
+                let body = body.map(|b| *b).unwrap_or_else(|| SyntaxTree::Body {
+                    children: Vec::new(),
+                    pass_only: false,
+                    block_wrap: false,
+                    range: ByteRange::empty_at(range.end),
+                    span,
+                });
+                SyntaxTree::Constructor {
+                    modifiers,
+                    decorators,
+                    name,
+                    parameters,
+                    body: Box::new(body),
+                    range,
+                    span,
+                }
             } else {
-                "method"
-            };
-            SyntaxTree::Function {
-                element_name,
-                modifiers,
-                decorators,
-                name: Box::new(match name_node {
-                    Some(n) => name_of(n, source),
-                    None => SyntaxTree::Unknown {
-                        kind: format!("{}(missing name)", element_name),
-                        range,
-                        span,
-                    },
-                }),
-                generics,
-                parameters,
-                returns,
-                throws,
-                body,
-                range,
-                span,
+                SyntaxTree::Method {
+                    modifiers,
+                    decorators,
+                    name,
+                    generics,
+                    parameters,
+                    returns,
+                    throws,
+                    body,
+                    range,
+                    span,
+                }
             }
         }
 
@@ -715,7 +732,6 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
             match (left, right, op_marker(&op_text)) {
                 (Some(l), Some(r), Some(marker)) => SyntaxTree::Binary {
-                    element_name: "binary",
                     op_text,
                     op_marker: marker,
                     op_range,
@@ -1301,16 +1317,19 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     span,
                 }),
             };
-            SyntaxTree::Function {
-                element_name: "constructor",
+            let body = body.map(|b| *b).unwrap_or_else(|| SyntaxTree::Body {
+                children: Vec::new(),
+                pass_only: false,
+                block_wrap: false,
+                range: ByteRange::empty_at(range.end),
+                span,
+            });
+            SyntaxTree::Constructor {
                 modifiers,
                 decorators: Vec::new(),
                 name,
-                generics: Vec::new(),
                 parameters: Vec::new(),
-                returns: None,
-                throws: Vec::new(),
-                body,
+                body: Box::new(body),
                 range,
                 span,
             }
@@ -1541,8 +1560,7 @@ fn lower_java_catch_clause(node: &RawNode, source: &str) -> SyntaxTree {
             _ => {}
         }
     }
-    SyntaxTree::ExceptHandler {
-        kind: "catch",
+    SyntaxTree::Catch {
         type_target,
         binding,
         filter: None,
@@ -1746,16 +1764,16 @@ fn lower_variable_declarator(
     // Java tests assert `value/expression/int='1'`; without the
     // wrapper the value renders as a bare child of `<field>`.
     let value_ir = value_node.map(|v| crate::tree::Expression::wrap(lower_node(v, source)));
-    SyntaxTree::Variable {
+    SyntaxTree::variable_or_field(
         element_name,
         modifiers,
         decorators,
-        type_ann: type_ir,
-        name: Box::new(name_ir),
-        value: value_ir,
+        type_ir,
+        Box::new(name_ir),
+        value_ir,
         range,
         span,
-    }
+    )
 }
 
 fn lower_children(node: &RawNode, source: &str) -> Vec<SyntaxTree> {

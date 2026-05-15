@@ -22,7 +22,6 @@ pub fn lower_go_root(root: &RawNode, source: &str) -> SyntaxTree {
     let range = range_of(root);
     match root.kind() {
         "source_file" => SyntaxTree::Module {
-            element_name: "file",
             children: merge_go_line_comments(lower_children(root, source), source),
             range,
             span,
@@ -449,15 +448,15 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
             match (left, right, op_marker(&op_text)) {
-                (Some(l), Some(r), Some(marker)) => SyntaxTree::Binary {
-                    element_name: if matches!(op_text.as_str(), "&&" | "||") { "logical" } else { "binary" },
+                (Some(l), Some(r), Some(marker)) => SyntaxTree::binary_or_logical(
+                    if matches!(op_text.as_str(), "&&" | "||") { "logical" } else { "binary" },
                     op_text,
-                    op_marker: marker,
+                    marker,
                     op_range,
-                    left: Box::new(l.wrap_slot("left")),
-                    right: Box::new(r.wrap_slot("right")),
+                    Box::new(l.wrap_slot("left")),
+                    Box::new(r.wrap_slot("right")),
                     range, span,
-                },
+                ),
                 _ => SyntaxTree::Unknown {
                     kind: "binary_expression(missing)".to_string(),
                     range, span,

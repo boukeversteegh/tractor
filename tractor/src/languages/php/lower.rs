@@ -18,7 +18,6 @@ pub fn lower_php_root(root: &RawNode, source: &str) -> SyntaxTree {
     let range = range_of(root);
     match root.kind() {
         "program" => SyntaxTree::Module {
-            element_name: "program",
             children: merge_php_line_comments(lower_children(root, source), source),
             range, span,
         },
@@ -811,15 +810,15 @@ fn php_binary_expression(node: &RawNode, source: &str) -> SyntaxTree {
     let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
     let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
     match (left, right, php_op_marker(&op_text)) {
-        (Some(l), Some(r), Some(marker)) => SyntaxTree::Binary {
-            element_name: if matches!(op_text.as_str(), "&&" | "||" | "and" | "or" | "xor") { "logical" } else { "binary" },
+        (Some(l), Some(r), Some(marker)) => SyntaxTree::binary_or_logical(
+            if matches!(op_text.as_str(), "&&" | "||" | "and" | "or" | "xor") { "logical" } else { "binary" },
             op_text,
-            op_marker: marker,
+            marker,
             op_range,
-            left: Box::new(l.wrap_slot("left")),
-            right: Box::new(r.wrap_slot("right")),
+            Box::new(l.wrap_slot("left")),
+            Box::new(r.wrap_slot("right")),
             range, span,
-        },
+        ),
         _ => simple_statement(node, "binary", source),
     }
 }

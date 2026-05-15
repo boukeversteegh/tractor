@@ -75,7 +75,6 @@ fn lower_csharp_root_inner(root: &RawNode, source: &str) -> SyntaxTree {
             // queries (`//namespace[name='Foo']/class[...]`).
             fold_file_scoped_namespace_siblings(&mut children, source);
             SyntaxTree::Module {
-                element_name: "unit",
                 children: merge_adjacent_line_comments(children, source),
                 range,
                 span,
@@ -583,25 +582,31 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 .map(|c| lower_node(c, source))
                 .collect();
             let generics = fold_csharp_where_clauses_into_generics(generics, raw_where_clauses, source);
-            SyntaxTree::Class {
-                kind,
-                modifiers,
-                decorators,
-                name: Box::new(match name_node {
-                    Some(n) => name_of(n, source),
-                    None => SyntaxTree::Unknown {
-                        kind: format!("{}(missing name)", kind),
-                        range, span,
-                    },
-                }),
-                generics,
-                bases,
-                where_clauses: where_for_render,
-                body: Box::new(match body_node {
-                    Some(b) => lower_block_like(b, source),
-                    None => SyntaxTree::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span },
-                }),
-                range, span,
+            let name = Box::new(match name_node {
+                Some(n) => name_of(n, source),
+                None => SyntaxTree::Unknown {
+                    kind: format!("{}(missing name)", kind),
+                    range, span,
+                },
+            });
+            let body = Box::new(match body_node {
+                Some(b) => lower_block_like(b, source),
+                None => SyntaxTree::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span },
+            });
+            let where_clauses = where_for_render;
+            match kind {
+                "struct" => SyntaxTree::Struct {
+                    modifiers, decorators, name, generics, bases, where_clauses, body, range, span,
+                },
+                "interface" => SyntaxTree::Interface {
+                    modifiers, decorators, name, generics, bases, where_clauses, body, range, span,
+                },
+                "record" => SyntaxTree::Record {
+                    modifiers, decorators, name, generics, bases, where_clauses, body, range, span,
+                },
+                _ => SyntaxTree::Class {
+                    modifiers, decorators, name, generics, bases, where_clauses, body, range, span,
+                },
             }
         }
 
@@ -633,8 +638,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 }
                 None => None,
             };
-            SyntaxTree::Function {
-                element_name: "method",
+            SyntaxTree::Method {
                 modifiers,
                 decorators: Vec::new(),
                 name: Box::new(match name_node {
@@ -686,8 +690,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         .collect::<Vec<_>>()
                 })
                 .collect();
-            SyntaxTree::Function {
-                element_name: "method",
+            SyntaxTree::Method {
                 modifiers,
                 decorators,
                 name: Box::new(match name_node {
@@ -1794,16 +1797,16 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 _ => "binary",
             };
             match (left, right, op_marker(&op_text)) {
-                (Some(l), Some(r), Some(marker)) => SyntaxTree::Binary {
+                (Some(l), Some(r), Some(marker)) => SyntaxTree::binary_or_logical(
                     element_name,
                     op_text,
-                    op_marker: marker,
+                    marker,
                     op_range,
-                    left: Box::new(l.wrap_slot("left")),
-                    right: Box::new(r.wrap_slot("right")),
+                    Box::new(l.wrap_slot("left")),
+                    Box::new(r.wrap_slot("right")),
                     range,
                     span,
-                },
+                ),
                 _ => SyntaxTree::Unknown {
                     kind: "binary_expression(missing/unknown op)".to_string(),
                     range,
@@ -2303,8 +2306,7 @@ fn lower_event_field_declaration(node: &RawNode, source: &str) -> SyntaxTree {
         kind: "event(missing name)".to_string(),
         range, span,
     }));
-    SyntaxTree::Variable {
-        element_name: "event",
+    SyntaxTree::Event {
         modifiers,
         decorators: Vec::new(),
         type_ann: type_ir,
@@ -2551,8 +2553,7 @@ fn lower_csharp_catch_clause(node: &RawNode, source: &str) -> SyntaxTree {
             _ => {}
         }
     }
-    SyntaxTree::ExceptHandler {
-        kind: "catch",
+    SyntaxTree::Catch {
         type_target,
         binding,
         filter,
@@ -2746,16 +2747,16 @@ fn lower_variable_declarator(
                     .filter(|v| v.id() != p.id())
                     .map(|v| crate::tree::Expression::wrap(lower_node(v, source)));
                 let type_ir = type_node.map(|t| Box::new(lower_node(t, source).wrap_type()));
-                return SyntaxTree::Variable {
+                return SyntaxTree::variable_or_field(
                     element_name,
                     modifiers,
                     decorators,
-                    type_ann: type_ir,
-                    name: pattern_ir,
-                    value: value_ir,
+                    type_ir,
+                    pattern_ir,
+                    value_ir,
                     range,
                     span,
-                };
+                );
             }
             None => {
                 let mut children: Vec<SyntaxTree> = Vec::new();
@@ -2778,16 +2779,16 @@ fn lower_variable_declarator(
     let name_ir = name_of(n, source);
     let type_ir = type_node.map(|t| Box::new(lower_node(t, source).wrap_type()));
     let value_ir = value_node.map(|v| crate::tree::Expression::wrap(lower_node(v, source)));
-    SyntaxTree::Variable {
+    SyntaxTree::variable_or_field(
         element_name,
         modifiers,
         decorators,
-        type_ann: type_ir,
-        name: Box::new(name_ir),
-        value: value_ir,
+        type_ir,
+        Box::new(name_ir),
+        value_ir,
         range,
         span,
-    }
+    )
 }
 
 /// Decode the right side of a `conditional_access_expression` (the

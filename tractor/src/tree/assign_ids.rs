@@ -64,7 +64,6 @@ mod tests {
     #[test]
     fn syntax_children_get_distinct_increasing_ids() {
         let mut t = SyntaxTree::Module {
-            element_name: "module",
             children: vec![
                 SyntaxTree::Name {
                     text: "x".to_string(),
@@ -119,10 +118,8 @@ mod tests {
         // Guards against a `children_mut` impl forgetting to list a
         // child slot: any missed subtree would keep id == 0.
         let mut t = SyntaxTree::Module {
-            element_name: "module",
             children: vec![
                 SyntaxTree::Binary {
-                    element_name: "binary",
                     op_text: "+".to_string(),
                     op_marker: "add",
                     op_range: ByteRange::synthetic_empty(),

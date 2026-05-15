@@ -18,7 +18,6 @@ pub fn lower_ruby_root(root: &RawNode, source: &str) -> SyntaxTree {
     let range = range_of(root);
     match root.kind() {
         "program" => SyntaxTree::Module {
-            element_name: "program",
             children: merge_ruby_line_comments(lower_children(root, source), source),
             range, span,
         },
@@ -275,15 +274,15 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 _ => "",
             };
             match (left, right) {
-                (Some(l), Some(r)) if !marker.is_empty() => SyntaxTree::Binary {
-                    element_name: if matches!(op_text.as_str(), "&&" | "||" | "and" | "or") { "logical" } else { "binary" },
+                (Some(l), Some(r)) if !marker.is_empty() => SyntaxTree::binary_or_logical(
+                    if matches!(op_text.as_str(), "&&" | "||" | "and" | "or") { "logical" } else { "binary" },
                     op_text,
-                    op_marker: marker,
+                    marker,
                     op_range,
-                    left: Box::new(l.wrap_slot("left")),
-                    right: Box::new(r.wrap_slot("right")),
+                    Box::new(l.wrap_slot("left")),
+                    Box::new(r.wrap_slot("right")),
                     range, span,
-                },
+                ),
                 _ => simple_statement(node, "binary", source),
             }
         }

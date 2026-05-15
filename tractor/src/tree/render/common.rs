@@ -223,7 +223,18 @@ pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax
             indent.write(out);
             out.push_str(sx.block_close);
         }
-        SyntaxTree::Class { kind, name, generics, bases, body, .. } => {
+        SyntaxTree::Class { name, generics, bases, body, .. }
+        | SyntaxTree::Struct { name, generics, bases, body, .. }
+        | SyntaxTree::Interface { name, generics, bases, body, .. }
+        | SyntaxTree::Record { name, generics, bases, body, .. } => {
+            // Element name comes from the variant tag; per-language
+            // keyword still needs a string, derived from the variant.
+            let kind: &str = match tree {
+                SyntaxTree::Struct { .. } => "struct",
+                SyntaxTree::Interface { .. } => "interface",
+                SyntaxTree::Record { .. } => "record",
+                _ => "class",
+            };
             out.push_str(kind);
             out.push(' ');
             write_ir(name, out, indent, sx);
@@ -254,7 +265,8 @@ pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax
                 out.push_str(sx.block_close);
             }
         }
-        SyntaxTree::Function { name, generics, parameters, returns, body, .. } => {
+        SyntaxTree::Function { name, generics, parameters, returns, body, .. }
+        | SyntaxTree::Method { name, generics, parameters, returns, body, .. } => {
             if !sx.typed_param_pre || returns.is_none() {
                 out.push_str(sx.fn_keyword);
                 out.push(' ');
@@ -391,7 +403,8 @@ pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax
         }
         SyntaxTree::Break { .. } => out.push_str(sx.break_keyword),
         SyntaxTree::Continue { .. } => out.push_str(sx.continue_keyword),
-        SyntaxTree::Binary { op_text, left, right, .. } => {
+        SyntaxTree::Binary { op_text, left, right, .. }
+        | SyntaxTree::Logical { op_text, left, right, .. } => {
             write_ir(left, out, indent, sx); out.push(' ');
             out.push_str(op_text); out.push(' ');
             write_ir(right, out, indent, sx);
@@ -561,7 +574,9 @@ fn needs_terminator(tree: &SyntaxTree, sx: &Syntax) -> bool {
     !matches!(
         tree,
         SyntaxTree::If { .. } | SyntaxTree::While { .. } | SyntaxTree::Foreach { .. } | SyntaxTree::CFor { .. }
-            | SyntaxTree::For { .. } | SyntaxTree::Function { .. } | SyntaxTree::Class { .. }
+            | SyntaxTree::For { .. } | SyntaxTree::Function { .. } | SyntaxTree::Method { .. }
+            | SyntaxTree::Class { .. } | SyntaxTree::Struct { .. }
+            | SyntaxTree::Interface { .. } | SyntaxTree::Record { .. }
             | SyntaxTree::Namespace { .. } | SyntaxTree::Try { .. } | SyntaxTree::Comment { .. }
     )
 }
