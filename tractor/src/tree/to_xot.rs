@@ -341,50 +341,20 @@ fn render_tree_except_handler(
         else { unreachable!() };
     let node = element(xot, kind, *span);
     xot.append(parent, node)?;
-    // Unified shape — same structural slots for Python's
-    // `except [Type [as name]] [if filter]:` and C#-style
-    // `catch (Type name) [when filter]`. The keyword stored on
-    // `kind` selects the element name (`<except>` vs `<catch>`)
-    // but the inner structure is identical.
-    #[derive(Clone, Copy)]
-    enum Slot<'a> { Type(&'a SyntaxTree), Bind(&'a SyntaxTree), Filter(&'a SyntaxTree), Body(&'a SyntaxTree) }
-    let mut order: Vec<Slot> = Vec::new();
-    if let Some(t) = type_target { order.push(Slot::Type(t)); }
-    if let Some(b) = binding { order.push(Slot::Bind(b)); }
-    if let Some(f) = filter { order.push(Slot::Filter(f)); }
-    order.push(Slot::Body(body));
-    order.sort_by_key(|s| match s {
-        Slot::Type(i) | Slot::Bind(i) | Slot::Filter(i) | Slot::Body(i) => i.range().start,
-    });
+    // Slots pre-shaped at lowering — type_target via `wrap_type()`,
+    // binding via `wrap_slot("as")`, filter via `wrap_slot("filter")`.
+    // Renderer walks them in source order.
+    let mut order: Vec<&SyntaxTree> = Vec::new();
+    if let Some(t) = type_target { order.push(t.as_ref()); }
+    if let Some(b) = binding { order.push(b.as_ref()); }
+    if let Some(f) = filter { order.push(f.as_ref()); }
+    order.push(body.as_ref());
+    order.sort_by_key(|i| i.range().start);
     let mut cursor = range.start;
-    for slot in &order {
-        let inner: &SyntaxTree = match slot {
-            Slot::Type(i) | Slot::Bind(i) | Slot::Filter(i) | Slot::Body(i) => i,
-        };
+    for inner in &order {
         let cr = inner.range();
         emit_gap(xot, node, source, cursor, cr.start)?;
-        match slot {
-            Slot::Type(_) => {
-                let t = element(xot, "type", inner.span());
-                xot.append(node, t)?;
-                render_to_xot(xot, t, inner, source)?;
-            }
-            Slot::Bind(_) => {
-                let as_el = element(xot, "as", inner.span());
-                xot.append(node, as_el)?;
-                render_to_xot(xot, as_el, inner, source)?;
-            }
-            Slot::Filter(_) => {
-                let f = element(xot, "filter", inner.span());
-                xot.append(node, f)?;
-                let expr = element(xot, "expression", inner.span());
-                xot.append(f, expr)?;
-                render_to_xot(xot, expr, inner, source)?;
-            }
-            Slot::Body(_) => {
-                render_to_xot(xot, node, inner, source)?;
-            }
-        }
+        render_to_xot(xot, node, inner, source)?;
         cursor = cr.end;
     }
     emit_gap(xot, node, source, cursor, range.end)?;
@@ -417,7 +387,11 @@ fn render_tree_for(
     } else {
         ByteRange::empty_at(range.start)
     };
-    // Pre-left gap
+    // Lowering pre-wraps each target / iterable in `<expression>`;
+    // the renderer just emits the slot wrappers + delegates rendering.
+    // Lifting `<left>` / `<right>` slot wrappers themselves into the
+    // tree is deferred to a later slice (Assign and For share the
+    // pattern).
     emit_gap(xot, node, source, range.start, left_range.start)?;
     let left_slot = element(xot, "left", *span);
     xot.append(node, left_slot)?;
@@ -425,24 +399,18 @@ fn render_tree_for(
     for t in targets {
         let tr = t.range();
         emit_gap(xot, left_slot, source, cursor, tr.start)?;
-        let expr = element(xot, "expression", t.span());
-        xot.append(left_slot, expr)?;
-        render_to_xot(xot, expr, t, source)?;
+        render_to_xot(xot, left_slot, t, source)?;
         cursor = tr.end;
     }
     emit_gap(xot, left_slot, source, cursor, left_range.end)?;
-    // Gap between left and right
     emit_gap(xot, node, source, left_range.end, right_range.start)?;
-    // Right slot
     let right_slot = element(xot, "right", *span);
     xot.append(node, right_slot)?;
     let mut cursor = right_range.start;
     for i in iterables {
         let ir2 = i.range();
         emit_gap(xot, right_slot, source, cursor, ir2.start)?;
-        let expr = element(xot, "expression", i.span());
-        xot.append(right_slot, expr)?;
-        render_to_xot(xot, expr, i, source)?;
+        render_to_xot(xot, right_slot, i, source)?;
         cursor = ir2.end;
     }
     emit_gap(xot, right_slot, source, cursor, right_range.end)?;
@@ -539,46 +507,20 @@ fn render_tree_foreach(
     xot.append(parent, node)?;
     let in_marker = element(xot, "in", *span);
     xot.append(node, in_marker)?;
-    #[derive(Clone, Copy)]
-    enum Slot<'a> { Type(&'a SyntaxTree), Target(&'a SyntaxTree), Iter(&'a SyntaxTree), Body(&'a SyntaxTree) }
-    let mut order: Vec<Slot> = Vec::new();
-    if let Some(t) = type_ann { order.push(Slot::Type(t)); }
-    order.push(Slot::Target(target));
-    order.push(Slot::Iter(iterable));
-    order.push(Slot::Body(body));
-    order.sort_by_key(|s| match s {
-        Slot::Type(i) | Slot::Target(i) | Slot::Iter(i) | Slot::Body(i) => i.range().start,
-    });
+    // All slots pre-shaped in lowering: type_ann via `wrap_type()`,
+    // target / iterable via `wrap_slot("left" / "right")`. Renderer
+    // emits them in source order with gap text between.
+    let mut order: Vec<&SyntaxTree> = Vec::new();
+    if let Some(t) = type_ann { order.push(t.as_ref()); }
+    order.push(target.as_ref());
+    order.push(iterable.as_ref());
+    order.push(body.as_ref());
+    order.sort_by_key(|i| i.range().start);
     let mut cursor = range.start;
-    for slot in &order {
-        let inner: &SyntaxTree = match slot {
-            Slot::Type(i) | Slot::Target(i) | Slot::Iter(i) | Slot::Body(i) => i,
-        };
+    for inner in &order {
         let cr = inner.range();
         emit_gap(xot, node, source, cursor, cr.start)?;
-        match slot {
-            Slot::Type(_) => {
-                // Lowering wraps via `wrap_type()` (P1).
-                render_to_xot(xot, node, inner, source)?;
-            }
-            Slot::Target(_) => {
-                let slot_el = element(xot, "left", inner.span());
-                xot.append(node, slot_el)?;
-                let expr = element(xot, "expression", inner.span());
-                xot.append(slot_el, expr)?;
-                render_to_xot(xot, expr, inner, source)?;
-            }
-            Slot::Iter(_) => {
-                let slot_el = element(xot, "right", inner.span());
-                xot.append(node, slot_el)?;
-                let expr = element(xot, "expression", inner.span());
-                xot.append(slot_el, expr)?;
-                render_to_xot(xot, expr, inner, source)?;
-            }
-            Slot::Body(_) => {
-                render_to_xot(xot, node, inner, source)?;
-            }
-        }
+        render_to_xot(xot, node, inner, source)?;
         cursor = cr.end;
     }
     emit_gap(xot, node, source, cursor, range.end)?;

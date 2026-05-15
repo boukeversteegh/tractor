@@ -364,7 +364,7 @@ module/
   │       │   │   ├─ type/tuple/
   │       │   │   │   ├─ name = "ValueError"
   │       │   │   │   └─ name = "TypeError"
-  │       │   │   ├─ as/name = "e"
+  │       │   │   ├─ as/expression/name = "e"
   │       │   │   └─ body/raise/
   │       │   │       ├─ expression/call/
   │       │   │       │   ├─ name = "RuntimeError"

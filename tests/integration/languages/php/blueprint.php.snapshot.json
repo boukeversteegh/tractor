@@ -251,19 +251,23 @@
                 },
                 "right": {
                   "left": {
-                    "name": "who"
+                    "node": {
+                      "name": "who"
+                    }
                   },
                   "op": {
                     "text": "??",
                     "null_coalesce": true
                   },
                   "right": {
-                    "access": true,
-                    "receiver": {
-                      "name": "this"
-                    },
-                    "member": {
-                      "name": "name"
+                    "node": {
+                      "access": true,
+                      "receiver": {
+                        "name": "this"
+                      },
+                      "member": {
+                        "name": "name"
+                      }
                     }
                   }
                 }
@@ -274,19 +278,23 @@
                 "expression": {
                   "node": {
                     "left": {
-                      "access": true,
-                      "receiver": {
-                        "name": "this"
-                      },
-                      "member": {
-                        "name": "count"
+                      "node": {
+                        "access": true,
+                        "receiver": {
+                          "name": "this"
+                        },
+                        "member": {
+                          "name": "count"
+                        }
                       }
                     },
                     "op": {
                       "text": ">",
                       "greater": true
                     },
-                    "right": 10
+                    "right": {
+                      "node": 10
+                    }
                   }
                 }
               },
@@ -308,19 +316,23 @@
                   "expression": {
                     "node": {
                       "left": {
-                        "access": true,
-                        "receiver": {
-                          "name": "this"
-                        },
-                        "member": {
-                          "name": "count"
+                        "node": {
+                          "access": true,
+                          "receiver": {
+                            "name": "this"
+                          },
+                          "member": {
+                            "name": "count"
+                          }
                         }
                       },
                       "op": {
                         "text": ">",
                         "greater": true
                       },
-                      "right": 0
+                      "right": {
+                        "node": 0
+                      }
                     }
                   }
                 },
@@ -369,25 +381,33 @@
               "ternary": {
                 "node": {
                   "left": {
-                    "name": "n"
+                    "node": {
+                      "name": "n"
+                    }
                   },
                   "op": {
                     "text": ">",
                     "greater": true
                   },
-                  "right": 0
+                  "right": {
+                    "node": 0
+                  }
                 },
                 "string": {},
                 "ternary": {
                   "node": {
                     "left": {
-                      "name": "n"
+                      "node": {
+                        "name": "n"
+                      }
                     },
                     "op": {
                       "text": "<",
                       "less": true
                     },
-                    "right": 0
+                    "right": {
+                      "node": 0
+                    }
                   },
                   "strings": [
                     {},
@@ -433,10 +453,12 @@
                   {
                     "node": {
                       "left": {
-                        "callee": "is_string",
-                        "argument": {
-                          "variable": {
-                            "name": "value"
+                        "node": {
+                          "callee": "is_string",
+                          "argument": {
+                            "variable": {
+                              "name": "value"
+                            }
                           }
                         }
                       },
@@ -445,19 +467,25 @@
                         "and": true
                       },
                       "right": {
-                        "left": {
-                          "callee": "strlen",
-                          "argument": {
-                            "variable": {
-                              "name": "value"
+                        "node": {
+                          "left": {
+                            "node": {
+                              "callee": "strlen",
+                              "argument": {
+                                "variable": {
+                                  "name": "value"
+                                }
+                              }
                             }
+                          },
+                          "op": {
+                            "text": ">",
+                            "greater": true
+                          },
+                          "right": {
+                            "node": 0
                           }
-                        },
-                        "op": {
-                          "text": ">",
-                          "greater": true
-                        },
-                        "right": 0
+                        }
                       }
                     },
                     "string": {}
@@ -532,13 +560,17 @@
                     "expression": {
                       "node": {
                         "left": {
-                          "name": "item"
+                          "node": {
+                            "name": "item"
+                          }
                         },
                         "op": {
                           "text": "===",
                           "identical": true
                         },
-                        "right": null
+                        "right": {
+                          "node": null
+                        }
                       }
                     }
                   },
@@ -1233,14 +1265,18 @@
             "expression": {
               "node": {
                 "left": {
-                  "name": "i"
+                  "node": {
+                    "name": "i"
+                  }
                 },
                 "op": {
                   "text": "<",
                   "less": true
                 },
                 "right": {
-                  "name": "j"
+                  "node": {
+                    "name": "j"
+                  }
                 }
               }
             }
@@ -1267,13 +1303,17 @@
                 "nodes": [
                   {
                     "left": {
-                      "name": "value"
+                      "node": {
+                        "name": "value"
+                      }
                     },
                     "op": {
                       "text": "instanceof",
                       "instanceof": true
                     },
-                    "right": "Stringable"
+                    "right": {
+                      "node": "Stringable"
+                    }
                   },
                   1
                 ]
@@ -1282,13 +1322,17 @@
                 "nodes": [
                   {
                     "left": {
-                      "name": "value"
+                      "node": {
+                        "name": "value"
+                      }
                     },
                     "op": {
                       "text": "instanceof",
                       "instanceof": true
                     },
-                    "right": "Countable2"
+                    "right": {
+                      "node": "Countable2"
+                    }
                   },
                   2
                 ]
@@ -1368,13 +1412,17 @@
         "return": {
           "node": {
             "left": {
-              "name": "thing"
+              "node": {
+                "name": "thing"
+              }
             },
             "op": {
               "text": "!==",
               "not_identical": true
             },
-            "right": null
+            "right": {
+              "node": null
+            }
           }
         }
       }
@@ -1423,13 +1471,17 @@
           "body": {
             "node": {
               "left": {
-                "name": "x"
+                "node": {
+                  "name": "x"
+                }
               },
               "op": {
                 "text": "*",
                 "multiply": true
               },
-              "right": 2
+              "right": {
+                "node": 2
+              }
             }
           }
         }
@@ -1486,12 +1538,14 @@
             "return": {
               "node": {
                 "left": {
-                  "callee": {
-                    "name": "pipeline"
-                  },
-                  "argument": {
-                    "variable": {
-                      "name": "x"
+                  "node": {
+                    "callee": {
+                      "name": "pipeline"
+                    },
+                    "argument": {
+                      "variable": {
+                        "name": "x"
+                      }
                     }
                   }
                 },
@@ -1499,7 +1553,9 @@
                   "text": "+",
                   "plus": true
                 },
-                "right": 1
+                "right": {
+                  "node": 1
+                }
               }
             }
           }
@@ -1510,17 +1566,23 @@
   "echo": {
     "node": {
       "left": {
-        "left": {},
-        "op": {
-          "text": ".",
-          "concat": true
-        },
-        "right": {
-          "callee": {
-            "name": "closure"
+        "node": {
+          "left": {
+            "node": {}
           },
-          "argument": {
-            "node": 5
+          "op": {
+            "text": ".",
+            "concat": true
+          },
+          "right": {
+            "node": {
+              "callee": {
+                "name": "closure"
+              },
+              "argument": {
+                "node": 5
+              }
+            }
           }
         }
       },
@@ -1528,7 +1590,9 @@
         "text": ".",
         "concat": true
       },
-      "right": {}
+      "right": {
+        "node": {}
+      }
     }
   }
 }

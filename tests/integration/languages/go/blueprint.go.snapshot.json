@@ -987,24 +987,32 @@
                   "right": {
                     "expression": {
                       "node": {
-                        "left": "n",
+                        "left": {
+                          "node": "n"
+                        },
                         "op": {
                           "text": "+",
                           "plus": true
                         },
-                        "right": 1
+                        "right": {
+                          "node": 1
+                        }
                       }
                     }
                   }
                 },
                 "return": {
                   "node": {
-                    "left": "x",
+                    "left": {
+                      "node": "x"
+                    },
                     "op": {
                       "text": "*",
                       "multiply": true
                     },
-                    "right": 2
+                    "right": {
+                      "node": 2
+                    }
                   }
                 }
               }
@@ -1328,12 +1336,16 @@
               },
               "return": {
                 "node": {
-                  "left": "\"string:\"",
+                  "left": {
+                    "node": "\"string:\""
+                  },
                   "op": {
                     "text": "+",
                     "plus": true
                   },
-                  "right": "v"
+                  "right": {
+                    "node": "v"
+                  }
                 }
               }
             },
@@ -1555,12 +1567,16 @@
             "condition": {
               "expression": {
                 "node": {
-                  "left": "err",
+                  "left": {
+                    "node": "err"
+                  },
                   "op": {
                     "text": "!=",
                     "not_equal": true
                   },
-                  "right": {}
+                  "right": {
+                    "node": {}
+                  }
                 }
               }
             },
@@ -1649,19 +1665,21 @@
               "expression": {
                 "node": {
                   "left": {
-                    "access": true,
-                    "receiver": "errors",
-                    "call": {
-                      "names": [
-                        "As",
-                        "err"
-                      ],
-                      "node": {
-                        "op": {
-                          "text": "&",
-                          "address": true
-                        },
-                        "operand": "target"
+                    "node": {
+                      "access": true,
+                      "receiver": "errors",
+                      "call": {
+                        "names": [
+                          "As",
+                          "err"
+                        ],
+                        "node": {
+                          "op": {
+                            "text": "&",
+                            "address": true
+                          },
+                          "operand": "target"
+                        }
                       }
                     }
                   },
@@ -1670,14 +1688,16 @@
                     "or": true
                   },
                   "right": {
-                    "access": true,
-                    "receiver": "errors",
-                    "call": {
-                      "names": [
-                        "Is",
-                        "err",
-                        "ErrNotFound"
-                      ]
+                    "node": {
+                      "access": true,
+                      "receiver": "errors",
+                      "call": {
+                        "names": [
+                          "Is",
+                          "err",
+                          "ErrNotFound"
+                        ]
+                      }
                     }
                   }
                 }
@@ -1710,12 +1730,16 @@
             "condition": {
               "expression": {
                 "node": {
-                  "left": "i",
+                  "left": {
+                    "node": "i"
+                  },
                   "op": {
                     "text": "<",
                     "less": true
                   },
-                  "right": 10
+                  "right": {
+                    "node": 10
+                  }
                 }
               }
             },
@@ -1732,12 +1756,16 @@
                 "condition": {
                   "expression": {
                     "node": {
-                      "left": "i",
+                      "left": {
+                        "node": "i"
+                      },
                       "op": {
                         "text": "==",
                         "equal": true
                       },
-                      "right": 5
+                      "right": {
+                        "node": 5
+                      }
                     }
                   }
                 },
@@ -1835,12 +1863,16 @@
             "condition": {
               "expression": {
                 "node": {
-                  "left": "n",
+                  "left": {
+                    "node": "n"
+                  },
                   "op": {
                     "text": "<",
                     "less": true
                   },
-                  "right": 3
+                  "right": {
+                    "node": 3
+                  }
                 }
               }
             },

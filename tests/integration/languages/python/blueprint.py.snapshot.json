@@ -125,12 +125,16 @@
     {
       "name": "IntOrStr",
       "value": {
-        "left": "int",
+        "left": {
+          "node": "int"
+        },
         "op": {
           "text": "|",
           "bitwise_or": true
         },
-        "right": "str"
+        "right": {
+          "node": "str"
+        }
       }
     },
     {
@@ -204,18 +208,26 @@
         {
           "expression": {
             "left": {
-              "left": "a",
-              "op": {
-                "text": "+",
-                "plus": true
-              },
-              "right": "b"
+              "node": {
+                "left": {
+                  "node": "a"
+                },
+                "op": {
+                  "text": "+",
+                  "plus": true
+                },
+                "right": {
+                  "node": "b"
+                }
+              }
             },
             "op": {
               "text": "+",
               "plus": true
             },
-            "right": "kw_only"
+            "right": {
+              "node": "kw_only"
+            }
           }
         }
       ]
@@ -378,9 +390,15 @@
         },
         {
           "expression": {
-            "condition": "result",
-            "then": "result",
-            "else": null
+            "condition": {
+              "node": "result"
+            },
+            "then": {
+              "node": "result"
+            },
+            "else": {
+              "node": null
+            }
           }
         }
       ]
@@ -462,12 +480,16 @@
             "callee": "range",
             "name": "n",
             "node": {
-              "left": "n",
+              "left": {
+                "node": "n"
+              },
               "op": {
                 "text": "*",
                 "multiply": true
               },
-              "right": 2
+              "right": {
+                "node": 2
+              }
             }
           }
         }
@@ -542,23 +564,27 @@
           },
           "node": {
             "condition": {
-              "left": "v",
-              "op": {
-                "text": "<",
-                "less": true
-              },
-              "right": 0
+              "node": {
+                "left": "v",
+                "op": {
+                  "text": "<",
+                  "less": true
+                },
+                "right": 0
+              }
             },
             "nodes": [
               {},
               {
                 "condition": {
-                  "left": "v",
-                  "op": {
-                    "text": "==",
-                    "equal": true
-                  },
-                  "right": 0
+                  "node": {
+                    "left": "v",
+                    "op": {
+                      "text": "==",
+                      "equal": true
+                    },
+                    "right": 0
+                  }
                 },
                 "nodes": [
                   {},
@@ -589,12 +615,14 @@
         },
         {
           "condition": {
-            "left": "n",
-            "op": {
-              "text": "<",
-              "less": true
-            },
-            "right": 10
+            "node": {
+              "left": "n",
+              "op": {
+                "text": "<",
+                "less": true
+              },
+              "right": 10
+            }
           },
           "node": {
             "assign": true,
@@ -610,11 +638,15 @@
               "callee": "risky"
             },
             {
-              "type": [
-                "ValueError",
-                "TypeError"
-              ],
-              "name": "e",
+              "type": {
+                "node": [
+                  "ValueError",
+                  "TypeError"
+                ]
+              },
+              "as": {
+                "node": "e"
+              },
               "raise": {
                 "expression": {
                   "node": {
@@ -626,7 +658,9 @@
               }
             },
             {
-              "type": "Exception"
+              "type": {
+                "name": "Exception"
+              }
             }
           ],
           "else": {
@@ -807,12 +841,16 @@
             "comprehension": true,
             "nodes": [
               {
-                "left": "x",
+                "left": {
+                  "node": "x"
+                },
                 "op": {
                   "text": "*",
                   "multiply": true
                 },
-                "right": "x"
+                "right": {
+                  "node": "x"
+                }
               },
               {
                 "left": "x",
@@ -949,33 +987,41 @@
         {
           "left": "first",
           "right": {
-            "condition": "items",
+            "condition": {
+              "node": "items"
+            },
             "then": {
-              "access": true,
-              "receiver": "items",
-              "index": {
-                "node": 0
+              "node": {
+                "access": true,
+                "receiver": "items",
+                "index": {
+                  "node": 0
+                }
               }
             },
-            "else": null
+            "else": {
+              "node": null
+            }
           }
         },
         {
           "condition": {
-            "left": {
-              "assign": {
-                "name": "n",
-                "node": {
-                  "callee": "len",
-                  "name": "items"
+            "node": {
+              "left": {
+                "assign": {
+                  "name": "n",
+                  "node": {
+                    "callee": "len",
+                    "name": "items"
+                  }
                 }
-              }
-            },
-            "op": {
-              "text": ">",
-              "greater": true
-            },
-            "right": 3
+              },
+              "op": {
+                "text": ">",
+                "greater": true
+              },
+              "right": 3
+            }
           },
           "node": {
             "callee": "print",
@@ -1023,12 +1069,16 @@
                   "name": "v"
                 },
                 "body": {
-                  "left": "v",
+                  "left": {
+                    "node": "v"
+                  },
                   "op": {
                     "text": "*",
                     "multiply": true
                   },
-                  "right": 2
+                  "right": {
+                    "node": 2
+                  }
                 }
               },
               "name": "items"
@@ -1147,10 +1197,12 @@
               }
             },
             {
-              "type": [
-                "ValueError",
-                "TypeError"
-              ],
+              "type": {
+                "node": [
+                  "ValueError",
+                  "TypeError"
+                ]
+              },
               "node": {
                 "left": "result",
                 "right": []
@@ -1225,12 +1277,16 @@
                 "node": {
                   "left": "matched",
                   "right": {
-                    "left": "a",
+                    "left": {
+                      "node": "a"
+                    },
                     "op": {
                       "text": "+",
                       "plus": true
                     },
-                    "right": "b"
+                    "right": {
+                      "node": "b"
+                    }
                   }
                 }
               }
@@ -1374,35 +1430,39 @@
           "node": {
             "expression": {
               "left": {
-                "callee": "isinstance",
-                "names": [
-                  "other",
-                  "Derived"
-                ]
+                "node": {
+                  "callee": "isinstance",
+                  "names": [
+                    "other",
+                    "Derived"
+                  ]
+                }
               },
               "op": {
                 "text": "and",
                 "and": true
               },
               "right": {
-                "left": {
-                  "access": true,
-                  "receiver": {
-                    "self": true
+                "node": {
+                  "left": {
+                    "access": true,
+                    "receiver": {
+                      "self": true
+                    },
+                    "member": {
+                      "name": "name"
+                    }
                   },
-                  "member": {
-                    "name": "name"
-                  }
-                },
-                "op": {
-                  "text": "==",
-                  "equal": true
-                },
-                "right": {
-                  "access": true,
-                  "receiver": "other",
-                  "member": {
-                    "name": "name"
+                  "op": {
+                    "text": "==",
+                    "equal": true
+                  },
+                  "right": {
+                    "access": true,
+                    "receiver": "other",
+                    "member": {
+                      "name": "name"
+                    }
                   }
                 }
               }

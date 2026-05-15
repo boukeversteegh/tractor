@@ -921,12 +921,16 @@
                     "b"
                   ],
                   "node": {
-                    "left": "a",
+                    "left": {
+                      "node": "a"
+                    },
                     "op": {
                       "text": "+",
                       "plus": true
                     },
-                    "right": "b"
+                    "right": {
+                      "node": "b"
+                    }
                   }
                 }
               }
@@ -1293,23 +1297,31 @@
                           ],
                           "condition": {
                             "node": {
-                              "left": "x",
+                              "left": {
+                                "node": "x"
+                              },
                               "op": {
                                 "text": "==",
                                 "equal": true
                               },
-                              "right": "y"
+                              "right": {
+                                "node": "y"
+                              }
                             }
                           }
                         },
                         "value": {
                           "node": {
-                            "left": "x",
+                            "left": {
+                              "node": "x"
+                            },
                             "op": {
                               "text": "+",
                               "plus": true
                             },
-                            "right": "y"
+                            "right": {
+                              "node": "y"
+                            }
                           }
                         }
                       },
@@ -1336,12 +1348,16 @@
                           },
                           "condition": {
                             "node": {
-                              "left": "w",
+                              "left": {
+                                "node": "w"
+                              },
                               "op": {
                                 "text": ">",
                                 "greater": true
                               },
-                              "right": 0
+                              "right": {
+                                "node": 0
+                              }
                             }
                           }
                         },
@@ -1350,12 +1366,16 @@
                             "value": {
                               "expression": {
                                 "node": {
-                                  "left": "w",
+                                  "left": {
+                                    "node": "w"
+                                  },
                                   "op": {
                                     "text": "*",
                                     "multiply": true
                                   },
-                                  "right": "h"
+                                  "right": {
+                                    "node": "h"
+                                  }
                                 }
                               }
                             },
@@ -1614,18 +1634,26 @@
                   "condition": {
                     "node": {
                       "left": {
-                        "left": "i",
-                        "op": {
-                          "text": "*",
-                          "multiply": true
-                        },
-                        "right": "j"
+                        "node": {
+                          "left": {
+                            "node": "i"
+                          },
+                          "op": {
+                            "text": "*",
+                            "multiply": true
+                          },
+                          "right": {
+                            "node": "j"
+                          }
+                        }
                       },
                       "op": {
                         "text": ">",
                         "greater": true
                       },
-                      "right": 20
+                      "right": {
+                        "node": 20
+                      }
                     }
                   },
                   "then": {
@@ -1673,12 +1701,16 @@
           "condition": {
             "expression": {
               "node": {
-                "left": "n",
+                "left": {
+                  "node": "n"
+                },
                 "op": {
                   "text": "<",
                   "less": true
                 },
-                "right": 3
+                "right": {
+                  "node": 3
+                }
               }
             }
           },
@@ -1863,12 +1895,16 @@
               "block": {
                 "async": true,
                 "node": {
-                  "left": "1u32",
+                  "left": {
+                    "node": "1u32"
+                  },
                   "op": {
                     "text": "+",
                     "plus": true
                   },
-                  "right": 2
+                  "right": {
+                    "node": 2
+                  }
                 }
               }
             }
@@ -2144,12 +2180,16 @@
                         },
                         "value": {
                           "node": {
-                            "left": "a",
+                            "left": {
+                              "node": "a"
+                            },
                             "op": {
                               "text": "+",
                               "plus": true
                             },
-                            "right": "b"
+                            "right": {
+                              "node": "b"
+                            }
                           }
                         }
                       },
@@ -2167,18 +2207,26 @@
                         "value": {
                           "node": {
                             "left": {
-                              "left": "a",
-                              "op": {
-                                "text": "+",
-                                "plus": true
-                              },
-                              "right": "b"
+                              "node": {
+                                "left": {
+                                  "node": "a"
+                                },
+                                "op": {
+                                  "text": "+",
+                                  "plus": true
+                                },
+                                "right": {
+                                  "node": "b"
+                                }
+                              }
                             },
                             "op": {
                               "text": "+",
                               "plus": true
                             },
-                            "right": "c"
+                            "right": {
+                              "node": "c"
+                            }
                           }
                         }
                       }
@@ -2241,12 +2289,16 @@
                         },
                         "value": {
                           "node": {
-                            "left": "first",
+                            "left": {
+                              "node": "first"
+                            },
                             "op": {
                               "text": "+",
                               "plus": true
                             },
-                            "right": "last"
+                            "right": {
+                              "node": "last"
+                            }
                           }
                         }
                       },
@@ -2296,20 +2348,28 @@
                   "name": "counter",
                   "nodes": [
                     {
-                      "left": "counter",
+                      "left": {
+                        "node": "counter"
+                      },
                       "op": {
                         "text": "*",
                         "multiply": true
                       },
-                      "right": 2
+                      "right": {
+                        "node": 2
+                      }
                     },
                     {
-                      "left": "counter",
+                      "left": {
+                        "node": "counter"
+                      },
                       "op": {
                         "text": "*",
                         "multiply": true
                       },
-                      "right": 3
+                      "right": {
+                        "node": 3
+                      }
                     }
                   ]
                 }
@@ -2415,12 +2475,16 @@
           "assign": {
             "name": "counter",
             "node": {
-              "left": "total",
+              "left": {
+                "node": "total"
+              },
               "op": {
                 "text": "+",
                 "plus": true
               },
-              "right": "head_tail"
+              "right": {
+                "node": "head_tail"
+              }
             }
           }
         },
@@ -2453,12 +2517,16 @@
               ]
             },
             "node": {
-              "left": "ix",
+              "left": {
+                "node": "ix"
+              },
               "op": {
                 "text": ">",
                 "greater": true
               },
-              "right": 0
+              "right": {
+                "node": 0
+              }
             }
           },
           "then": {
@@ -2466,12 +2534,16 @@
               "expression": {
                 "return": {
                   "node": {
-                    "left": "ix",
+                    "left": {
+                      "node": "ix"
+                    },
                     "op": {
                       "text": "+",
                       "plus": true
                     },
-                    "right": "x"
+                    "right": {
+                      "node": "x"
+                    }
                   }
                 }
               }
@@ -2480,19 +2552,21 @@
         },
         "node": {
           "left": {
-            "value": {
-              "expression": {
-                "node": {
-                  "access": true,
-                  "receiver": "v",
-                  "call": {
-                    "name": "len"
+            "node": {
+              "value": {
+                "expression": {
+                  "node": {
+                    "access": true,
+                    "receiver": "v",
+                    "call": {
+                      "name": "len"
+                    }
                   }
                 }
+              },
+              "type": {
+                "name": "i32"
               }
-            },
-            "type": {
-              "name": "i32"
             }
           },
           "op": {
@@ -2500,10 +2574,12 @@
             "plus": true
           },
           "right": {
-            "access": true,
-            "receiver": "triples",
-            "index": {
-              "node": 0
+            "node": {
+              "access": true,
+              "receiver": "triples",
+              "index": {
+                "node": 0
+              }
             }
           }
         }

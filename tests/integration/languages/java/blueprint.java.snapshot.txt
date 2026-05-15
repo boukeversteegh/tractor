@@ -401,7 +401,7 @@ program/
           │       │       ├─ type/
           │       │       │   ├─ name = "java.io.IOException"
           │       │       │   └─ name = "RuntimeException"
-          │       │       ├─ as/name = "e"
+          │       │       ├─ as/expression/name = "e"
           │       │       └─ body/throw/expression/name = "e"
           │       └─ lock/
           │           ├─ this = "this"

@@ -1528,10 +1528,10 @@ fn lower_java_catch_clause(node: &RawNode, source: &str) -> SyntaxTree {
                 for inner in c.named_children() {
                     match inner.kind() {
                         "catch_type" | "type" | "type_identifier" | "scoped_type_identifier" => {
-                            type_target = Some(Box::new(lower_node(inner, source)));
+                            type_target = Some(Box::new(lower_node(inner, source).wrap_type()));
                         }
                         "identifier" => {
-                            binding = Some(Box::new(name_of(inner, source)));
+                            binding = Some(Box::new(name_of(inner, source).wrap_slot("as")));
                         }
                         _ => {}
                     }

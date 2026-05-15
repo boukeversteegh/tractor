@@ -199,12 +199,18 @@
           },
           "node": {
             "condition": {
-              "left": "input",
-              "op": {
-                "text": "==",
-                "equal": true
-              },
-              "right": null
+              "node": {
+                "left": {
+                  "node": "input"
+                },
+                "op": {
+                  "text": "==",
+                  "equal": true
+                },
+                "right": {
+                  "node": null
+                }
+              }
             },
             "throw": {
               "expression": {
@@ -216,11 +222,13 @@
             },
             "node": {
               "condition": {
-                "op": {
-                  "text": "!",
-                  "not": true
-                },
-                "operand": "ready"
+                "node": {
+                  "op": {
+                    "text": "!",
+                    "not": true
+                  },
+                  "operand": "ready"
+                }
               },
               "nodes": [
                 {
@@ -252,25 +260,45 @@
           "node": {
             "expression": {
               "condition": {
-                "left": "n",
-                "op": {
-                  "text": ">",
-                  "greater": true
-                },
-                "right": 0
-              },
-              "then": "\"positive\"",
-              "else": {
-                "condition": {
-                  "left": "n",
-                  "op": {
-                    "text": "<",
-                    "less": true
+                "node": {
+                  "left": {
+                    "node": "n"
                   },
-                  "right": 0
-                },
-                "then": "\"negative\"",
-                "else": "\"zero\""
+                  "op": {
+                    "text": ">",
+                    "greater": true
+                  },
+                  "right": {
+                    "node": 0
+                  }
+                }
+              },
+              "then": {
+                "node": "\"positive\""
+              },
+              "else": {
+                "node": {
+                  "condition": {
+                    "node": {
+                      "left": {
+                        "node": "n"
+                      },
+                      "op": {
+                        "text": "<",
+                        "less": true
+                      },
+                      "right": {
+                        "node": 0
+                      }
+                    }
+                  },
+                  "then": {
+                    "node": "\"negative\""
+                  },
+                  "else": {
+                    "node": "\"zero\""
+                  }
+                }
               }
             }
           }
@@ -307,22 +335,32 @@
             },
             {
               "condition": {
-                "left": "i",
-                "op": {
-                  "text": "<",
-                  "less": true
-                },
-                "right": 3
+                "node": {
+                  "left": {
+                    "node": "i"
+                  },
+                  "op": {
+                    "text": "<",
+                    "less": true
+                  },
+                  "right": {
+                    "node": 3
+                  }
+                }
               },
               "node": {
                 "left": "i",
                 "right": {
-                  "left": "i",
+                  "left": {
+                    "node": "i"
+                  },
                   "op": {
                     "text": "+",
                     "plus": true
                   },
-                  "right": 1
+                  "right": {
+                    "node": 1
+                  }
                 }
               }
             },
@@ -374,12 +412,16 @@
                     }
                   },
                   "node": {
-                    "left": "\"int \"",
+                    "left": {
+                      "node": "\"int \""
+                    },
                     "op": {
                       "text": "+",
                       "plus": true
                     },
-                    "right": "i"
+                    "right": {
+                      "node": "i"
+                    }
                   }
                 },
                 {
@@ -407,12 +449,16 @@
                     }
                   },
                   "node": {
-                    "left": "\"non-empty: \"",
+                    "left": {
+                      "node": "\"non-empty: \""
+                    },
                     "op": {
                       "text": "+",
                       "plus": true
                     },
-                    "right": "s"
+                    "right": {
+                      "node": "s"
+                    }
                   }
                 },
                 {
@@ -500,25 +546,39 @@
           "name": "Point",
           "node": {
             "condition": {
-              "left": {
-                "left": "x",
-                "op": {
-                  "text": "<",
-                  "less": true
+              "node": {
+                "left": {
+                  "node": {
+                    "left": {
+                      "node": "x"
+                    },
+                    "op": {
+                      "text": "<",
+                      "less": true
+                    },
+                    "right": {
+                      "node": 0
+                    }
+                  }
                 },
-                "right": 0
-              },
-              "op": {
-                "text": "||",
-                "or": true
-              },
-              "right": {
-                "left": "y",
                 "op": {
-                  "text": "<",
-                  "less": true
+                  "text": "||",
+                  "or": true
                 },
-                "right": 0
+                "right": {
+                  "node": {
+                    "left": {
+                      "node": "y"
+                    },
+                    "op": {
+                      "text": "<",
+                      "less": true
+                    },
+                    "right": {
+                      "node": 0
+                    }
+                  }
+                }
               }
             },
             "node": {
@@ -706,24 +766,32 @@
                 "operand": "k"
               },
               "condition": {
-                "left": "k",
+                "left": {
+                  "node": "k"
+                },
                 "op": {
                   "text": "<",
                   "less": true
                 },
-                "right": 3
+                "right": {
+                  "node": 3
+                }
               }
             }
           ],
           "assert": {
             "nodes": [
               {
-                "left": "n",
+                "left": {
+                  "node": "n"
+                },
                 "op": {
                   "text": ">=",
                   "greater_or_equal": true
                 },
-                "right": 0
+                "right": {
+                  "node": 0
+                }
               },
               "\"non-negative\""
             ]
@@ -732,12 +800,16 @@
             "name": "outer",
             "node": {
               "condition": {
-                "left": "i",
+                "left": {
+                  "node": "i"
+                },
                 "op": {
                   "text": "<",
                   "less": true
                 },
-                "right": 5
+                "right": {
+                  "node": 5
+                }
               },
               "nodes": [
                 {
@@ -758,23 +830,35 @@
                 [
                   {
                     "condition": {
-                      "left": "i",
-                      "op": {
-                        "text": "==",
-                        "equal": true
-                      },
-                      "right": 1
+                      "node": {
+                        "left": {
+                          "node": "i"
+                        },
+                        "op": {
+                          "text": "==",
+                          "equal": true
+                        },
+                        "right": {
+                          "node": 1
+                        }
+                      }
                     },
                     "name": "outer"
                   },
                   {
                     "condition": {
-                      "left": "i",
-                      "op": {
-                        "text": "==",
-                        "equal": true
-                      },
-                      "right": 3
+                      "node": {
+                        "left": {
+                          "node": "i"
+                        },
+                        "op": {
+                          "text": "==",
+                          "equal": true
+                        },
+                        "right": {
+                          "node": 3
+                        }
+                      }
                     },
                     "name": "outer"
                   }
@@ -796,12 +880,18 @@
             "nodes": [
               {
                 "condition": {
-                  "left": "s",
-                  "op": {
-                    "text": "==",
-                    "equal": true
-                  },
-                  "right": null
+                  "node": {
+                    "left": {
+                      "node": "s"
+                    },
+                    "op": {
+                      "text": "==",
+                      "equal": true
+                    },
+                    "right": {
+                      "node": null
+                    }
+                  }
                 },
                 "node": {
                   "type": "java.io.IOException"
@@ -814,7 +904,9 @@
                     "RuntimeException"
                   ]
                 },
-                "name": "e",
+                "as": {
+                  "node": "e"
+                },
                 "throw": {
                   "expression": {
                     "name": "e"

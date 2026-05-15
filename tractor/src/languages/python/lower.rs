@@ -741,11 +741,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let body = node.child_by_field_name("body");
             let alt = node.child_by_field_name("alternative");
             let targets = match left {
-                Some(l) => lower_assign_side(l, source),
+                Some(l) => lower_assign_side(l, source).into_iter().map(SyntaxTree::wrap_expression).collect(),
                 None => Vec::new(),
             };
             let iterables = match right {
-                Some(r) => lower_assign_side(r, source),
+                Some(r) => lower_assign_side(r, source).into_iter().map(SyntaxTree::wrap_expression).collect(),
                 None => Vec::new(),
             };
             let body = match body {
@@ -1469,7 +1469,7 @@ fn lower_python_except_clause(node: &RawNode, source: &str) -> SyntaxTree {
                 let kids: Vec<&RawNode> = c.named_children().collect();
                 if let Some(t) = kids.first() {
                     if type_target.is_none() {
-                        type_target = Some(Box::new(lower_node(*t, source)));
+                        type_target = Some(Box::new(lower_node(*t, source).wrap_type()));
                     }
                 }
                 if kids.len() >= 2 {
@@ -1478,12 +1478,12 @@ fn lower_python_except_clause(node: &RawNode, source: &str) -> SyntaxTree {
                         let n = last.named_children().next();
                         n.unwrap_or(last)
                     } else { last };
-                    binding = Some(Box::new(name_of(inner, source)));
+                    binding = Some(Box::new(name_of(inner, source).wrap_slot("as")));
                 }
             }
             _ if type_target.is_none() && body.is_none() => {
                 // First non-block, non-as_pattern child: the type.
-                type_target = Some(Box::new(lower_node(c, source)));
+                type_target = Some(Box::new(lower_node(c, source).wrap_type()));
             }
             _ => {}
         }

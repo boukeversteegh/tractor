@@ -141,12 +141,16 @@
                       {
                         "left": "@id",
                         "right": {
-                          "left": "id",
+                          "left": {
+                            "node": "id"
+                          },
                           "op": {
                             "text": "||",
                             "or": true
                           },
-                          "right": 0
+                          "right": {
+                            "node": 0
+                          }
                         }
                       }
                     ]
@@ -162,13 +166,15 @@
                   "body": {
                     "node": {
                       "left": {
-                        "access": true,
-                        "receiver": "other",
-                        "call": {
-                          "names": [
-                            "is_a?",
-                            "Base"
-                          ]
+                        "node": {
+                          "access": true,
+                          "receiver": "other",
+                          "call": {
+                            "names": [
+                              "is_a?",
+                              "Base"
+                            ]
+                          }
                         }
                       },
                       "op": {
@@ -176,18 +182,24 @@
                         "and": true
                       },
                       "right": {
-                        "left": {
-                          "access": true,
-                          "receiver": "other",
-                          "call": {
-                            "name": "name"
+                        "node": {
+                          "left": {
+                            "node": {
+                              "access": true,
+                              "receiver": "other",
+                              "call": {
+                                "name": "name"
+                              }
+                            }
+                          },
+                          "op": {
+                            "text": "==",
+                            "equal": true
+                          },
+                          "right": {
+                            "node": "@name"
                           }
-                        },
-                        "op": {
-                          "text": "==",
-                          "equal": true
-                        },
-                        "right": "@name"
+                        }
                       }
                     }
                   }
@@ -461,26 +473,30 @@
                   "body": {
                     "node": {
                       "left": {
-                        "access": true,
-                        "receiver": "items",
-                        "calls": [
-                          {
-                            "name": "each_with_index"
-                          },
-                          {
-                            "name": "map"
-                          }
-                        ]
+                        "node": {
+                          "access": true,
+                          "receiver": "items",
+                          "calls": [
+                            {
+                              "name": "each_with_index"
+                            },
+                            {
+                              "name": "map"
+                            }
+                          ]
+                        }
                       },
                       "op": {
                         "text": "+",
                         "plus": true
                       },
                       "right": {
-                        "access": true,
-                        "receiver": "meta",
-                        "call": {
-                          "name": "keys"
+                        "node": {
+                          "access": true,
+                          "receiver": "meta",
+                          "call": {
+                            "name": "keys"
+                          }
                         }
                       }
                     }
@@ -773,19 +789,23 @@
                     },
                     {
                       "left": {
-                        "op": {
-                          "text": "defined?",
-                          "defined": true
-                        },
-                        "operand": {
-                          "name": "items"
+                        "node": {
+                          "op": {
+                            "text": "defined?",
+                            "defined": true
+                          },
+                          "operand": {
+                            "name": "items"
+                          }
                         }
                       },
                       "op": {
                         "text": "&&",
                         "and": true
                       },
-                      "right": false
+                      "right": {
+                        "node": false
+                      }
                     }
                   ]
                 }
@@ -805,12 +825,16 @@
               ],
               "block": {
                 "node": {
-                  "left": "a",
+                  "left": {
+                    "node": "a"
+                  },
                   "op": {
                     "text": "+",
                     "plus": true
                   },
-                  "right": "b"
+                  "right": {
+                    "node": "b"
+                  }
                 }
               }
             }
@@ -826,12 +850,16 @@
                   }
                 ],
                 "node": {
-                  "left": "n",
+                  "left": {
+                    "node": "n"
+                  },
                   "op": {
                     "text": "*",
                     "multiply": true
                   },
-                  "right": 2
+                  "right": {
+                    "node": 2
+                  }
                 }
               }
             }
@@ -853,12 +881,16 @@
                   ]
                 },
                 "node": {
-                  "left": "n",
+                  "left": {
+                    "node": "n"
+                  },
                   "op": {
                     "text": "+",
                     "plus": true
                   },
-                  "right": 1
+                  "right": {
+                    "node": 1
+                  }
                 }
               }
             }
@@ -879,12 +911,16 @@
                   ]
                 },
                 "node": {
-                  "left": "n",
+                  "left": {
+                    "node": "n"
+                  },
                   "op": {
                     "text": "+",
                     "plus": true
                   },
-                  "right": 1
+                  "right": {
+                    "node": 1
+                  }
                 }
               }
             }
@@ -922,12 +958,16 @@
           {
             "left": "total",
             "right": {
-              "left": "total",
+              "left": {
+                "node": "total"
+              },
               "op": {
                 "text": "+",
                 "plus": true
               },
-              "right": 1
+              "right": {
+                "node": 1
+              }
             }
           },
           {
@@ -951,53 +991,69 @@
           },
           {
             "left": {
-              "left": "flag",
-              "right": true
+              "node": {
+                "left": "flag",
+                "right": true
+              }
             },
             "op": {
               "text": "and",
               "and": true
             },
-            "right": false
+            "right": {
+              "node": false
+            }
           },
           {
             "left": {
-              "left": "flag",
-              "right": true
+              "node": {
+                "left": "flag",
+                "right": true
+              }
             },
             "op": {
               "text": "or",
               "or": true
             },
-            "right": false
+            "right": {
+              "node": false
+            }
           },
           {
             "left": "flag",
             "right": {
               "left": {
-                "left": {
-                  "op": {
-                    "text": "not",
-                    "not": true
+                "node": {
+                  "left": {
+                    "node": {
+                      "op": {
+                        "text": "not",
+                        "not": true
+                      },
+                      "operand": "flag"
+                    }
                   },
-                  "operand": "flag"
-                },
-                "op": {
-                  "text": "&&",
-                  "and": true
-                },
-                "right": "flag"
+                  "op": {
+                    "text": "&&",
+                    "and": true
+                  },
+                  "right": {
+                    "node": "flag"
+                  }
+                }
               },
               "op": {
                 "text": "||",
                 "or": true
               },
               "right": {
-                "op": {
-                  "text": "!",
-                  "not": true
-                },
-                "operand": "flag"
+                "node": {
+                  "op": {
+                    "text": "!",
+                    "not": true
+                  },
+                  "operand": "flag"
+                }
               }
             }
           }
@@ -1006,12 +1062,16 @@
           "condition": {
             "expression": {
               "node": {
-                "left": "i",
+                "left": {
+                  "node": "i"
+                },
                 "op": {
                   "text": "<",
                   "less": true
                 },
-                "right": 3
+                "right": {
+                  "node": 3
+                }
               }
             }
           },
@@ -1026,12 +1086,16 @@
           "condition": {
             "expression": {
               "node": {
-                "left": "i",
+                "left": {
+                  "node": "i"
+                },
                 "op": {
                   "text": ">=",
                   "greater_or_equal": true
                 },
-                "right": 6
+                "right": {
+                  "node": 6
+                }
               }
             }
           },
@@ -1151,16 +1215,20 @@
                   },
                   "then": {
                     "node": {
-                      "left": "head",
+                      "left": {
+                        "node": "head"
+                      },
                       "op": {
                         "text": "+",
                         "plus": true
                       },
                       "right": {
-                        "access": true,
-                        "receiver": "tail",
-                        "call": {
-                          "name": "size"
+                        "node": {
+                          "access": true,
+                          "receiver": "tail",
+                          "call": {
+                            "name": "size"
+                          }
                         }
                       }
                     }
@@ -1179,12 +1247,16 @@
                   },
                   "unless": {
                     "node": {
-                      "left": "first",
+                      "left": {
+                        "node": "first"
+                      },
                       "op": {
                         "text": "==",
                         "equal": true
                       },
-                      "right": "last"
+                      "right": {
+                        "node": "last"
+                      }
                     }
                   },
                   "then": {

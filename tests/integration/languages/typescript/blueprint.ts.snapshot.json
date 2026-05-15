@@ -546,26 +546,30 @@
               "value": {
                 "node": {
                   "left": {
-                    "access": true,
-                    "receiver": {},
-                    "members": [
-                      {
-                        "name": "items"
-                      },
-                      {
-                        "optional": true,
-                        "name": "label"
+                    "node": {
+                      "access": true,
+                      "receiver": {},
+                      "members": [
+                        {
+                          "name": "items"
+                        },
+                        {
+                          "optional": true,
+                          "name": "label"
+                        }
+                      ],
+                      "index": {
+                        "number": {}
                       }
-                    ],
-                    "index": {
-                      "number": {}
                     }
                   },
                   "op": {
                     "text": "??",
                     "null_coalesce": true
                   },
-                  "right": "\"unnamed\""
+                  "right": {
+                    "node": "\"unnamed\""
+                  }
                 }
               }
             },
@@ -613,22 +617,26 @@
                 }
               },
               "condition": {
-                "left": "i",
+                "left": {
+                  "node": "i"
+                },
                 "op": {
                   "text": "<",
                   "less": true
                 },
                 "right": {
-                  "access": true,
-                  "receiver": {},
-                  "members": [
-                    {
-                      "name": "items"
-                    },
-                    {
-                      "name": "length"
-                    }
-                  ]
+                  "node": {
+                    "access": true,
+                    "receiver": {},
+                    "members": [
+                      {
+                        "name": "items"
+                      },
+                      {
+                        "name": "length"
+                      }
+                    ]
+                  }
                 }
               },
               "node": {
@@ -819,12 +827,18 @@
         "nodes": [
           {
             "condition": {
-              "left": "n",
-              "op": {
-                "text": "<",
-                "less": true
-              },
-              "right": {}
+              "node": {
+                "left": {
+                  "node": "n"
+                },
+                "op": {
+                  "text": "<",
+                  "less": true
+                },
+                "right": {
+                  "node": {}
+                }
+              }
             },
             "nodes": [
               {
@@ -833,12 +847,18 @@
               },
               {
                 "condition": {
-                  "left": "n",
-                  "op": {
-                    "text": "===",
-                    "equal": true
-                  },
-                  "right": {}
+                  "node": {
+                    "left": {
+                      "node": "n"
+                    },
+                    "op": {
+                      "text": "===",
+                      "equal": true
+                    },
+                    "right": {
+                      "node": {}
+                    }
+                  }
                 },
                 "nodes": [
                   {
@@ -847,12 +867,18 @@
                   },
                   {
                     "condition": {
-                      "left": "n",
-                      "op": {
-                        "text": "<",
-                        "less": true
-                      },
-                      "right": {}
+                      "node": {
+                        "left": {
+                          "node": "n"
+                        },
+                        "op": {
+                          "text": "<",
+                          "less": true
+                        },
+                        "right": {
+                          "node": {}
+                        }
+                      }
                     },
                     "nodes": [
                       {
@@ -872,21 +898,33 @@
             ]
           },
           {
-            "condition": false,
+            "condition": {
+              "node": false
+            },
             "comment": "/* never */"
           },
           {
             "expression": {
               "condition": {
-                "left": "n",
-                "op": {
-                  "text": ">",
-                  "greater": true
-                },
-                "right": {}
+                "node": {
+                  "left": {
+                    "node": "n"
+                  },
+                  "op": {
+                    "text": ">",
+                    "greater": true
+                  },
+                  "right": {
+                    "node": {}
+                  }
+                }
               },
-              "then": "status",
-              "else": "\"idle\""
+              "then": {
+                "node": "status"
+              },
+              "else": {
+                "node": "\"idle\""
+              }
             }
           }
         ],
@@ -993,31 +1031,45 @@
       "node": {
         "expression": {
           "left": {
-            "left": {
+            "node": {
               "left": {
-                "op": {
-                  "text": "typeof",
-                  "typeof": true
-                },
-                "operand": "v"
+                "node": {
+                  "left": {
+                    "node": {
+                      "op": {
+                        "text": "typeof",
+                        "typeof": true
+                      },
+                      "operand": "v"
+                    }
+                  },
+                  "op": {
+                    "text": "===",
+                    "equal": true
+                  },
+                  "right": {
+                    "node": "\"object\""
+                  }
+                }
               },
               "op": {
-                "text": "===",
-                "equal": true
+                "text": "&&",
+                "and": true
               },
-              "right": "\"object\""
-            },
-            "op": {
-              "text": "&&",
-              "and": true
-            },
-            "right": {
-              "left": "v",
-              "op": {
-                "text": "!==",
-                "not_equal": true
-              },
-              "right": null
+              "right": {
+                "node": {
+                  "left": {
+                    "node": "v"
+                  },
+                  "op": {
+                    "text": "!==",
+                    "not_equal": true
+                  },
+                  "right": {
+                    "node": null
+                  }
+                }
+              }
             }
           },
           "op": {
@@ -1025,12 +1077,18 @@
             "and": true
           },
           "right": {
-            "left": "\"id\"",
-            "op": {
-              "text": "in",
-              "in": true
-            },
-            "right": "v"
+            "node": {
+              "left": {
+                "node": "\"id\""
+              },
+              "op": {
+                "text": "in",
+                "in": true
+              },
+              "right": {
+                "node": "v"
+              }
+            }
           }
         }
       }
@@ -1146,12 +1204,16 @@
                 "interpolations": [
                   {
                     "node": {
-                      "left": "label",
+                      "left": {
+                        "node": "label"
+                      },
                       "op": {
                         "text": "??",
                         "null_coalesce": true
                       },
-                      "right": "\"world\""
+                      "right": {
+                        "node": "\"world\""
+                      }
                     }
                   },
                   {
@@ -1200,18 +1262,24 @@
       },
       "node": {
         "condition": {
-          "left": {
-            "op": {
-              "text": "typeof",
-              "typeof": true
+          "node": {
+            "left": {
+              "node": {
+                "op": {
+                  "text": "typeof",
+                  "typeof": true
+                },
+                "operand": "x"
+              }
             },
-            "operand": "x"
-          },
-          "op": {
-            "text": "!==",
-            "not_equal": true
-          },
-          "right": "\"number\""
+            "op": {
+              "text": "!==",
+              "not_equal": true
+            },
+            "right": {
+              "node": "\"number\""
+            }
+          }
         },
         "node": {
           "type": "Error",
@@ -1231,18 +1299,22 @@
       "node": {
         "expression": {
           "left": {
-            "access": true,
-            "receiver": "new.target",
-            "member": {
-              "optional": true,
-              "name": "name"
+            "node": {
+              "access": true,
+              "receiver": "new.target",
+              "member": {
+                "optional": true,
+                "name": "name"
+              }
             }
           },
           "op": {
             "text": "??",
             "null_coalesce": true
           },
-          "right": "\"\""
+          "right": {
+            "node": "\"\""
+          }
         }
       }
     },
@@ -1297,12 +1369,16 @@
             ]
           },
           "condition": {
-            "left": "i",
+            "left": {
+              "node": "i"
+            },
             "op": {
               "text": "<",
               "less": true
             },
-            "right": {}
+            "right": {
+              "node": {}
+            }
           },
           "nodes": [
             {
@@ -1324,23 +1400,35 @@
             [
               {
                 "condition": {
-                  "left": "i",
-                  "op": {
-                    "text": "===",
-                    "equal": true
-                  },
-                  "right": {}
+                  "node": {
+                    "left": {
+                      "node": "i"
+                    },
+                    "op": {
+                      "text": "===",
+                      "equal": true
+                    },
+                    "right": {
+                      "node": {}
+                    }
+                  }
                 },
                 "name": "outer"
               },
               {
                 "condition": {
-                  "left": "i",
-                  "op": {
-                    "text": "===",
-                    "equal": true
-                  },
-                  "right": {}
+                  "node": {
+                    "left": {
+                      "node": "i"
+                    },
+                    "op": {
+                      "text": "===",
+                      "equal": true
+                    },
+                    "right": {
+                      "node": {}
+                    }
+                  }
                 },
                 "name": "outer"
               },
@@ -1353,12 +1441,16 @@
                       "right": "i"
                     },
                     {
-                      "left": "total",
+                      "left": {
+                        "node": "total"
+                      },
                       "op": {
                         "text": "*",
                         "multiply": true
                       },
-                      "right": {}
+                      "right": {
+                        "node": {}
+                      }
                     }
                   ]
                 }
@@ -1378,25 +1470,35 @@
             "operand": "n"
           },
           "condition": {
-            "left": "n",
+            "left": {
+              "node": "n"
+            },
             "op": {
               "text": "<",
               "less": true
             },
-            "right": {}
+            "right": {
+              "node": {}
+            }
           }
         },
         {
-          "condition": false
+          "condition": {
+            "node": false
+          }
         },
         {
           "expression": {
-            "left": "total",
+            "left": {
+              "node": "total"
+            },
             "op": {
               "text": "+",
               "plus": true
             },
-            "right": "n"
+            "right": {
+              "node": "n"
+            }
           }
         }
       ]
@@ -1475,29 +1577,41 @@
       "node": {
         "expression": {
           "left": {
-            "left": {
-              "left": "aa",
+            "node": {
+              "left": {
+                "node": {
+                  "left": {
+                    "node": "aa"
+                  },
+                  "op": {
+                    "text": "+",
+                    "plus": true
+                  },
+                  "right": {
+                    "node": "bb"
+                  }
+                }
+              },
               "op": {
                 "text": "+",
                 "plus": true
               },
-              "right": "bb"
-            },
-            "op": {
-              "text": "+",
-              "plus": true
-            },
-            "right": "c"
+              "right": {
+                "node": "c"
+              }
+            }
           },
           "op": {
             "text": "+",
             "plus": true
           },
           "right": {
-            "access": true,
-            "receiver": "rest",
-            "member": {
-              "name": "length"
+            "node": {
+              "access": true,
+              "receiver": "rest",
+              "member": {
+                "name": "length"
+              }
             }
           }
         }
@@ -1555,30 +1669,42 @@
                       "expression": {
                         "node": {
                           "left": {
-                            "left": "acc",
-                            "op": {
-                              "text": "+",
-                              "plus": true
-                            },
-                            "right": "p"
+                            "node": {
+                              "left": {
+                                "node": "acc"
+                              },
+                              "op": {
+                                "text": "+",
+                                "plus": true
+                              },
+                              "right": {
+                                "node": "p"
+                              }
+                            }
                           },
                           "op": {
                             "text": "+",
                             "plus": true
                           },
                           "right": {
-                            "left": {
-                              "access": true,
-                              "receiver": "vals",
-                              "index": {
-                                "name": "i"
+                            "node": {
+                              "left": {
+                                "node": {
+                                  "access": true,
+                                  "receiver": "vals",
+                                  "index": {
+                                    "name": "i"
+                                  }
+                                }
+                              },
+                              "op": {
+                                "text": "??",
+                                "null_coalesce": true
+                              },
+                              "right": {
+                                "node": "\"\""
                               }
-                            },
-                            "op": {
-                              "text": "??",
-                              "null_coalesce": true
-                            },
-                            "right": "\"\""
+                            }
                           }
                         }
                       }
@@ -1663,12 +1789,16 @@
               "value": {
                 "expression": {
                   "node": {
-                    "left": "x",
+                    "left": {
+                      "node": "x"
+                    },
                     "op": {
                       "text": "*",
                       "multiply": true
                     },
-                    "right": {}
+                    "right": {
+                      "node": {}
+                    }
                   }
                 }
               }
@@ -1699,12 +1829,16 @@
           "body": {
             "node": {
               "expression": {
-                "left": "x",
+                "left": {
+                  "node": "x"
+                },
                 "op": {
                   "text": "*",
                   "multiply": true
                 },
-                "right": {}
+                "right": {
+                  "node": {}
+                }
               }
             }
           }
@@ -1731,12 +1865,16 @@
       "name": "fallback",
       "value": {
         "node": {
-          "left": "maybe",
+          "left": {
+            "node": "maybe"
+          },
           "op": {
             "text": "??",
             "null_coalesce": true
           },
-          "right": "\"default\""
+          "right": {
+            "node": "\"default\""
+          }
         }
       }
     },

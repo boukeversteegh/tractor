@@ -763,8 +763,8 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             match (left_node, right_node, body_node) {
                 (Some(l), Some(r), Some(b)) => SyntaxTree::Foreach {
                     type_ann: type_node.map(|t| Box::new(lower_node(t, source).wrap_type())),
-                    target: Box::new(lower_node(l, source)),
-                    iterable: Box::new(lower_node(r, source)),
+                    target: Box::new(lower_node(l, source).wrap_slot("left")),
+                    iterable: Box::new(lower_node(r, source).wrap_slot("right")),
                     body: Box::new(lower_csharp_consequence(b, source)),
                     range, span,
                 },
@@ -2532,17 +2532,17 @@ fn lower_csharp_catch_clause(node: &RawNode, source: &str) -> SyntaxTree {
                 let t = c.child_by_field_name("type");
                 let n = c.child_by_field_name("name");
                 if let Some(t) = t {
-                    type_target = Some(Box::new(lower_node(t, source)));
+                    type_target = Some(Box::new(lower_node(t, source).wrap_type()));
                 }
                 if let Some(n) = n {
-                    binding = Some(Box::new(name_of(n, source)));
+                    binding = Some(Box::new(name_of(n, source).wrap_slot("as")));
                 }
             }
             "catch_filter_clause" => {
                 // First named child is the filter expression.
                 let inner = c.named_children().next();
                 if let Some(i) = inner {
-                    filter = Some(Box::new(lower_node(i, source)));
+                    filter = Some(Box::new(lower_node(i, source).wrap_slot("filter")));
                 }
             }
             "block" if body.is_none() => {

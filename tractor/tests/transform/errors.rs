@@ -175,7 +175,7 @@ fn python() {
         &multi_xpath(r#"
             //try/except
                 [type/name='ValueError']
-                [as/name='err']
+                [as/expression/name='err']
         "#),
         1);
 

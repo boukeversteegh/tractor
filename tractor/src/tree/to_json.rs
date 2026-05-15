@@ -213,13 +213,9 @@ impl<'a> Renderer<'a> {
                 self.add_access_chain(shape, receiver, segments);
             }
             SyntaxTree::Binary { left, op_text, op_marker, right, .. } => {
-                // Lowering pre-wraps left / right in `<left>` / `<right>`
-                // slot SimpleStatements; the JSON view operates on the
-                // bare operand for ergonomic shape — unwrap past the
-                // slot + `<expression>` host.
-                shape.singleton("left", self.wrap_expression_host(left.unwrap_slot()));
+                shape.singleton("left", self.render(left, true));
                 shape.singleton("op", self.op_value(op_text, op_marker));
-                shape.singleton("right", self.wrap_expression_host(right.unwrap_slot()));
+                shape.singleton("right", self.render(right, true));
             }
             SyntaxTree::Unary { op_text, op_marker, operand, extra_markers, .. } => {
                 for m in extra_markers.iter() {
@@ -253,14 +249,14 @@ impl<'a> Renderer<'a> {
                 shape.singleton("right", self.wrap_expression_host(right));
             }
             SyntaxTree::If { condition, body, else_branch, .. } => {
-                shape.singleton("condition", self.wrap_expression_host(condition.unwrap_slot()));
+                shape.singleton("condition", self.render(condition, true));
                 shape.singleton("body", self.render(body, true));
                 if let Some(e) = else_branch {
                     self.add_else_chain(shape, e);
                 }
             }
             SyntaxTree::ElseIf { condition, body, else_branch, .. } => {
-                shape.singleton("condition", self.wrap_expression_host(condition.unwrap_slot()));
+                shape.singleton("condition", self.render(condition, true));
                 shape.singleton("body", self.render(body, true));
                 if let Some(e) = else_branch {
                     self.add_else_chain(shape, e);
@@ -274,15 +270,15 @@ impl<'a> Renderer<'a> {
                     shape.flag("async");
                 }
                 if targets.len() == 1 {
-                    shape.singleton("left", self.wrap_expression_host(&targets[0]));
+                    shape.singleton("left", self.render(&targets[0], true));
                 } else {
-                    let arr: Vec<Value> = targets.iter().map(|t| self.wrap_expression_host(t)).collect();
+                    let arr: Vec<Value> = targets.iter().map(|t| self.render(t, true)).collect();
                     shape.put("lefts", Value::Array(arr));
                 }
                 if iterables.len() == 1 {
-                    shape.singleton("right", self.wrap_expression_host(&iterables[0]));
+                    shape.singleton("right", self.render(&iterables[0], true));
                 } else {
-                    let arr: Vec<Value> = iterables.iter().map(|i| self.wrap_expression_host(i)).collect();
+                    let arr: Vec<Value> = iterables.iter().map(|i| self.render(i, true)).collect();
                     shape.put("rights", Value::Array(arr));
                 }
                 shape.singleton("body", self.render(body, true));
@@ -291,7 +287,7 @@ impl<'a> Renderer<'a> {
                 }
             }
             SyntaxTree::While { condition, body, else_body, .. } => {
-                shape.singleton("condition", self.wrap_expression_host(condition.unwrap_slot()));
+                shape.singleton("condition", self.render(condition, true));
                 shape.singleton("body", self.render(body, true));
                 if let Some(e) = else_body {
                     shape.singleton("else", self.render(e, true));
@@ -300,10 +296,10 @@ impl<'a> Renderer<'a> {
             SyntaxTree::Foreach { type_ann, target, iterable, body, .. } => {
                 shape.flag("in");
                 if let Some(t) = type_ann {
-                    shape.singleton("type", self.render_as_type(t));
+                    shape.singleton("type", self.render(t, true));
                 }
-                shape.singleton("left", self.wrap_expression_host(target));
-                shape.singleton("right", self.wrap_expression_host(iterable));
+                shape.singleton("left", self.render(target, true));
+                shape.singleton("right", self.render(iterable, true));
                 shape.singleton("body", self.render(body, true));
             }
             SyntaxTree::CFor { initializer, condition, updates, body, .. } => {
@@ -341,9 +337,9 @@ impl<'a> Renderer<'a> {
                 }
             }
             SyntaxTree::Ternary { condition, if_true, if_false, .. } => {
-                shape.singleton("condition", self.wrap_expression_host(condition.unwrap_slot()));
-                shape.singleton("then", self.wrap_expression_host(if_true.unwrap_slot()));
-                shape.singleton("else", self.wrap_expression_host(if_false.unwrap_slot()));
+                shape.singleton("condition", self.render(condition, true));
+                shape.singleton("then", self.render(if_true, true));
+                shape.singleton("else", self.render(if_false, true));
             }
             SyntaxTree::FieldWrap { inner, .. } => {
                 self.add_singleton_or_text(shape, inner);
@@ -369,13 +365,13 @@ impl<'a> Renderer<'a> {
             }
             SyntaxTree::ExceptHandler { type_target, binding, filter, body, .. } => {
                 if let Some(t) = type_target {
-                    shape.singleton("type", self.render_as_type(t));
+                    shape.singleton("type", self.render(t, true));
                 }
                 if let Some(b) = binding {
-                    self.add_singleton_or_text(shape, b);
+                    shape.singleton("as", self.render(b, true));
                 }
                 if let Some(f) = filter {
-                    shape.singleton("when", self.wrap_expression_host(f));
+                    shape.singleton("filter", self.render(f, true));
                 }
                 shape.singleton("body", self.render(body, true));
             }
