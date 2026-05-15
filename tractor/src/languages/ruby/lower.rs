@@ -804,7 +804,7 @@ fn lower_ruby_assignment(node: &RawNode, source: &str) -> SyntaxTree {
         op_text,
         op_range,
         op_markers: Vec::new(),
-        values: right.map(|n| vec![lower_node(n, source)]).unwrap_or_default(),
+        values: right.map(|n| vec![lower_node(n, source).wrap_expression()]).unwrap_or_default(),
         range,
         span,
     }
@@ -825,7 +825,7 @@ fn lower_ruby_operator_assignment(node: &RawNode, source: &str) -> SyntaxTree {
         op_text,
         op_range,
         op_markers: Vec::new(),
-        values: right.map(|n| vec![lower_node(n, source)]).unwrap_or_default(),
+        values: right.map(|n| vec![lower_node(n, source).wrap_expression()]).unwrap_or_default(),
         range,
         span,
     }

@@ -214,7 +214,7 @@ unit/
   │   │       │   ├─ parameter/
   │   │       │   │   ├─ type/name = "string"
   │   │       │   │   └─ name = "key"
-  │   │       │   └─ value/expression/object[access]/
+  │   │       │   └─ value/object[access]/
   │   │       │       ├─ name = "key"
   │   │       │       └─ member/name = "Length"
   │   │       ├─ event[public]/
@@ -417,7 +417,7 @@ unit/
   │               │   ├─ name = "token"
   │               │   └─ value/expression[non_null]/name = "widget"
   │               ├─ switch/
-  │               │   ├─ value/expression/name = "token"
+  │               │   ├─ value/name = "token"
   │               │   └─ body/
   │               │       ├─ arm/
   │               │       │   ├─ pattern[declaration]/
@@ -955,7 +955,7 @@ unit/
       │       │       │   ├─ parameter/
       │       │       │   │   ├─ type/name = "int"
       │       │       │   │   └─ name = "i"
-      │       │       │   └─ value/expression/name = "Value"
+      │       │       │   └─ value/name = "Value"
       │       │       ├─ destructor/
       │       │       │   ├─ name = "Container"
       │       │       │   └─ body/block/comment = "/* finalizer */"

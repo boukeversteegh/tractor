@@ -280,7 +280,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     op_text,
                     op_range,
                     op_markers,
-                    values: vec![r],
+                    values: vec![r.wrap_expression()],
                     range, span,
                 },
                 _ => SyntaxTree::Unknown {
@@ -951,7 +951,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 let vs = span_of(value);
                 children.push(SyntaxTree::FieldWrap {
                     wrapper: "value",
-                    inner: Box::new(lower_node(value, source)),
+                    inner: Box::new(lower_node(value, source).wrap_expression()),
                     range: vr, span: vs,
                 });
             }

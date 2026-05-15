@@ -788,7 +788,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     op_text,
                     op_range,
                     op_markers: Vec::new(),
-                    values: vec![lower_node(r, source)],
+                    values: vec![lower_node(r, source).wrap_expression()],
                     range,
                     span,
                 },

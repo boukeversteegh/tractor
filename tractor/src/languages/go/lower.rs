@@ -523,7 +523,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     op_text,
                     op_range,
                     op_markers: vec![op_marker_text],
-                    values: vec![lower_node(r, source)],
+                    values: vec![lower_node(r, source).wrap_expression()],
                     range, span,
                 },
                 _ => SyntaxTree::Unknown {

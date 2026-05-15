@@ -1019,7 +1019,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 op_range,
                 op_markers: Vec::new(),
                 values: match right {
-                    Some(n) => lower_assign_side(n, source),
+                    Some(n) => lower_assign_side(n, source).into_iter().map(SyntaxTree::wrap_expression).collect(),
                     None => vec![],
                 },
                 range,
@@ -1045,7 +1045,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 op_range,
                 op_markers,
                 values: match right {
-                    Some(n) => lower_assign_side(n, source),
+                    Some(n) => lower_assign_side(n, source).into_iter().map(SyntaxTree::wrap_expression).collect(),
                     None => vec![],
                 },
                 range,

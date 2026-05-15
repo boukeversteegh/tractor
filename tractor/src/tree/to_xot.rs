@@ -245,16 +245,9 @@ fn render_tree_assign(
         for v in values {
             let vr = v.range();
             emit_gap(xot, right_node, source, cursor, vr.start)?;
-            // Don't double-wrap when the value already
-            // produces an `<expression>` host (SyntaxTree::Expression
-            // / await / non-null markers).
-            if matches!(v, SyntaxTree::Expression { .. }) {
-                render_to_xot(xot, right_node, v, source)?;
-            } else {
-                let expr = element(xot, "expression", v.span());
-                xot.append(right_node, expr)?;
-                render_to_xot(xot, expr, v, source)?;
-            }
+            // Lowering wraps each value in `SyntaxTree::Expression`
+            // (P2). Renderer just renders what's there.
+            render_to_xot(xot, right_node, v, source)?;
             cursor = vr.end;
         }
         emit_gap(xot, right_node, source, cursor, rr.end)?;
@@ -669,16 +662,9 @@ fn render_tree_field_wrap(
     xot.append(parent, node)?;
     let ir_range = inner.range();
     emit_gap(xot, node, source, range.start, ir_range.start)?;
-    let target = if matches!(*wrapper, "value" | "condition")
-        && !matches!(inner.as_ref(), SyntaxTree::Expression { .. })
-    {
-        let expr = element(xot, "expression", *span);
-        xot.append(node, expr)?;
-        expr
-    } else {
-        node
-    };
-    render_to_xot(xot, target, inner, source)?;
+    // Lowering wraps value/condition inner in `SyntaxTree::Expression`
+    // (P2). Renderer renders the tree as-is — no conditional wrap.
+    render_to_xot(xot, node, inner, source)?;
     emit_gap(xot, node, source, ir_range.end, range.end)?;
     Ok(node)
 }

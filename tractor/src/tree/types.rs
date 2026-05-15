@@ -1622,6 +1622,25 @@ impl Expression {
 }
 
 impl SyntaxTree {
+    /// Wrap this tree in a `SyntaxTree::Expression` value-position host
+    /// (Principle #15). Idempotent — already-wrapped trees pass through
+    /// unchanged. Lowering sites call this so the renderer never has
+    /// to decide whether to insert `<expression>`; the tree shape is
+    /// final.
+    pub fn wrap_expression(self) -> SyntaxTree {
+        if matches!(self, SyntaxTree::Expression { .. }) {
+            return self;
+        }
+        let range = self.range();
+        let span = self.span();
+        SyntaxTree::Expression {
+            inner: Box::new(self),
+            marker: None,
+            range,
+            span,
+        }
+    }
+
     /// Source span of this node. Used for XML attribute emission.
     pub fn span(&self) -> Span {
         match self {
