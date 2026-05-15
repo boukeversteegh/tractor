@@ -1,6 +1,8 @@
 # Walker codegen — design
 
-**Status:** Sketch. The walker module exists (`tractor/src/tree/walker.rs`) with hand-written accessors for `SimpleStatement` + leaves. The next phase replaces those hand-written accessors with build-time codegen driven by `#[shape(...)]` attributes on the `SyntaxTree` enum.
+**Status:** In-progress hard switch. The hand-written walker is being deleted; the renderer drops to a no-op stub; build-time codegen driven by `#[shape(...)]` attributes on the `SyntaxTree` enum becomes the SOLE path. No gradual `WalkerEligibility` ramp.
+
+**Core principle:** the XML / JSON / YAML renderers MUST NOT change the tree structure. Any divergence between renderer output and expected shape is fixed by **changing the tree** at lowering, never by adding rules to the renderer or codegen. The codegen reads `#[shape(...)]` annotations mechanically; if a variant doesn't fit, the variant must change. The renderers are projections of the tree — not transformers of it. Source renderer (`tree::source`) is exempt because it reconstructs the original byte sequence.
 
 This document fixes the attribute DSL, the build pipeline, and the
 contract between hand-written lowering and generated projection.
@@ -218,38 +220,54 @@ mutation, not by projection).
 Use sparingly. If three variants need `custom`, the DSL is missing a
 feature — extend the DSL rather than proliferating custom escapes.
 
-## Migration order
+## Migration order (revised — hard switch)
 
-1. **Land the hand-written walker** (current state — `walker.rs` with
-   `element_name_of` / `flags_of` / `children_of` plus a `NeedsLegacy`
-   eligibility classifier). The accessor functions are real Rust today;
-   only the `SimpleStatement` + leaf arms are eligible.
+The earlier gradual ramp (one variant at a time, hand-written
+walker accessors, eligibility classifier) **kept allowing semantic
+leaks** — special cases for List / Set / Dictionary's `[literal]`
+marker, slot-unwrapping in JSON projections, etc. Every gradual
+step gave a new place for "just this one variant" rules to slip
+in. The revised plan removes the temptation by deleting the
+gradual path:
 
-2. **Migrate variants to the walker one-by-one.** For each variant:
-   - Move its renderer-side wrapper synthesis into lowering (the
-     Assign / Class.bases work — steps 2 and 3 of the unified
-     renderer plan).
-   - Flip its `walker_eligibility` arm from `NeedsLegacy` to
-     `Eligible`.
-   - Add hand-written accessor arms in `walker.rs`.
-   - Run snapshot parity; commit.
+1. **Strip the renderer to nothing.** `render_to_xot` becomes a
+   no-op stub (emits a placeholder root or nothing). Delete every
+   `render_tree_*` function. Delete `walker.rs`. The code compiles
+   but most snapshots / tests break — that's expected. There is
+   no per-variant rendering knowledge left in the codebase.
 
-3. **Once every variant is `Eligible`**, retire the per-variant
-   `render_tree_*` functions in `to_xot.rs`. The walker is the only
-   path.
+2. **Annotate the enum.** Add `#[shape(...)]` attributes to every
+   `SyntaxTree` variant per the DSL above.
 
-4. **Then introduce the codegen.** Add `#[shape(...)]` attributes to
-   each variant; replace the hand-written accessors in `walker.rs`
-   with `walker_generated.rs` produced by `build.rs`. The accessors'
-   API stays identical; only their authorship changes.
+3. **Build the codegen.** `tractor/src/bin/gen_walker.rs` parses
+   `tree/types.rs` with `syn`, reads the annotations, and emits
+   `tree/render_generated.rs` containing the three accessors and a
+   `render_generic` function. Add `task gen:render-xml` + a CI
+   `--check` gate that fails if the committed generated file is
+   stale.
 
-5. **Extend codegen to drive `to_data` and `to_json`.** Same
-   attributes, two more generated files. Three projections from one
-   declaration.
+4. **Wire the generated renderer in.** `render_to_xot` delegates
+   directly to `render_generic`. No fallback. No legacy. Every
+   variant renders through one mechanical path.
 
-The codegen is the *last* step — it formalises a pattern we've
-already validated against the hand-written walker. Doing it first
-would have us iterating the DSL while still discovering edge cases.
+5. **Iterate at the tree.** Diff the generated output against the
+   pre-strip snapshots. For every difference, the fix is at the
+   *lowering* / *tree-structure* side: add a marker child, lift a
+   slot wrapper into the tree, replace a `bool` field with a `Flag`
+   on a sub-variant. The codegen and the walker do not change;
+   adding rules to either re-introduces the leak.
+
+6. **Extend codegen to `to_json` / `to_data`.** Same `#[shape(...)]`
+   attributes drive two more generated files. Per-variant code in
+   `to_json.rs` / `to_data.rs` retires.
+
+Past commits (`6ee9376f` / `3e8cd31f` / `e4e0e64c` / `67e395bd` /
+`a6fee7a0` / `8837b64b`) lifted many slot wrappers / Expression
+hosts into the tree at lowering — that groundwork is good (tree-
+side, the right direction). The leak crept in only when
+projections started peeling those wrappers back, and when the
+walker grew per-variant marker rules. Step 1 (stripping the
+renderer) removes the surface for either kind of leak.
 
 ## Open questions
 

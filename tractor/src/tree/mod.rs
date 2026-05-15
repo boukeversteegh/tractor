@@ -77,8 +77,6 @@ pub mod types;
 // - `to_json` : `serde_json::Value` (skips Xot for tree-direct JSON).
 // - `source/` : original byte-anchored or canonical source text.
 pub mod to_xot;
-#[cfg(feature = "native")]
-pub mod walker;
 pub mod to_json;
 // Data-language tree — a separate, simpler typed shape for JSON /
 // YAML / TOML / INI / .env / Markdown. Format-agnostic: a single
