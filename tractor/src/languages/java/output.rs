@@ -49,6 +49,10 @@ pub enum TractorNode {
     Trailing, Leading,
     // Access modifiers (markers only)
     Public, Private, Protected,
+    // Field wrapper on `<catch>` for the binding name (Java's
+    // `catch (E e)` → `<as>e</as>`). Unified shape with Python's
+    // `except E as e:`.
+    As,
     // Other modifiers (markers only — Synchronized dual-use: marker on method + container for stmt)
     Static, Final, Abstract, Synchronized, Volatile, Transient, Native, Strictfp,
     // Special markers (This dual-use; Array dual-use; Class dual-use for class_literal)

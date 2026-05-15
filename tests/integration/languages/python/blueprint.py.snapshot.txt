@@ -361,18 +361,17 @@ module/
   │       ├─ try/
   │       │   ├─ body/expression/call/name = "risky"
   │       │   ├─ except/
-  │       │   │   ├─ value/expression/as/
-  │       │   │   │   ├─ tuple/
-  │       │   │   │   │   ├─ name = "ValueError"
-  │       │   │   │   │   └─ name = "TypeError"
-  │       │   │   │   └─ name = "e"
+  │       │   │   ├─ type/tuple/
+  │       │   │   │   ├─ name = "ValueError"
+  │       │   │   │   └─ name = "TypeError"
+  │       │   │   ├─ as/name = "e"
   │       │   │   └─ body/raise/
   │       │   │       ├─ expression/call/
   │       │   │       │   ├─ name = "RuntimeError"
   │       │   │       │   └─ string = "\"bad\""
   │       │   │       └─ name = "e"
   │       │   ├─ except/
-  │       │   │   ├─ value/expression/name = "Exception"
+  │       │   │   ├─ type/name = "Exception"
   │       │   │   └─ body[pass] = "pass"
   │       │   ├─ else/body/assign/
   │       │   │   ├─ left/expression/name = "total"
@@ -712,7 +711,7 @@ module/
           │   │       ├─ name = "list"
           │   │       └─ name = "items"
           │   └─ except/
-          │       ├─ value/expression/tuple/
+          │       ├─ type/tuple/
           │       │   ├─ name = "ValueError"
           │       │   └─ name = "TypeError"
           │       └─ body/assign/

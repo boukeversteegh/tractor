@@ -77,6 +77,9 @@ pub enum TractorNode {
     Anonymous, Stackalloc,
     // Access modifiers (markers only)
     Public, Private, Protected, Internal,
+    // Field wrapper on `<catch>` for the binding name (`catch (E e)`
+    // → `<as>e</as>`). Unified shape with Python's `except E as e:`.
+    As,
     // Other modifiers (markers only); CONST is dual-use container/marker.
     Static, Abstract, Virtual, Override, Sealed, Readonly, Const, Partial, Async, Extern, Unsafe, This,
     // Parameter passing modifiers (markers only) — `void f(out int x)` etc.

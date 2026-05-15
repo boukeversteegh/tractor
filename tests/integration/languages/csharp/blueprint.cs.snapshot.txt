@@ -629,7 +629,7 @@ unit/
   │               │   │       └─ string = "\"boom\""
   │               │   ├─ catch/
   │               │   │   ├─ type/name = "InvalidOperationException"
-  │               │   │   ├─ name = "ex"
+  │               │   │   ├─ as/name = "ex"
   │               │   │   ├─ filter/expression/binary/
   │               │   │   │   ├─ left/expression/object[access]/
   │               │   │   │   │   ├─ name = "ex"

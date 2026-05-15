@@ -173,18 +173,18 @@ fn python() {
     claim("Python except with `as` binding exposes both the type and the binding name",
         &mut tree,
         &multi_xpath(r#"
-            //try/except/value/expression/as
-                [name='ValueError']
-                [name='err']
+            //try/except
+                [type/name='ValueError']
+                [as/name='err']
         "#),
         1);
 
-    claim("Python type-only except has the bare type as value with no binding",
+    claim("Python type-only except has the bare type with no binding",
         &mut tree,
         &multi_xpath(r#"
             //try/except
-                [value/expression/name='Exception']
-                [not(value/expression/as)]
+                [type/name='Exception']
+                [not(as)]
         "#),
         1);
 
