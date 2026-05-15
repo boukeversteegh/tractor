@@ -1641,6 +1641,34 @@ impl SyntaxTree {
         }
     }
 
+    /// Wrap this tree in a `<type>` host using
+    /// [`SyntaxTree::SimpleStatement`]. Idempotent — already-typed
+    /// shapes (`GenericType`, `SimpleStatement{element_name: "type"}`,
+    /// `FieldWrap{wrapper: "type"}`) pass through unchanged. Lowering
+    /// calls this at type-position slots so the renderer never has to
+    /// decide whether to insert `<type>`.
+    pub fn wrap_type(self) -> SyntaxTree {
+        let already_typed = matches!(
+            &self,
+            SyntaxTree::GenericType { .. }
+                | SyntaxTree::SimpleStatement { element_name: "type", .. }
+                | SyntaxTree::FieldWrap { wrapper: "type", .. }
+        );
+        if already_typed {
+            return self;
+        }
+        let range = self.range();
+        let span = self.span();
+        SyntaxTree::SimpleStatement {
+            element_name: "type",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![self],
+            range,
+            span,
+        }
+    }
+
     /// Source span of this node. Used for XML attribute emission.
     pub fn span(&self) -> Span {
         match self {
