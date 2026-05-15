@@ -58,6 +58,26 @@ The tree path renders to xot, **serialises the xot to a string, and re-parses it
 
 The tree design itself (typed slots, byte-range anchoring, `Inline`/`Unknown` escape hatches, coverage audit) is sound — none of these slices refactor it. The three tree families staying separate as types is also fine; the cost only goes away if dispatch + projection + rendering stop being copy-pasted three ways (S2 + S5).
 
+## Next up (post-S6B-Retire)
+
+With the imperative pipeline retired and the typed pipeline serving every parse on every target, the next slices fall into a clear sequence. Open slices doable now are marked 1️⃣ … 🔟 on their headers below; ones not numbered are either closed, blocked, or explicitly deferred.
+
+1. **1️⃣ S9** — Retire the legacy parse API (`parse_string_to_xot`, …). Small, mechanical, reduces public surface confusion before any other refactor touches the parse entry points.
+2. **2️⃣ S16** — Address the 11 pre-existing snapshot regressions. They block `task test:snapshots:check` from going green, which makes every subsequent refactor harder to validate.
+3. **3️⃣ S5B/S5D/S5E** — Delete `tree::to_json` (~1000 LOC of heuristics). S5A-Z7 already proved the typed `data_to_json` path is exhaustive; this is the cleanup.
+4. **4️⃣ S7** — Drop the xot serialise / xee reparse "v1 stepping stone". Real per-parse latency win, cleanly bounded to `parser/mod.rs`.
+5. **5️⃣ S8** — Split `XmlNode` markup from `XpathValue` atomic data. Cleaner renderer signatures; downstream simplification for any future `Tree` work.
+6. **6️⃣ S11** — Drop accidental wrappers / normalize field names. Big structural payoff but needs the simpler JSON path (S5B/D/E) and `XmlNode` split (S8) to land first so the per-Z changes don't fight legacy projection logic.
+7. **7️⃣ S15-Z4** — `replace <xpath> <xml-literal>` CLI verb. Completes editable trees on top of the typed-mutation pipeline already shipped in S15-Z1..Z3.
+8. **8️⃣ S13-Z5b/Z6b** — Full gap engine in the unified renderer. Pending pair; only matters once a use case demands synthetic-region formatting parity with anchored regions.
+9. **9️⃣ S12-Z12..Z18 + S3E + C1 + C2 + C4 + C5** — Mechanical mop-up: internal `_ir` renames, typed shape contracts, dead `field_wrappings`, the `TractorNode`-vs-variant decision, retired `xml_node_to_json` fallthrough, registry consolidation.
+🔟 **🔟 S10F + S10H** — Directory consolidation tail (rename `output.rs → vocabulary.rs`; decide `transform/` fate). Defer until the surface is otherwise stable; depends on C2 + the `transform/` survivors actually settling.
+
+Slices not numbered:
+- **S3E**: small follow-up tied to the C2 decision; bundled under 9️⃣.
+- **S13-Z6b / S14-Z4 / S14-Z5**: open subtasks/decisions inside otherwise-closed slices; numbered above where active.
+- **S15-Z5 / S15-SqlTier2**: explicitly deferred until a use case demands them.
+
 ---
 
 ## S1 — tree module documentation reflects production reality ✅
@@ -187,7 +207,7 @@ The slice closes when both halves leave nothing standing — no per-language `po
 
 - [x] [S4A] **`tractor render` reads source, parses to tree, and emits via `tree::source::render(tree, lang, anchor)`.** Done — `cli/render.rs` dispatches by tree family; anchored mode byte-identical; non-tree languages return a clear error.
 
-- [ ] [S4B] **`mutation/xpath_upsert.rs` value-rewrite uses anchored tree re-render with span tracking, not `render_with_spans(xml_node, lang, TreeMode::Data, …)`.**
+- [x] [S4B] **`mutation/xpath_upsert.rs` value-rewrite uses anchored tree re-render with span tracking, not `render_with_spans(xml_node, lang, TreeMode::Data, …)`.** All Z1..Z5 done (data languages via S4B-Z1..Z3; SyntaxTree-pipeline languages via S15-Z3); the legacy XmlNode-based renderer was deleted entirely in S4D.
   - Today: `mutation/xpath_upsert.rs` calls `render::render_with_spans` 9× over a `XmlNode` derived from xot. Works today because of transitional shims in `render::json`/`render::yaml` (`is_property_element` accepts `field`/`list` or `name != "item"`; `property_key` priority adds `list`).
   - After: mutation finds the matched tree node by byte position, mutates `SyntaxTree`/`DataTree` directly, re-renders the modified subtree via an tree-aware span-tracking renderer, splices into original source.
   - Decomposes into:
@@ -203,7 +223,7 @@ The slice closes when both halves leave nothing standing — no per-language `po
 
 ---
 
-## S6 — WASM uses the unified parse (kills W5)
+## S6 — WASM uses the unified parse (kills W5) ✅
 
 **Goal.** The web playground and the CLI produce *byte-identical* semantic XML for the same source on every migrated language. WASM runs the typed-tree pipeline (lower → SyntaxTree → render_to_xot), not `XotBuilder` + `walk_transform`. The imperative transform machinery retires once unused.
 
@@ -305,7 +325,7 @@ WASM-side data-language parsing routes through the typed pipeline: `tree::data`,
 
 ---
 
-## S7 — Drop xot serialise/reparse (kills the "v1 stepping stone" tax)
+## 4️⃣ S7 — Drop xot serialise/reparse (kills the "v1 stepping stone" tax)
 
 **Goal.** The tree pipeline constructs xee `Documents` directly from xot, with no intermediate XML serialisation + reparse step.
 
@@ -335,7 +355,7 @@ WASM-side data-language parsing routes through the typed pipeline: `tree::data`,
 
 ---
 
-## S8 — Split `XmlNode` from XPath atomic data (kills W7)
+## 5️⃣ S8 — Split `XmlNode` from XPath atomic data (kills W7)
 
 **Goal.** `XmlNode` represents XML markup only (Element / Text / Comment / PI). XPath atomic and structured values (Map / Array / Number / Boolean / Null) live in a separate `XpathValue` type. Renderers no longer pattern-match across two abstractions in one enum.
 
@@ -364,7 +384,7 @@ WASM-side data-language parsing routes through the typed pipeline: `tree::data`,
 
 ---
 
-## S9 — Retire the old parse API surface (kills W10)
+## 1️⃣ S9 — Retire the old parse API surface (kills W10)
 
 **Goal.** The library exposes one parse function: `parse(ParseInput, ParseOptions)`. The legacy multi-function API is gone.
 
@@ -395,7 +415,7 @@ WASM-side data-language parsing routes through the typed pipeline: `tree::data`,
 
 ---
 
-## S10 — Per-language directory consolidation
+## 🔟 S10 — Per-language directory consolidation
 
 **Goal.** All language-specific code for one language lives in one directory: `languages/<lang>/` carries the kinds, vocabulary, lowering, and canonical-source emitter. The shared tree machinery is small and clearly demarcated under `tree/`.
 
@@ -460,7 +480,7 @@ The shared tree machinery — `tree/types.rs` (the unified `SyntaxTree` enum), `
 
 ---
 
-## S11 — tree-as-data-shape: drop accidental wrappers, normalize fields (kills the `to_data.rs` boilerplate at the source)
+## 6️⃣ S11 — tree-as-data-shape: drop accidental wrappers, normalize fields (kills the `to_data.rs` boilerplate at the source)
 
 **Goal.** The `SyntaxTree` variants ARE the data shape. Reading `SyntaxTree::If` tells you exactly what the JSON output looks like. Wrappers exist only when the data view needs them; XML-only structural wrappers (`<body>`, `<expression>`, `<decorator>`) get inserted at xot-render time, not stored in tree. Field names match output keys. Boolean fields become marker arrays. Operator text+marker collapses to enum.
 
@@ -543,7 +563,7 @@ Listed roughly by blast radius (smaller first). Each Z step:
 
 ---
 
-## S13 — Unified source renderer (one path, three input sources)
+## 8️⃣ S13 — Unified source renderer (one path, three input sources)
 
 **Goal.** One `render(tree, lang, source: Option<&str>)` function. The renderer assembles output text from three sources: language keywords and structural punctuation driven by the tree's node type and the per-language Syntax config; literal text stored on scalar tree nodes; and gaps/whitespace sliced from source where anchored byte ranges exist, defaulted per language otherwise. Today's "anchored mode vs canonical mode" distinction disappears — there is one rendering path, with a graceful fallback for the third source.
 
@@ -650,7 +670,7 @@ The original S13 entry called out `DataTree` as out-of-scope ("revisit unifying 
 
 ---
 
-## S15 — Editable trees: NodeId-based mutation pipeline
+## 7️⃣ S15 — Editable trees: NodeId-based mutation pipeline
 
 **Goal.** `tractor set` (and future mutation verbs) flow through the typed tree, not byte-splicing on source. Address by XPath against the xot projection; the matched xot element carries an `@id` that resolves to the typed-tree node via a stable per-node `NodeId`; mutation happens on the typed tree; render via the unified renderer (S13) reproduces source. Same pipeline for SyntaxTree, DataTree, SqlTree.
 
@@ -686,7 +706,7 @@ The original S13 entry called out `DataTree` as out-of-scope ("revisit unifying 
 
 ---
 
-## S5 — Single JSON projection: `SyntaxTree → DataTree → JSON` (kills part of W1)
+## 3️⃣ S5 — Single JSON projection: `SyntaxTree → DataTree → JSON` (kills part of W1)
 
 **Goal.** One JSON projection algorithm for all three tree families. The principled `data_to_json` (typed `DataTree` reader) is the only path; the heuristic blocks in `tree_to_json` are gone.
 
@@ -738,7 +758,7 @@ The original S13 entry called out `DataTree` as out-of-scope ("revisit unifying 
 
 ---
 
-## S16 — Typed-tree migration: known shape regressions
+## 2️⃣ S16 — Typed-tree migration: known shape regressions
 
 **Goal.** Restore semantic-shape information that the typed-tree migration accidentally flattened. The typed catalogue (`SyntaxTree::{Name, String, Int, ...}`) is generic by design; per-language semantic wrappers and markers that the imperative pipeline minted didn't all carry over. Each item below is a concrete diff between current output and the committed snapshot (pre-typed-migration imperative output) — surfaced 2026-05-14 during a snapshot regen audit.
 
@@ -772,7 +792,7 @@ The original S13 entry called out `DataTree` as out-of-scope ("revisit unifying 
 
 ---
 
-## S12 — Drop the IR vocabulary entirely; per-domain tree types (`SyntaxTree` / `DataTree` / `SqlTree` / `DocumentTree`)
+## 9️⃣ S12 — Drop the IR vocabulary entirely; per-domain tree types (`SyntaxTree` / `DataTree` / `SqlTree` / `DocumentTree`)
 
 **Status: structural rename shipped 2026-05-12 (commits `0e08dffd` … `28dac866`); residual mop-up open per 2026-05-14 audit.** The eleven original Z-steps (type renames `Ir/DataIr/SqlIr → SyntaxTree/DataTree/SqlTree`, module `crate::ir → crate::tree`, `IrFamily → TreeKind`, spec dir `semantic-tree/ → tree/`, living-doc scrub, TODO.md scrub) all landed and are no longer enumerated here — see the git log for those commits. A subsequent audit (below) found that the rename sweep stopped at type names and missed a substantial tail of internal function names, ~150 local-variable bindings, 11 test files, and stale `src/ir/` path references in two design docs.
 
@@ -820,8 +840,7 @@ Each is one closeable invariant. No full slice header — too small to warrant o
 - [ ] [C2] **One source of truth for emitted element names: either `SyntaxTree` variants alone (per-language `TractorNode` enums deleted), or `TractorNode` generated from `SyntaxTree`.**
   - Decision point. The choice cascades into S10F and the shape-contract walks in S3E.
 
-- [ ] [C3] **`transform::builder::XotBuilder` does not exist.**
-  - Depends on S6 (WASM moved off it) and S2 (legacy languages routed through `XeeBuilder` only).
+- [x] [C3] **`transform::builder::XotBuilder` does not exist.** Done — closed by S6B-Retire (2026-05-15). `tractor/src/transform/builder.rs` deleted entirely; both `XotBuilder` and `XeeBuilder` gone. Native parser and WASM both route every parse through the typed pipeline (`lower → render_to_xot`), with `lower_raw_passthrough_all` covering `TreeMode::Raw`.
 
 - [ ] [C4] **`output::xml_node_to_json` is reachable only by genuine XPath partial matches; the legacy tree/DataTree fallthrough is gone.**
   - Depends on S5 + S8.
