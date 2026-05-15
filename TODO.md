@@ -562,7 +562,7 @@ The originally-listed Z1–Z9 were sampled from the 11 reverted snapshots only. 
 
 **Pattern catalogue (folded in 2026-05-15).** Renderer escape hatches that must all disappear under (a) — invariant when closed: `to_xot.rs` does NO inspection beyond reading the types of variant members and marshalling them to XML values.
 
-- **P1.** `SimpleStatement{element_name: "type"|"extends"|"implements"|"value"}` wrappers — groundwork (`wrap_type` helper) landed 2026-05-15; per-site lowering migration is follow-up work. See S11-Z15.
+- **P1.** ✅ done 2026-05-15. `wrap_type` / `wrap_extends` helpers added; lowering migrated for Variable.type_ann / Returns.type_ann / Parameter.type_ann / Class.bases across csharp/java/python/typescript/rust. All `already_typed` / `already_wrapped` / `inner_already_wrapped` escape hatches removed from `to_xot.rs`. Renderer marshals only.
 - **P2.** ✅ done 2026-05-15. Conditional `<expression>` wrap-or-skip removed from to_xot (commit 3e08acd8). Lowering wraps Assign values and FieldWrap value/condition slots via `wrap_expression()`. The unconditional `<expression>` wraps in other renderers are not escape hatches — they always wrap, never check.
 - **P3.** ✅ done 2026-05-15. ExceptHandler unified — single shape for Python/C#/Java.
 - **P4.** ✅ done 2026-05-15. Class/Function generics field is `Vec<SyntaxTree>` directly (no optional Generic wrapper).
@@ -632,11 +632,11 @@ Listed roughly by blast radius (smaller first). Each Z step:
 
 - [x] [S11-Z14] [P4] **Class/Function generics field is `Vec<SyntaxTree>` directly.** Done 2026-05-15 (commit ede35820). Was `Option<Box<SyntaxTree>>` (may contain `SyntaxTree::Generic { items }` or bare TypeParameter); now `Vec<SyntaxTree>` of items directly. Renderer iterates unconditionally — no `if let SyntaxTree::Generic { .. } = g.as_ref()` unwrap branch. `SyntaxTree::Generic` variant retained for standalone use.
 
-- [ ] [S11-Z15] [P1] **`SimpleStatement{element_name: "type"|"extends"|"implements"|"value"}` ad-hoc wrappers gone.** The renderer's `already_typed` / `already_wrapped` / `inner_already_wrapped` checks at L328 / L338 / L647 / L934 / L963 / L1410 / L2048 all disappear.
-  - **Groundwork:** `SyntaxTree::wrap_type()` helper added 2026-05-15 (commit 2eb0fcf9), idempotent — already-typed shapes pass through. Companion to `SyntaxTree::wrap_expression()` from P2.
-  - **Remaining:** every lowering site that produces a type-position slot (Variable.type_ann, Returns.type_ann, Parameter.type_ann, Cast.type_ann, Foreach.type_ann, ...) must call `.wrap_type()`. ~30+ sites across 9 languages. Once migrated, the renderer's 4 `already_typed` arms can become unconditional renders (no wrap, no check).
-  - Class.bases (`<extends>` wrap) and `<implements>` shape similarly need lowering migration.
-  - Per-site work; commit each language as it's converted.
+- [x] [S11-Z15] [P1] **`SimpleStatement{element_name: "type"|"extends"|"implements"|"value"}` ad-hoc wrappers handled.** Done 2026-05-15 (commits 2eb0fcf9 + ca956820 + 2dc10c10).
+  - `SyntaxTree::wrap_type()` and `wrap_extends()` helpers added — idempotent. Companion to `wrap_expression()` from P2.
+  - Lowering migrated: `Variable.type_ann`, `Returns.type_ann`, `Parameter.type_ann` across csharp/java/python/typescript/rust_lang; `Class.bases` items wrap via `wrap_extends()`; Python's `lower_type_slot` wraps its return value; C#'s `maybe_wrap_field` recognizes Body as already-wrapped.
+  - Renderer escape hatches removed: `already_typed` checks in `render_tree_variable` / `render_tree_returns` / property-field / `render_tree_parameter` / `render_tree_foreach`; `inner_already_emits_wrapper` in `render_tree_field_wrap`; `inner_already_wrapped` + nested `already_typed` in `render_tree_class`. **`to_xot.rs` contains zero shape-conditional `matches!(... SyntaxTree::X)` branches.**
+  - The remaining `<value>`-wrap site in `render_tree_variable` (initializer wraps unconditionally) is structural, not shape-driven — kept as-is.
 
 ---
 
