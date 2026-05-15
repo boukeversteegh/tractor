@@ -27,7 +27,9 @@
 /// snake_case-of-variant-tag rendering doesn't match the language's
 /// existing vocabulary.
 ///
-/// Format: `(language, variant_tag, native_name)`.
+/// Format: `(language, variant_tag, native_name)`. Looked up first;
+/// falls through to [`UNIVERSAL_OVERRIDES`] if no language-specific
+/// entry matches.
 const OVERRIDES: &[(&str, &str, &str)] = &[
     // Root-document naming restored after the C8 Module unification.
     ("csharp", "module", "unit"),
@@ -40,14 +42,34 @@ const OVERRIDES: &[(&str, &str, &str)] = &[
     // Future: ("python", "namespace", "package"), etc.
 ];
 
+/// Universal element-name renames applied regardless of language.
+/// Used for variant tags whose snake_case Rust form differs from
+/// the user-facing vocabulary every language shares for that concept.
+///
+/// Format: `(variant_tag, display_name)`. Applied after the
+/// per-language lookup misses.
+const UNIVERSAL_OVERRIDES: &[(&str, &str)] = &[
+    // EnumMember renders as <constant> universally: every code
+    // language calls these "constants" / "members" rather than
+    // "enum_member" in user-facing tools.
+    ("enum_member", "constant"),
+];
+
 /// Resolve the user-facing element name for `variant_tag` in the
-/// context of `lang`. With `None`, returns the variant tag verbatim
-/// (universal mode).
+/// context of `lang`. With `None`, the per-language layer is skipped
+/// but the universal overrides still apply (so JSON round-trips and
+/// XPath share the same vocabulary as XML).
 pub fn element_name_for_lang<'a>(variant_tag: &'a str, lang: Option<&str>) -> &'a str {
-    let Some(lang) = lang else { return variant_tag };
-    for (l, tag, native) in OVERRIDES {
-        if *l == lang && *tag == variant_tag {
-            return *native;
+    if let Some(lang) = lang {
+        for (l, tag, native) in OVERRIDES {
+            if *l == lang && *tag == variant_tag {
+                return *native;
+            }
+        }
+    }
+    for (tag, display) in UNIVERSAL_OVERRIDES {
+        if *tag == variant_tag {
+            return *display;
         }
     }
     variant_tag
