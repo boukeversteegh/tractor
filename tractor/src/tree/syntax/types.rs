@@ -664,6 +664,8 @@ pub enum SyntaxTree {
     /// field has a wrapping in the language's table, lower it as
     /// `SyntaxTree::FieldWrap { wrapper: "type", inner: ... }` so the
     /// rendered XML is `<type>{inner rendering}</type>`.
+    ///
+    /// @element_name = element_name_for_field_wrap
     FieldWrap {
         wrapper: &'static str,
         inner: Box<SyntaxTree>,
@@ -685,6 +687,8 @@ pub enum SyntaxTree {
     /// variants with proper field labels — but for parity-first
     /// rollout, this gets the element name right without designing
     /// each one upfront.
+    ///
+    /// @element_name = element_name_for_simple_statement
     SimpleStatement {
         element_name: &'static str,
         modifiers: Modifiers,
@@ -1166,6 +1170,8 @@ pub enum SyntaxTree {
     /// `dbo.Users`, `<alias>` for trailing `AS`-position identifiers,
     /// and `<name>` otherwise. `text` carries the verbatim source so
     /// the renderer can emit it without a source anchor (S13-Z1).
+    ///
+    /// @element_name = element_name_for_atom
     Atom {
         element_name: &'static str,
         text: String,
@@ -1209,17 +1215,15 @@ pub enum SyntaxTree {
         span: Span,
     },
 
-    /// `<accessor>` — one of `get`, `set`, `init` inside a property's
-    /// `{ ... }`. Body is optional (auto-implemented properties have
-    /// no body). Kept as a single variant because three of the four
-    /// possible Rust variant names (`Set` in particular) would
-    /// collide with sibling variants (`SyntaxTree::Set` is the
-    /// collection-literal variant). XML still emits `<get>` /
-    /// `<set>` / `<init>` via the discriminator-field rule until C9
-    /// per-language naming retires this last special case.
+    /// `<get>` / `<set>` / `<init>` — property accessor. Single
+    /// variant because the natural Rust split names (`Get` / `Set` /
+    /// `Init`) would collide with the collection `Set` variant. The
+    /// discriminator `kind: AccessorKind` is a typed closed enum.
+    ///
+    /// @element_name = element_name_for_accessor
     Accessor {
         modifiers: Modifiers,
-        kind: &'static str,                // "get" | "set" | "init"
+        kind: AccessorKind,
         body: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
@@ -1639,6 +1643,81 @@ pub enum ParamKind {
     Args,
     /// `**kwargs` — adds `<kwargs/>` marker.
     Kwargs,
+}
+
+/// `SyntaxTree::Accessor` kind discriminator — typed closed enum,
+/// replacing the legacy `&'static str` parity-track form (C5).
+/// The active variant's snake_case name becomes the XML element
+/// name (`<get>` / `<set>` / `<init>`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AccessorKind {
+    Get,
+    Set,
+    Init,
+}
+
+impl AccessorKind {
+    /// Snake_case element name for this accessor kind. Called from
+    /// the generated metadata via the per-variant
+    /// `@element_name = element_name_for_accessor` annotation.
+    pub const fn as_element_name(self) -> &'static str {
+        match self {
+            AccessorKind::Get => "get",
+            AccessorKind::Set => "set",
+            AccessorKind::Init => "init",
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Per-variant `element_name_for_*` overrides (C5). The metadata
+// codegen looks for `@element_name = <fn_ident>` on a variant's doc
+// comment; when found, the variant's `element_name_of` arm calls the
+// named function instead of falling back to snake_case(variant). All
+// override functions live here so the knowledge stays local —
+// no convention-based detection in the codegen.
+
+/// Override for [`SyntaxTree::Accessor`]: routes through the typed
+/// [`AccessorKind`] discriminator.
+pub fn element_name_for_accessor(t: &SyntaxTree) -> &'static str {
+    if let SyntaxTree::Accessor { kind, .. } = t {
+        kind.as_element_name()
+    } else {
+        "accessor"
+    }
+}
+
+/// Override for [`SyntaxTree::SimpleStatement`]: the legacy
+/// parity-track wrapper carries an open-set `&'static str`
+/// element name (~87 distinct values across the codebase).
+/// Retirement to typed slot/clause/statement variants is tracked in
+/// [`tractor/src/tree/syntax/PARITY_TRACK_RETIREMENT.md`].
+pub fn element_name_for_simple_statement(t: &SyntaxTree) -> &'static str {
+    if let SyntaxTree::SimpleStatement { element_name, .. } = t {
+        *element_name
+    } else {
+        "simple_statement"
+    }
+}
+
+/// Override for [`SyntaxTree::FieldWrap`]: open-set `wrapper`
+/// string. Retirement to typed variants tracked in the same doc.
+pub fn element_name_for_field_wrap(t: &SyntaxTree) -> &'static str {
+    if let SyntaxTree::FieldWrap { wrapper, .. } = t {
+        *wrapper
+    } else {
+        "field_wrap"
+    }
+}
+
+/// Override for [`SyntaxTree::Atom`]: open-set `element_name`
+/// string used by T-SQL identifier classification.
+pub fn element_name_for_atom(t: &SyntaxTree) -> &'static str {
+    if let SyntaxTree::Atom { element_name, .. } = t {
+        *element_name
+    } else {
+        "atom"
+    }
 }
 
 /// One step in an [`SyntaxTree::Access`] chain.

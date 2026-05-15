@@ -88,6 +88,14 @@ use super::types::{
     AccessReceiver, AccessSegment, ByteRange, Flag, Marker, Span, SyntaxTree,
 };
 
+// Per-variant element-name overrides declared via
+// `@element_name = <fn>` on the variant's doc comment in `types.rs`.
+#[allow(unused_imports)]
+use super::types::{
+    element_name_for_accessor, element_name_for_atom,
+    element_name_for_field_wrap, element_name_for_simple_statement,
+};
+
 ";
 
 fn find_enum<'a>(file: &'a syn::File, name: &str) -> Option<&'a ItemEnum> {
@@ -154,35 +162,62 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
     out
 }
 
+/// Build one `element_name_of` match arm for `v`.
+///
+/// Rules (highest priority first):
+/// 1. **`Inline` / `Skip`** — return `None` (no wrapper element).
+/// 2. **Explicit annotation** — if the variant's doc comment
+///    contains `@element_name = <fn_ident>`, emit a call to that
+///    hand-written function. Knowledge stays local to the variant.
+///    Use this for any variant whose element name isn't a literal.
+/// 3. **Default** — `snake_case` of the variant identifier.
+///
+/// Note: there is **no** magic "field named `kind` is a
+/// discriminator" rule. Variants that want to derive the element
+/// name from a typed field do so by declaring `@element_name = X`
+/// and writing the corresponding `fn X(t: &SyntaxTree) -> &'static str`
+/// helper next to the variant in `types.rs`.
 fn element_arm(name: &str, v: &Variant) -> String {
     if name == "Inline" || name == "Skip" {
         return format!("        SyntaxTree::{} {{ .. }} => None,\n", name);
     }
-    for cand in ["element_name", "wrapper", "kind"] {
-        if let Some(field) = find_field(v, cand) {
-            let ty = type_str(&field.ty);
-            return match ty.as_str() {
-                "&'staticstr" => format!(
-                    "        SyntaxTree::{} {{ {}, .. }} => Some(*{}),\n",
-                    name, cand, cand
-                ),
-                "String" => format!(
-                    "        SyntaxTree::{} {{ {}, .. }} => Some({}.as_str()),\n",
-                    name, cand, cand
-                ),
-                _ => format!(
-                    "        SyntaxTree::{} {{ .. }} => Some({:?}),\n",
-                    name,
-                    snake_case(name)
-                ),
-            };
-        }
+    if let Some(fn_ident) = element_name_annotation(v) {
+        return format!(
+            "        SyntaxTree::{} {{ .. }} => Some({}(tree)),\n",
+            name, fn_ident
+        );
     }
     format!(
         "        SyntaxTree::{} {{ .. }} => Some({:?}),\n",
         name,
         snake_case(name)
     )
+}
+
+/// Scan a variant's doc comments (the `#[doc = "..."]` attributes
+/// that `///` rustdoc syntax expands to) for an `@element_name = X`
+/// line. Returns the identifier of the override function when present.
+fn element_name_annotation(v: &Variant) -> Option<String> {
+    for attr in &v.attrs {
+        if !attr.path().is_ident("doc") {
+            continue;
+        }
+        let syn::Meta::NameValue(nv) = &attr.meta else { continue };
+        let syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(s), .. }) = &nv.value else { continue };
+        let line = s.value();
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("@element_name") {
+            let rest = rest.trim_start_matches(|c: char| c == ' ' || c == '=');
+            let ident: String = rest
+                .chars()
+                .take_while(|c| c.is_ascii_alphanumeric() || *c == '_')
+                .collect();
+            if !ident.is_empty() {
+                return Some(ident);
+            }
+        }
+    }
+    None
 }
 
 fn render_flags_of(en: &ItemEnum) -> String {

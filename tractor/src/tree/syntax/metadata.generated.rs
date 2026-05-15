@@ -13,6 +13,14 @@ use super::types::{
     AccessReceiver, AccessSegment, ByteRange, Flag, Marker, Span, SyntaxTree,
 };
 
+// Per-variant element-name overrides declared via
+// `@element_name = <fn>` on the variant's doc comment in `types.rs`.
+#[allow(unused_imports)]
+use super::types::{
+    element_name_for_accessor, element_name_for_atom,
+    element_name_for_field_wrap, element_name_for_simple_statement,
+};
+
 /// The XML element name for this tree node, or `None` if the
 /// node renders no wrapper (`Inline`, `Skip`).
 ///
@@ -44,8 +52,8 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
         SyntaxTree::DoWhile { .. } => Some("do_while"),
         SyntaxTree::Break { .. } => Some("break"),
         SyntaxTree::Continue { .. } => Some("continue"),
-        SyntaxTree::FieldWrap { wrapper, .. } => Some(*wrapper),
-        SyntaxTree::SimpleStatement { element_name, .. } => Some(*element_name),
+        SyntaxTree::FieldWrap { .. } => Some(element_name_for_field_wrap(tree)),
+        SyntaxTree::SimpleStatement { .. } => Some(element_name_for_simple_statement(tree)),
         SyntaxTree::Try { .. } => Some("try"),
         SyntaxTree::Except { .. } => Some("except"),
         SyntaxTree::Catch { .. } => Some("catch"),
@@ -87,11 +95,11 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
         SyntaxTree::True { .. } => Some("true"),
         SyntaxTree::False { .. } => Some("false"),
         SyntaxTree::None { .. } => Some("none"),
-        SyntaxTree::Atom { element_name, .. } => Some(*element_name),
+        SyntaxTree::Atom { .. } => Some(element_name_for_atom(tree)),
         SyntaxTree::Enum { .. } => Some("enum"),
         SyntaxTree::EnumMember { .. } => Some("enum_member"),
         SyntaxTree::Property { .. } => Some("property"),
-        SyntaxTree::Accessor { kind, .. } => Some(*kind),
+        SyntaxTree::Accessor { .. } => Some(element_name_for_accessor(tree)),
         SyntaxTree::Constructor { .. } => Some("constructor"),
         SyntaxTree::Using { .. } => Some("using"),
         SyntaxTree::Namespace { .. } => Some("namespace"),
@@ -102,8 +110,8 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
         SyntaxTree::Cast { .. } => Some("cast"),
         SyntaxTree::Null { .. } => Some("null"),
         SyntaxTree::Inline { .. } => None,
-        SyntaxTree::Unknown { kind, .. } => Some(kind.as_str()),
-        SyntaxTree::Raw { kind, .. } => Some(kind.as_str()),
+        SyntaxTree::Unknown { .. } => Some("unknown"),
+        SyntaxTree::Raw { .. } => Some("raw"),
     }
 }
 

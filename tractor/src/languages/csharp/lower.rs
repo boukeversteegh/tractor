@@ -412,7 +412,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             // Treat as a get-only accessor with body.
                             accessors.push(SyntaxTree::Accessor {
                                 modifiers: Modifiers::default(),
-                                kind: "get",
+                                kind: crate::tree::types::AccessorKind::Get,
                                 body: Some(Box::new(lower_node(i, source))),
                                 range: range_of(c),
                                 span: span_of(c),
@@ -2087,16 +2087,15 @@ fn lower_accessor_declaration(node: &RawNode, source: &str) -> SyntaxTree {
     let range = range_of(node);
     // The kind keyword (`get`/`set`/`init`) is an unnamed token
     // child. Find it by scanning unnamed children.
-    let mut kind: &'static str = "get";  // default fallback
+    let mut kind = crate::tree::types::AccessorKind::Get;  // default fallback
     for c in node.children() {
         if !c.is_named() {
-            { let t = c.utf8_text(source);
-                match t {
-                    "get" => { kind = "get"; break; }
-                    "set" => { kind = "set"; break; }
-                    "init" => { kind = "init"; break; }
-                    _ => {}
-                }
+            let t = c.utf8_text(source);
+            match t {
+                "get" => { kind = crate::tree::types::AccessorKind::Get; break; }
+                "set" => { kind = crate::tree::types::AccessorKind::Set; break; }
+                "init" => { kind = crate::tree::types::AccessorKind::Init; break; }
+                _ => {}
             }
         }
     }
