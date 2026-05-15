@@ -22,6 +22,11 @@ name = "gen-kinds"
 path = "src/bin/gen_kinds.rs"
 required-features = ["native"]
 
+[[bin]]
+name = "gen-walker"
+path = "src/bin/gen_walker.rs"
+required-features = ["native"]
+
 [features]
 default = ["native"]
 native = [
@@ -109,6 +114,11 @@ regex.workspace = true
 once_cell = "1.19"
 strum.workspace = true
 strum_macros.workspace = true
+
+# Codegen helpers (read by the gen-walker binary; not used at runtime)
+syn = { version = "2", features = ["full", "extra-traits"] }
+proc-macro2 = "1"
+quote = "1"
 
 # Native-only utilities
 atty = { workspace = true, optional = true }

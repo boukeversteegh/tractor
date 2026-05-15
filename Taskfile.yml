@@ -117,6 +117,17 @@ tasks:
       - task: gen:kinds
       - git diff --exit-code -- tractor/src/languages/*/kinds.rs
 
+  gen:walker:
+    desc: Regenerate the variant-blind XML walker accessors from SyntaxTree
+    cmds:
+      - cargo run --release -p tractor --bin gen-walker
+
+  verify:gen-walker:
+    desc: Regenerate walker accessors and verify there is no diff (CI check)
+    cmds:
+      - task: gen:walker
+      - git diff --exit-code -- tractor/src/tree/render_generated.rs
+
   test:snapshots:
     desc: Check that XML snapshots match current tractor output
     deps: [build]
