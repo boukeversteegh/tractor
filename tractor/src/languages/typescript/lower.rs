@@ -21,7 +21,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     false_of, name_of, null_of, range_of, span_of, string_of, text_of, true_of,
 };
-use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Marker, ParamKind};
+use crate::tree::types::{Access, AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, ParamKind};
 
 /// Lower a TypeScript tree-sitter root node to [`SyntaxTree`].
 pub fn lower_typescript_root(root: &RawNode, source: &str) -> SyntaxTree {
@@ -1547,8 +1547,8 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 
         // Comments.
         "comment" => SyntaxTree::Comment {
-            leading: false,
-            trailing: false,
+            leading: Flag::Off,
+            trailing: Flag::Off,
             range,
             span,
         },
@@ -1887,7 +1887,7 @@ fn merge_ts_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Syntax
                     .trim_start().starts_with("//");
                 let curr_is_line_comment = source[range.start as usize..range.end as usize]
                     .trim_start().starts_with("//");
-                let prev_was_trailing = matches!(out.last(), Some(SyntaxTree::Comment { trailing: true, .. }));
+                let prev_was_trailing = matches!(out.last(), Some(SyntaxTree::Comment { trailing: Flag::On { .. }, .. }));
                 if only_one_newline && prev_is_line_comment && curr_is_line_comment
                     && !prev_was_trailing && !curr_is_trailing {
                     if let Some(SyntaxTree::Comment { range: r, span: s, .. }) = out.last_mut() {
@@ -1898,7 +1898,11 @@ fn merge_ts_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Syntax
                     continue;
                 }
             }
-            let trailing = trailing || curr_is_trailing;
+            let trailing = if trailing.is_set() || curr_is_trailing {
+                Flag::implicit_at(span.line, span.column)
+            } else {
+                Flag::Off
+            };
             out.push(SyntaxTree::Comment { leading, trailing, range, span });
         } else {
             out.push(child);
@@ -1906,9 +1910,11 @@ fn merge_ts_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Syntax
     }
     let n = out.len();
     for i in 0..n {
-        if let SyntaxTree::Comment { trailing, range, .. } = &out[i] {
-            if *trailing { continue; }
+        if let SyntaxTree::Comment { trailing, range, span, .. } = &out[i] {
+            if trailing.is_set() { continue; }
             let comment_end = range.end as usize;
+            let comment_range = *range;
+            let comment_span = *span;
             let next = out.iter().skip(i + 1).find(|c| !matches!(c, SyntaxTree::Comment { .. }));
             if let Some(next_ir) = next {
                 let next_start = next_ir.range().start as usize;
@@ -1916,7 +1922,8 @@ fn merge_ts_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Syntax
                 let newlines = between.chars().filter(|&c| c == '\n').count();
                 if newlines == 1 && between.chars().all(|c| c.is_whitespace()) {
                     if let SyntaxTree::Comment { leading, .. } = &mut out[i] {
-                        *leading = true;
+                        *leading = Flag::implicit_at(comment_span.line, comment_span.column);
+                        let _ = comment_range;
                     }
                 }
             }

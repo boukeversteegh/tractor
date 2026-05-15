@@ -262,7 +262,15 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
         SyntaxTree::Generic { .. } => {}
         SyntaxTree::TypeParameter { .. } => {}
         SyntaxTree::Return { .. } => {}
-        SyntaxTree::Comment { .. } => {}
+        SyntaxTree::Comment { leading, trailing, span, .. } => {
+            if let Flag::On { range: frange, span: fspan } = leading {
+                out.push(Marker { name: "leading", range: *frange, span: *fspan });
+            }
+            if let Flag::On { range: frange, span: fspan } = trailing {
+                out.push(Marker { name: "trailing", range: *frange, span: *fspan });
+            }
+
+        }
         SyntaxTree::Assign { .. } => {}
         SyntaxTree::Import { .. } => {}
         SyntaxTree::From { .. } => {}

@@ -1024,8 +1024,8 @@ pub enum SyntaxTree {
     /// (`int x; // here`). At most one of leading/trailing is true; a
     /// comment with neither is "floating".
     Comment {
-        leading: bool,
-        trailing: bool,
+        leading: Flag,
+        trailing: Flag,
         range: ByteRange,
         span: Span,
     },

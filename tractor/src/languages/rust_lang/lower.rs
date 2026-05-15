@@ -16,7 +16,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     float_of, int_of, name_of, range_of, span_of, string_of, text_of,
 };
-use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Marker, ParamKind, Span};
+use crate::tree::types::{Access, AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, ParamKind, Span};
 
 /// Lower a Rust tree-sitter root node to [`SyntaxTree`].
 pub fn lower_rust_root(root: &RawNode, source: &str) -> SyntaxTree {
@@ -83,7 +83,7 @@ fn merge_rust_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Synt
                 let prev_prefix = comment_prefix(prev_trim);
                 let curr_prefix = comment_prefix(curr_trim);
                 let same_prefix = prev_prefix == curr_prefix && prev_prefix.is_some();
-                let prev_was_trailing = matches!(out.last(), Some(SyntaxTree::Comment { trailing: true, .. }));
+                let prev_was_trailing = matches!(out.last(), Some(SyntaxTree::Comment { trailing: Flag::On { .. }, .. }));
                 if no_newline
                     && same_prefix
                     && !prev_was_trailing
@@ -102,7 +102,11 @@ fn merge_rust_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Synt
                     continue;
                 }
             }
-            let trailing = trailing || curr_is_trailing;
+            let trailing = if trailing.is_set() || curr_is_trailing {
+                Flag::implicit_at(span.line, span.column)
+            } else {
+                Flag::Off
+            };
             out.push(SyntaxTree::Comment {
                 leading,
                 trailing,
@@ -115,11 +119,13 @@ fn merge_rust_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Synt
     }
     let n = out.len();
     for i in 0..n {
-        if let SyntaxTree::Comment { trailing, range, .. } = &out[i] {
-            if *trailing {
+        if let SyntaxTree::Comment { trailing, range, span, .. } = &out[i] {
+            if trailing.is_set() {
                 continue;
             }
             let comment_end = range.end as usize;
+            let comment_range = *range;
+            let comment_span = *span;
             let next = out.iter().skip(i + 1).find(|c| !matches!(c, SyntaxTree::Comment { .. }));
             if let Some(next_ir) = next {
                 let next_start = next_ir.range().start as usize;
@@ -131,7 +137,8 @@ fn merge_rust_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Synt
                 // where line_comment excludes the \n).
                 if newlines <= 1 && between.chars().all(|c| c.is_whitespace()) {
                     if let SyntaxTree::Comment { leading, .. } = &mut out[i] {
-                        *leading = true;
+                        *leading = Flag::implicit_at(comment_span.line, comment_span.column);
+                        let _ = comment_range;
                     }
                 }
             }
@@ -208,8 +215,8 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 
         // ----- Comments ------------------------------------------------
         "line_comment" | "block_comment" | "doc_comment" => SyntaxTree::Comment {
-            leading: false,
-            trailing: false,
+            leading: Flag::Off,
+            trailing: Flag::Off,
             range,
             span,
         },

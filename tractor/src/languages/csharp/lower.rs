@@ -24,7 +24,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     float_of, int_of, name_of, null_of, range_of, span_of, string_of, text_of,
 };
-use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Marker, ParamKind, Span};
+use crate::tree::types::{Access, AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, ParamKind, Span};
 
 // Parent-map context. `RawNode` is a parent-less tree (the tree-sitter
 // `Node::parent()` API does not map cleanly to an owned, borrowed-
@@ -291,7 +291,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 
         // ----- Statements with simple structure -------------------------
 
-        "comment" => SyntaxTree::Comment { leading: false, trailing: false, range, span },
+        "comment" => SyntaxTree::Comment { leading: Flag::Off, trailing: Flag::Off, range, span },
 
         // `using System;` / `using static System.Math;` / `using A = B;`
         "using_directive" => {
@@ -2630,7 +2630,7 @@ fn merge_adjacent_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<
                     .trim_start().starts_with("//");
                 let curr_is_line_comment = source[range.start as usize..range.end as usize]
                     .trim_start().starts_with("//");
-                let prev_was_trailing = matches!(out.last(), Some(SyntaxTree::Comment { trailing: true, .. }));
+                let prev_was_trailing = matches!(out.last(), Some(SyntaxTree::Comment { trailing: Flag::On { .. }, .. }));
                 if only_one_newline && prev_is_line_comment && curr_is_line_comment
                     && !prev_was_trailing && !curr_is_trailing
                 {
@@ -2642,7 +2642,11 @@ fn merge_adjacent_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<
                     continue;
                 }
             }
-            let trailing = trailing || curr_is_trailing;
+            let trailing = if trailing.is_set() || curr_is_trailing {
+                Flag::implicit_at(span.line, span.column)
+            } else {
+                Flag::Off
+            };
             out.push(SyntaxTree::Comment { leading, trailing, range, span });
         } else {
             out.push(child);
@@ -2654,9 +2658,11 @@ fn merge_adjacent_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<
     // line in between) AND it isn't already classified as trailing.
     let n = out.len();
     for i in 0..n {
-        if let SyntaxTree::Comment { trailing, range, .. } = &out[i] {
-            if *trailing { continue; }
+        if let SyntaxTree::Comment { trailing, range, span, .. } = &out[i] {
+            if trailing.is_set() { continue; }
             let comment_end = range.end as usize;
+            let comment_range = *range;
+            let comment_span = *span;
             // Find next non-comment sibling.
             let next = out.iter().skip(i + 1).find(|c| !matches!(c, SyntaxTree::Comment { .. }));
             if let Some(next_ir) = next {
@@ -2665,7 +2671,8 @@ fn merge_adjacent_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<
                 let newlines = between.chars().filter(|&c| c == '\n').count();
                 if newlines == 1 && between.chars().all(|c| c.is_whitespace()) {
                     if let SyntaxTree::Comment { leading, .. } = &mut out[i] {
-                        *leading = true;
+                        *leading = Flag::implicit_at(comment_span.line, comment_span.column);
+                        let _ = comment_range;
                     }
                 }
             }
