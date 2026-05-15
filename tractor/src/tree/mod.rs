@@ -122,6 +122,8 @@ pub use locator::{find_by_id, parse_id_attr};
 pub use syntax::to_xot::render_to_xot;
 #[cfg(feature = "native")]
 pub use syntax::to_json::tree_to_json;
+#[cfg(feature = "native")]
+pub use syntax::from_json::tree_from_json;
 pub use lower_raw_passthrough::{lower_raw_passthrough, lower_raw_passthrough_all};
 pub use data::DataTree;
 // Per-language data lowerings moved to `crate::languages::<lang>::lower`.
