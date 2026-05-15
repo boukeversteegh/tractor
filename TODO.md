@@ -64,14 +64,15 @@ With the imperative pipeline retired and the typed pipeline serving every parse 
 
 1. ~~**1️⃣ S9** — Retire the legacy parse API~~ — done; closed below.
 2. **2️⃣ S16** — Address the 11 pre-existing snapshot regressions. They block `task test:snapshots:check` from going green, which makes every subsequent refactor harder to validate.
-3. **3️⃣ S5B/S5D/S5E** — Delete `tree::to_json` (~1000 LOC of heuristics). S5A-Z7 already proved the typed `data_to_json` path is exhaustive; this is the cleanup.
+3. ~~**3️⃣ S5B/S5D/S5E** — Delete `tree::to_json`~~ — done; superseded by **S17** (variant-blind walker) 2026-05-16.
 4. **4️⃣ S7** — Drop the xot serialise / xee reparse "v1 stepping stone". Real per-parse latency win, cleanly bounded to `parser/mod.rs`.
 5. **5️⃣ S8** — Split `XmlNode` markup from `XpathValue` atomic data. Cleaner renderer signatures; downstream simplification for any future `Tree` work.
-6. **6️⃣ S11** — Drop accidental wrappers / normalize field names. Big structural payoff but needs the simpler JSON path (S5B/D/E) and `XmlNode` split (S8) to land first so the per-Z changes don't fight legacy projection logic.
+6. **6️⃣ S11** — Drop accidental wrappers / normalize field names. Big structural payoff but needs the simpler JSON path (now done via S17) and `XmlNode` split (S8) to land first so the per-Z changes don't fight legacy projection logic.
 7. **7️⃣ S15-Z4** — `replace <xpath> <xml-literal>` CLI verb. Completes editable trees on top of the typed-mutation pipeline already shipped in S15-Z1..Z3.
 8. **8️⃣ S13-Z5b/Z6b** — Full gap engine in the unified renderer. Pending pair; only matters once a use case demands synthetic-region formatting parity with anchored regions.
-9. **9️⃣ S12-Z12..Z18 + S3E + C1 + C2 + C4 + C5** — Mechanical mop-up: internal `_ir` renames, typed shape contracts, dead `field_wrappings`, the `TractorNode`-vs-variant decision, retired `xml_node_to_json` fallthrough, registry consolidation.
-🔟 **🔟 S10F + S10H** — Directory consolidation tail (rename `output.rs → vocabulary.rs`; decide `transform/` fate). Defer until the surface is otherwise stable; depends on C2 + the `transform/` survivors actually settling.
+9. **9️⃣ S12-Z12..Z18 + S3E + C1 + C5** — Mechanical mop-up: internal `_ir` renames, typed shape contracts, dead `field_wrappings`, language registry consolidation. (C2 + C4 closed by S17.)
+🔟 **🔟 S10F + S10H** — Directory consolidation tail (rename `output.rs → vocabulary.rs`; decide `transform/` fate). Defer until the surface is otherwise stable; depends on the `transform/` survivors actually settling.
+1️⃣1️⃣ **`PARITY_TRACK_RETIREMENT.md` multi-pass** — retire `SimpleStatement` / `FieldWrap` / `Atom` to typed slot/clause/statement variants. ~380 usage sites; explicitly multi-pass; full plan committed at `tractor/src/tree/syntax/PARITY_TRACK_RETIREMENT.md`. Each pass independent and shippable.
 
 Slices not numbered:
 - **S3E**: small follow-up tied to the C2 decision; bundled under 9️⃣.
@@ -441,9 +442,11 @@ The originally-listed Z1–Z9 were sampled from the 11 reverted snapshots only. 
 
 ---
 
-## 3️⃣ S5 — Single JSON projection: `SyntaxTree → DataTree → JSON` (kills part of W1)
+## S5 — Single JSON projection ✅ (superseded by S17)
 
-**Goal.** One JSON projection algorithm for all three tree families. The principled `data_to_json` (typed `DataTree` reader) is the only path; the heuristic blocks in `tree_to_json` are gone.
+**Closed by S17 (2026-05-16).** The slice's premise — that the canonical path is `SyntaxTree → DataTree → JSON` via `data_to_json` — was overtaken by the variant-blind renderer work. `tree_to_json` is now a generic walker driven by the same `metadata_generated.rs` accessors that drive the XML walker; it goes **directly** from `SyntaxTree` to `serde_json::Value` (no DataTree hop). `to_data` was retired (~1500 LOC deleted). `Tree::to_json` for `Tree::SyntaxTree` calls the variant-blind walker. Historical Z-sub-tasks below kept for the record.
+
+**Original goal.** One JSON projection algorithm for all three tree families. The principled `data_to_json` (typed `DataTree` reader) is the only path; the heuristic blocks in `tree_to_json` are gone.
 
 **Why now.** Three concurrent JSON projection strategies coexist: legacy `xml_node_to_json` (XmlNode-based fallback), heuristic `tree_to_json` (1087 LOC of `$inline`/`$skip`/`$type`/plural-collapse rules papering over tree↔JSON impedance), and the principled `data_to_json` reading a typed `DataTree`. The `to_data` projection was completed in S5A-Z7: every `SyntaxTree` variant has its own arm with compile-enforced exhaustiveness (verified 2026-05-13). What remains is a snapshot-reconciliation audit (S5A-Z8), retiring `tree_to_json` and `tree/to_json.rs` (S5B + S5D), and routing `SqlTree` JSON output through `DataTree` (S5E).
 
@@ -790,7 +793,73 @@ The original S13 entry called out `DataTree` as out-of-scope ("revisit unifying 
 
 - [ ] [S14-Z4] **Layer B: full DataTree↔SyntaxTree engine unification.** Pending — DataTree still uses its own walkers. The split is the right level of separation today (the per-variant arms genuinely diverge); Layer B becomes worth doing when structural mutation lands on SyntaxTree with a span-map output, at which point a uniform entry-point shape `render(tree, source) -> (String, Option<SpanMap>)` is worth the trait scaffolding.
 
-- [ ] [S14-Z5] **Re-evaluate Layer C in light of `TreeNode`.** S14 / [`docs/design-ir-and-renderings.md` § 3.4](docs/design-ir-and-renderings.md#34-renderer-engine-layering-whats-shared-across-trees-and-where-it-stops) classified "Layer C = single generic walker" as **rejected, not a target** for the renderer. That decision pre-dates the `TreeNode` trait introduced for S15-Z1/Z2 follow-ups, which proved out a generic pre-order walker on two non-trivial cases (`assign_ids`: -573 LOC; `locator`: -874 LOC). The rejection's substance — that per-variant *emission shapes* genuinely diverge (synthetic `<expression>` / `<left>` / `<right>` wrappers for SyntaxTree, format-specific punctuation for DataTree renderers) — still stands for the *renderer*. But the rejection's *generality* (a generic walker is wrong for trees) is now demonstrably false for traversal-shaped passes. Audit: is there a hybrid where the *traversal* is `TreeNode`-generic but the *emission* is per-variant via an associated method (`fn emit(&self, ctx: &mut RenderCtx)`)? That's strictly more structure than Layer A and strictly less than Layer C as originally framed. If yes, it could unify the three `to_xot.rs` files (~4000 LOC) without violating the per-variant-emission constraint. **Status:** open question; no work scheduled. Decision should land before any to_xot refactor.
+- [x] [S14-Z5] **Re-evaluate Layer C in light of `TreeNode`.** Closed by S17 (2026-05-16) for the SyntaxTree side. The variant-blind walker in `tree::syntax::to_xot` (and its JSON sibling `tree::syntax::to_json`) is *exactly* the hybrid proposed here: traversal is generic over the typed tree (via `tree.children()` + `range_of(tree)` + `span_of(tree)`), and per-variant emission is delegated to **generated** accessors (`element_name_of`, `flags_of`) sourced from `tractor/src/tree/syntax/metadata.generated.rs` via `build_codegen.rs`. No per-variant emission code lives in the walker; the codegen is mechanical with optional `@element_name = <fn>` overrides for the four parity-track variants. The original concern ("per-variant emission shapes genuinely diverge") is satisfied because each variant *declares* its shape (via field types) and the codegen mechanically emits the accessors. The DataTree side remains on its own per-variant walker — converging it onto the same metadata layer is the natural follow-up if/when SqlTree picks up the same pattern.
+
+---
+
+## S17 — Variant-blind renderers via generated reflection metadata ✅
+
+**Goal.** XML, JSON, and YAML rendering of `SyntaxTree` are 100% based on auto-generated code with zero variant-specific logic in the renderers. Adding a new `SyntaxTree` variant requires no changes outside `types.rs` + lowering. Shape decisions live in the typed enum; the codegen produces all the reflection metadata mechanically; the renderers consume only that metadata.
+
+**Why this slice exists.** Pre-S17, per-variant `match SyntaxTree::Foo { … }` arms lived in `to_xot.rs` (~2400 LOC), `to_json.rs` (~1100 LOC), `to_data.rs` (~1500 LOC), and the inherent `children()` / `range()` / `span()` impls on `SyntaxTree` (~720 LOC). Every new variant or shape decision had to be replicated across 4–5 places, and discriminator string fields (`element_name: &'static str`, `kind: &'static str`, `wrapper: &'static str`) collapsed variant identity with one of its fields, breaking invertibility and inviting "just this one variant" rules to leak back into the renderers.
+
+**Architectural shift.** Each `SyntaxTree` variant is the **single source of truth** for its shape. The codegen (`tractor/build_codegen.rs`, invoked from `build.rs`) reads `tractor/src/tree/syntax/types.rs` via `syn`, emits `tractor/src/tree/syntax/metadata.generated.rs` on every build (`write_if_changed` — no churn when unchanged), and the renderers walk the tree using only:
+- `element_name_of(&SyntaxTree) -> Option<&str>` — XML element name (None ⇒ inline children at parent)
+- `flags_of(&SyntaxTree) -> Vec<Marker>` — empty-element marker children
+- `range_of` / `span_of` / `scalar_text_of` — leaf-level reflection
+- `children_of` / `children_mut_of` — variant-blind child enumeration
+- `span_mut_of` — mutable span access for ID stamping
+
+Per-language native vocabulary (`<unit>` for C# Module, etc.) is a thin lookup layer in `tree::syntax::element_naming::OVERRIDES` consumed by both renderers.
+
+**Depends on.** S5 (retired; superseded by this slice's direct walker), S13 (typed scalar leaves), S14-Z1..Z3 (shared `QuoteStyle` / `write_quoted_scalar`).
+**Unblocks.** Future from_json deserializer (Z6 stubbed), SqlTree / DataTree migration to the same pattern.
+**Independent of.** S16 (snapshot shape work) — orthogonal: S16 fixes shape regressions in lowering; S17 lifts how the rendered shape is *projected*.
+
+**Size.** XL. Landed across many commits; see the per-Z attribution.
+**Reversibility.** Medium. The metadata.generated.rs file lives in source control so any regression is diffable. Reverting individual variant splits is per-commit; the codegen itself is one commit to back out.
+
+**Invariants when closed:**
+- `tree::syntax::to_xot::render_to_xot` and `tree::syntax::to_json::tree_to_json` contain zero `match SyntaxTree::Foo { … }` arms.
+- `tree::syntax::metadata.generated.rs` is the only place per-variant emission rules live; it is regenerated by `tractor/build.rs` on every build.
+- The codegen's element-name rule is purely mechanical: snake_case of the variant identifier, with explicit `@element_name = <fn>` doc-annotations as the only override mechanism. No "field named X is a discriminator" convention.
+- `Tree::SyntaxTree` carries a `lang: &'static str` so the JSON projection picks the right native vocabulary at the dispatcher.
+- YAML rendering re-encodes the variant-blind JSON `Value` via `serde_yaml` — same vocabulary as XML and JSON.
+
+### Tasks
+
+- [x] [S17-Z1] **Strip + replace the XML renderer with a variant-blind walker.** Closed 2026-05-15 (commits `7f7b018e`, `b955b580`). Hand-written `walker.rs` (~470 LOC) and per-variant `render_tree_*` (~2400 LOC) deleted; `to_xot.rs` now hosts a ~150 LOC variant-blind walk that consumes generated `element_name_of` + `flags_of` + `tree.children()` and weaves gap text from `source` between source-sorted markers + children.
+
+- [x] [S17-Z2] **Variant-blind JSON projection direct from the typed tree.** Closed 2026-05-15 (commit `5eb1f765`). New `tree/syntax/to_json.rs` (~150 LOC) walks `SyntaxTree` → `serde_json::Value` using the same metadata as the XML walker. Singleton children keyed by element name; same-named siblings overflow into `$children`. Retires the legacy `tree::to_data::lower_to_data_ir` (~1500 LOC) and the heuristic-laden `tree_to_json` (~1100 LOC).
+
+- [x] [S17-Z3] **Generate the remaining reflection accessors.** Closed 2026-05-16 (commits `f596ebdf`, `f8126244`). `range_of`, `span_of`, `scalar_text_of`, `children_of`, `span_mut_of`, `children_mut_of` are all emitted by `tractor/build_codegen.rs` from `types.rs` field types. ~720 LOC of hand-written reflection retired from `tree/syntax/types.rs`. The inherent `range()` / `span()` / `scalar_text()` / `children()` methods + the `TreeNode for SyntaxTree` impl shrink to one-line forwarders.
+
+- [x] [S17-Z4] **Split discriminator variants.** Closed 2026-05-16 (commit `19351bcf`). Discriminator string fields (`element_name`/`kind`/`wrapper: &'static str`) collapsed variant identity with one of their fields. Splits applied:
+  - `Class { kind: "class"|"struct"|"interface"|"record" }` → `Class | Struct | Interface | Record`
+  - `Binary { element_name: "binary"|"logical" }` → `Binary | Logical`
+  - `Function { element_name: "function"|"method" }` → `Function | Method` (Java compact_constructor moved to `Constructor` variant)
+  - `Variable { element_name: "variable"|"field"|"event" }` → `Variable | Field | Event`
+  - `ExceptHandler { kind: "except"|"catch" }` → `Except | Catch`
+  - `Module { element_name }` → unified `Module` (per-language native naming restored via Z5's lookup table)
+  - `Accessor` — kept as single variant; Rust name conflict with `Set` collection variant. Retired to typed `AccessorKind` discriminator in Z7.
+
+- [x] [S17-Z5] **Per-language native naming layer.** Closed 2026-05-16 (commit `0eb1c48d`). `tree/syntax/element_naming.rs` exposes `element_name_for_lang(tag, lang)` consulting a per-language override table; falls back to the variant tag. Walkers thread `lang: Option<&str>` and consult the table at every element. Module root naming restored (csharp `<unit>`, java `<program>`, go/rust `<file>`, etc.); universal renames (`enum_member → constant`) layered on top. Two modes: native (per-language, primary) and universal (lang = `None`, for JSON inversion and cross-language XPath).
+
+- [x] [S17-Z6] **`from_json` deserializer API + scalar-leaf stub.** Closed 2026-05-16 (commit `9c30b166`). `tree::tree_from_json(value, lang) -> SyntaxTree` lives in `tree/syntax/from_json.rs`. Scalar string values reconstruct as `SyntaxTree::Name`; objects with `$type` return `SyntaxTree::Unknown` until the per-variant constructor codegen lands (future work). Synthetic ranges/spans throughout — render via `tree::render::render` produces canonical source.
+
+- [x] [S17-Z7] **Per-variant `@element_name` doc annotations + typed `AccessorKind`.** Closed 2026-05-16 (commit `116aad4b`). The codegen's convention-based field-name rule ("if a variant has a field named `element_name`/`wrapper`/`kind` of type `&'static str`, use its value") is gone. Variants that need a custom element-name declare it explicitly via a `@element_name = <fn_ident>` line in their doc comment; the codegen reads the annotation and emits a call to the named hand-written function. The four parity-track variants (`Accessor`, `SimpleStatement`, `FieldWrap`, `Atom`) opt in; everything else gets snake_case-of-variant mechanically. `Accessor.kind: &'static str` → `AccessorKind` closed enum (Get/Set/Init) with `as_element_name()`; demonstrates the typed-discriminator pattern for the remaining three.
+
+- [x] [S17-Z8] **Build-time codegen via `build.rs`.** Closed 2026-05-16 (commit `decebf41`). The codegen logic (originally a manual `bin/gen_metadata` binary) moved into `tractor/build.rs` + `tractor/build_codegen.rs`, runs on every `cargo build`, emits `tree/syntax/metadata.generated.rs` via `write_if_changed` (no spurious writes), and `syn`/`proc-macro2`/`quote` moved from `[dependencies]` to `[build-dependencies]`. `task verify:gen-metadata` is the CI safety net: `cargo build && git diff --exit-code` on the generated file.
+
+- [x] [S17-Z9] **Symmetric `tree/syntax/` + per-language `lower.rs` + `render_source.rs` layout.** Closed 2026-05-16 (commits `c85d5ebb`, `9838d9d2`). `SyntaxTree` files moved to `tree/syntax/{types.rs,to_xot.rs,to_json.rs,from_json.rs,metadata.generated.rs,element_naming.rs,mod.rs}` (mirrors `tree/data/` and `tree/sql/`). Data-language lowering moved from `tree/data/lower_*.rs` to `languages/<lang>/lower.rs`; data-language source renderers (DataTree → JSON/YAML source text) moved from `tree/render/data_*.rs` to `languages/{json,yaml}/render_source.rs`. Back-compat shim at `tree/types.rs` re-exports `syntax::types::*` so the many `crate::tree::types::ByteRange` etc. import sites keep compiling unchanged.
+
+### Future work tracked separately
+
+- **Full per-variant `from_json` constructors** (Z6 stretch). The generic deserializer needs per-variant `(name → variant + field map)` decoders. The codegen would emit one decoder function per variant from the same field-type analysis used for `children_of`. Estimated ~400 LOC of codegen + ~150 LOC of generic value-to-field conversion. Not currently blocking any use case.
+
+- **`PARITY_TRACK_RETIREMENT.md` multi-pass** — the long-form retirement of `SimpleStatement` / `FieldWrap` / `Atom` into typed slot / clause / statement variants. ~380 usage sites; explicitly multi-pass. The Z7 doc-annotation form is the architecturally clean intermediate state until each pass lands.
+
+- **DataTree / SqlTree on the same metadata layer.** Today's S17 covers `SyntaxTree` only; `DataTree` still uses per-variant walkers in `tree/data/to_xot.rs` / `to_json.rs`. The pattern transfers cleanly — add a `data_metadata.generated.rs` and matching walkers when there's a use case for it.
 
 ---
 
@@ -904,13 +973,11 @@ Each is one closeable invariant. No full slice header — too small to warrant o
 - [ ] [C1] **No `LanguageOps` entry on the tree path declares `field_wrappings` (read only by the legacy `XeeBuilder`).**
   - Depends on S2 routing tree languages away from `XeeBuilder`. Languages still on the legacy path retain their wrappings.
 
-- [ ] [C2] **One source of truth for emitted element names: either `SyntaxTree` variants alone (per-language `TractorNode` enums deleted), or `TractorNode` generated from `SyntaxTree`.**
-  - Decision point. The choice cascades into S10F and the shape-contract walks in S3E.
+- [x] [C2] **One source of truth for emitted element names.** Closed by S17 (2026-05-16). Decision: **`SyntaxTree` variants alone** drive emitted element names, mechanically via `metadata_generated::element_name_of`. The generated accessor uses the variant tag (snake_case) by default; the four parity-track variants opt in to custom resolution via a `@element_name = <fn>` doc annotation. Per-language native vocabulary is layered on via `tree::syntax::element_naming::OVERRIDES`. Per-language `TractorNode` enums (S10F) stay only as kind-coverage catalogues for the unmigrated layers; emission no longer reads them.
 
 - [x] [C3] **`transform::builder::XotBuilder` does not exist.** Done — closed by S6B-Retire (2026-05-15). `tractor/src/transform/builder.rs` deleted entirely; both `XotBuilder` and `XeeBuilder` gone. Native parser and WASM both route every parse through the typed pipeline (`lower → render_to_xot`), with `lower_raw_passthrough_all` covering `TreeMode::Raw`.
 
-- [ ] [C4] **`output::xml_node_to_json` is reachable only by genuine XPath partial matches; the legacy tree/DataTree fallthrough is gone.**
-  - Depends on S5 + S8.
+- [x] [C4] **`output::xml_node_to_json` is reachable only by genuine XPath partial matches.** Closed by S17 (2026-05-16). `Tree::to_json` for `Tree::SyntaxTree` routes directly through the variant-blind walker `tree::tree_to_json`; the historical "lower_to_data_ir + has_unhandled fallback" path is gone (`to_data.rs` deleted, ~1500 LOC). `xml_node_to_json` is now reached only by `Tree::Xml(_)` (genuine XPath partial-subtree matches).
 
 - [ ] [C5] **Exactly one language registry exists. `tractor/src/languages/info.rs::LANGUAGES` either is gone or is a typed view onto `tractor/src/languages/mod.rs::LANGUAGES`.**
   - Surfaced during S2-Z3: two `LANGUAGES` arrays both claim SSoT in their docstrings. `info.rs` carries `aliases`, `has_transforms`, `grammar_file` (web/wasm path); `mod.rs` carries `extensions`, `grammar`, `tree_kind`, `transform`, `post_transform`, etc.
