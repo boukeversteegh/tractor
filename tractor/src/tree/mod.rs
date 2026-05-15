@@ -88,11 +88,9 @@ pub mod to_json;
 // Per-format lowering + the to_xot / to_json renderers live under
 // `tree::data::*` (regrouped in S10C).
 pub mod data;
-// `SyntaxTree` → `DataTree` projection. Replacing the
-// ad-hoc projection in `to_json.rs` per
-// `docs/design-projection-pipeline.md`.
-#[cfg(feature = "native")]
-pub mod to_data;
+// `SyntaxTree` → `DataTree` projection — RETIRED. Variant-blind
+// `tree_to_json` now renders code directly from the typed tree, so
+// the SyntaxTree → DataTree detour is no longer reachable.
 // SQL-language tree — typed variants per construct. Parallel to
 // `SyntaxTree` (programming languages) and `DataTree` (data languages).
 // Per-construct lowering, to_xot, to_json, and render_source live
@@ -135,7 +133,5 @@ pub use data::lower_ini::lower_ini_data_root;
 pub use data::lower_markdown::lower_markdown_data_root;
 pub use data::to_xot::{render_data_to_xot_json, render_data_to_xot_keyed};
 pub use data::to_json::data_to_json;
-#[cfg(feature = "native")]
-pub use to_data::{lower_to_data_ir, has_unhandled};
 #[cfg(feature = "native")]
 pub use coverage::{audit_coverage, Coverage, CoverageReport, KindStats};

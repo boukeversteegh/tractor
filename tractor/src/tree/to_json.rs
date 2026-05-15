@@ -1,1114 +1,179 @@
-//! tree → JSON renderer. Skips the XML intermediate.
+//! Tree → JSON projection — **variant-blind walk**.
 //!
-//! Walks the typed `SyntaxTree` tree directly and produces a `serde_json::Value`
-//! whose shape matches what the XML→JSON projection (`xml_to_json.rs`)
-//! would produce, but without going through Xot or `XmlNode`. The tree
-//! is the source of truth: list-cardinality decisions come from
-//! `Vec<SyntaxTree>` vs `Box<SyntaxTree>` field shapes, marker flags come from
-//! `Modifiers::marker_names()` and per-variant `extra_markers`.
+//! Direct from the typed `SyntaxTree` to `serde_json::Value`, with no
+//! XML intermediate. Uses the same generated metadata as the XML
+//! walker:
 //!
-//! ## Output shape (kept compatible with `xml_to_json.rs` for snapshot
-//! parity)
+//! - [`element_name_of`](super::render_generated::element_name_of)
+//!   produces the JSON key / `$type` value for the node.
+//! - [`flags_of`](super::render_generated::flags_of) produces the
+//!   boolean flag fields.
+//! - [`SyntaxTree::children`] gives the variant-blind child list.
 //!
-//! - `$type`: element name (omitted when the parent's chosen JSON key
-//!   already conveys the type — list entries under a plural key, or
-//!   singleton entries under their own name).
-//! - Self-closing markers / modifier flags → `"name": true`.
-//! - Multiple same-keyed children → array under the plural key
-//!   (`methods: [...]`).
-//! - Singleton structural children → keyed by element name
-//!   (`body: {...}`).
-//! - Text-only leaves → scalar string under the parent's key.
-//! - Same-name siblings without a list discriminator promote to
-//!   `$children: [...]` (Principle #19 escape hatch).
+//! ## Output shape (mechanical rules)
 //!
-//! ## Why skip XML
+//! - **Scalar leaves** (no children, no flags, has stored text) →
+//!   bare JSON string.
+//! - **Inline / Skip** (no element name) → render children inline at
+//!   parent.
+//! - **Structural nodes** → JSON object with:
+//!   - `$type`: element name (omitted when the parent's key already
+//!     conveys the type).
+//!   - One boolean field per flag (`"async": true`).
+//!   - One child group per distinct child element name; singleton
+//!     children are keyed directly (`"body": { … }`); multiple
+//!     same-named children fall back to `$children: [ … ]` so JSON
+//!     keys stay unique.
 //!
-//! The tree already encodes every projection decision (Vec → array, Box
-//! → singleton, modifiers → flags). Routing through XML adds an
-//! intermediate `list="X"` attribute step that's purely a serializer
-//! affordance for the XML-driven JSON projector — and it costs us
-//! flexibility (the XML attribute namespace clutters queries and
-//! pre-supposes a particular plural-name spelling). Going direct lets
-//! the tree define the JSON contract without that detour.
+//! Zero `match SyntaxTree::…` arms — every per-variant decision lives
+//! in the generated metadata layer. YAML re-encodes this Value via
+//! `serde_yaml`.
+
+#![cfg(feature = "native")]
+
+use std::collections::BTreeMap;
 
 use serde_json::{Map, Value};
 
-use crate::tree::types::{AccessReceiver, AccessSegment, SyntaxTree, Modifiers, ParamKind};
-use crate::transform::helpers::pluralize_list_name;
+use super::render_generated::{element_name_of, flags_of};
+use super::types::{SyntaxTree, TreeNode};
 
 const KEY_TYPE: &str = "$type";
 const KEY_CHILDREN: &str = "$children";
-const KEY_TEXT: &str = "text";
 
-/// Top-level entry: convert an tree tree to a JSON value. The root is
-/// emitted with its `$type` (no parent context to strip it).
+/// Entry point. Render `tree` (with its `source`) to a JSON Value.
+/// The root keeps its `$type` (no parent key conveys it).
 pub fn tree_to_json(tree: &SyntaxTree, source: &str) -> Value {
-    Renderer::new(source).render_root(tree)
+    render(tree, source, /*strip_type=*/ false)
 }
 
-struct Renderer<'a> {
-    source: &'a str,
-}
+/// Variant-blind render. `strip_type` is set by the parent when the
+/// child sits under a key that already names its type — then the
+/// child's `$type` field is omitted to avoid `{"body": {"$type":
+/// "body", …}}` duplication.
+fn render(tree: &SyntaxTree, source: &str, strip_type: bool) -> Value {
+    // 1. Inline / Skip: no wrapper. Inline children at parent — but
+    //    a value can't carry siblings, so collapse to:
+    //      • the single child rendered, if exactly one,
+    //      • a $children array otherwise.
+    let elem_name = match element_name_of(tree) {
+        Some(n) => n,
+        None => return render_inline(tree, source),
+    };
 
-impl<'a> Renderer<'a> {
-    fn new(source: &'a str) -> Self {
-        Self { source }
-    }
+    let flags = flags_of(tree);
+    let children = tree.children();
 
-    fn render_root(&self, tree: &SyntaxTree) -> Value {
-        // Roots keep their $type — nothing above them sets a key.
-        self.render(tree, /*strip_type=*/ false)
-    }
-
-    /// Render an tree node. `strip_type` is true when the parent's
-    /// chosen key already conveys the type (list entry under plural
-    /// key, or singleton under its own element name) — matches the
-    /// XML→JSON `strip_top_level_type` behaviour.
-    fn render(&self, tree: &SyntaxTree, strip_type: bool) -> Value {
-        match self.try_render_scalar(tree) {
-            Some(scalar) => scalar,
-            None => {
-                let mut shape = Shape::new(self.element_name(tree));
-                self.populate(tree, &mut shape);
-                shape.into_value(strip_type)
-            }
+    // 2. Scalar leaf: no children, no flags, has stored text. Emit
+    //    the text as a bare JSON string. The parent keys it under
+    //    this node's element name.
+    if children.is_empty() && flags.is_empty() {
+        if let Some(text) = leaf_text(tree, source) {
+            return Value::String(text);
         }
     }
 
-    /// Some tree nodes naturally render as scalars (Name → string,
-    /// integer-literal → number, true/false → boolean, null → null).
-    /// `xml_to_json.rs` collapses text-only-leaf elements to strings;
-    /// we do the same here at render time.
-    fn try_render_scalar(&self, tree: &SyntaxTree) -> Option<Value> {
-        let text_scalar = |tree: &SyntaxTree| {
-            let text = tree.range().slice(self.source);
-            Value::String(text.to_string())
-        };
-        match tree {
-            SyntaxTree::Name { .. }
-            | SyntaxTree::Atom { .. }
-            | SyntaxTree::Int { .. }
-            | SyntaxTree::Float { .. }
-            | SyntaxTree::String { .. }
-            | SyntaxTree::None { .. }
-            | SyntaxTree::Null { .. }
-            | SyntaxTree::True { .. }
-            | SyntaxTree::False { .. } => Some(text_scalar(tree)),
-            SyntaxTree::Skip { .. } => Some(Value::Null),
-            SyntaxTree::PositionalSeparator { .. } | SyntaxTree::KeywordSeparator { .. } => {
-                // Markers; rendered as flags by parents. Render as null
-                // when reached as a value.
-                Some(Value::Null)
-            }
-            _ => None,
-        }
+    // 3. Structural node: build an object.
+    let mut obj: Map<String, Value> = Map::new();
+    if !strip_type {
+        obj.insert(KEY_TYPE.to_string(), Value::String(elem_name.to_string()));
     }
 
-    /// Element name (matches the XML element name for the same tree node).
-    /// Used as the JSON `$type` and as the key when this node sits in
-    /// its parent as a singleton or list entry.
-    fn element_name(&self, tree: &SyntaxTree) -> &'static str {
-        match tree {
-            SyntaxTree::Module { element_name, .. } => element_name,
-            SyntaxTree::Expression { .. } => "expression",
-            SyntaxTree::Access { .. } => "object",
-            SyntaxTree::Binary { element_name, .. } => element_name,
-            SyntaxTree::Unary { .. } => "unary",
-            SyntaxTree::Tuple { .. } => "tuple",
-            SyntaxTree::List { .. } => "list",
-            SyntaxTree::Set { .. } => "set",
-            SyntaxTree::Dictionary { .. } => "dict",
-            SyntaxTree::Pair { .. } => "pair",
-            SyntaxTree::GenericType { .. } => "type",
-            SyntaxTree::Comparison { .. } => "compare",
-            SyntaxTree::If { .. } => "if",
-            SyntaxTree::ElseIf { .. } => "else_if",
-            SyntaxTree::Else { .. } => "else",
-            SyntaxTree::For { .. } => "for",
-            SyntaxTree::While { .. } => "while",
-            SyntaxTree::Foreach { .. } => "foreach",
-            SyntaxTree::CFor { .. } => "for",
-            SyntaxTree::DoWhile { .. } => "do",
-            SyntaxTree::Break { .. } => "break",
-            SyntaxTree::Continue { .. } => "continue",
-            SyntaxTree::Lambda { .. } => "lambda",
-            SyntaxTree::ObjectCreation { .. } => "new",
-            SyntaxTree::Ternary { .. } => "ternary",
-            SyntaxTree::FieldWrap { wrapper, .. } => wrapper,
-            SyntaxTree::SimpleStatement { element_name, .. } => element_name,
-            SyntaxTree::Try { .. } => "try",
-            SyntaxTree::ExceptHandler { .. } => "catch",
-            SyntaxTree::TypeAlias { .. } => "type_alias",
-            SyntaxTree::KeywordArgument { .. } => "keyword_argument",
-            SyntaxTree::ListSplat { .. } => "spread",
-            SyntaxTree::DictSplat { .. } => "spread",
-            SyntaxTree::Function { element_name, .. } => element_name,
-            SyntaxTree::Class { kind, .. } => kind,
-            SyntaxTree::Body { .. } => "body",
-            SyntaxTree::Parameter { .. } => "parameter",
-            SyntaxTree::PositionalSeparator { .. } => "positional",
-            SyntaxTree::KeywordSeparator { .. } => "keyword",
-            SyntaxTree::Decorator { .. } => "decorator",
-            SyntaxTree::Returns { .. } => "returns",
-            SyntaxTree::Generic { .. } => "generic",
-            SyntaxTree::TypeParameter { .. } => "type",
-            SyntaxTree::Return { .. } => "return",
-            SyntaxTree::Comment { .. } => "comment",
-            SyntaxTree::Assign { .. } => "assign",
-            SyntaxTree::Import { .. } => "import",
-            SyntaxTree::From { .. } => "from",
-            SyntaxTree::FromImport { .. } => "import",
-            SyntaxTree::Path { .. } => "path",
-            SyntaxTree::Aliased { .. } => "aliased",
-            SyntaxTree::Name { .. } => "name",
-            SyntaxTree::Atom { element_name, .. } => element_name,
-            SyntaxTree::Int { .. } => "int",
-            SyntaxTree::Float { .. } => "float",
-            SyntaxTree::String { .. } => "string",
-            SyntaxTree::True { .. } => "true",
-            SyntaxTree::False { .. } => "false",
-            SyntaxTree::None { .. } => "none",
-            SyntaxTree::Enum { .. } => "enum",
-            SyntaxTree::EnumMember { .. } => "constant",
-            SyntaxTree::Property { .. } => "property",
-            SyntaxTree::Accessor { kind, .. } => kind,
-            SyntaxTree::Constructor { .. } => "constructor",
-            // C# `using_directive` is exposed in the imperative
-            // pipeline (and JSON snapshots) as `<import>` — keep
-            // tree_to_json on that name. Block-scoped `using_statement`
-            // is a different kind (handled via SimpleStatement "using").
-            SyntaxTree::Using { .. } => "import",
-            SyntaxTree::Namespace { .. } => "namespace",
-            SyntaxTree::Variable { element_name, .. } => element_name,
-            SyntaxTree::Is { .. } => "is",
-            SyntaxTree::Cast { .. } => "cast",
-            SyntaxTree::Null { .. } => "null",
-            SyntaxTree::Inline { .. } => "$inline",
-            SyntaxTree::Skip { .. } => "$skip",
-            SyntaxTree::Unknown { .. } => "unknown",
-            // `Raw` carries a runtime kind string; the JSON path can't
-            // borrow it as `&'static`, so emit a sentinel. Consumers
-            // that need the actual kind read it from the XML output
-            // (which preserves it as the element name). JSON
-            // projection of passthrough languages is best-effort.
-            SyntaxTree::Raw { .. } => "$raw",
-            SyntaxTree::Call { .. } => "call",
-        }
+    // Flags as boolean fields.
+    for marker in &flags {
+        obj.insert(marker.name.to_string(), Value::Bool(true));
     }
 
-    /// Populate the shape with the tree's flags + child entries.
-    fn populate(&self, tree: &SyntaxTree, shape: &mut Shape) {
-        match tree {
-            SyntaxTree::Module { children, .. } => {
-                self.add_children(shape, children);
-            }
-            SyntaxTree::Expression { inner, marker, .. } => {
-                if let Some(m) = marker {
-                    shape.flag(m);
-                }
-                self.add_singleton_or_text(shape, inner);
-            }
-            SyntaxTree::Access { receiver, segments, .. } => {
-                self.add_access_chain(shape, receiver, segments);
-            }
-            SyntaxTree::Binary { left, op_text, op_marker, right, .. } => {
-                shape.singleton("left", self.render(left, true));
-                shape.singleton("op", self.op_value(op_text, op_marker));
-                shape.singleton("right", self.render(right, true));
-            }
-            SyntaxTree::Unary { op_text, op_marker, operand, extra_markers, .. } => {
-                for m in extra_markers.iter() {
-                    shape.flag(m.name);
-                }
-                shape.singleton("op", self.op_value(op_text, op_marker));
-                self.add_singleton_or_text(shape, operand);
-            }
-            SyntaxTree::Tuple { children, .. }
-            | SyntaxTree::List { children, .. }
-            | SyntaxTree::Set { children, .. } => {
-                self.add_children(shape, children);
-            }
-            SyntaxTree::Dictionary { pairs, .. } => {
-                self.add_children(shape, pairs);
-            }
-            SyntaxTree::Pair { key, value, .. } => {
-                shape.singleton("key", self.render(key, true));
-                shape.singleton("value", self.render(value, true));
-            }
-            SyntaxTree::GenericType { name, params, .. } => {
-                shape.flag("generic");
-                self.add_singleton_or_text(shape, name);
-                for p in params {
-                    shape.list_with("type", self.render(p, true));
-                }
-            }
-            SyntaxTree::Comparison { left, op_text, op_marker, right, .. } => {
-                shape.singleton("left", self.wrap_expression_host(left));
-                shape.singleton("op", self.op_value(op_text, op_marker));
-                shape.singleton("right", self.wrap_expression_host(right));
-            }
-            SyntaxTree::If { condition, body, else_branch, .. } => {
-                shape.singleton("condition", self.render(condition, true));
-                shape.singleton("body", self.render(body, true));
-                if let Some(e) = else_branch {
-                    self.add_else_chain(shape, e);
-                }
-            }
-            SyntaxTree::ElseIf { condition, body, else_branch, .. } => {
-                shape.singleton("condition", self.render(condition, true));
-                shape.singleton("body", self.render(body, true));
-                if let Some(e) = else_branch {
-                    self.add_else_chain(shape, e);
-                }
-            }
-            SyntaxTree::Else { body, .. } => {
-                shape.singleton("body", self.render(body, true));
-            }
-            SyntaxTree::For { is_async, targets, iterables, body, else_body, .. } => {
-                if *is_async {
-                    shape.flag("async");
-                }
-                if targets.len() == 1 {
-                    shape.singleton("left", self.render(&targets[0], true));
-                } else {
-                    let arr: Vec<Value> = targets.iter().map(|t| self.render(t, true)).collect();
-                    shape.put("lefts", Value::Array(arr));
-                }
-                if iterables.len() == 1 {
-                    shape.singleton("right", self.render(&iterables[0], true));
-                } else {
-                    let arr: Vec<Value> = iterables.iter().map(|i| self.render(i, true)).collect();
-                    shape.put("rights", Value::Array(arr));
-                }
-                shape.singleton("body", self.render(body, true));
-                if let Some(e) = else_body {
-                    shape.singleton("else", self.render(e, true));
-                }
-            }
-            SyntaxTree::While { condition, body, else_body, .. } => {
-                shape.singleton("condition", self.render(condition, true));
-                shape.singleton("body", self.render(body, true));
-                if let Some(e) = else_body {
-                    shape.singleton("else", self.render(e, true));
-                }
-            }
-            SyntaxTree::Foreach { type_ann, target, iterable, body, .. } => {
-                shape.flag("in");
-                if let Some(t) = type_ann {
-                    shape.singleton("type", self.render(t, true));
-                }
-                shape.singleton("left", self.render(target, true));
-                shape.singleton("right", self.render(iterable, true));
-                shape.singleton("body", self.render(body, true));
-            }
-            SyntaxTree::CFor { initializer, condition, updates, body, .. } => {
-                if let Some(i) = initializer {
-                    shape.list_with(self.element_name(i), self.render(i, true));
-                }
-                if let Some(c) = condition {
-                    shape.singleton("condition", self.wrap_expression_host(c));
-                }
-                for u in updates {
-                    shape.list_with(self.element_name(u), self.render(u, true));
-                }
-                shape.singleton("body", self.render(body, true));
-            }
-            SyntaxTree::DoWhile { body, condition, .. } => {
-                shape.singleton("body", self.render(body, true));
-                shape.singleton("condition", self.wrap_expression_host(condition));
-            }
-            SyntaxTree::Break { .. } | SyntaxTree::Continue { .. } => {}
-            SyntaxTree::Lambda { parameters, body, .. } => {
-                for p in parameters {
-                    shape.list_with("parameter", self.render(p, true));
-                }
-                shape.singleton("body", self.render(body.inner(), true));
-            }
-            SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {
-                if let Some(t) = type_target {
-                    self.add_singleton_or_text(shape, t);
-                }
-                for a in arguments {
-                    shape.list_with(self.element_name(a), self.render(a, true));
-                }
-                if let Some(i) = initializer {
-                    shape.singleton("literal", self.render(i, true));
-                }
-            }
-            SyntaxTree::Ternary { condition, if_true, if_false, .. } => {
-                shape.singleton("condition", self.render(condition, true));
-                shape.singleton("then", self.render(if_true, true));
-                shape.singleton("else", self.render(if_false, true));
-            }
-            SyntaxTree::FieldWrap { inner, .. } => {
-                self.add_singleton_or_text(shape, inner);
-            }
-            SyntaxTree::SimpleStatement { children, modifiers, extra_markers, .. } => {
-                self.add_modifier_flags(shape, modifiers);
-                for m in extra_markers.iter() {
-                    shape.flag(m.name);
-                }
-                self.add_children(shape, children);
-            }
-            SyntaxTree::Try { try_body, handlers, else_body, finally_body, .. } => {
-                shape.singleton("body", self.render(try_body, true));
-                for h in handlers {
-                    shape.list_with("catch", self.render(h, true));
-                }
-                if let Some(e) = else_body {
-                    shape.singleton("else", self.render(e, true));
-                }
-                if let Some(f) = finally_body {
-                    shape.singleton("finally", self.render(f, true));
-                }
-            }
-            SyntaxTree::ExceptHandler { type_target, binding, filter, body, .. } => {
-                if let Some(t) = type_target {
-                    shape.singleton("type", self.render(t, true));
-                }
-                if let Some(b) = binding {
-                    shape.singleton("as", self.render(b, true));
-                }
-                if let Some(f) = filter {
-                    shape.singleton("filter", self.render(f, true));
-                }
-                shape.singleton("body", self.render(body, true));
-            }
-            SyntaxTree::TypeAlias { name, type_params, value, .. } => {
-                self.add_singleton_or_text(shape, name);
-                if let Some(p) = type_params {
-                    self.add_singleton_or_text(shape, p);
-                }
-                shape.singleton("value", self.wrap_expression_host(value));
-            }
-            SyntaxTree::KeywordArgument { name, value, .. } => {
-                self.add_singleton_or_text(shape, name);
-                shape.singleton("value", self.wrap_expression_host(value));
-            }
-            SyntaxTree::ListSplat { inner, .. } | SyntaxTree::DictSplat { inner, .. } => {
-                self.add_singleton_or_text(shape, inner);
-            }
-            SyntaxTree::Function {
-                modifiers, decorators, name, generics, parameters, returns, throws, body, ..
-            } => {
-                for d in decorators {
-                    shape.list_with("attribute", self.render(d, true));
-                }
-                self.add_modifier_flags(shape, modifiers);
-                self.add_singleton_or_text(shape, name);
-                self.add_generics(shape, generics);
-                for p in parameters {
-                    shape.list_with("parameter", self.render(p, true));
-                }
-                if let Some(r) = returns {
-                    shape.singleton("returns", self.render(r, true));
-                }
-                for t in throws {
-                    shape.list_with("throws", self.render(t, true));
-                }
-                if let Some(b) = body {
-                    shape.singleton("body", self.render(b, true));
-                }
-            }
-            SyntaxTree::Class {
-                modifiers, decorators, name, generics, bases, where_clauses: _, body, ..
-            } => {
-                for d in decorators {
-                    shape.list_with("attribute", self.render(d, true));
-                }
-                self.add_modifier_flags(shape, modifiers);
-                self.add_singleton_or_text(shape, name);
-                self.add_generics(shape, generics);
-                for b in bases {
-                    let inner = self.render_as_type(b);
-                    let mut wrap = Map::new();
-                    wrap.insert("type".into(), inner);
-                    shape.list_with("extends", Value::Object(wrap));
-                }
-                shape.singleton("body", self.render(body, true));
-            }
-            SyntaxTree::Body { children, .. } => {
-                self.add_children(shape, children);
-            }
-            SyntaxTree::Parameter { kind, extra_markers, modifiers, name, type_ann, default, .. } => {
-                match kind {
-                    ParamKind::Args => shape.flag("args"),
-                    ParamKind::Kwargs => shape.flag("kwargs"),
-                    _ => {}
-                }
-                for m in modifiers.marker_names() {
-                    shape.flag(m);
-                }
-                for m in extra_markers.iter() {
-                    shape.flag(m.name);
-                }
-                if let Some(t) = type_ann {
-                    shape.singleton("type", self.render_as_type(t));
-                }
-                self.add_singleton_or_text(shape, name);
-                if let Some(d) = default {
-                    shape.singleton("value", self.wrap_expression_host(d));
-                }
-            }
-            SyntaxTree::PositionalSeparator { .. } | SyntaxTree::KeywordSeparator { .. } => {}
-            SyntaxTree::Decorator { inner, .. } => {
-                self.add_singleton_or_text(shape, inner);
-            }
-            SyntaxTree::Returns { type_ann, .. } => {
-                shape.singleton("type", self.render_as_type(type_ann));
-            }
-            SyntaxTree::Generic { items, .. } => {
-                for it in items {
-                    shape.list_with(self.element_name(it), self.render(it, true));
-                }
-            }
-            SyntaxTree::TypeParameter { name, constraint, .. } => {
-                self.add_singleton_or_text(shape, name);
-                if let Some(c) = constraint {
-                    self.add_singleton_or_text(shape, c);
-                }
-            }
-            SyntaxTree::Return { value, .. } => {
-                if let Some(v) = value {
-                    shape.singleton("expression", self.wrap_expression_host(v));
-                }
-            }
-            SyntaxTree::Comment { leading, trailing, range, .. } => {
-                if *leading {
-                    shape.flag("leading");
-                }
-                if *trailing {
-                    shape.flag("trailing");
-                }
-                let text = range.slice(self.source).to_string();
-                shape.text(text);
-            }
-            SyntaxTree::Assign { targets, type_annotation, op_text, op_markers, values, .. } => {
-                let _ = op_text;
-                for marker in op_markers.iter() {
-                    shape.flag(marker);
-                }
-                let mut left_arr: Vec<Value> = Vec::new();
-                for t in targets {
-                    left_arr.push(self.wrap_expression_host(t));
-                }
-                if left_arr.len() == 1 {
-                    shape.singleton("left", left_arr.into_iter().next().unwrap());
-                } else if !left_arr.is_empty() {
-                    shape.singleton("left", Value::Array(left_arr));
-                }
-                if let Some(ty) = type_annotation {
-                    shape.singleton("type", self.render_as_type(ty));
-                }
-                let mut right_arr: Vec<Value> = Vec::new();
-                for v in values {
-                    right_arr.push(self.wrap_expression_host(v));
-                }
-                if right_arr.len() == 1 {
-                    shape.singleton("right", right_arr.into_iter().next().unwrap());
-                } else if !right_arr.is_empty() {
-                    shape.singleton("right", Value::Array(right_arr));
-                }
-            }
-            SyntaxTree::Import { children, .. } => {
-                self.add_children(shape, children);
-            }
-            SyntaxTree::From { relative, path, imports, .. } => {
-                if *relative {
-                    shape.flag("relative");
-                }
-                if let Some(p) = path {
-                    shape.singleton("path", self.render(p, true));
-                }
-                for it in imports {
-                    shape.list_with(self.element_name(it), self.render(it, true));
-                }
-            }
-            SyntaxTree::FromImport { has_alias, name, alias, .. } => {
-                if *has_alias {
-                    shape.flag("alias");
-                }
-                self.add_singleton_or_text(shape, name);
-                if let Some(a) = alias {
-                    shape.singleton("alias", self.render(a, true));
-                }
-            }
-            SyntaxTree::Path { segments, .. } => {
-                let arr: Vec<Value> = segments
-                    .iter()
-                    .map(|s| Value::String(s.range().slice(self.source).to_string()))
-                    .collect();
-                shape.put("names", Value::Array(arr));
-            }
-            SyntaxTree::Aliased { inner, .. } => {
-                self.add_singleton_or_text(shape, inner);
-            }
-            SyntaxTree::Enum { modifiers, decorators, name, underlying_type, members, .. } => {
-                for d in decorators {
-                    shape.list_with("attribute", self.render(d, true));
-                }
-                self.add_modifier_flags(shape, modifiers);
-                self.add_singleton_or_text(shape, name);
-                if let Some(t) = underlying_type {
-                    shape.singleton("type", self.render_as_type(t));
-                    shape.flag("underlying");
-                }
-                for m in members {
-                    shape.list_with("constant", self.render(m, true));
-                }
-            }
-            SyntaxTree::EnumMember { name, value, .. } => {
-                self.add_singleton_or_text(shape, name);
-                if let Some(v) = value {
-                    shape.singleton("value", self.wrap_expression_host(v));
-                }
-            }
-            SyntaxTree::Property { modifiers, decorators, type_ann, name, accessors, value, .. } => {
-                for d in decorators {
-                    shape.list_with("attribute", self.render(d, true));
-                }
-                self.add_modifier_flags(shape, modifiers);
-                if let Some(t) = type_ann {
-                    shape.singleton("type", self.render_as_type(t));
-                }
-                self.add_singleton_or_text(shape, name);
-                for a in accessors {
-                    shape.list_with(self.element_name(a), self.render(a, true));
-                }
-                if let Some(v) = value {
-                    shape.singleton("value", self.wrap_expression_host(v));
-                }
-            }
-            SyntaxTree::Accessor { modifiers, body, .. } => {
-                self.add_modifier_flags(shape, modifiers);
-                if let Some(b) = body {
-                    shape.singleton("body", self.render(b, true));
-                }
-            }
-            SyntaxTree::Constructor { modifiers, decorators, name, parameters, body, .. } => {
-                for d in decorators {
-                    shape.list_with("attribute", self.render(d, true));
-                }
-                self.add_modifier_flags(shape, modifiers);
-                self.add_singleton_or_text(shape, name);
-                for p in parameters {
-                    shape.list_with("parameter", self.render(p, true));
-                }
-                shape.singleton("body", self.render(body, true));
-            }
-            SyntaxTree::Using { is_static, alias, path, .. } => {
-                // Note: `is_static` is preserved on the tree for mutation
-                // surface, but the imperative pipeline emits the
-                // `static` keyword as gap text only — JSON projection
-                // doesn't surface a `"static": true` flag. Stay
-                // consistent with that for snapshot parity.
-                let _ = is_static;
-                if let Some(a) = alias {
-                    shape.singleton("alias", self.render(a, true));
-                }
-                // Single-segment using like `using System;` renders as
-                // `name: "System"` rather than `path: "System"`. Multi-
-                // segment (`using System.Collections.Generic;`) renders
-                // as `path: { names: [...] }`. Mirrors the imperative
-                // pipeline's `restructure_csharp_using`-style output.
-                if matches!(path.as_ref(), SyntaxTree::Name { .. }) {
-                    shape.singleton("name", self.render(path, true));
-                } else {
-                    shape.singleton("path", self.render(path, true));
-                }
-            }
-            SyntaxTree::Namespace { file_scoped, name, children, .. } => {
-                if *file_scoped {
-                    shape.flag("file");
-                }
-                self.add_singleton_or_text(shape, name);
-                self.add_children(shape, children);
-            }
-            SyntaxTree::Variable { modifiers, decorators, type_ann, name, value, .. } => {
-                for d in decorators {
-                    shape.list_with("attribute", self.render(d, true));
-                }
-                self.add_modifier_flags(shape, modifiers);
-                if let Some(t) = type_ann {
-                    shape.singleton("type", self.render_as_type(t));
-                }
-                self.add_singleton_or_text(shape, name);
-                if let Some(v) = value {
-                    shape.singleton("value", self.wrap_expression_host(&v.inner));
-                }
-            }
-            SyntaxTree::Is { value, type_target, .. } => {
-                shape.singleton("left", self.wrap_expression_host(value));
-                shape.singleton("right", self.render_as_type(type_target));
-            }
-            SyntaxTree::Cast { type_ann, value, .. } => {
-                shape.singleton("type", self.render_as_type(type_ann));
-                shape.singleton("value", self.wrap_expression_host(value));
-            }
-            SyntaxTree::Inline { children, list_name, .. } => {
-                if let Some(list) = list_name {
-                    let arr: Vec<Value> = children
-                        .iter()
-                        .map(|c| self.render(c, true))
-                        .collect();
-                    shape.put(list, Value::Array(arr));
-                } else {
-                    self.add_children(shape, children);
-                }
-            }
-            SyntaxTree::Unknown { .. } => {
-                // Unknown is opaque; carry the source text so consumers
-                // see what fell through.
-                let text = tree.range().slice(self.source).to_string();
-                if !text.is_empty() {
-                    shape.text(text);
-                }
-            }
-            SyntaxTree::Raw { kind, children, .. } => {
-                // Stash the actual CST kind under a `$kind` flag so
-                // JSON consumers can still discriminate; render
-                // children recursively. Leaves carry the source slice
-                // as text — same shape as Unknown. (Anonymous Raw
-                // nodes don't reach the JSON path on their own;
-                // they're filtered out by `add_children` when they
-                // would appear, or already inlined as text by the
-                // parent.)
-                shape.flag(kind);
-                if children.is_empty() {
-                    let text = tree.range().slice(self.source).to_string();
-                    if !text.is_empty() {
-                        shape.text(text);
-                    }
-                } else {
-                    self.add_children(shape, children);
-                }
-            }
-            SyntaxTree::Call { callee, arguments, .. } => {
-                self.add_singleton_or_text(shape, callee);
-                for a in arguments {
-                    shape.list_with(self.element_name(a), self.render(a, true));
-                }
-            }
-            // Scalar leaves are short-circuited in `try_render_scalar`
-            // before reaching `populate` — guard the match exhaustively.
-            SyntaxTree::Name { .. }
-            | SyntaxTree::Atom { .. }
-            | SyntaxTree::Int { .. }
-            | SyntaxTree::Float { .. }
-            | SyntaxTree::String { .. }
-            | SyntaxTree::True { .. }
-            | SyntaxTree::False { .. }
-            | SyntaxTree::None { .. }
-            | SyntaxTree::Null { .. }
-            | SyntaxTree::Skip { .. } => {}
-        }
+    // Group children by their element name so JSON keys stay unique.
+    // Inline children flatten their grandchildren into the parent's
+    // group set, so a `<expression>` wrapping a `<name>` contributes
+    // a `name` entry rather than a `$children` overflow.
+    let mut groups: BTreeMap<String, Vec<&SyntaxTree>> = BTreeMap::new();
+    let mut inline_overflow: Vec<&SyntaxTree> = Vec::new();
+    for child in &children {
+        push_child(child, &mut groups, &mut inline_overflow);
     }
 
-    /// `SyntaxTree::Access` chain rendering — preserves the right-nested
-    /// `<object>` shape that `xml_to_json.rs` projects via list= /
-    /// singleton rules. Each segment becomes a key on the previous
-    /// segment's JSON object.
-    fn add_access_chain(&self, shape: &mut Shape, receiver: &AccessReceiver, segments: &[AccessSegment]) {
-        shape.flag("access");
-        // Rendered right-nested in XML; the tree walks segments in
-        // source order. For JSON we emit the receiver at the
-        // outermost level, then each segment as a child key on the
-        // accumulated object.
-        if let Some(kw) = receiver.keyword_element() {
-            shape.flag(kw);
-            return self.add_segments(shape, segments);
-        }
-        let inner = match receiver {
-            AccessReceiver::Instance(t) => t.as_ref(),
-            _ => unreachable!("keyword_element returned None"),
-        };
-        let receiver_val = self.render(inner, true);
-        // Drop the wrapper object's $type when scalar
-        match receiver_val {
-            Value::String(s) => shape.text(s),
-            Value::Object(map) => {
-                for (k, v) in map {
-                    shape.put(&k, v);
-                }
-            }
-            other => shape.put("receiver", other),
-        }
-        self.add_segments(shape, segments);
-    }
-
-    fn add_segments(&self, shape: &mut Shape, segments: &[AccessSegment]) {
-        for seg in segments {
-            match seg {
-                AccessSegment::Member { property_range, optional, .. } => {
-                    let mut m = Map::new();
-                    m.insert(KEY_TYPE.into(), Value::String("member".into()));
-                    if *optional { m.insert("optional".into(), Value::Bool(true)); }
-                    m.insert("name".into(), Value::String(property_range.slice(self.source).to_string()));
-                    shape.list_with("member", Value::Object(m));
-                }
-                AccessSegment::Index { indices, .. } => {
-                    let mut m = Map::new();
-                    m.insert(KEY_TYPE.into(), Value::String("index".into()));
-                    if indices.len() == 1 {
-                        let v = self.render(&indices[0], true);
-                        match v {
-                            Value::String(s) => { m.insert("text".into(), Value::String(s)); }
-                            Value::Object(inner) => { for (k, vv) in inner { m.insert(k, vv); } }
-                            other => { m.insert("$children".into(), Value::Array(vec![other])); }
-                        }
-                    } else {
-                        let arr: Vec<Value> = indices.iter().map(|i| self.render(i, true)).collect();
-                        m.insert("arguments".into(), Value::Array(arr));
-                    }
-                    shape.list_with("index", Value::Object(m));
-                }
-                AccessSegment::Call { name, arguments, .. } => {
-                    let mut m = Map::new();
-                    m.insert(KEY_TYPE.into(), Value::String("call".into()));
-                    if let Some(n) = name {
-                        m.insert("name".into(), Value::String(n.slice(self.source).to_string()));
-                    }
-                    if !arguments.is_empty() {
-                        let arr: Vec<Value> = arguments.iter().map(|a| self.render(a, true)).collect();
-                        if arr.len() == 1 {
-                            m.insert("argument".into(), arr.into_iter().next().unwrap());
-                        } else {
-                            m.insert("arguments".into(), Value::Array(arr));
-                        }
-                    }
-                    shape.list_with("call", Value::Object(m));
-                }
-            }
-        }
-    }
-
-    fn add_else_chain(&self, shape: &mut Shape, tree: &SyntaxTree) {
-        match tree {
-            SyntaxTree::ElseIf { .. } => {
-                shape.list_with("else_if", self.render(tree, true));
-            }
-            SyntaxTree::Else { .. } => {
-                shape.singleton("else", self.render(tree, true));
-            }
-            _ => {
-                shape.singleton("else", self.render(tree, true));
-            }
-        }
-    }
-
-    fn add_generics(&self, shape: &mut Shape, generics: &[SyntaxTree]) {
-        for it in generics {
-            shape.list_with(self.element_name(it), self.render(it, true));
-        }
-    }
-
-    /// Add a single child as either a singleton key-by-element-name or
-    /// a scalar text value, depending on whether the rendering is an
-    /// object or a string. Mirrors `xml_to_json`'s behaviour where
-    /// text-only-leaves collapse to scalars under their parent's chosen
-    /// key.
-    fn add_singleton_or_text(&self, shape: &mut Shape, tree: &SyntaxTree) {
-        // `SyntaxTree::Inline` is a transparent wrapper — recurse into its
-        // children so they surface as direct keys on the parent
-        // shape (otherwise we'd emit a `"\$inline": …` key, which
-        // is meant for the rare case where an Inline is rendered
-        // standalone, not as a sub-shape under a parent slot).
-        if let SyntaxTree::Inline { children, list_name, .. } = tree {
-            if list_name.is_none() {
-                for c in children {
-                    if matches!(c, SyntaxTree::Skip { .. }) { continue; }
-                    self.add_singleton_or_text(shape, c);
-                }
-                return;
-            }
-        }
-        let key = self.element_name(tree);
-        let val = self.render(tree, true);
-        shape.singleton(key, val);
-    }
-
-    /// Render an tree as the value-side of a `<type>` slot. If the tree
-    /// already produces a `<type>`-shaped value (GenericType,
-    /// SimpleStatement::type), unwrap so the parent doesn't double-wrap.
-    fn render_as_type(&self, tree: &SyntaxTree) -> Value {
-        let element = self.element_name(tree);
-        if element == "type" {
-            // Already type-shaped — return the inner so the parent's
-            // explicit "type" key holds it directly.
-            self.render(tree, true)
+    for (key, items) in groups {
+        if items.len() == 1 {
+            // Singleton child → keyed by element name, $type stripped.
+            obj.insert(key, render(items[0], source, /*strip_type=*/ true));
         } else {
-            // Not type-shaped — wrap in a `{ "$type": "type", inner }`
-            // object. Use a scalar for the inner if it renders as text.
-            let inner = self.render(tree, true);
-            match inner {
-                Value::String(s) => {
-                    let mut obj = Map::new();
-                    obj.insert("name".into(), Value::String(s));
-                    Value::Object(obj)
-                }
-                Value::Object(m) => Value::Object(m),
-                other => other,
+            // Multiple same-named siblings: overflow into $children.
+            // Each entry keeps its $type so callers can tell them
+            // apart by name without inspecting JSON shape.
+            for item in items {
+                inline_overflow.push(item);
             }
         }
     }
 
-    fn wrap_expression_host(&self, tree: &SyntaxTree) -> Value {
-        // Mirror the XML render's <expression> host wrapping. Skip the
-        // wrapper when the inner already produces an `<expression>`-
-        // shaped value, to avoid `expression > expression` nesting.
-        let inner_kind = self.element_name(tree);
-        if matches!(inner_kind, "expression") {
-            return self.render(tree, true);
+    if !inline_overflow.is_empty() {
+        let mut existing = obj
+            .remove(KEY_CHILDREN)
+            .and_then(|v| match v {
+                Value::Array(a) => Some(a),
+                _ => None,
+            })
+            .unwrap_or_default();
+        for item in inline_overflow {
+            existing.push(render(item, source, /*strip_type=*/ false));
         }
-        let inner = self.render(tree, true);
-        match inner {
-            Value::Object(map) if !map.is_empty() => {
-                // Lift inner into expression host without `$type`
-                // duplication: the JSON shape emits `{ "<inner_key>":
-                // {...} }` on the parent's key.
-                let mut wrap = Map::new();
-                for (k, v) in map { wrap.insert(k, v); }
-                Value::Object(wrap)
-            }
-            other => other,
-        }
+        obj.insert(KEY_CHILDREN.to_string(), Value::Array(existing));
     }
 
-    fn op_value(&self, op_text: &str, op_marker: &str) -> Value {
-        let mut obj = Map::new();
-        obj.insert("text".into(), Value::String(op_text.to_string()));
-        // Some operators have no semantic marker (e.g. `=`, `<`,
-        // `>` in TSQL, where comparison polarity is implied by the
-        // op text itself). Skip the marker entry rather than
-        // emitting `"": true` with an empty key.
-        if !op_marker.is_empty() {
-            obj.insert(op_marker.to_string(), Value::Bool(true));
-        }
-        Value::Object(obj)
-    }
+    Value::Object(obj)
+}
 
-    fn add_modifier_flags(&self, shape: &mut Shape, modifiers: &Modifiers) {
-        for marker in modifiers.marker_names() {
-            shape.flag(marker);
-        }
+/// Inline render: a node whose `element_name_of` is `None` (Inline,
+/// Skip) carries children but no wrapper of its own. As a JSON value
+/// it has no natural shape — fall through to either a single child or
+/// a $children array.
+fn render_inline(tree: &SyntaxTree, source: &str) -> Value {
+    let children = tree.children();
+    match children.len() {
+        0 => Value::Null,
+        1 => render(children[0], source, /*strip_type=*/ false),
+        _ => Value::Array(
+            children
+                .iter()
+                .map(|c| render(c, source, /*strip_type=*/ false))
+                .collect(),
+        ),
     }
+}
 
-    /// Add a heterogeneous Vec of children to the shape, grouping by
-    /// their JSON key name (= element name). Leaves without children
-    /// become scalar text under the same key. `SyntaxTree::Inline` is
-    /// transparent — its children flatten into the parent (matching
-    /// the XML render behaviour).
-    fn add_children(&self, shape: &mut Shape, children: &[SyntaxTree]) {
-        for c in children {
-            // Markers (Break/Continue) collapse to flags when bare.
-            if matches!(c, SyntaxTree::Break { .. } | SyntaxTree::Continue { .. }) {
-                shape.flag(self.element_name(c));
-                continue;
+/// Push one child into the parent's grouping. Inline children
+/// dissolve: their grandchildren flow into the parent's groups so
+/// `<inline><name>x</name><name>y</name></inline>` contributes two
+/// `name` entries to the parent (which then promote to `$children`).
+fn push_child<'a>(
+    child: &'a SyntaxTree,
+    groups: &mut BTreeMap<String, Vec<&'a SyntaxTree>>,
+    inline_overflow: &mut Vec<&'a SyntaxTree>,
+) {
+    match element_name_of(child) {
+        Some(name) => {
+            groups.entry(name.to_string()).or_default().push(child);
+        }
+        None => {
+            for grand in child.children() {
+                push_child(grand, groups, inline_overflow);
             }
-            // `SyntaxTree::SimpleStatement` with no semantic children
-            // (kids empty OR every kid is `SyntaxTree::Skip`) is a synthetic
-            // marker — e.g. T-SQL `SELECT *` (`<star>` with one
-            // anonymous-`*` Skip), JOIN direction `<left/>`. It
-            // folds to an XML marker chip via the empty-element
-            // pass; in JSON, surface as a boolean flag rather than
-            // `"\<name\>": {}`.
-            if let SyntaxTree::SimpleStatement { children: kids, modifiers, extra_markers, .. } = c {
-                let all_skip_or_empty = kids.iter().all(|k| matches!(k, SyntaxTree::Skip { .. }));
-                if all_skip_or_empty
-                    && modifiers.marker_names().is_empty()
-                    && extra_markers.is_empty()
-                {
-                    shape.flag(self.element_name(c));
-                    continue;
-                }
-            }
-            // Inline: transparent — recurse with its children. If
-            // `list_name` is set, treat it as a flat list under that
-            // key (matching the XML render's `list="X"` distribution).
-            if let SyntaxTree::Inline { children: inner, list_name, .. } = c {
-                if let Some(list) = list_name {
-                    for ic in inner {
-                        let val = self.render(ic, true);
-                        shape.put_in_list(list, val);
-                    }
-                } else {
-                    self.add_children(shape, inner);
-                }
-                continue;
-            }
-            let key = self.element_name(c);
-            let val = self.render(c, true);
-            shape.list_with(key, val);
         }
     }
 }
 
-/// Builder for an object shape. Tracks both single-keyed slots (with
-/// collision promotion to arrays) and explicit array slots. Mirrors
-/// the XML→JSON projection rules for `list=` / singleton-element-
-/// name / collision-overflow.
-struct Shape {
-    type_name: &'static str,
-    obj: Map<String, Value>,
-    /// Tracks how many entries we've put under each key, so the
-    /// second occurrence promotes the existing singleton to an array.
-    counts: std::collections::HashMap<String, usize>,
-    /// Anonymous overflow array for collisions that can't promote to
-    /// a list (e.g. role-mixed shapes). `xml_to_json` calls this
-    /// `$children`.
-    overflow: Vec<Value>,
-    /// Optional text content (for text-only leaves with extra flags).
-    text: Option<String>,
-}
-
-impl Shape {
-    fn new(type_name: &'static str) -> Self {
-        Self {
-            type_name,
-            obj: Map::new(),
-            counts: std::collections::HashMap::new(),
-            overflow: Vec::new(),
-            text: None,
-        }
+/// Text content of a leaf node: stored scalar text if anchored=false,
+/// else the source slice. Returns `None` when the node has no text
+/// content (markers / synthetic wrappers).
+fn leaf_text(tree: &SyntaxTree, source: &str) -> Option<String> {
+    if let Some(text) = tree.scalar_text() {
+        return Some(text.to_string());
     }
-
-    fn flag(&mut self, name: &str) {
-        // Only set if not already present (avoid clobbering an actual
-        // child with a same-named flag).
-        if !self.obj.contains_key(name) {
-            self.obj.insert(name.to_string(), Value::Bool(true));
-        }
+    let range = tree.range();
+    if range.is_anchored() && !range.is_empty() {
+        return Some(range.slice(source).to_string());
     }
-
-    fn put(&mut self, key: &str, value: Value) {
-        self.obj.insert(key.to_string(), value);
-    }
-
-    /// Append a value under a fixed list key, creating the array on
-    /// first call and reusing it on subsequent calls. Used for
-    /// `SyntaxTree::Inline { list_name }` flattening.
-    fn put_in_list(&mut self, list_key: &str, value: Value) {
-        let value = strip_top_level_type(value);
-        match self.obj.remove(list_key) {
-            Some(Value::Array(mut arr)) => {
-                arr.push(value);
-                self.obj.insert(list_key.into(), Value::Array(arr));
-            }
-            Some(other) => {
-                self.obj.insert(list_key.into(), Value::Array(vec![other, value]));
-            }
-            None => {
-                self.obj.insert(list_key.into(), Value::Array(vec![value]));
-            }
-        }
-    }
-
-    fn text(&mut self, text: String) {
-        self.text = Some(text);
-    }
-
-    /// Insert a singleton-keyed value. On collision, promote to an
-    /// array (wraps existing + new). Reserved sigil keys never collide.
-    fn singleton(&mut self, key: &str, value: Value) {
-        let count = self.counts.entry(key.to_string()).or_insert(0);
-        *count += 1;
-        if *count == 1 {
-            self.obj.insert(key.to_string(), value);
-        } else if *count == 2 {
-            // Promote to array.
-            let existing = self.obj.remove(key).unwrap_or(Value::Null);
-            self.obj.insert(key.to_string(), Value::Array(vec![existing, value]));
-        } else {
-            // Already an array — append.
-            if let Some(Value::Array(arr)) = self.obj.get_mut(key) {
-                arr.push(value);
-            }
-        }
-    }
-
-    /// Insert into a list-keyed slot. The key is pluralised English
-    /// (matches the existing `list="X"` convention). First entry becomes
-    /// a singleton-then-array on the second insert, just like
-    /// `xml_to_json.rs` projects.
-    fn list_with(&mut self, element_name: &str, value: Value) {
-        let plural = pluralize_list_name(element_name);
-        let count = self.counts.entry(plural.clone()).or_insert(0);
-        *count += 1;
-        // Element names that always render as a plural JSON array
-        // even for singletons. Used to keep the JSON output
-        // consistent with snapshot convention when an element of
-        // this name appears once — we skip the singleton branch and
-        // go directly to the plural array on first occurrence.
-        let always_plural = matches!(element_name, "comment");
-        if *count == 1 && !always_plural {
-            // First occurrence — use singular key (the singleton form).
-            // Singleton entries DROP their $type since the key already
-            // conveys it.
-            let value = strip_top_level_type(value);
-            self.obj.insert(element_name.to_string(), value);
-        } else if *count == 1 {
-            // Always-plural element with one occurrence — emit as
-            // single-element array directly.
-            let value = strip_top_level_type(value);
-            self.obj.insert(plural, Value::Array(vec![value]));
-        } else if *count == 2 && !always_plural {
-            // Second occurrence — promote singular to plural array.
-            let existing = self.obj.remove(element_name).unwrap_or(Value::Null);
-            let value = strip_top_level_type(value);
-            self.obj.insert(plural, Value::Array(vec![existing, value]));
-        } else {
-            // Already an array — append.
-            let value = strip_top_level_type(value);
-            if let Some(Value::Array(arr)) = self.obj.get_mut(&plural) {
-                arr.push(value);
-            }
-        }
-    }
-
-    fn into_value(mut self, strip_type: bool) -> Value {
-        // Text-only leaf with no other content: emit as scalar string.
-        let no_content = self.obj.is_empty() && self.overflow.is_empty();
-        if no_content {
-            if let Some(text) = self.text.take() {
-                if strip_type {
-                    return Value::String(text);
-                } else {
-                    let mut obj = Map::new();
-                    obj.insert(KEY_TYPE.into(), Value::String(self.type_name.into()));
-                    obj.insert(KEY_TEXT.into(), Value::String(text));
-                    return Value::Object(obj);
-                }
-            }
-        }
-        // Otherwise build an object.
-        let mut obj = self.obj;
-        if let Some(text) = self.text {
-            obj.insert(KEY_TEXT.into(), Value::String(text));
-        }
-        if !self.overflow.is_empty() {
-            obj.insert(KEY_CHILDREN.into(), Value::Array(self.overflow));
-        }
-        if !strip_type {
-            // Insert $type at front for readability.
-            let mut with_type = Map::new();
-            with_type.insert(KEY_TYPE.into(), Value::String(self.type_name.into()));
-            for (k, v) in obj {
-                with_type.insert(k, v);
-            }
-            Value::Object(with_type)
-        } else {
-            Value::Object(obj)
-        }
-    }
-}
-
-fn strip_top_level_type(value: Value) -> Value {
-    match value {
-        Value::Object(mut m) => {
-            m.remove(KEY_TYPE);
-            Value::Object(m)
-        }
-        other => other,
-    }
+    None
 }

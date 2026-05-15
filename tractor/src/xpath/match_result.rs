@@ -138,30 +138,18 @@ pub enum Tree {
 }
 
 impl Tree {
-    /// Render the matched tree to a JSON value. JSON-typed shape
-    /// (arrays for `Vec<SyntaxTree>` slots, singletons for `Box<SyntaxTree>` slots)
-    /// comes from the typed renderers; `Tree::Xml` falls back to
-    /// the XML→JSON projection until partial matches carry tree too.
+    /// Render the matched tree to a JSON value.
     ///
-    /// **`Tree::SyntaxTree` dispatch (S5C).** Syntax tree
-    /// renders through `lower_to_data_ir → data_to_json` once the
-    /// projection covers every variant in the tree. While S5A is
-    /// in progress, documents containing unhandled variants still
-    /// fall back to the legacy heuristic `tree_to_json` — coverage
-    /// flips per-document to the new path as `to_data::project`'s
-    /// arms grow. The legacy path retires when `has_unhandled`
-    /// returns false for every test fixture (S5A's closing
-    /// condition).
+    /// `SyntaxTree` flows through the variant-blind walker in
+    /// `tree::to_json` (same metadata accessors as the XML walker;
+    /// emits `serde_json::Value` directly). `DataTree` / `Sql` keep
+    /// their existing typed renderers. `Xml` falls back to the
+    /// XML → JSON projection for partial-match subtrees.
     pub fn to_json(&self, max_depth: Option<usize>) -> serde_json::Value {
         match self {
             #[cfg(feature = "native")]
             Tree::SyntaxTree { tree, source, .. } => {
-                let data = crate::tree::lower_to_data_ir(tree, source);
-                if crate::tree::has_unhandled(&data) {
-                    crate::tree::tree_to_json(tree, source)
-                } else {
-                    crate::tree::data_to_json(&data)
-                }
+                crate::tree::tree_to_json(tree, source)
             }
             #[cfg(feature = "native")]
             Tree::DataTree { tree, .. } => crate::tree::data_to_json(tree),
