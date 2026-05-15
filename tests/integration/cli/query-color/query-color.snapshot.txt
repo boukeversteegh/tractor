@@ -5,11 +5,11 @@ tests/integration/sample.cs:2
 🟫  └─ 🟫🟦body🟦🟫/🟫
 🟫      ├─ 🟫🟨"{"🟨
 🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
-🟫      │   └─ 🟫🟫... (23 children)🟫
+🟫      │   └─ 🟫🟫... (25 children)🟫
 🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
-🟫      │   └─ 🟫🟫... (23 children)🟫
+🟫      │   └─ 🟫🟫... (25 children)🟫
 🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
-🟫      │   └─ 🟫🟫... (23 children)🟫
+🟫      │   └─ 🟫🟫... (25 children)🟫
 🟫      └─ 🟫🟨"}"🟨
 
 tests/integration/sample.cs:9
@@ -19,9 +19,9 @@ tests/integration/sample.cs:9
 🟫  └─ 🟫🟦body🟦🟫/🟫
 🟫      ├─ 🟫🟨"{"🟨
 🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
-🟫      │   └─ 🟫🟫... (19 children)🟫
+🟫      │   └─ 🟫🟫... (20 children)🟫
 🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
-🟫      │   └─ 🟫🟫... (19 children)🟫
+🟫      │   └─ 🟫🟫... (20 children)🟫
 🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
 🟫      │   └─ 🟫🟫... (4 children)🟫
 🟫      └─ 🟫🟨"}"🟨

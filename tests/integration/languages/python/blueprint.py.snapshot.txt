@@ -23,12 +23,12 @@ module/
   │       └─ aliased/name = "h"
   ├─ assign/
   │   ├─ left/expression/name = "GLOBAL_FLAG"
-  │   ├─ type/name = "bool"
+  │   ├─ type/type/name = "bool"
   │   ├─ op = "="
   │   └─ right/expression/true = "True"
   ├─ assign/
   │   ├─ left/expression/name = "PI"
-  │   ├─ type/name = "float"
+  │   ├─ type/type/name = "float"
   │   ├─ op = "="
   │   └─ right/expression/float = "3.14159"
   ├─ assign/
@@ -90,7 +90,7 @@ module/
   │   ├─ generic/type/name = "T"
   │   ├─ parameter/
   │   │   ├─ name = "v"
-  │   │   └─ type/name = "T"
+  │   │   └─ type/type/name = "T"
   │   ├─ returns/type/name = "T"
   │   └─ body/return/expression/name = "v"
   ├─ class/
@@ -108,7 +108,7 @@ module/
   │   ├─ name = "annotated"
   │   ├─ parameter/
   │   │   ├─ name = "x"
-  │   │   └─ type/name = "int"
+  │   │   └─ type/type/name = "int"
   │   ├─ parameter/
   │   │   ├─ name = "y"
   │   │   ├─ type/type[generic]/
@@ -136,7 +136,7 @@ module/
   │       │   └─ string = "\"x must be non-negative\""
   │       ├─ assign/
   │       │   ├─ left/expression/name = "result"
-  │       │   ├─ type/name = "int"
+  │       │   ├─ type/type/name = "int"
   │       │   ├─ op = "="
   │       │   └─ right/expression/name = "x"
   │       ├─ assign/
@@ -169,7 +169,7 @@ module/
   │   ├─ name = "async_work"
   │   ├─ parameter/
   │   │   ├─ name = "url"
-  │   │   └─ type/name = "str"
+  │   │   └─ type/type/name = "str"
   │   ├─ returns/type/name = "bytes"
   │   └─ body/with[async]/
   │       ├─ as/
@@ -243,12 +243,12 @@ module/
   │       ├─ expression/string = "\"\"\"A dataclass with default factory.\"\"\""
   │       ├─ assign/
   │       │   ├─ left/expression/name = "x"
-  │       │   ├─ type/name = "int"
+  │       │   ├─ type/type/name = "int"
   │       │   ├─ op = "="
   │       │   └─ right/expression/int = "0"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "y"
-  │       │   ├─ type/name = "int"
+  │       │   ├─ type/type/name = "int"
   │       │   ├─ op = "="
   │       │   └─ right/expression/int = "0"
   │       └─ assign/
@@ -288,7 +288,7 @@ module/
   │       │   ├─ parameter/name = "self"
   │       │   ├─ parameter/
   │       │   │   ├─ name = "name"
-  │       │   │   └─ type/name = "str"
+  │       │   │   └─ type/type/name = "str"
   │       │   └─ body/assign/
   │       │       ├─ left/expression/object[access and self]/member/name = "name"
   │       │       ├─ op = "="
@@ -674,7 +674,7 @@ module/
           ├─ expression/string = "\"\"\"Exercise tuple/complex match patterns, except*, `not`, parenthesized\n    splats, and concatenated string literals.\"\"\""
           ├─ assign/
           │   ├─ left/expression/name = "matched"
-          │   └─ type/name = "int"
+          │   └─ type/type/name = "int"
           ├─ match/
           │   ├─ name = "values"
           │   └─ body/

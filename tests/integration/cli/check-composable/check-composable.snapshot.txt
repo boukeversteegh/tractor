@@ -4,11 +4,11 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ method[public]/
-      │   └─ ... (23 children)
+      │   └─ ... (25 children)
       ├─ method[public]/
-      │   └─ ... (23 children)
+      │   └─ ... (25 children)
       ├─ method[public]/
-      │   └─ ... (23 children)
+      │   └─ ... (25 children)
       └─ "}"
 error: class found
 
@@ -18,9 +18,9 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ method[public]/
-      │   └─ ... (19 children)
+      │   └─ ... (20 children)
       ├─ method[public]/
-      │   └─ ... (19 children)
+      │   └─ ... (20 children)
       ├─ method[public]/
       │   └─ ... (4 children)
       └─ "}"

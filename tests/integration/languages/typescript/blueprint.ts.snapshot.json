@@ -133,11 +133,15 @@
           "name": "describe",
           "parameter": {
             "required": true,
-            "type": "string",
+            "type": {
+              "name": "string"
+            },
             "name": "prefix"
           },
           "returns": {
-            "type": "string"
+            "type": {
+              "name": "string"
+            }
           }
         }
       }
@@ -226,7 +230,9 @@
           "function": true,
           "node": {
             "required": true,
-            "type": "T",
+            "type": {
+              "name": "T"
+            },
             "name": "input"
           },
           "returns": {
@@ -309,14 +315,18 @@
           {
             "public": true,
             "static": true,
-            "type": "string",
+            "type": {
+              "name": "string"
+            },
             "name": "kind",
             "value": "\"base\""
           },
           {
             "protected": true,
             "readonly": true,
-            "type": "number",
+            "type": {
+              "name": "number"
+            },
             "name": "createdAt",
             "value": {
               "access": true,
@@ -350,14 +360,18 @@
               {
                 "public": true,
                 "required": true,
-                "type": "string",
+                "type": {
+                  "name": "string"
+                },
                 "name": "name"
               },
               {
                 "private": true,
                 "readonly": true,
                 "optional": true,
-                "type": "number",
+                "type": {
+                  "name": "number"
+                },
                 "name": "seed"
               }
             ]
@@ -367,7 +381,9 @@
             "abstract": true,
             "name": "render",
             "returns": {
-              "type": "string"
+              "type": {
+                "name": "string"
+              }
             }
           },
           {
@@ -375,7 +391,9 @@
             "get": true,
             "name": "cacheSize",
             "returns": {
-              "type": "number"
+              "type": {
+                "name": "number"
+              }
             },
             "node": {
               "expression": {
@@ -398,7 +416,9 @@
             "name": "primary",
             "parameter": {
               "required": true,
-              "type": "T",
+              "type": {
+                "name": "T"
+              },
               "name": "value"
             },
             "node": {
@@ -422,17 +442,23 @@
             "parameters": [
               {
                 "required": true,
-                "type": "string",
+                "type": {
+                  "name": "string"
+                },
                 "name": "key"
               },
               {
                 "required": true,
-                "type": "T",
+                "type": {
+                  "name": "T"
+                },
                 "name": "value"
               }
             ],
             "returns": {
-              "type": "void"
+              "type": {
+                "name": "void"
+              }
             },
             "node": {
               "access": true,
@@ -468,7 +494,9 @@
             "parameters": [
               {
                 "required": true,
-                "type": "string",
+                "type": {
+                  "name": "string"
+                },
                 "name": "name"
               },
               {
@@ -508,7 +536,9 @@
             "override": true,
             "name": "render",
             "returns": {
-              "type": "string"
+              "type": {
+                "name": "string"
+              }
             },
             "variable": {
               "const": true,
@@ -739,11 +769,15 @@
         "name": "controlFlow",
         "parameter": {
           "required": true,
-          "type": "number",
+          "type": {
+            "name": "number"
+          },
           "name": "n"
         },
         "returns": {
-          "type": "Status"
+          "type": {
+            "name": "Status"
+          }
         },
         "variables": [
           {
@@ -943,14 +977,18 @@
       "name": "isShape",
       "parameter": {
         "required": true,
-        "type": "unknown",
+        "type": {
+          "name": "unknown"
+        },
         "name": "v"
       },
       "returns": {
         "type": {
-          "name": "v",
-          "type": {
-            "name": "Shape"
+          "predicate": {
+            "name": "v",
+            "type": {
+              "name": "Shape"
+            }
           }
         }
       },
@@ -1005,7 +1043,9 @@
       "parameters": [
         {
           "required": true,
-          "type": "T",
+          "type": {
+            "name": "T"
+          },
           "name": "input"
         },
         {
@@ -1146,15 +1186,19 @@
       "name": "isNumber",
       "parameter": {
         "required": true,
-        "type": "unknown",
+        "type": {
+          "name": "unknown"
+        },
         "name": "x"
       },
       "returns": {
         "type": {
-          "asserts": true,
-          "name": "x",
-          "type": {
-            "name": "number"
+          "predicate": {
+            "asserts": true,
+            "name": "x",
+            "type": {
+              "name": "number"
+            }
           }
         }
       },
@@ -1183,7 +1227,9 @@
       "name": "MetaCtor",
       "parameter": {
         "required": true,
-        "type": "unknown",
+        "type": {
+          "name": "unknown"
+        },
         "name": {}
       },
       "node": {
@@ -1208,11 +1254,15 @@
       "name": "controlOdds",
       "parameter": {
         "required": true,
-        "type": "number",
+        "type": {
+          "name": "number"
+        },
         "name": "value"
       },
       "returns": {
-        "type": "number"
+        "type": {
+          "name": "number"
+        }
       },
       "variables": [
         {
@@ -1422,7 +1472,9 @@
         }
       ],
       "returns": {
-        "type": "number"
+        "type": {
+          "name": "number"
+        }
       },
       "node": {
         "expression": {
@@ -1465,7 +1517,9 @@
           "nodes": [
             {
               "required": true,
-              "type": "TemplateStringsArray",
+              "type": {
+                "name": "TemplateStringsArray"
+              },
               "name": "parts"
             },
             {
@@ -1605,7 +1659,9 @@
                   "name": "x"
                 },
                 {
-                  "type": "number"
+                  "type": {
+                    "name": "number"
+                  }
                 }
               ],
               "value": {
@@ -1633,11 +1689,15 @@
           "nodes": [
             {
               "required": true,
-              "type": "number",
+              "type": {
+                "name": "number"
+              },
               "name": "x"
             },
             {
-              "type": "number"
+              "type": {
+                "name": "number"
+              }
             }
           ],
           "body": {
@@ -1904,11 +1964,15 @@
         "name": "externalThing",
         "parameter": {
           "required": true,
-          "type": "string",
+          "type": {
+            "name": "string"
+          },
           "name": "name"
         },
         "returns": {
-          "type": "void"
+          "type": {
+            "name": "void"
+          }
         }
       }
     },
@@ -1919,7 +1983,9 @@
           "function": {
             "name": "init",
             "returns": {
-              "type": "void"
+              "type": {
+                "name": "void"
+              }
             }
           }
         }
@@ -1933,7 +1999,9 @@
         "constructor": true,
         "node": {
           "required": true,
-          "type": "string",
+          "type": {
+            "name": "string"
+          },
           "name": "input"
         },
         "name": "Status"
@@ -1977,7 +2045,9 @@
           "public": true,
           "name": "copy",
           "returns": {
-            "type": "this"
+            "type": {
+              "name": "this"
+            }
           }
         }
       }
@@ -2008,14 +2078,18 @@
           {
             "node": {
               "required": true,
-              "type": "number",
+              "type": {
+                "name": "number"
+              },
               "name": "head"
             }
           },
           {
             "node": {
               "optional": true,
-              "type": "string",
+              "type": {
+                "name": "string"
+              },
               "name": "tail"
             }
           }

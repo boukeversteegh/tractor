@@ -318,35 +318,11 @@ fn render_tree_class(
             // a separate `<where>` element.
             emit_gap(xot, node, source, cr.start, cr.end)?;
         } else if matches!(slot, CSlot::Base(_)) {
-            // Bases wrap in `<extends><type>...</type></extends>`
-            // — when the inner is already a type-shaped tree
-            // (GenericType produces its own `<type>`), don't
-            // double-wrap. When the inner is itself an
-            // `<implements>` SimpleStatement (Java's
-            // interface base), emit it as-is without the
-            // `<extends>` wrap.
-            let inner_already_wrapped = matches!(
-                inner,
-                SyntaxTree::SimpleStatement { element_name: "implements", .. }
-                    | SyntaxTree::SimpleStatement { element_name: "extends", .. }
-            );
-            if inner_already_wrapped {
-                render_to_xot(xot, node, inner, source)?;
-            } else {
-                let ext = element(xot, "extends", inner.span());
-                xot.append(node, ext)?;
-                let already_typed = matches!(inner,
-                    SyntaxTree::GenericType { .. }
-                        | SyntaxTree::SimpleStatement { element_name: "type", .. }
-                );
-                if already_typed {
-                    render_to_xot(xot, ext, inner, source)?;
-                } else {
-                    let t = element(xot, "type", inner.span());
-                    xot.append(ext, t)?;
-                    render_to_xot(xot, t, inner, source)?;
-                }
-            }
+            // Lowering wraps each base via `wrap_extends()` (P1) —
+            // produces either `<extends><type>...</type></extends>`
+            // or `<implements>...</implements>` as a tree node.
+            // Renderer renders what's there.
+            render_to_xot(xot, node, inner, source)?;
         } else {
             render_to_xot(xot, node, inner, source)?;
         }
@@ -931,46 +907,22 @@ fn render_tree_variable(
         emit_gap(xot, node, source, cursor, cr.start)?;
         if let Some(t) = type_ann {
             if std::ptr::eq(*c, t.as_ref()) {
-                let already_typed = matches!(*c,
-                    SyntaxTree::GenericType { .. }
-                        | SyntaxTree::SimpleStatement { element_name: "type", .. }
-                );
-                if already_typed {
-                    render_to_xot(xot, node, *c, source)?;
-                } else {
-                    let type_el = element(xot, "type", c.span());
-                    xot.append(node, type_el)?;
-                    render_to_xot(xot, type_el, c, source)?;
-                }
+                // Lowering produces typed-wrapped trees via
+                // `wrap_type()` (P1). Renderer just renders what's
+                // there.
+                render_to_xot(xot, node, *c, source)?;
                 cursor = cr.end;
                 continue;
             }
         }
         if let Some(v) = value {
             if std::ptr::eq(*c, v.inner.as_ref()) {
-                // Wrap initializer in `<value>` so the value slot is
-                // queryable consistently with properties / parameters
-                // (Principle #5 / #15). The `<expression>` host is
-                // added by `wrap_expression_positions` post-pass.
-                //
-                // Skip the wrap when the tree is already a
-                // `SimpleStatement{ element_name: "value" }` —
-                // several per-language lowerings construct that
-                // shape directly so the post-pass would find it
-                // without the renderer's help. Re-wrapping would
-                // produce nested `<value><value>` (Principle #5
-                // violation in the other direction).
-                let already_wrapped = matches!(
-                    *c,
-                    SyntaxTree::SimpleStatement { element_name: "value", .. }
-                );
-                if already_wrapped {
-                    render_to_xot(xot, node, *c, source)?;
-                } else {
-                    let val = element(xot, "value", c.span());
-                    xot.append(node, val)?;
-                    render_to_xot(xot, val, *c, source)?;
-                }
+                // Lowering wraps initializers in `<value>` via the
+                // appropriate construction (P1). Renderer renders
+                // what's there.
+                let val = element(xot, "value", c.span());
+                xot.append(node, val)?;
+                render_to_xot(xot, val, *c, source)?;
                 cursor = cr.end;
                 continue;
             }
@@ -1407,19 +1359,9 @@ fn render_tree_returns(
     xot.append(parent, node)?;
     let tr = type_ann.range();
     emit_gap(xot, node, source, range.start, tr.start)?;
-    let already_typed = matches!(
-        type_ann.as_ref(),
-        SyntaxTree::GenericType { .. }
-            | SyntaxTree::SimpleStatement { element_name: "type", .. }
-            | SyntaxTree::SimpleStatement { element_name: "predicate", .. }
-    );
-    if already_typed {
-        render_to_xot(xot, node, type_ann, source)?;
-    } else {
-        let type_el = element(xot, "type", type_ann.span());
-        xot.append(node, type_el)?;
-        render_to_xot(xot, type_el, type_ann, source)?;
-    }
+    // Lowering produces typed-wrapped trees via `wrap_type()` (P1).
+    // Renderer renders what's there.
+    render_to_xot(xot, node, type_ann, source)?;
     emit_gap(xot, node, source, tr.end, range.end)?;
     Ok(node)
 }
@@ -2045,17 +1987,9 @@ fn render_tree_property(
                 render_to_xot(xot, node, inner, source)?;
             }
             Slot::Type(_) => {
-                let already_typed = matches!(inner,
-                    SyntaxTree::GenericType { .. }
-                        | SyntaxTree::SimpleStatement { element_name: "type", .. }
-                );
-                if already_typed {
-                    render_to_xot(xot, node, inner, source)?;
-                } else {
-                    let type_el = element(xot, "type", inner.span());
-                    xot.append(node, type_el)?;
-                    render_to_xot(xot, type_el, inner, source)?;
-                }
+                // Lowering wraps via `wrap_type()` (P1). Renderer
+                // renders what's there.
+                render_to_xot(xot, node, inner, source)?;
             }
             Slot::Value(_) => {
                 let val = element(xot, "value", inner.span());

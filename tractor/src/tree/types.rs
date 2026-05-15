@@ -1641,6 +1641,30 @@ impl SyntaxTree {
         }
     }
 
+    /// Wrap this tree in a `<extends><type>...</type></extends>`
+    /// host so the renderer doesn't have to. Idempotent —
+    /// already-wrapped shapes (`SimpleStatement{element_name:
+    /// "extends" | "implements"}`) pass through unchanged.
+    pub fn wrap_extends(self) -> SyntaxTree {
+        if matches!(
+            &self,
+            SyntaxTree::SimpleStatement { element_name: "extends", .. }
+                | SyntaxTree::SimpleStatement { element_name: "implements", .. }
+        ) {
+            return self;
+        }
+        let range = self.range();
+        let span = self.span();
+        SyntaxTree::SimpleStatement {
+            element_name: "extends",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![self.wrap_type()],
+            range,
+            span,
+        }
+    }
+
     /// Wrap this tree in a `<type>` host using
     /// [`SyntaxTree::SimpleStatement`]. Idempotent — already-typed
     /// shapes (`GenericType`, `SimpleStatement{element_name: "type"}`,

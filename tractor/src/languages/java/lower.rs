@@ -154,7 +154,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             // Superclass (`extends Foo`) — bare type, gets wrapped in
             // `<extends>` by the Class render's default base path.
             if let Some(sc) = superclass {
-                bases.extend(sc.named_children().map(|c| lower_node(c, source)));
+                bases.extend(sc.named_children().map(|c| lower_node(c, source).wrap_extends()));
             }
             // Interfaces (`implements Bar, Baz`) — each wrapped in
             // a `<implements>` SimpleStatement so the Class render
@@ -275,7 +275,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             };
             let returns = returns_node.map(|t| {
                 Box::new(SyntaxTree::Returns {
-                    type_ann: Box::new(lower_node(t, source)),
+                    type_ann: Box::new(lower_node(t, source).wrap_type()),
                     range: range_of(t),
                     span: span_of(t),
                 })
@@ -368,7 +368,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     },
                 }),
-                type_ann: type_node.map(|t| Box::new(lower_node(t, source))),
+                type_ann: type_node.map(|t| Box::new(lower_node(t, source).wrap_type())),
                 default: None,
                 range,
                 span,
@@ -1084,7 +1084,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let value_node = node.child_by_field_name("value");
             match (type_node, value_node) {
                 (Some(t), Some(v)) => SyntaxTree::Cast {
-                    type_ann: Box::new(lower_node(t, source)),
+                    type_ann: Box::new(lower_node(t, source).wrap_type()),
                     value: Box::new(lower_node(v, source)),
                     range,
                     span,
@@ -1739,7 +1739,7 @@ fn lower_variable_declarator(
         };
     };
     let name_ir = name_of(n, source);
-    let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
+    let type_ir = type_node.map(|t| Box::new(lower_node(t, source).wrap_type()));
     // Wrap the value in a `<value>` SimpleStatement so the post-pass'
     // `wrap_expression_positions` finds it (it scans for `<value>`,
     // `<condition>` etc. and adds the `<expression>` host inside).

@@ -68,12 +68,16 @@
       }
     },
     {
-      "type": "bool",
+      "type": {
+        "name": "bool"
+      },
       "left": "GLOBAL_FLAG",
       "right": true
     },
     {
-      "type": "float",
+      "type": {
+        "name": "float"
+      },
       "left": "PI",
       "right": 3.14159
     },
@@ -258,11 +262,15 @@
     {
       "name": "identity",
       "parameter": {
-        "type": "T",
+        "type": {
+          "name": "T"
+        },
         "name": "v"
       },
       "returns": {
-        "type": "T"
+        "type": {
+          "name": "T"
+        }
       },
       "node": {
         "expression": "v"
@@ -272,7 +280,9 @@
       "name": "annotated",
       "parameters": [
         {
-          "type": "int",
+          "type": {
+            "name": "int"
+          },
           "name": "x"
         },
         {
@@ -329,7 +339,9 @@
       },
       "nodes": [
         {
-          "type": "int",
+          "type": {
+            "name": "int"
+          },
           "left": "result",
           "right": "x"
         },
@@ -377,11 +389,15 @@
       "async": true,
       "name": "async_work",
       "parameter": {
-        "type": "str",
+        "type": {
+          "name": "str"
+        },
         "name": "url"
       },
       "returns": {
-        "type": "bytes"
+        "type": {
+          "name": "bytes"
+        }
       },
       "with": {
         "async": true,
@@ -1116,7 +1132,9 @@
       "nodes": [
         "\"\"\"Exercise tuple/complex match patterns, except*, `not`, parenthesized\n    splats, and concatenated string literals.\"\"\"",
         {
-          "type": "int",
+          "type": {
+            "name": "int"
+          },
           "left": "matched"
         },
         {
@@ -1266,12 +1284,16 @@
       "nodes": [
         "\"\"\"A dataclass with default factory.\"\"\"",
         {
-          "type": "int",
+          "type": {
+            "name": "int"
+          },
           "left": "x",
           "right": 0
         },
         {
-          "type": "int",
+          "type": {
+            "name": "int"
+          },
           "left": "y",
           "right": 0
         },
@@ -1319,7 +1341,9 @@
               "name": "self"
             },
             {
-              "type": "str",
+              "type": {
+                "name": "str"
+              },
               "name": "name"
             }
           ],

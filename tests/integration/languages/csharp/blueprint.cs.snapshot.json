@@ -57,7 +57,9 @@
         ],
         "parameters": [
           {
-            "type": "T",
+            "type": {
+              "name": "T"
+            },
             "name": "value"
           }
         ]
@@ -109,7 +111,9 @@
             "public": true,
             "name": "Find",
             "parameter": {
-              "type": "int",
+              "type": {
+                "name": "int"
+              },
               "name": "id"
             }
           },
@@ -140,14 +144,18 @@
         "properties": [
           {
             "public": true,
-            "type": "double",
+            "type": {
+              "name": "double"
+            },
             "name": "X",
             "node": {},
             "value": "x"
           },
           {
             "public": true,
-            "type": "double",
+            "type": {
+              "name": "double"
+            },
             "name": "Y",
             "node": {},
             "value": "y"
@@ -206,11 +214,15 @@
             ],
             "parameters": [
               {
-                "type": "Point",
+                "type": {
+                  "name": "Point"
+                },
                 "name": "a"
               },
               {
-                "type": "Point",
+                "type": {
+                  "name": "Point"
+                },
                 "name": "b"
               }
             ]
@@ -269,11 +281,15 @@
             ],
             "parameters": [
               {
-                "type": "Point",
+                "type": {
+                  "name": "Point"
+                },
                 "name": "a"
               },
               {
-                "type": "Point",
+                "type": {
+                  "name": "Point"
+                },
                 "name": "b"
               }
             ]
@@ -302,11 +318,15 @@
             ],
             "parameters": [
               {
-                "type": "Point",
+                "type": {
+                  "name": "Point"
+                },
                 "name": "a"
               },
               {
-                "type": "Point",
+                "type": {
+                  "name": "Point"
+                },
                 "name": "b"
               }
             ]
@@ -385,7 +405,9 @@
             {
               "public": true,
               "const": true,
-              "type": "int",
+              "type": {
+                "name": "int"
+              },
               "name": "MaxNameLength",
               "value": 128
             },
@@ -394,7 +416,9 @@
               "internal": true,
               "static": true,
               "readonly": true,
-              "type": "DateTime",
+              "type": {
+                "name": "DateTime"
+              },
               "name": "Epoch",
               "value": {
                 "nodes": [
@@ -406,7 +430,9 @@
             },
             {
               "private": true,
-              "type": "int",
+              "type": {
+                "name": "int"
+              },
               "name": "_version"
             },
             {
@@ -427,7 +453,9 @@
           "properties": [
             {
               "public": true,
-              "type": "int",
+              "type": {
+                "name": "int"
+              },
               "name": "Id",
               "nodes": [
                 {},
@@ -436,7 +464,9 @@
             },
             {
               "public": true,
-              "type": "string",
+              "type": {
+                "name": "string"
+              },
               "name": "Name",
               "nodes": [
                 {},
@@ -447,7 +477,9 @@
             {
               "public": true,
               "virtual": true,
-              "type": "Priority",
+              "type": {
+                "name": "Priority"
+              },
               "name": "Priority",
               "nodes": [
                 {},
@@ -478,7 +510,9 @@
             ],
             "parameters": [
               {
-                "type": "string",
+                "type": {
+                  "name": "string"
+                },
                 "name": "key"
               }
             ]
@@ -492,7 +526,9 @@
               "protected": true,
               "name": "EntityBase",
               "parameter": {
-                "type": "int",
+                "type": {
+                  "name": "int"
+                },
                 "name": "id"
               },
               "node": {
@@ -561,11 +597,15 @@
               "name": "Widget",
               "parameters": [
                 {
-                  "type": "int",
+                  "type": {
+                    "name": "int"
+                  },
                   "name": "id"
                 },
                 {
-                  "type": "string",
+                  "type": {
+                    "name": "string"
+                  },
                   "name": "name"
                 }
               ],
@@ -578,7 +618,9 @@
           "property": {
             "public": true,
             "override": true,
-            "type": "Priority",
+            "type": {
+              "name": "Priority"
+            },
             "name": "Priority",
             "nodes": [
               {
@@ -632,7 +674,9 @@
               "public": true,
               "name": "Find",
               "parameter": {
-                "type": "int",
+                "type": {
+                  "name": "int"
+                },
                 "name": "id"
               },
               "node": {
@@ -673,7 +717,9 @@
               "name": "Pipe",
               "parameters": [
                 {
-                  "type": "T",
+                  "type": {
+                    "name": "T"
+                  },
                   "name": "input"
                 },
                 {
@@ -705,7 +751,9 @@
             "name": "Shout",
             "parameter": {
               "this": true,
-              "type": "Widget",
+              "type": {
+                "name": "Widget"
+              },
               "name": "w"
             },
             "node": {
@@ -757,7 +805,9 @@
             ],
             "nodes": [
               {
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "name": "widget",
                 "value": {
                   "left": "maybe",
@@ -775,7 +825,9 @@
                 }
               },
               {
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "name": "shouted",
                 "value": {
                   "left": {
@@ -795,7 +847,9 @@
                 }
               },
               {
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "name": "label",
                 "value": {
                   "condition": {
@@ -824,7 +878,9 @@
                 }
               },
               {
-                "type": "string",
+                "type": {
+                  "name": "string"
+                },
                 "name": "kind",
                 "value": {
                   "name": "widget",
@@ -882,7 +938,9 @@
                 }
               },
               {
-                "type": "object",
+                "type": {
+                  "name": "object"
+                },
                 "name": "token",
                 "value": {
                   "non_null": true,
@@ -914,7 +972,9 @@
                 }
               },
               {
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "name": "evens",
                 "value": {
                   "from": {
@@ -957,7 +1017,9 @@
                 }
               },
               {
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "name": "odds",
                 "value": {
                   "access": true,
@@ -1121,7 +1183,9 @@
               {
                 "nodes": [
                   {
-                    "type": "var",
+                    "type": {
+                      "name": "var"
+                    },
                     "name": "i",
                     "value": 0
                   },
@@ -1145,7 +1209,9 @@
                 "comment": "/* for */"
               },
               {
-                "type": "int",
+                "type": {
+                  "name": "int"
+                },
                 "name": "j",
                 "value": 0
               },
@@ -1167,7 +1233,9 @@
                 }
               },
               {
-                "type": "int",
+                "type": {
+                  "name": "int"
+                },
                 "name": "k",
                 "value": 0
               },
@@ -1191,7 +1259,9 @@
               },
               {
                 "in": true,
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "left": "n",
                 "right": "odds",
                 "node": {
@@ -1206,7 +1276,9 @@
                 }
               },
               {
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "name": "scope",
                 "value": {
                   "type": {
@@ -1222,7 +1294,9 @@
                 "using": {
                   "nodes": [
                     {
-                      "type": "var",
+                      "type": {
+                        "name": "var"
+                      },
                       "name": "inner",
                       "value": {
                         "type": {
@@ -1332,7 +1406,9 @@
                 }
               },
               {
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "name": {
                   "tuple": true,
                   "names": [
@@ -1392,17 +1468,23 @@
                 }
               },
               {
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "name": "plain",
                 "value": "\"hello\""
               },
               {
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "name": "verbatim",
                 "value": "@\"C:\\path\\file.txt\""
               },
               {
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "name": "interp",
                 "value": {
                   "interpolations": [
@@ -1416,7 +1498,9 @@
                 }
               },
               {
-                "type": "var",
+                "type": {
+                  "name": "var"
+                },
                 "name": "raw",
                 "value": "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\""
               },
@@ -1590,7 +1674,9 @@
             "method": {
               "name": "Square",
               "parameter": {
-                "type": "int",
+                "type": {
+                  "name": "int"
+                },
                 "name": "x"
               },
               "node": {
@@ -1624,7 +1710,9 @@
             "property": {
               "public": true,
               "static": true,
-              "type": "int",
+              "type": {
+                "name": "int"
+              },
               "name": "Answer",
               "node": {
                 "body": 42
@@ -1658,7 +1746,9 @@
                 "static": true,
                 "name": "Statements",
                 "parameter": {
-                  "type": "object",
+                  "type": {
+                    "name": "object"
+                  },
                   "name": "o"
                 },
                 "comments": [
@@ -1676,25 +1766,35 @@
                 ],
                 "nodes": [
                   {
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "n",
                     "value": {
-                      "type": "int",
+                      "type": {
+                        "name": "int"
+                      },
                       "value": 3.14
                     }
                   },
                   {
-                    "type": "char",
+                    "type": {
+                      "name": "char"
+                    },
                     "name": "ch",
                     "value": "'A'"
                   },
                   {
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "unreachable",
                     "value": 0
                   },
                   {
-                    "type": "var",
+                    "type": {
+                      "name": "var"
+                    },
                     "name": "m",
                     "value": {
                       "type": "Money",
@@ -1705,7 +1805,9 @@
                     }
                   },
                   {
-                    "type": "var",
+                    "type": {
+                      "name": "var"
+                    },
                     "name": "m2",
                     "value": {
                       "name": "m",
@@ -1716,7 +1818,9 @@
                     }
                   },
                   {
-                    "type": "var",
+                    "type": {
+                      "name": "var"
+                    },
                     "name": "anon",
                     "value": {
                       "anonymous": true,
@@ -1763,33 +1867,43 @@
                     }
                   },
                   {
-                    "type": "Type",
+                    "type": {
+                      "name": "Type"
+                    },
                     "name": "t",
                     "value": {
                       "node": "int"
                     }
                   },
                   {
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "sz",
                     "value": {
                       "node": "int"
                     }
                   },
                   {
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "def",
                     "value": {
                       "node": "int"
                     }
                   },
                   {
-                    "type": "string",
+                    "type": {
+                      "name": "string"
+                    },
                     "name": "s",
                     "value": null
                   },
                   {
-                    "type": "string",
+                    "type": {
+                      "name": "string"
+                    },
                     "name": "s2",
                     "value": {
                       "left": "s",
@@ -1870,7 +1984,9 @@
                 "static": true,
                 "name": "Patterns",
                 "parameter": {
-                  "type": "object",
+                  "type": {
+                    "name": "object"
+                  },
                   "name": "o"
                 },
                 "node": {
@@ -1965,12 +2081,16 @@
                 "parameters": [
                   {
                     "out": true,
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "x"
                   },
                   {
                     "out": true,
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "y"
                   }
                 ],
@@ -2001,7 +2121,9 @@
                 "static": true,
                 "name": "Origin",
                 "parameter": {
-                  "type": "object",
+                  "type": {
+                    "name": "object"
+                  },
                   "name": "o"
                 },
                 "switch": {
@@ -2051,7 +2173,9 @@
                 "public": true,
                 "name": "Trim",
                 "parameter": {
-                  "type": "string",
+                  "type": {
+                    "name": "string"
+                  },
                   "name": "s"
                 },
                 "node": {
@@ -2084,7 +2208,9 @@
                 ],
                 "nodes": [
                   {
-                    "type": "var",
+                    "type": {
+                      "name": "var"
+                    },
                     "name": "joined",
                     "value": {
                       "from": {
@@ -2155,12 +2281,16 @@
                     }
                   },
                   {
-                    "type": "object",
+                    "type": {
+                      "name": "object"
+                    },
                     "name": "o",
                     "value": "xs"
                   },
                   {
-                    "type": "var",
+                    "type": {
+                      "name": "var"
+                    },
                     "name": "asArr",
                     "value": {
                       "nodes": [
@@ -2269,7 +2399,9 @@
                     },
                     "nodes": [
                       {
-                        "type": "int",
+                        "type": {
+                          "name": "int"
+                        },
                         "name": "i",
                         "value": 0
                       },
@@ -2317,7 +2449,9 @@
                 "static": true,
                 "name": "Aligned",
                 "parameter": {
-                  "type": "int",
+                  "type": {
+                    "name": "int"
+                  },
                   "name": "n"
                 },
                 "string": {
@@ -2333,11 +2467,15 @@
                 "name": "Checks",
                 "parameters": [
                   {
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "a"
                   },
                   {
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "b"
                   }
                 ],
@@ -2406,7 +2544,9 @@
                     "name": "fn"
                   },
                   {
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "x"
                   }
                 ],
@@ -2489,7 +2629,9 @@
                 "lambda": {
                   "parameters": [
                     {
-                      "type": "int",
+                      "type": {
+                        "name": "int"
+                      },
                       "name": "x"
                     }
                   ],
@@ -2512,7 +2654,9 @@
                 "static": true,
                 "name": "IsInt",
                 "parameter": {
-                  "type": "object",
+                  "type": {
+                    "name": "object"
+                  },
                   "name": "o"
                 },
                 "node": {
@@ -2533,7 +2677,9 @@
                     "name": "xs"
                   },
                   {
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "i"
                   }
                 ],
@@ -2558,7 +2704,9 @@
                 "name": "RefExample",
                 "nodes": [
                   {
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "x",
                     "value": 0
                   },
@@ -2602,7 +2750,9 @@
                   },
                   {
                     "ref": true,
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "target"
                   }
                 ],
@@ -2622,7 +2772,9 @@
                 "static": true,
                 "name": "VarPat",
                 "parameter": {
-                  "type": "object",
+                  "type": {
+                    "name": "object"
+                  },
                   "name": "o"
                 },
                 "nodes": [
@@ -2711,7 +2863,9 @@
                 ],
                 "nodes": [
                   {
-                    "type": "var",
+                    "type": {
+                      "name": "var"
+                    },
                     "name": "q",
                     "value": {
                       "from": {
@@ -2791,7 +2945,9 @@
               "name": "Container",
               "property": {
                 "public": true,
-                "type": "T",
+                "type": {
+                  "name": "T"
+                },
                 "name": "Value",
                 "nodes": [
                   {},
@@ -2809,7 +2965,9 @@
                 ],
                 "parameters": [
                   {
-                    "type": "int",
+                    "type": {
+                      "name": "int"
+                    },
                     "name": "i"
                   }
                 ]
@@ -2832,7 +2990,9 @@
               "name": "OnChanged",
               "parameters": [
                 {
-                  "type": "int",
+                  "type": {
+                    "name": "int"
+                  },
                   "name": "newValue"
                 }
               ]
@@ -2840,29 +3000,37 @@
             "nodes": [
               {
                 "public": true,
-                "type": "OnChanged",
+                "type": {
+                  "name": "OnChanged"
+                },
                 "name": "Changed"
               },
               {
                 "private": true,
                 "type": {
-                  "names": [
-                    "global::System",
-                    "Int32"
-                  ]
+                  "node": {
+                    "names": [
+                      "global::System",
+                      "Int32"
+                    ]
+                  }
                 },
                 "name": "aliased",
                 "value": 0
               },
               {
                 "private": true,
-                "type": "OnChanged",
+                "type": {
+                  "name": "OnChanged"
+                },
                 "name": "_changed"
               },
               {
                 "private": true,
                 "static": true,
-                "type": "int",
+                "type": {
+                  "name": "int"
+                },
                 "name": "a",
                 "value": 1
               }
@@ -2968,11 +3136,15 @@
               "name": "Move",
               "parameters": [
                 {
-                  "type": "Point",
+                  "type": {
+                    "name": "Point"
+                  },
                   "name": "p"
                 },
                 {
-                  "type": "int",
+                  "type": {
+                    "name": "int"
+                  },
                   "name": "dx"
                 }
               ],

@@ -2028,7 +2028,7 @@ fn rust_function(node: &RawNode, source: &str) -> SyntaxTree {
                 if let Some(rt) = return_type_node {
                     if c.id() == rt.id() {
                         children.push(SyntaxTree::Returns {
-                            type_ann: Box::new(lower_node(c, source)),
+                            type_ann: Box::new(lower_node(c, source).wrap_type()),
                             range: range_of(c),
                             span: span_of(c),
                         });

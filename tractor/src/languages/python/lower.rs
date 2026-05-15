@@ -1656,8 +1656,8 @@ fn lower_class(node: &RawNode, source: &str, decorators: Vec<SyntaxTree>) -> Syn
 
     let generics: Vec<SyntaxTree> = type_params_node.map(|tp| lower_type_parameters(tp, source)).unwrap_or_default();
 
-    let bases = superclasses_node.map(|s| {
-        s.named_children().map(|n| lower_node(n, source)).collect()
+    let bases: Vec<SyntaxTree> = superclasses_node.map(|s| {
+        s.named_children().map(|n| lower_node(n, source).wrap_extends()).collect()
     }).unwrap_or_default();
 
     let mut body = match body_node {
@@ -2077,7 +2077,7 @@ fn lower_type_slot(node: &RawNode, source: &str) -> SyntaxTree {
             }
         }
     }
-    lower_node(inner_node, source)
+    lower_node(inner_node, source).wrap_type()
 }
 
 /// Locate the `=` token inside a plain `assignment` CST node. tree-sitter

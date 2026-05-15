@@ -71,13 +71,17 @@
           "public": true,
           "static": true,
           "final": true,
-          "type": "int",
+          "type": {
+            "name": "int"
+          },
           "name": "MAX",
           "value": 100
         },
         {
           "private": true,
-          "type": "String",
+          "type": {
+            "name": "String"
+          },
           "name": "name"
         },
         {
@@ -98,14 +102,18 @@
         },
         {
           "package": true,
-          "type": "int",
+          "type": {
+            "name": "int"
+          },
           "name": "pkg"
         },
         {
           "package": true,
           "volatile": true,
           "transient": true,
-          "type": "boolean",
+          "type": {
+            "name": "boolean"
+          },
           "name": "ready"
         }
       ],
@@ -122,7 +130,9 @@
           "public": true,
           "name": "Demo",
           "parameter": {
-            "type": "String",
+            "type": {
+              "name": "String"
+            },
             "name": "name"
           },
           "call": {
@@ -157,7 +167,9 @@
             "name": "mapper"
           },
           "returns": {
-            "type": "R"
+            "type": {
+              "name": "R"
+            }
           },
           "node": {
             "expression": {
@@ -175,11 +187,15 @@
           "synchronized": true,
           "name": "process",
           "parameter": {
-            "type": "T",
+            "type": {
+              "name": "T"
+            },
             "name": "input"
           },
           "returns": {
-            "type": "T"
+            "type": {
+              "name": "T"
+            }
           },
           "node": {
             "condition": {
@@ -223,11 +239,15 @@
           "public": true,
           "name": "describe",
           "parameter": {
-            "type": "int",
+            "type": {
+              "name": "int"
+            },
             "name": "n"
           },
           "returns": {
-            "type": "String"
+            "type": {
+              "name": "String"
+            }
           },
           "node": {
             "expression": {
@@ -260,20 +280,28 @@
           "name": "sum",
           "parameter": {
             "variadic": true,
-            "type": "int",
+            "type": {
+              "name": "int"
+            },
             "name": "xs"
           },
           "returns": {
-            "type": "int"
+            "type": {
+              "name": "int"
+            }
           },
           "nodes": [
             {
-              "type": "int",
+              "type": {
+                "name": "int"
+              },
               "name": "total",
               "value": 0
             },
             {
-              "type": "int",
+              "type": {
+                "name": "int"
+              },
               "name": "i",
               "value": 0
             },
@@ -322,11 +350,15 @@
           "public": true,
           "name": "match",
           "parameter": {
-            "type": "Object",
+            "type": {
+              "name": "Object"
+            },
             "name": "o"
           },
           "returns": {
-            "type": "String"
+            "type": {
+              "name": "String"
+            }
           },
           "node": {
             "expression": {
@@ -399,11 +431,15 @@
           "public": true,
           "name": "process",
           "parameter": {
-            "type": "U",
+            "type": {
+              "name": "U"
+            },
             "name": "input"
           },
           "returns": {
-            "type": "U"
+            "type": {
+              "name": "U"
+            }
           }
         }
       },
@@ -425,7 +461,9 @@
           "public": true,
           "name": "rgb",
           "returns": {
-            "type": "int"
+            "type": {
+              "name": "int"
+            }
           },
           "node": {
             "expression": {
@@ -497,7 +535,9 @@
         "package": true,
         "name": "greet",
         "returns": {
-          "type": "String"
+          "type": {
+            "name": "String"
+          }
         },
         "node": {
           "expression": {
@@ -529,7 +569,9 @@
         "package": true,
         "static": true,
         "final": true,
-        "type": "int",
+        "type": {
+          "name": "int"
+        },
         "name": "SEED"
       },
       "block": {
@@ -573,7 +615,9 @@
               }
             },
             {
-              "type": "char",
+              "type": {
+                "name": "char"
+              },
               "name": "ch",
               "value": "'A'"
             },
@@ -611,7 +655,9 @@
           "package": true,
           "name": "controlFlow",
           "parameter": {
-            "type": "Object",
+            "type": {
+              "name": "Object"
+            },
             "name": "o"
           },
           "returns": {
@@ -622,15 +668,21 @@
           },
           "nodes": [
             {
-              "type": "int",
+              "type": {
+                "name": "int"
+              },
               "name": "n",
               "value": {
-                "type": "int",
+                "type": {
+                  "name": "int"
+                },
                 "value": "0L"
               }
             },
             {
-              "type": "boolean",
+              "type": {
+                "name": "boolean"
+              },
               "name": "isStr",
               "value": {
                 "left": "o",
@@ -638,7 +690,9 @@
               }
             },
             {
-              "type": "int",
+              "type": {
+                "name": "int"
+              },
               "name": "k",
               "value": 0
             },
@@ -687,7 +741,9 @@
               },
               "nodes": [
                 {
-                  "type": "int",
+                  "type": {
+                    "name": "int"
+                  },
                   "name": "i",
                   "value": 0
                 },
@@ -778,15 +834,21 @@
           "package": true,
           "name": "yieldDemo",
           "parameter": {
-            "type": "Object",
+            "type": {
+              "name": "Object"
+            },
             "name": "o"
           },
           "returns": {
-            "type": "int"
+            "type": {
+              "name": "int"
+            }
           },
           "nodes": [
             {
-              "type": "int",
+              "type": {
+                "name": "int"
+              },
               "name": "v",
               "value": {
                 "name": "o",

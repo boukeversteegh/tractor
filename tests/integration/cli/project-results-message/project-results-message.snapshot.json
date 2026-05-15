@@ -15,7 +15,9 @@
             "parameter": {
               "name": "a",
               "type": {
-                "name": "int"
+                "type": {
+                  "name": "int"
+                }
               }
             },
             "body": {
@@ -46,7 +48,9 @@
               {
                 "$type": "parameter",
                 "type": {
-                  "name": "int"
+                  "type": {
+                    "name": "int"
+                  }
                 },
                 "name": "b"
               }
@@ -59,7 +63,9 @@
             "parameter": {
               "name": "a",
               "type": {
-                "name": "int"
+                "type": {
+                  "name": "int"
+                }
               }
             },
             "body": {
@@ -90,7 +96,9 @@
               {
                 "$type": "parameter",
                 "type": {
-                  "name": "int"
+                  "type": {
+                    "name": "int"
+                  }
                 },
                 "name": "b"
               }
@@ -102,7 +110,9 @@
             {
               "$type": "parameter",
               "type": {
-                "name": "int"
+                "type": {
+                  "name": "int"
+                }
               },
               "name": "b"
             }
@@ -112,7 +122,9 @@
           "parameter": {
             "name": "a",
             "type": {
-              "name": "int"
+              "type": {
+                "name": "int"
+              }
             }
           },
           "body": {
@@ -160,7 +172,9 @@
             "parameter": {
               "name": "name",
               "type": {
-                "name": "string"
+                "type": {
+                  "name": "string"
+                }
               }
             },
             "body": {
@@ -227,7 +241,9 @@
           "parameter": {
             "name": "name",
             "type": {
-              "name": "string"
+              "type": {
+                "name": "string"
+              }
             }
           }
         }

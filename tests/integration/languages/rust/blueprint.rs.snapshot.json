@@ -444,7 +444,9 @@
             }
           ],
           "node": {
-            "type": "String"
+            "type": {
+              "name": "String"
+            }
           },
           "body": {
             "node": {
@@ -540,7 +542,9 @@
               }
             ],
             "node": {
-              "type": "Self"
+              "type": {
+                "name": "Self"
+              }
             },
             "body": {
               "literal": {
@@ -571,7 +575,9 @@
               }
             ],
             "node": {
-              "type": "Self"
+              "type": {
+                "name": "Self"
+              }
             },
             "body": {
               "node": {
@@ -590,7 +596,9 @@
             "name": "const_fn",
             "parameters": [],
             "node": {
-              "type": "u32"
+              "type": {
+                "name": "u32"
+              }
             },
             "body": {
               "node": 42
@@ -609,7 +617,9 @@
               }
             ],
             "node": {
-              "type": "T"
+              "type": {
+                "name": "T"
+              }
             },
             "body": {
               "node": {
@@ -1146,7 +1156,9 @@
         }
       ],
       "node": {
-        "type": "i32"
+        "type": {
+          "name": "i32"
+        }
       },
       "body": {
         "lets": [
@@ -1558,7 +1570,9 @@
       "name": "loops_and_flow",
       "parameters": [],
       "node": {
-        "type": "i32"
+        "type": {
+          "name": "i32"
+        }
       },
       "body": {
         "for": {
@@ -1837,7 +1851,9 @@
       "name": "async_demo",
       "parameters": [],
       "node": {
-        "type": "u32"
+        "type": {
+          "name": "u32"
+        }
       },
       "body": {
         "let": {
@@ -2033,7 +2049,9 @@
         }
       ],
       "node": {
-        "type": "i32"
+        "type": {
+          "name": "i32"
+        }
       },
       "body": {
         "comments": [
