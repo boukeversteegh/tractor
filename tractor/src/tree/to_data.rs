@@ -709,10 +709,17 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
             for p in parameters {
                 pairs.push(make_pair("parameter", project(p, source), p.range(), p.span()));
             }
-            if let SyntaxTree::Body { children, .. } = body.as_ref() {
-                pairs.extend(collect_member_pairs(children, source));
-            } else {
-                pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
+            match body {
+                crate::tree::types::LambdaBody::Block(b) => {
+                    if let SyntaxTree::Body { children, .. } = b.as_ref() {
+                        pairs.extend(collect_member_pairs(children, source));
+                    } else {
+                        pairs.push(make_pair("body", project(b, source), b.range(), b.span()));
+                    }
+                }
+                crate::tree::types::LambdaBody::Expression(e) => {
+                    pairs.push(make_pair("body", project(e, source), e.range(), e.span()));
+                }
             }
             DataTree::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
         }

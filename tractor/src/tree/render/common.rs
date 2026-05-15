@@ -478,7 +478,7 @@ pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax
                 write_ir(p, out, indent, sx);
             }
             out.push_str(") => ");
-            write_ir(body, out, indent, sx);
+            write_ir(body.inner(), out, indent, sx);
         }
         SyntaxTree::Inline { children, .. } => {
             for c in children { write_ir(c, out, indent, sx); }

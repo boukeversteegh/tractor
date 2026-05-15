@@ -1341,12 +1341,12 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     .last()
             });
             let body = match body_node {
-                Some(b) if b.kind() == "block" => Box::new(lower_block_like(b, source)),
-                Some(b) => Box::new(lower_node(b, source)),
-                None => Box::new(SyntaxTree::Unknown {
+                Some(b) if b.kind() == "block" => crate::tree::types::LambdaBody::Block(Box::new(lower_block_like(b, source))),
+                Some(b) => crate::tree::types::LambdaBody::Expression(Box::new(lower_node(b, source))),
+                None => crate::tree::types::LambdaBody::Expression(Box::new(SyntaxTree::Unknown {
                     kind: "lambda(missing body)".to_string(),
                     range, span,
-                }),
+                })),
             };
             SyntaxTree::Lambda {
                 modifiers,

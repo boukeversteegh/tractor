@@ -484,12 +484,13 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 Some(p) => lower_parameters(p, source),
                 None => Vec::new(),
             };
+            // Python lambdas are always expression-bodied.
             let body = match body_node {
-                Some(b) => Box::new(lower_node(b, source)),
-                None => Box::new(SyntaxTree::Unknown {
+                Some(b) => crate::tree::types::LambdaBody::Expression(Box::new(lower_node(b, source))),
+                None => crate::tree::types::LambdaBody::Expression(Box::new(SyntaxTree::Unknown {
                     kind: "lambda(missing body)".to_string(),
                     range, span,
-                }),
+                })),
             };
             SyntaxTree::Lambda {
                 modifiers: Modifiers::default(),

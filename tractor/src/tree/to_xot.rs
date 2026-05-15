@@ -34,7 +34,7 @@
 
 use xot::{Node as XotNode, Xot};
 
-use super::types::{AccessReceiver, AccessSegment, ByteRange, SyntaxTree, ParamKind, Span};
+use super::types::{AccessReceiver, AccessSegment, ByteRange, LambdaBody, SyntaxTree, ParamKind, Span};
 
 /// Render an [`SyntaxTree`] tree as a child of `parent` in the given Xot
 /// document. Returns the root node of the rendered subtree.
@@ -792,15 +792,15 @@ fn render_tree_lambda(
     }
     let mut order: Vec<&SyntaxTree> = Vec::new();
     for p in parameters { order.push(p); }
-    order.push(body.as_ref());
+    order.push(body.inner());
     order.sort_by_key(|c| c.range().start);
 
-    let is_block_body = matches!(body.as_ref(), SyntaxTree::Body { .. });
+    let is_block_body = matches!(body, LambdaBody::Block(_));
     let mut cursor = range.start;
     for child in &order {
         let cr = child.range();
         emit_gap(xot, node, source, cursor, cr.start)?;
-        if std::ptr::eq(*child, body.as_ref()) {
+        if std::ptr::eq(*child, body.inner()) {
             if is_block_body {
                 render_to_xot(xot, node, child, source)?;
             } else {

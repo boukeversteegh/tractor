@@ -323,7 +323,7 @@ impl<'a> Renderer<'a> {
                 for p in parameters {
                     shape.list_with("parameter", self.render(p, true));
                 }
-                shape.singleton("body", self.render(body, true));
+                shape.singleton("body", self.render(body.inner(), true));
             }
             SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {
                 if let Some(t) = type_target {

@@ -636,13 +636,13 @@ pub enum SyntaxTree {
     /// `<lambda>` — `x => x*x`, `(x, y) => x+y`, `async x => ...`,
     /// `(x) => { return x; }`. Cross-language: C# lambda, Java
     /// lambda (`x -> x`), Python `lambda` (which has bare-param
-    /// syntax). `body` is `SyntaxTree::Body` for block-bodied lambdas
-    /// (renders `<body>`) or any expression tree for expression-bodied
-    /// (renders `<value><expression>...</expression></value>`).
+    /// syntax). `body` is a typed [`LambdaBody`] enum so the renderer
+    /// dispatches on the form (block vs expression) without inspecting
+    /// the inner tree's variant.
     Lambda {
         modifiers: Modifiers,
         parameters: Vec<SyntaxTree>,
-        body: Box<SyntaxTree>,
+        body: LambdaBody,
         range: ByteRange,
         span: Span,
     },
@@ -1549,6 +1549,35 @@ impl AccessReceiver {
     }
 }
 
+/// Body of an [`SyntaxTree::Lambda`]. Distinguishes statement-block
+/// bodies (`x => { stmts; }`) from expression bodies (`x => x + 1`)
+/// at the type level so the renderer dispatches by variant rather
+/// than by inspecting the inner tree.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LambdaBody {
+    /// Block-bodied lambda — inner is a [`SyntaxTree::Body`].
+    Block(Box<SyntaxTree>),
+    /// Expression-bodied lambda — inner is an expression tree.
+    Expression(Box<SyntaxTree>),
+}
+
+impl LambdaBody {
+    pub fn inner(&self) -> &SyntaxTree {
+        match self {
+            LambdaBody::Block(b) | LambdaBody::Expression(b) => b,
+        }
+    }
+
+    pub fn inner_mut(&mut self) -> &mut SyntaxTree {
+        match self {
+            LambdaBody::Block(b) | LambdaBody::Expression(b) => b.as_mut(),
+        }
+    }
+
+    pub fn range(&self) -> ByteRange { self.inner().range() }
+    pub fn span(&self) -> Span { self.inner().span() }
+}
+
 /// Typed wrapper for expression-position slots (`SyntaxTree::Variable.value`,
 /// `SyntaxTree::If.condition`, `SyntaxTree::Binary.left/right`, `SyntaxTree::Return.value`, …).
 /// The type system enforces Principle #15: anything in these slots
@@ -1896,7 +1925,7 @@ impl SyntaxTree {
             }
             SyntaxTree::Lambda { parameters, body, .. } => {
                 v.extend(parameters.iter());
-                v.push(body);
+                v.push(body.inner());
             }
             SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {
                 if let Some(t) = type_target { v.push(t); }
@@ -2238,7 +2267,7 @@ impl TreeNode for SyntaxTree {
             }
             SyntaxTree::Lambda { parameters, body, .. } => {
                 v.extend(parameters.iter_mut());
-                v.push(body.as_mut());
+                v.push(body.inner_mut());
             }
             SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {
                 if let Some(t) = type_target { v.push(t.as_mut()); }
