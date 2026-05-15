@@ -949,6 +949,17 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
             span: *span,
         },
 
+        // Raw passthrough — project as Unknown carrying the kind.
+        // Languages on the typed passthrough (HTML / CSS / C / C++ /
+        // bash / scala / lua / haskell / ocaml / r / julia) have no
+        // semantic data tree; surface the structural kind so a
+        // downstream consumer can still see what was there.
+        SyntaxTree::Raw { kind, range, span, .. } => DataTree::Unknown {
+            kind: format!("tree-raw:{}", kind),
+            range: *range,
+            span: *span,
+        },
+
         // ----- Access chain (deferred from Z3) ---------------------------
         // Receiver + segment list (Member / Index / Call). The legacy
         // path emits `access` flag, then unfolds receiver into the

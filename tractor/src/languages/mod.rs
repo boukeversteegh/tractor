@@ -4,8 +4,6 @@
 //! The shared infrastructure (crate::transform) provides only the walker and helpers.
 
 pub mod info;
-pub mod comments;
-pub mod rule;
 pub mod typescript;
 pub mod csharp;
 pub mod python;
@@ -23,7 +21,6 @@ pub mod markdown;
 pub mod tsql;
 
 use xot::{Xot, Node as XotNode};
-use crate::transform::TransformAction;
 use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Per-name metadata for a language's semantic vocabulary.
@@ -86,9 +83,6 @@ impl TractorNodeSpec {
     }
 }
 
-/// Type alias for language transform functions
-pub type TransformFn = fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>;
-
 /// Type alias for syntax category mapping functions
 /// Maps a transformed element name to a syntax category for highlighting
 pub type SyntaxCategoryFn = fn(&str) -> SyntaxCategory;
@@ -110,7 +104,6 @@ pub type GrammarFn = fn() -> tree_sitter::Language;
 pub type LowerToSyntaxTree = fn(&crate::raw::RawNode, &str) -> crate::tree::SyntaxTree;
 
 /// CST → [`DataTree`](crate::tree::DataTree) lowering function pointer (data languages).
-#[cfg(feature = "native")]
 pub type LowerToDataTree = fn(&crate::raw::RawNode, &str) -> crate::tree::DataTree;
 
 /// CST → [`SqlTree`](crate::tree::sql::SqlTree) lowering function pointer (SQL family).
@@ -119,7 +112,6 @@ pub type LowerToSqlTree = fn(&crate::raw::RawNode, &str) -> crate::tree::sql::Sq
 /// Renderer for a `DataTree` tree. Each [`DataParser`] pairs a lower
 /// fn with one of these so the pipeline never needs a per-language
 /// match to choose a renderer.
-#[cfg(feature = "native")]
 pub type DataRenderFn = fn(
     &mut xot::Xot,
     xot::Node,
@@ -130,7 +122,6 @@ pub type DataRenderFn = fn(
 /// One parsing+rendering path a data language supports. Data
 /// languages register two of these (one per tree mode); the pipeline
 /// picks based on `--tree=structure` vs `--tree=data`.
-#[cfg(feature = "native")]
 #[derive(Copy, Clone)]
 pub struct DataParser {
     pub lower: LowerToDataTree,
@@ -158,14 +149,12 @@ pub enum TreeKind {
     None,
     Syntax(LowerToSyntaxTree),
     Sql(LowerToSqlTree),
-    #[cfg(feature = "native")]
     Data {
         structure: DataParser,
         content: DataParser,
     },
 }
 
-#[cfg(feature = "native")]
 impl LanguageOps {
     /// True iff this language should run through the typed-tree pipeline
     /// at the given tree mode. Reads `tree_kind` from the registry —
@@ -229,9 +218,9 @@ pub struct LanguageOps {
     pub grammar: GrammarFn,
     /// Which tree family this language lowers to (and the lower fn). See
     /// [`TreeKind`]. `None` means the language stays on the legacy
-    /// imperative path.
+    /// imperative path — currently unused; all registered languages
+    /// have a typed lowering.
     pub tree_kind: TreeKind,
-    pub transform: TransformFn,
     pub syntax_category: SyntaxCategoryFn,
     pub field_wrappings: &'static [(&'static str, &'static str)],
     pub node_spec: Option<TractorNodeSpecLookupFn>,
@@ -239,10 +228,7 @@ pub struct LanguageOps {
     pub is_programming: bool,
     /// Has a `/data` branch projection (JSON/YAML).
     pub supports_data_tree: bool,
-    /// Dual-branch transforms for data-aware languages
-    /// (Some((ast_transform, data_transform))).
-    pub data_transforms: Option<(TransformFn, TransformFn)>,
-    /// Singleton wrapper list used by the builder's `apply_singleton_wrappers`.
+    /// Singleton wrapper list used by the typed-tree shape pass.
     pub singleton_wrappers: &'static [&'static str],
 }
 
@@ -266,13 +252,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_typescript,
         tree_kind: TreeKind::Syntax(crate::languages::typescript::lower_typescript_root),
-        transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
         node_spec: Some(typescript::output::spec),
         is_programming: true,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
@@ -282,13 +266,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_tsx,
         tree_kind: TreeKind::Syntax(crate::languages::typescript::lower_typescript_root),
-        transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
         node_spec: Some(typescript::output::spec),
         is_programming: true,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
@@ -298,13 +280,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_javascript,
         tree_kind: TreeKind::Syntax(crate::languages::typescript::lower_typescript_root),
-        transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
         node_spec: Some(typescript::output::spec),
         is_programming: true,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     // ----- Other programming languages --------------------------------------
@@ -319,13 +299,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
         // walker is no longer reachable for C#; `passthrough_transform`
         // satisfies the field's contract for any code path that still
         // looks up `transform` by language id.
-        transform: passthrough_transform,
         syntax_category: csharp::syntax_category,
         field_wrappings: CSHARP_FIELD_WRAPPINGS,
         node_spec: Some(csharp::output::spec),
         is_programming: true,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
@@ -335,13 +313,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_python,
         tree_kind: TreeKind::Syntax(crate::languages::python::lower_python_root),
-        transform: passthrough_transform,
         syntax_category: python::syntax_category,
         field_wrappings: PYTHON_FIELD_WRAPPINGS,
         node_spec: Some(python::output::spec),
         is_programming: true,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
@@ -351,13 +327,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_go,
         tree_kind: TreeKind::Syntax(crate::languages::go::lower_go_root),
-        transform: passthrough_transform,
         syntax_category: go::syntax_category,
         field_wrappings: GO_FIELD_WRAPPINGS,
         node_spec: Some(go::output::spec),
         is_programming: true,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
@@ -367,13 +341,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_rust,
         tree_kind: TreeKind::Syntax(crate::languages::rust_lang::lower_rust_root),
-        transform: passthrough_transform,
         syntax_category: rust_lang::syntax_category,
         field_wrappings: RUST_FIELD_WRAPPINGS,
         node_spec: Some(rust_lang::output::spec),
         is_programming: true,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
@@ -383,13 +355,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_java,
         tree_kind: TreeKind::Syntax(crate::languages::java::lower_java_root),
-        transform: passthrough_transform,
         syntax_category: java::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(java::output::spec),
         is_programming: true,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
@@ -399,13 +369,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_ruby,
         tree_kind: TreeKind::Syntax(crate::languages::ruby::lower_ruby_root),
-        transform: passthrough_transform,
         syntax_category: ruby::syntax_category,
         field_wrappings: RUBY_FIELD_WRAPPINGS,
         node_spec: Some(ruby::output::spec),
         is_programming: true,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
@@ -418,13 +386,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
         // PHP flows entirely through `crate::tree::php`. The imperative
         // walker is no longer reachable; passthrough satisfies the
         // registry contract.
-        transform: passthrough_transform,
         syntax_category: php::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(php::output::spec),
         is_programming: true,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
@@ -434,13 +400,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_tsql,
         tree_kind: TreeKind::Sql(crate::languages::tsql::lower_sql_root),
-        transform: tsql::transform,
         syntax_category: tsql::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(tsql::output::spec),
         is_programming: true,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     // ----- Data / config languages ------------------------------------------
@@ -450,7 +414,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["json"],
         #[cfg(feature = "native")]
         grammar: ts_json,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_json_data_root,
@@ -461,15 +424,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
-        #[cfg(not(feature = "native"))]
-        tree_kind: TreeKind::None,
-        transform: json::data_transform,
         syntax_category: json::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
         is_programming: false,
         supports_data_tree: true,
-        data_transforms: Some((json::ast_transform, json::data_transform)),
         singleton_wrappers: &[],
     },
     LanguageOps {
@@ -478,7 +437,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["yml", "yaml"],
         #[cfg(feature = "native")]
         grammar: ts_yaml,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_yaml_data_root,
@@ -489,15 +447,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
-        #[cfg(not(feature = "native"))]
-        tree_kind: TreeKind::None,
-        transform: yaml::data_transform,
         syntax_category: yaml::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
         is_programming: false,
         supports_data_tree: true,
-        data_transforms: Some((yaml::ast_transform, yaml::data_transform)),
         singleton_wrappers: &[],
     },
     LanguageOps {
@@ -506,7 +460,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["toml"],
         #[cfg(feature = "native")]
         grammar: ts_toml,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_toml_data_root,
@@ -517,19 +470,15 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
-        #[cfg(not(feature = "native"))]
-        tree_kind: TreeKind::None,
         // TOML flows entirely through `crate::tree::toml_data` (parser
         // dispatches to `parse_with_ir_pipeline`). The tree's data
         // lowering already collapses array-of-tables; no post-pass
         // needed.
-        transform: passthrough_transform,
         syntax_category: toml::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
         is_programming: false,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: &[],
     },
     LanguageOps {
@@ -538,7 +487,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["ini", "cfg", "inf"],
         #[cfg(feature = "native")]
         grammar: ts_ini,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_ini_data_root,
@@ -549,16 +497,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
-        #[cfg(not(feature = "native"))]
-        tree_kind: TreeKind::None,
         // INI flows entirely through `crate::tree::ini_data`.
-        transform: passthrough_transform,
         syntax_category: ini::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
         is_programming: false,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: &[],
     },
     LanguageOps {
@@ -567,7 +511,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["env"],
         #[cfg(feature = "native")]
         grammar: ts_env,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_ini_data_root,
@@ -578,18 +521,14 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
-        #[cfg(not(feature = "native"))]
-        tree_kind: TreeKind::None,
         // .env flows entirely through `crate::tree::ini_data` (shares
         // INI's data lowering — same shape). Grammar is bash because
         // the .env shell-style syntax overlaps closely.
-        transform: passthrough_transform,
         syntax_category: env::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
         is_programming: false,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: &[],
     },
     LanguageOps {
@@ -598,7 +537,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["md", "markdown", "mdx"],
         #[cfg(feature = "native")]
         grammar: ts_markdown,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_markdown_data_root,
@@ -609,16 +547,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
-        #[cfg(not(feature = "native"))]
-        tree_kind: TreeKind::None,
         // Markdown flows entirely through `crate::tree::markdown_data`.
-        transform: passthrough_transform,
         syntax_category: markdown::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
         is_programming: false,
         supports_data_tree: false,
-        data_transforms: None,
         singleton_wrappers: &[],
     },
 ];
@@ -628,24 +562,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
 pub fn get_language(lang: &str) -> Option<&'static LanguageOps> {
     LANGUAGES.iter().find(|l| l.ids.iter().any(|id| *id == lang))
 }
-
-/// Get the transform function for a language (single-branch transform).
-///
-/// For data-aware languages (JSON, YAML), prefer `get_data_transforms()`
-/// which returns separate AST and data transforms for dual-branch output.
-pub fn get_transform(lang: &str) -> TransformFn {
-    get_language(lang).map(|l| l.transform).unwrap_or(passthrough_transform)
-}
-
-// /specs/tractor-parse/dual-view/supported-languages.md: Supported Languages
-/// Get dual-branch transform functions for data-aware languages.
-///
-/// Returns `Some((syntax_transform, data_transform))` for languages
-/// that produce both a `/syntax` and `/data` branch, or `None` otherwise.
-pub fn get_data_transforms(lang: &str) -> Option<(TransformFn, TransformFn)> {
-    get_language(lang).and_then(|l| l.data_transforms)
-}
-
 
 /// Recursively collect every element with the given name into `out`,
 /// in document order.
@@ -863,11 +779,6 @@ pub fn is_declared_name(lang: &str, name: &str) -> bool {
         .and_then(|l| l.node_spec)
         .and_then(|f| f(name))
         .is_some()
-}
-
-/// Default passthrough transform - just continues without changes
-fn passthrough_transform(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
 }
 
 /// Default syntax category - generic fallback for unknown languages

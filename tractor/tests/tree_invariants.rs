@@ -212,49 +212,18 @@ fn no_underscore_in_node_names_except_whitelist() {
         });
     }
 
-    // Static-side complement: each language's rule table is the source
-    // of truth for which grammar kinds survive the transform with their
-    // raw name (`Rule::Passthrough`). Walk every language's rules and
-    // panic on any passthrough kind whose snake_case form contains an
-    // underscore not on the allowlist — even if no fixture currently
-    // exercises that kind. Catches drift before it reaches output.
-    let mut rule_violations: Vec<(&'static str, &'static str)> = Vec::new();
-    for (lang, kinds) in passthrough_kinds_per_language() {
-        for kind in kinds {
-            if !kind.contains('_') {
-                continue;
-            }
-            if ALLOWED_UNDERSCORE_NAMES.contains(&kind) {
-                continue;
-            }
-            rule_violations.push((lang, kind));
-        }
-    }
-    if !rule_violations.is_empty() {
-        eprintln!();
-        eprintln!(
-            "⚠ Principle #1/#2 — passthrough rule produces underscored kind names ({} violation(s))",
-            rule_violations.len()
-        );
-        eprintln!();
-        eprintln!("  These kinds map to `Rule::Passthrough` in the language's rules.rs,");
-        eprintln!("  so their raw grammar string surfaces as the element name. Either");
-        eprintln!("  rename them via `Rule::Rename` / `RenameWithMarker` / `Custom`, or");
-        eprintln!("  add the resulting name to ALLOWED_UNDERSCORE_NAMES if it's an");
-        eprintln!("  intentional multi-word concept (rare).");
-        eprintln!();
-        for (lang, kind) in &rule_violations {
-            eprintln!("  {:<12} {}", lang, kind);
-        }
-    }
+    // The static rule-table complement (which checked per-language
+    // `Rule::Passthrough` entries) was retired in S6B-Retire — the
+    // imperative pipeline and its per-language rule tables are gone.
+    // The blueprint-fixture walk above is the surviving check;
+    // coverage gaps now manifest as `SyntaxTree::Unknown` (per-language
+    // missing-kind tests pick them up).
 
-    let report_violation = !report.is_empty();
-    let rule_violation = !rule_violations.is_empty();
-    if report_violation {
+    if !report.is_empty() {
         report.print("Principle #1/#2 — no tree-sitter kind leaks (underscored names)");
-    }
-    if (report_violation || rule_violation) && ASSERT_INVARIANTS && ASSERT_NO_UNDERSCORE {
-        panic!("underscored node names");
+        if ASSERT_INVARIANTS && ASSERT_NO_UNDERSCORE {
+            panic!("underscored node names");
+        }
     }
 }
 
@@ -267,50 +236,10 @@ fn no_underscore_in_node_names_except_whitelist() {
 // invocation). Strictly more coverage than the previous blueprint-only
 // walk.
 
-/// `(lang_id, kind_strs)` for every language whose rule table is
-/// rule-driven. The kind strings are the snake_case `IntoStaticStr`
-/// outputs of the language's `Kind` enum, filtered to those that map
-/// to `Rule::Passthrough`. JSON / YAML have two rule branches (syntax
-/// + data); we union them so a kind passing through *either* branch
-/// counts.
-fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
-    use tractor::languages::rule::passthrough_kinds;
-    use tractor::languages::*;
-
-    fn dedupe(mut v: Vec<&'static str>) -> Vec<&'static str> {
-        v.sort();
-        v.dedup();
-        v
-    }
-
-    vec![
-        // TS / JS / TSX / JSX / C# / Python moved off the imperative
-        // pipeline: rule tables no longer exist. The tree pipeline owns
-        // its own dispatch; the `SyntaxTree::Unknown` fall-through covers the
-        // same diagnostic.
-        // Go moved off the imperative pipeline: rule table no longer
-        // exists. `SyntaxTree::Unknown` covers the diagnostic.
-        // Rust / Java / Ruby moved off the imperative pipeline: rule
-        // tables no longer exist. `SyntaxTree::Unknown` covers the diagnostic.
-        // PHP moved off the imperative pipeline: rule table no longer
-        // exists. `SyntaxTree::Unknown` covers the diagnostic.
-        // TOML / INI / env / markdown moved off the imperative
-        // pipeline: rule tables no longer exist. The tree pipeline
-        // (crate::tree::{toml_data, ini_data, markdown_data}) owns
-        // their dispatch; `DataTree::Unknown` covers the diagnostic.
-        ("tsql",       passthrough_kinds(tsql::rules::rule)),
-        ("json", dedupe({
-            let mut v = passthrough_kinds(json::rules::syntax_rule);
-            v.extend(passthrough_kinds(json::rules::data_rule));
-            v
-        })),
-        ("yaml", dedupe({
-            let mut v = passthrough_kinds(yaml::rules::syntax_rule);
-            v.extend(passthrough_kinds(yaml::rules::data_rule));
-            v
-        })),
-    ]
-}
+// `passthrough_kinds_per_language` was retired in S6B-Retire alongside
+// `crate::languages::rule` — the imperative-pipeline rule tables it
+// queried no longer exist. The fixture-walk above (`build_violation_report`)
+// remains the primary "no underscored kinds leak" check.
 
 // ---------------------------------------------------------------------------
 // Invariant 3 (RETIRED iter 317): no_grammar_kind_suffixes migrated to

@@ -15,8 +15,6 @@
 //!   falling back to canonical spellings for empty / non-scalar
 //!   variants.
 
-#![cfg(feature = "native")]
-
 use std::collections::HashMap;
 
 use crate::tree::data::DataTree;

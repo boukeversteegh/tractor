@@ -141,3 +141,33 @@ fn php_parity() {
 fn tsql_parity() {
     assert_parity("tsql", "SELECT id, name FROM users WHERE id = 1;\n");
 }
+
+// --- Data-language fixtures (S6D: typed `DataTree` pipeline on WASM) ----
+
+#[test]
+fn json_parity() {
+    assert_parity("json", r#"{"name": "alice", "age": 30, "tags": ["x", "y"]}"#);
+}
+
+#[test]
+fn yaml_parity() {
+    assert_parity(
+        "yaml",
+        "name: alice\nage: 30\ntags:\n  - x\n  - y\n",
+    );
+}
+
+#[test]
+fn toml_parity() {
+    assert_parity("toml", "name = \"alice\"\nage = 30\n[address]\ncity = \"NY\"\n");
+}
+
+#[test]
+fn ini_parity() {
+    assert_parity("ini", "[section]\nname = alice\nage = 30\n");
+}
+
+#[test]
+fn markdown_parity() {
+    assert_parity("markdown", "# Title\n\nA paragraph with **bold** text.\n");
+}

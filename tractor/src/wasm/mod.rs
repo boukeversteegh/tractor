@@ -7,9 +7,7 @@ pub mod ast;
 
 use wasm_bindgen::prelude::*;
 use ast::{SerializedNode, ParseRequest, ParseResponse};
-use crate::transform::builder::XotBuilder;
-use crate::transform::walk_transform;
-use crate::languages::{get_transform, TreeKind};
+use crate::languages::TreeKind;
 use crate::output::RenderOptions;
 use crate::tree_mode::TreeMode;
 
@@ -93,16 +91,15 @@ fn resolve_wasm_tree_mode(tree_mode_str: Option<&str>, raw_mode: bool) -> Option
 
 /// Internal function to convert AST to XML.
 ///
-/// For languages whose registry entry advertises a typed-tree lowering
-/// (`TreeKind::Syntax` / `TreeKind::Sql`), this goes through the same
-/// `RawNode → SyntaxTree → render_to_xot` path the native CLI uses,
-/// closing the WASM↔CLI semantic-XML gap that motivated S6.
+/// For every language with a typed-tree lowering
+/// (`TreeKind::Syntax` / `TreeKind::Sql` / `TreeKind::Data`), routes
+/// through the same `RawNode → typed tree → render` path the native
+/// CLI uses, closing the WASM↔CLI semantic-XML gap that motivated
+/// S6. Raw tree mode (and any future `TreeKind::None` languages) use
+/// the bare `XotBuilder` CST dump.
 ///
-/// Languages still on the legacy imperative path (`TreeKind::None`,
-/// `TreeKind::Data`) fall back to `XotBuilder + walk_transform`.
-///
-/// `pub` so the S6A/S6C parity tests can exercise the WASM
-/// code path natively (without spinning up a real WASM runtime).
+/// `pub` so the S6A/S6C parity tests can exercise the WASM code path
+/// natively (without spinning up a real WASM runtime).
 pub fn parse_ast_to_xml(
     ast: &SerializedNode,
     source: &str,
@@ -115,9 +112,8 @@ pub fn parse_ast_to_xml(
     let resolved = TreeMode::resolve(tree_mode, language)?;
 
     // Route programming-language parses through the typed pipeline
-    // when the registry advertises a syntax/sql lowering. Raw mode
-    // still drops through to the imperative path (xot is a faithful
-    // CST dump in that mode).
+    // when the registry advertises a syntax / sql / data lowering.
+    // Raw mode still drops through to the bare CST dump.
     if resolved != TreeMode::Raw {
         if let Some(lang_ops) = crate::languages::get_language(language) {
             match lang_ops.tree_kind {
@@ -127,33 +123,63 @@ pub fn parse_ast_to_xml(
                 TreeKind::Sql(lower) => {
                     return parse_via_sql_tree(ast, source, lower, include_locations, pretty_print);
                 }
-                _ => {}
+                TreeKind::Data { structure, content } => {
+                    let parser = match resolved {
+                        TreeMode::Structure => structure,
+                        TreeMode::Data => content,
+                        TreeMode::Raw => unreachable!("filtered by outer condition"),
+                    };
+                    return parse_via_data_tree(ast, source, parser, include_locations, pretty_print);
+                }
+                TreeKind::None => {}
             }
         }
     }
 
-    // Imperative fallback (raw mode, data-language modes still on the
-    // legacy path, languages with `TreeKind::None`).
-    let mut builder = XotBuilder::new();
-    let root = builder.build_raw_from_serialized(ast, source, file_path)
-        .map_err(|e| format!("Failed to build XML: {}", e))?;
+    // Raw mode (and any `TreeKind::None` language) — typed
+    // passthrough preserving anonymous tokens. Mirrors the legacy
+    // imperative dump but routed through `SyntaxTree::Raw` so the
+    // imperative `XotBuilder` can retire.
+    parse_via_raw_passthrough(ast, source, include_locations, pretty_print)
+}
 
-    let mut xot = builder.into_xot();
-
-    if resolved != TreeMode::Raw {
-        let wrappings = crate::languages::get_field_wrappings(language);
-        crate::transform::apply_field_wrappings(&mut xot, root, wrappings)
-            .map_err(|e| format!("Field wrapping failed: {}", e))?;
-        let transform_fn = get_transform(language);
-        walk_transform(&mut xot, root, transform_fn)
-            .map_err(|e| format!("Transform failed: {}", e))?;
-    }
-
+/// Bare CST dump via `lower_raw_passthrough_all` — replaces the
+/// legacy `XotBuilder::build_raw_from_serialized`. Anonymous
+/// tree-sitter tokens (punctuation, keywords) are preserved as text
+/// nodes between named-element children.
+fn parse_via_raw_passthrough(
+    ast: &SerializedNode,
+    source: &str,
+    include_locations: bool,
+    pretty_print: bool,
+) -> Result<String, String> {
+    let (xot, doc) = raw_passthrough_xot(ast, source)?;
     let options = RenderOptions::new()
         .with_meta(include_locations)
         .with_pretty_print(pretty_print);
+    Ok(crate::output::render_document(&xot, doc, &options))
+}
 
-    Ok(crate::output::render_document(&xot, root, &options))
+/// Shared helper: serialise the AST through `lower_raw_passthrough_all`
+/// and render to a fresh xot document. Used by both `parse_ast_to_xml`
+/// (XML output) and `get_schema_tree` (schema collection).
+fn raw_passthrough_xot(
+    ast: &SerializedNode,
+    source: &str,
+) -> Result<(xot::Xot, xot::Node), String> {
+    let json = serde_json::to_string(ast)
+        .map_err(|e| format!("Failed to serialise AST: {}", e))?;
+    let raw: crate::raw::RawNode = serde_json::from_str(&json)
+        .map_err(|e| format!("Failed to deserialise RawNode: {}", e))?;
+
+    let mut tree = crate::tree::lower_raw_passthrough_all(&raw, source);
+    crate::tree::assign_ids_syntax(&mut tree);
+
+    let mut xot = xot::Xot::new();
+    let doc = xot.new_document();
+    crate::tree::render_to_xot(&mut xot, doc, &tree, source)
+        .map_err(|e| format!("tree render failed: {}", e))?;
+    Ok((xot, doc))
 }
 
 /// Route a `SerializedNode` AST through the typed `SyntaxTree`
@@ -183,6 +209,37 @@ fn parse_via_syntax_tree(
     let doc = xot.new_document();
     crate::tree::render_to_xot(&mut xot, doc, &tree, source)
         .map_err(|e| format!("tree render failed: {}", e))?;
+
+    let options = RenderOptions::new()
+        .with_meta(include_locations)
+        .with_pretty_print(pretty_print);
+
+    Ok(crate::output::render_document(&xot, doc, &options))
+}
+
+/// Route through the typed `DataTree` pipeline (json / yaml / toml /
+/// ini / env / markdown). Each language carries two `DataParser`s in
+/// its `TreeKind::Data` variant — one per tree mode — selected by
+/// the caller.
+fn parse_via_data_tree(
+    ast: &SerializedNode,
+    source: &str,
+    parser: crate::languages::DataParser,
+    include_locations: bool,
+    pretty_print: bool,
+) -> Result<String, String> {
+    let json = serde_json::to_string(ast)
+        .map_err(|e| format!("Failed to serialise AST: {}", e))?;
+    let raw: crate::raw::RawNode = serde_json::from_str(&json)
+        .map_err(|e| format!("Failed to deserialise RawNode: {}", e))?;
+
+    let mut tree = (parser.lower)(&raw, source);
+    crate::tree::assign_ids_data(&mut tree);
+
+    let mut xot = xot::Xot::new();
+    let doc = xot.new_document();
+    (parser.render)(&mut xot, doc, &tree, source)
+        .map_err(|e| format!("DataTree render failed: {}", e))?;
 
     let options = RenderOptions::new()
         .with_meta(include_locations)
@@ -249,9 +306,9 @@ pub fn get_schema_tree(
     let resolved = TreeMode::resolve(tree_mode, language)
         .map_err(|e| JsValue::from_str(&e))?;
 
-    // Build the xot document — typed pipeline for `Syntax` / `Sql`
-    // language families (same selection as `parse_ast_to_xml`),
-    // imperative XotBuilder fallback for everything else.
+    // Build the xot document — typed pipeline for every language
+    // family (same selection as `parse_ast_to_xml`); bare CST dump
+    // for raw mode and the (currently empty) `TreeKind::None` set.
     let (xot, root) = if resolved != TreeMode::Raw {
         match crate::languages::get_language(language).map(|l| l.tree_kind) {
             Some(TreeKind::Syntax(lower)) => {
@@ -280,26 +337,31 @@ pub fn get_schema_tree(
                     .map_err(|e| JsValue::from_str(&format!("SqlTree render failed: {}", e)))?;
                 (xot, doc)
             }
-            _ => {
-                let mut builder = XotBuilder::new();
-                let root = builder.build_raw_from_serialized(&ast, source, "input")
-                    .map_err(|e| JsValue::from_str(&format!("Failed to build XML: {}", e)))?;
-                let mut xot = builder.into_xot();
-                let wrappings = crate::languages::get_field_wrappings(language);
-                crate::transform::apply_field_wrappings(&mut xot, root, wrappings)
-                    .map_err(|e| JsValue::from_str(&format!("Field wrapping failed: {}", e)))?;
-                let transform_fn = get_transform(language);
-                walk_transform(&mut xot, root, transform_fn)
-                    .map_err(|e| JsValue::from_str(&format!("Transform failed: {}", e)))?;
-                (xot, root)
+            Some(TreeKind::Data { structure, content }) => {
+                let parser = match resolved {
+                    TreeMode::Structure => structure,
+                    TreeMode::Data => content,
+                    TreeMode::Raw => unreachable!("filtered by outer condition"),
+                };
+                let json = serde_json::to_string(&ast)
+                    .map_err(|e| JsValue::from_str(&format!("Failed to serialise AST: {}", e)))?;
+                let raw: crate::raw::RawNode = serde_json::from_str(&json)
+                    .map_err(|e| JsValue::from_str(&format!("Failed to deserialise RawNode: {}", e)))?;
+                let mut tree = (parser.lower)(&raw, source);
+                crate::tree::assign_ids_data(&mut tree);
+                let mut xot = xot::Xot::new();
+                let doc = xot.new_document();
+                (parser.render)(&mut xot, doc, &tree, source)
+                    .map_err(|e| JsValue::from_str(&format!("DataTree render failed: {}", e)))?;
+                (xot, doc)
             }
+            _ => raw_passthrough_xot(&ast, source)
+                .map_err(|e| JsValue::from_str(&e))?,
         }
     } else {
-        // Raw mode: untransformed CST dump via XotBuilder.
-        let mut builder = XotBuilder::new();
-        let root = builder.build_raw_from_serialized(&ast, source, "input")
-            .map_err(|e| JsValue::from_str(&format!("Failed to build XML: {}", e)))?;
-        (builder.into_xot(), root)
+        // Raw mode: typed CST dump preserving anonymous tokens.
+        raw_passthrough_xot(&ast, source)
+            .map_err(|e| JsValue::from_str(&e))?
     };
 
     // Collect schema from the xot tree

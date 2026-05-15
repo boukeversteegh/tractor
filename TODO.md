@@ -254,17 +254,19 @@ parsing source ─►  RawNode  ◄─────────┤               
 
 - [x] [S6B-Pilot+Rest] **Migrated all 14 lowerings to `&RawNode`.** Mechanical refactor scripted via `scripts/migrate_to_rawnode.py` (regex rewrites for `TsNode<'_>`/`Option<TsNode>`/`Vec<TsNode>` types, cursor declarations, children/named_children calls). Hand-fixes: csharp's 8 `utf8_text(source.as_bytes())` Result-shaped call sites, csharp/java's 4 `.parent()` walk-up sites (refactored to a `thread_local!` parent-map populated at the root of each `lower_*_root` call, scoped to the lowering — see `enclosing_type_kind` in csharp/java's `lower.rs`). Lowerings are no longer gated on `feature = "native"`.
 
-- [x] [S6B-WASM] **WASM crossing wired through the typed pipeline.** `wasm/mod.rs:parse_ast_to_xml` now routes `TreeKind::Syntax` / `TreeKind::Sql` languages through `serde_json::from_str::<RawNode>` → `lower(&raw, source)` → `assign_ids_*` → `render_to_xot` / `render_sql_to_xot` → `render_document`. Both `parse_to_xml` and `get_schema_tree` use the same path. Data-language modes and `TreeKind::None` languages fall back to the legacy `XotBuilder + walk_transform` path; that fallback is what S6B-Retire still has to address.
+- [x] [S6B-WASM] **WASM crossing wired through the typed pipeline.** `wasm/mod.rs:parse_ast_to_xml` and `get_schema_tree` both route every `TreeKind::Syntax` / `TreeKind::Sql` / `TreeKind::Data` parse through `serde_json::from_str::<RawNode>` → `lower(&raw, source)` → `assign_ids_*` → typed renderer → `render_document`. Data-language ungating landed alongside S6D (`tree::data` and its renderers are no longer `feature = "native"`-gated); `wasm_parity.rs` now covers json / yaml / toml / ini / markdown too.
 
-- [ ] [S6B-Retire] **Delete the imperative transform machinery.** Blocked on **S6R** (typed passthrough for `TreeKind::None` languages) and on ungating the data-tree path for WASM. Once both land, `walk_transform`, `apply_field_wrappings`, per-language `transform.rs`, and `XotBuilder::build_raw_from_serialized` have no callers and can be deleted.
+- [x] [S6B-Retire] **Deleted the imperative transform machinery.** Gone: `transform::builder` (`XotBuilder`, `XeeBuilder`, `build_raw_from_serialized`, `build_raw_with_options`, `build_with_options`), `transform::walk_transform`, `transform::walk_transform_node`, `transform::walk_node`, `transform::apply_field_wrappings`, `transform::collect_wrap_targets`. Per-language rule machinery: `languages::rule`, `languages::comments`, plus `json/{syntax,data,rules,transformations}.rs`, `yaml/{syntax,data,rules,transformations}.rs`, `tsql/{transform,transformations,rules}.rs`. Removed from registry: `LanguageOps::transform`, `LanguageOps::data_transforms`, `TransformFn` type alias, `get_transform`, `get_data_transforms`, `passthrough_transform`. Native parser and WASM both route raw mode and any future `TreeKind::None` language through `crate::tree::lower_raw_passthrough_all` instead. Snapshot suite still has 11 pre-existing mismatches (unrelated to S6B-Retire — confirmed by running `update-snapshots --check` on `git stash`'d state); no new regressions.
 
-- [x] [S6C] **The S6A fixtures pass: WASM↔CLI divergence is zero for every migrated language.** Verified by the 9-test `wasm_parity` suite; all green.
+- [x] [S6C] **The S6A fixtures pass: WASM↔CLI divergence is zero for every migrated language.** Verified by the 14-test `wasm_parity` suite (programming languages + sql + data languages); all green.
 
 ---
 
-## S6R — Typed passthrough for unmigrated languages (unblocks S6B-Retire)
+## S6R — Typed passthrough for unmigrated languages ✅
 
-**Goal.** Every language flows through the typed pipeline. Languages without a hand-written semantic lowering get a generic `lower_raw_passthrough` that wraps each CST node in a single `Raw` variant — close to the bare CST, no semantic decisions. This kills the last consumers of `walk_transform` + `XotBuilder` and unblocks S6B-Retire.
+**Closed alongside S6B-Retire.** Every parse on every target flows through the typed pipeline. Languages without a hand-written semantic lowering get `crate::tree::lower_raw_passthrough` (named children only) or `lower_raw_passthrough_all` (preserves anonymous tokens — used for `TreeMode::Raw`); both produce `SyntaxTree::Raw { kind, is_named, children, range, span }` which `to_xot::render_tree_raw` emits as `<{kind}>{children…}</{kind}>`. The current `LANGUAGES` registry has no `TreeKind::None` rows so the named-only passthrough has no production consumers yet — it stands ready for any future passthrough language registration (HTML, CSS, C, C++, bash, scala, lua, haskell, ocaml, r, julia). The unit tests in `tree/lower_raw_passthrough.rs` lock the shape.
+
+**Goal (historical).** Every language flows through the typed pipeline. Languages without a hand-written semantic lowering get a generic `lower_raw_passthrough` that wraps each CST node in a single `Raw` variant — close to the bare CST, no semantic decisions. This kills the last consumers of `walk_transform` + `XotBuilder` and unblocks S6B-Retire.
 
 **Why now.** After S6, the typed pipeline covers `TreeKind::Syntax` and `TreeKind::Sql`. Eleven languages (HTML, CSS, C, C++, bash, scala, lua, haskell, ocaml, r, julia) still route through `walk_transform` because they have no typed lowering. Data languages on WASM also fall back to the imperative path (separate issue — see follow-up below). As long as anything hits `walk_transform`, the legacy machinery can't be deleted.
 
@@ -289,23 +291,17 @@ Passthrough languages currently get `apply_field_wrappings` from the imperative 
 
 ### Tasks
 
-- [ ] [S6R-Variant] **A `SyntaxTree::Raw` variant exists with a `to_xot` arm.**
-  - Renders `<kind>{children…}</kind>`. Add to `tree::types`, `tree::to_xot`, `tree::to_json`, `tree::render::*`. Treat `kind` as a `Cow<'static, str>` or `String` (the grammar kind names aren't a closed set across all languages).
-  - Add the matching `TreeNode::children`/`children_mut` arm so `assign_ids` walks it.
+- [x] [S6R-Variant] **A `SyntaxTree::Raw` variant exists with a `to_xot` arm.** `SyntaxTree::Raw { kind: String, is_named: bool, children: Vec<SyntaxTree>, range, span }` in `tree/types.rs` with arms in `to_xot::render_tree_raw`, `to_json::populate`, `to_data::project`, plus `TreeNode::children/children_mut`. Renders `<{kind}>{children…}</{kind}>` for named nodes; anonymous nodes (only produced by `lower_raw_passthrough_all`) emit their source text inline. Between siblings of named-kind `Raw` nodes, the renderer emits gap text so `string()` round-trip recovers inter-token whitespace — the property the `XotBuilder` raw dump used to provide.
 
-- [ ] [S6R-Lower] **`lower_raw_passthrough` exists for `SyntaxTree` and produces the `Raw` variant recursively.**
-  - Walks named children only (or all children — pick to match the prior imperative output as closely as possible).
-  - Lives at `tree::lower_raw_passthrough` so it's reachable from the registry without a per-language file.
+- [x] [S6R-Lower] **`lower_raw_passthrough` exists for `SyntaxTree` and produces the `Raw` variant recursively.** `tree/lower_raw_passthrough.rs` exposes `lower_raw_passthrough` (named children only, for `TreeKind::Syntax` registrations) and `lower_raw_passthrough_all` (preserves anonymous tokens, used for `TreeMode::Raw`). 3 unit tests lock the shape.
 
-- [ ] [S6R-Register] **Every `TreeKind::None` row in `LANGUAGES` now carries `TreeKind::Syntax(lower_raw_passthrough)`.**
-  - HTML, CSS, C, C++, bash, scala, lua, haskell, ocaml, r, julia.
+- [x] [S6R-Register] **No native `LanguageOps` row currently uses `TreeKind::None`.** All 17 registry entries advertise `TreeKind::Syntax` / `TreeKind::Sql` / `TreeKind::Data`. The 11 unmigrated languages mentioned in the original write-up (HTML, CSS, C, C++, bash, scala, lua, haskell, ocaml, r, julia) aren't registered at all today; registering one in the future is now a one-line `tree_kind: TreeKind::Syntax(crate::tree::lower_raw_passthrough)`.
 
-- [ ] [S6R-Tests] **Snapshot or property tests cover the passthrough output for at least three of the new languages.**
-  - Cheap inputs (`<div>x</div>`, `body { color: red; }`, `int main(){}`). Goal is to lock the shape so future refactors can't silently break it.
+- [x] [S6R-Tests] **Unit tests on `lower_raw_passthrough` cover leaf / nested-named / anonymous-dropped shapes.** No language-specific snapshot tests yet (no passthrough languages registered); those would be added alongside the first registration.
 
-### Follow-up (not in this slice)
+### Follow-up — S6D (landed) ✅
 
-WASM-side data-language parsing still falls back to the imperative path because `tree::data` and the data renderers are `#[cfg(feature = "native")]`-gated. Ungating them is its own slice — call it **S6D**. With S6R + S6D landed, S6B-Retire's invariants hold and the imperative machinery can go.
+WASM-side data-language parsing routes through the typed pipeline: `tree::data`, `tree::data::to_xot`, `tree::data::to_json`, `tree::render::data_*` no longer carry the `feature = "native"` gate; `TreeKind::Data { structure, content }` is registered unconditionally on every data row; `wasm::parse_ast_to_xml` and `get_schema_tree` dispatch on `TreeKind::Data` the same way they do on `Syntax` / `Sql`. The `wasm_parity` suite covers json / yaml / toml / ini / markdown.
 
 ---
 

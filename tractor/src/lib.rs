@@ -105,7 +105,6 @@ pub use rule::{Rule, RuleSet};
 pub use rule::{GlobMatcher, GlobError, CompiledRule, compile_ruleset};
 #[cfg(feature = "native")]
 pub use files::{expand_globs, expand_globs_checked, GlobExpansion, GlobExpansionError};
-pub use transform::builder::{XotBuilder, XeeBuilder};
 pub use normalized_xpath::NormalizedXpath;
 pub use normalized_path::NormalizedPath;
 pub use glob_pattern::GlobPattern;

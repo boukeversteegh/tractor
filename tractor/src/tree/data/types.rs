@@ -39,7 +39,6 @@
 //! 3. **No silent drops** — un-handled CST kinds fall through to
 //!    [`DataTree::Unknown`] (visible `<unknown kind="…"/>`).
 
-#![cfg(feature = "native")]
 
 use crate::tree::types::{ByteRange, QuoteStyle, Span, TreeNode};
 
@@ -564,7 +563,7 @@ fn build_nested_pair(keys: &[&str], value: &str, kind: ScalarKind) -> DataTree {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "native"))]
 mod mutation_tests {
     use super::*;
     use crate::tree::lower_json_data_root;

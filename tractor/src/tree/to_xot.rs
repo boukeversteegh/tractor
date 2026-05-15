@@ -146,6 +146,7 @@ pub fn render_to_xot(
 
         SyntaxTree::Inline { .. } => render_tree_inline(xot, parent, tree, source),
         SyntaxTree::Unknown { .. } => render_tree_unknown(xot, parent, tree, source),
+        SyntaxTree::Raw { .. } => render_tree_raw(xot, parent, tree, source),
     }
 }
 
@@ -2246,6 +2247,81 @@ fn render_tree_unknown(
         xot.append(node, t)?;
     }
     xot.append(parent, node)?;
+    Ok(node)
+}
+
+/// Render a `SyntaxTree::Raw` passthrough node — `<{kind}>{children…}
+/// </{kind}>`. Leaves (no children) include the source slice inline.
+///
+/// Used for languages without a semantic lowering (HTML, CSS, C,
+/// C++, bash, scala, lua, haskell, ocaml, r, julia). The shape is
+/// deliberately raw: no field-wrapping, no marker injection, no
+/// per-language hooks. Whatever structure callers query has to live
+/// either in tree-sitter's kind hierarchy or in a real
+/// `lower_<lang>_root`.
+#[inline(never)]
+fn render_tree_raw(
+    xot: &mut Xot,
+    parent: XotNode,
+    tree: &SyntaxTree,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let SyntaxTree::Raw { kind, is_named, children, range, span } = tree else { unreachable!() };
+
+    // Anonymous Raw nodes are tree-sitter tokens (punctuation,
+    // keywords, operators). They have no enclosing element — just
+    // their source text in place. Only `lower_raw_passthrough_all`
+    // produces them; `lower_raw_passthrough` filters them out.
+    if !is_named {
+        let text = range.slice(source);
+        if !text.is_empty() {
+            let t = xot.new_text(text);
+            xot.append(parent, t)?;
+        }
+        return Ok(parent);
+    }
+
+    let node = element(xot, kind, *span);
+    xot.append(parent, node)?;
+    if children.is_empty() {
+        // Leaf: include the source slice as text. Matches the
+        // imperative `XotBuilder`'s leaf shape for un-typed kinds and
+        // preserves `string()` round-trip for typed-passthrough
+        // queries.
+        let text = range.slice(source);
+        if !text.is_empty() {
+            let t = xot.new_text(text);
+            xot.append(node, t)?;
+        }
+    } else {
+        // Emit gap text between sibling children so `string()`
+        // round-trip recovers inter-token whitespace. Imperative
+        // `XotBuilder` did this between each pair of CST children;
+        // we replicate it here using each child's byte range.
+        let mut cursor = range.start as usize;
+        for child in children {
+            let child_start = child.range().start as usize;
+            if child_start > cursor {
+                let gap = source.get(cursor..child_start).unwrap_or("");
+                if !gap.is_empty() {
+                    let t = xot.new_text(gap);
+                    xot.append(node, t)?;
+                }
+            }
+            render_to_xot(xot, node, child, source)?;
+            cursor = child.range().end as usize;
+        }
+        // Trailing gap to the end of this node's range (e.g. closing
+        // punctuation not represented as a child).
+        let end = range.end as usize;
+        if end > cursor {
+            let tail = source.get(cursor..end).unwrap_or("");
+            if !tail.is_empty() {
+                let t = xot.new_text(tail);
+                xot.append(node, t)?;
+            }
+        }
+    }
     Ok(node)
 }
 

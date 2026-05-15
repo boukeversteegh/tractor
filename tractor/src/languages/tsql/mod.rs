@@ -1,19 +1,27 @@
-//! T-SQL language transform pipeline.
+//! T-SQL language module.
 //!
-//!   - [`lower`]    — CST → `SqlTree` lowering (moved from `tree/sql_lower.rs`
-//!                    in S10D).
-//!   - [`kinds`]    — generated `TsqlKind` enum (the input vocabulary).
-//!   - [`output`]   — semantic-name constants and `NODES`.
-//!   - [`rules`]    — `rule(TsqlKind) -> Rule`, the input→output table.
-//!   - [`transformations`] — named functions for Rule::Custom + wrappers.
-//!   - [`transform`]      — orchestrator.
+//!   - [`lower`]  — CST → `SqlTree` lowering.
+//!   - [`kinds`]  — generated `TsqlKind` enum (the input vocabulary).
+//!   - [`output`] — semantic-name constants and `NODES`.
 
 pub mod lower;
 pub mod kinds;
 pub mod output;
-pub mod rules;
-pub mod transform;
-pub mod transformations;
 
 pub use lower::lower_sql_root;
-pub use transform::{transform, syntax_category};
+
+use crate::output::syntax_highlight::SyntaxCategory;
+use crate::transform::operators::is_operator_marker;
+
+/// Map a transformed element name to a syntax category for highlighting.
+pub fn syntax_category(element: &str) -> SyntaxCategory {
+    if let Some(spec) = output::spec(element) {
+        return spec.syntax;
+    }
+    match element {
+        "order_by" | "group_by" => SyntaxCategory::Keyword,
+        "create_table" | "create_function" => SyntaxCategory::Keyword,
+        _ if is_operator_marker(element) => SyntaxCategory::Operator,
+        _ => SyntaxCategory::Default,
+    }
+}

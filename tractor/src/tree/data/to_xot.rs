@@ -29,8 +29,6 @@
 //! bytes. Achieved via `range`-anchored gap-text emission between
 //! source-derived children, identical to `to_xot.rs`.
 
-#![cfg(feature = "native")]
-
 use xot::{Node as XotNode, Xot};
 
 use crate::tree::DataTree;

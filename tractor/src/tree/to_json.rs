@@ -187,6 +187,12 @@ impl<'a> Renderer<'a> {
             SyntaxTree::Inline { .. } => "$inline",
             SyntaxTree::Skip { .. } => "$skip",
             SyntaxTree::Unknown { .. } => "unknown",
+            // `Raw` carries a runtime kind string; the JSON path can't
+            // borrow it as `&'static`, so emit a sentinel. Consumers
+            // that need the actual kind read it from the XML output
+            // (which preserves it as the element name). JSON
+            // projection of passthrough languages is best-effort.
+            SyntaxTree::Raw { .. } => "$raw",
             SyntaxTree::Call { .. } => "call",
         }
     }
@@ -658,6 +664,25 @@ impl<'a> Renderer<'a> {
                 let text = tree.range().slice(self.source).to_string();
                 if !text.is_empty() {
                     shape.text(text);
+                }
+            }
+            SyntaxTree::Raw { kind, children, .. } => {
+                // Stash the actual CST kind under a `$kind` flag so
+                // JSON consumers can still discriminate; render
+                // children recursively. Leaves carry the source slice
+                // as text — same shape as Unknown. (Anonymous Raw
+                // nodes don't reach the JSON path on their own;
+                // they're filtered out by `add_children` when they
+                // would appear, or already inlined as text by the
+                // parent.)
+                shape.flag(kind);
+                if children.is_empty() {
+                    let text = tree.range().slice(self.source).to_string();
+                    if !text.is_empty() {
+                        shape.text(text);
+                    }
+                } else {
+                    self.add_children(shape, children);
                 }
             }
             SyntaxTree::Call { callee, arguments, .. } => {

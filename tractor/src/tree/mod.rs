@@ -99,6 +99,10 @@ pub mod sql;
 // extraction. Centralized to avoid 200+ LOC of duplication
 // across 13 per-language lower files.
 pub mod lower_helpers;
+// Typed passthrough lowering for `TreeKind::None` languages
+// (HTML/CSS/C/C++/bash/scala/lua/haskell/ocaml/r/julia) — see the
+// module docs for the rationale (S6R).
+pub mod lower_raw_passthrough;
 // Stamps a stable [`NodeId`] on every node's Span after the tree is
 // built — see `docs/design-editable-trees.md`. Run automatically at
 // the parser exit point so callers can rely on IDs being present.
@@ -113,28 +117,19 @@ pub mod render;
 pub mod coverage;
 
 pub use types::{Access, AccessSegment, ByteRange, Expression, NodeId, SyntaxTree, Modifiers, ParamKind, Span, TreeNode, to_source};
-pub use assign_ids::{assign_ids_sql, assign_ids_syntax};
-#[cfg(feature = "native")]
-pub use assign_ids::assign_ids_data;
+pub use assign_ids::{assign_ids_data, assign_ids_sql, assign_ids_syntax};
 #[cfg(feature = "native")]
 pub use locator::{find_by_id, parse_id_attr};
 pub use to_xot::render_to_xot;
 pub use to_json::tree_to_json;
-#[cfg(feature = "native")]
+pub use lower_raw_passthrough::{lower_raw_passthrough, lower_raw_passthrough_all};
 pub use data::DataTree;
-#[cfg(feature = "native")]
 pub use data::lower_json::lower_json_data_root;
-#[cfg(feature = "native")]
 pub use data::lower_yaml::lower_yaml_data_root;
-#[cfg(feature = "native")]
 pub use data::lower_toml::lower_toml_data_root;
-#[cfg(feature = "native")]
 pub use data::lower_ini::lower_ini_data_root;
-#[cfg(feature = "native")]
 pub use data::lower_markdown::lower_markdown_data_root;
-#[cfg(feature = "native")]
 pub use data::to_xot::{render_data_to_xot_json, render_data_to_xot_keyed};
-#[cfg(feature = "native")]
 pub use data::to_json::data_to_json;
 #[cfg(feature = "native")]
 pub use to_data::{lower_to_data_ir, has_unhandled};

@@ -14,8 +14,6 @@
 //!   - [`lower_ini`]     — INI CST → `DataTree`.
 //!   - [`lower_markdown`] — Markdown CST → `DataTree`.
 
-#![cfg(feature = "native")]
-
 pub mod types;
 pub mod to_xot;
 pub mod to_json;

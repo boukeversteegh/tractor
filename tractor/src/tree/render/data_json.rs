@@ -8,8 +8,6 @@
 //! [`crate::mutation::xpath_upsert`] can splice byte regions of a
 //! re-rendered tree back into the original source.
 
-#![cfg(feature = "native")]
-
 use crate::tree::data::DataTree;
 use super::data_common::{DataRenderOptions, DataSpanMap};
 
@@ -226,7 +224,7 @@ fn escape_json_string(s: &str) -> String {
     out
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "native"))]
 mod tests {
     use super::*;
     use crate::tree::lower_json_data_root;

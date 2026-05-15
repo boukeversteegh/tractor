@@ -151,7 +151,6 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
 // ============================================================================
 
 use crate::language_info::get_all_languages_for_extension;
-use crate::transform::builder::{XotBuilder, XeeBuilder};
 use xee_xpath::{Documents, DocumentHandle};
 
 /// Check if a file extension is ambiguous (multiple languages claim it).
@@ -201,64 +200,55 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, tree_mod
 }
 
 
-/// Parse a source string and return an xot document with options (new pipeline)
+/// Parse a source string and return an xot document with options.
 ///
-/// Note: the Xot pipeline only supports Raw and Structure modes (no dual-branch).
-/// For data-aware languages, Structure uses the syntax transform (ast_transform).
+/// Dispatches on the registry's `tree_kind`: programming / sql / data
+/// languages go through the typed pipeline ([`parse_with_ir_pipeline`]);
+/// Raw tree mode and (future) `TreeKind::None` languages go through
+/// `lower_raw_passthrough_all` — the bare CST dump expressed as
+/// `SyntaxTree::Raw`. `ignore_whitespace` is accepted for backward
+/// compatibility but is a no-op in the typed pipeline (whitespace
+/// handling lives in the per-language lowerings).
 pub fn parse_string_to_xot_with_options(
     source: &str,
     lang: &str,
     file_path: String,
     tree_mode: Option<TreeMode>,
-    ignore_whitespace: bool,
+    _ignore_whitespace: bool,
 ) -> Result<XotParseResult, ParseError> {
     let resolved = TreeMode::resolve(tree_mode, lang)
         .map_err(ParseError::Parse)?;
 
-    // Honour explicit Raw tree-mode requests by bypassing the tree
-    // pipeline. Raw mode emits raw tree-sitter kind names (e.g.
-    // `let_declaration`) — the tree pipeline replaces those with the
-    // semantic vocabulary (`<let>`).
     if crate::languages::get_language(lang).map(|l| l.uses_tree(resolved)).unwrap_or(false) {
         return parse_with_ir_pipeline(source, lang, file_path, resolved);
     }
 
+    // Raw mode (or `TreeKind::None` language): tree-sitter → RawNode
+    // → `SyntaxTree::Raw` → render_to_xot. No transforms; anonymous
+    // tokens (punctuation, keywords) come through as text content.
     let language = get_tree_sitter_language(lang)?;
-
     let mut parser = tree_sitter::Parser::new();
     parser.set_language(&language)
         .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
-
     let tree = parser.parse(source, None)
         .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
 
-    // Build xot document (always start with raw tree)
-    let mut builder = XotBuilder::new();
-    let root = builder.build_raw_with_options(tree.root_node(), source, &file_path, ignore_whitespace)
-        .map_err(|e| ParseError::Parse(e.to_string()))?;
+    let raw_root = crate::raw::RawNode::from_tree_sitter(tree.root_node(), source);
+    let mut ir_tree = crate::tree::lower_raw_passthrough_all(&raw_root, source);
+    crate::tree::assign_ids_syntax(&mut ir_tree);
 
-    let mut xot = builder.into_xot();
-
-    // Apply semantic transforms based on tree mode
-    if resolved != TreeMode::Raw {
-        // Per-language field wrapping (turns `<identifier field="name">` into
-        // `<name><identifier field="identifier"></identifier></name>` etc.)
-        let wrappings = languages::get_field_wrappings(lang);
-        crate::transform::apply_field_wrappings(&mut xot, root, wrappings)
-            .map_err(|e| ParseError::Parse(e.to_string()))?;
-
-        let transform_fn = languages::get_transform(lang);
-        crate::transform::walk_transform(&mut xot, root, transform_fn)
-            .map_err(|e| ParseError::Parse(e.to_string()))?;
-    }
+    let mut xot = xot::Xot::new();
+    let doc = xot.new_document();
+    crate::tree::render_to_xot(&mut xot, doc, &ir_tree, source)
+        .map_err(|e| ParseError::Parse(format!("raw passthrough render failed: {e}")))?;
 
     Ok(XotParseResult {
         xot,
-        root,
+        root: doc,
         source_lines: source.lines().map(|s| s.to_string()).collect(),
         file_path,
         language: lang.to_string(),
-        tree: None,
+        tree: Some(Box::new(ir_tree)),
         data_tree: None,
         #[cfg(feature = "native")]
         sql_tree: None,
@@ -616,8 +606,8 @@ pub fn parse_string_to_xee_with_options(
     lang: &str,
     file_path: String,
     tree_mode: Option<TreeMode>,
-    ignore_whitespace: bool,
-    max_depth: Option<usize>,
+    _ignore_whitespace: bool,
+    _max_depth: Option<usize>,
 ) -> Result<XeeParseResult, ParseError> {
     use std::time::Instant;
 
@@ -627,29 +617,42 @@ pub fn parse_string_to_xee_with_options(
     if crate::languages::get_language(lang).map(|l| l.uses_tree(resolved)).unwrap_or(false) {
         return parse_with_ir_pipeline_to_xee(source, lang, file_path, resolved);
     }
+
+    // Raw mode (or `TreeKind::None` language): typed CST dump via
+    // `lower_raw_passthrough_all`, then serialize + reparse into xee
+    // `Documents` (same v1 stepping stone the typed path uses; S7
+    // will eliminate this round-trip).
     let language = get_tree_sitter_language(lang)?;
 
     let t0 = Instant::now();
     let mut parser = tree_sitter::Parser::new();
     parser.set_language(&language)
         .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
-
     let tree = parser.parse(source, None)
         .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
     let t1 = Instant::now();
 
-    // Build directly into Documents using XeeBuilder
-    let mut builder = XeeBuilder::new();
-    let doc_handle = builder.build_with_options(tree.root_node(), source, &file_path, lang, resolved, ignore_whitespace, max_depth)
-        .map_err(|e| ParseError::Parse(e.to_string()))?;
+    let raw_root = crate::raw::RawNode::from_tree_sitter(tree.root_node(), source);
+    let mut ir_tree = crate::tree::lower_raw_passthrough_all(&raw_root, source);
+    crate::tree::assign_ids_syntax(&mut ir_tree);
 
-    let documents = builder.into_documents();
+    let mut xot = xot::Xot::new();
+    let holding = xot.new_document();
+    crate::tree::render_to_xot(&mut xot, holding, &ir_tree, source)
+        .map_err(|e| ParseError::Parse(format!("raw passthrough render failed: {e}")))?;
+
+    let xml = xot.to_string(holding)
+        .map_err(|e| ParseError::Parse(format!("tree serialize failed: {e}")))?;
+    let mut documents = Documents::new();
+    let doc_handle = documents.add_string(
+        "file:///source".try_into().unwrap(),
+        &xml,
+    ).map_err(|e| ParseError::Parse(format!("xee load failed: {e}")))?;
     let t2 = Instant::now();
 
     let source_lines = std::sync::Arc::new(source.lines().map(|s| s.to_string()).collect());
     let t3 = Instant::now();
 
-    // Record timing stats
     TIMING_TS_PARSE.fetch_add((t1 - t0).as_micros() as u64, Ordering::Relaxed);
     TIMING_XOT_BUILD.fetch_add((t2 - t1).as_micros() as u64, Ordering::Relaxed);
     TIMING_SOURCE_LINES.fetch_add((t3 - t2).as_micros() as u64, Ordering::Relaxed);
@@ -661,7 +664,6 @@ pub fn parse_string_to_xee_with_options(
         source_lines,
         file_path,
         language: lang.to_string(),
-        // Imperative path: no tree retained — root JSON falls back to xml_to_json.
         root_tree: None,
     })
 }

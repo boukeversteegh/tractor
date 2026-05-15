@@ -23,8 +23,6 @@
 //! `data_to_yaml.rs` / `data_to_toml.rs` modules — DataTree is
 //! format-agnostic by design).
 
-#![cfg(feature = "native")]
-
 use serde_json::{Map, Value};
 
 use crate::tree::DataTree;

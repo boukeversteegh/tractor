@@ -1,14 +1,35 @@
-//! Xot tree transformation infrastructure
+//! Shared post-tree shape helpers + low-level xot manipulation
+//! utilities.
 //!
-//! Provides a generic tree walker and low-level helpers for xot manipulation.
-//! No assumptions about AST structure - each language defines its own transform logic.
+//! ## Status (post S6B-Retire)
 //!
-//! ## Architecture
-//! ```text
-//! AST → build_raw() → xot tree → apply_field_wrappings → walk_transform(lang_fn) → transformed tree
-//! ```
+//! The original imperative pipeline (`walk_transform` + per-language
+//! `TransformFn`) was retired alongside the typed-pipeline migration.
+//! The pieces that survived have new homes:
+//!
+//! - **Per-typed-tree shape helpers** (`wrap_expression_positions`,
+//!   `wrap_body_value_children`, `flatten_*`, `strip_body_braces`,
+//!   `wrap_relationship_targets_in_type`): called from `tree::to_xot`
+//!   to perform shape adjustments on the rendered xot AFTER the typed
+//!   pipeline emits its base shape. They take an xot tree and rewrite
+//!   it in place — the typed-tree variants don't carry enough
+//!   information yet to encode these adjustments structurally.
+//! - **`helpers`**: low-level xot mutation utilities (fluent `with_*`
+//!   methods, attribute lookups, field-wrap primitives). Used widely
+//!   across the codebase as a general xot tooling library.
+//! - **`operators`**: per-language operator-marker tables, consumed
+//!   by `tree::to_xot` and per-language syntax highlighters.
+//! - **`generic_type`**, **`data_keys`**, **`shape_contracts`**,
+//!   **`singletons`**: domain-specific tables and validators consumed
+//!   by the typed pipeline and the renderer.
+//!
+//! [`TransformAction`] remains as a typed enum so the surviving
+//! per-language `TransformFn` declarations in `LanguageOps` still
+//! compile. The walker that consumed it (`walk_transform`) is gone;
+//! per-language transform functions are dead code today, kept only
+//! to avoid a churn-heavy registry refactor in the same slice. A
+//! follow-up cleanup can drop them and the field together.
 
-pub mod builder;
 pub mod data_keys;
 pub mod generic_type;
 pub mod operators;
@@ -54,53 +75,10 @@ pub enum TransformAction {
     Done,
 }
 
-// =============================================================================
-// TREE WALKER - Language-agnostic traversal
-// =============================================================================
-
-/// Walk an xot tree and apply a transform function to each element node.
-///
-/// The transform function receives each node and returns a `TransformAction`
-/// to control how the walker proceeds.
-pub fn walk_transform<F>(xot: &mut Xot, root: XotNode, mut transform_fn: F) -> Result<(), xot::Error>
-where
-    F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>,
-{
-    // Find the actual content root (skip document wrapper)
-    let content_root = find_content_root(xot, root);
-
-    // Apply transform to the content root, but protect it from being
-    // removed (Flatten/Skip) since it's the document element.
-    if xot.element(content_root).is_some() {
-        let action = transform_fn(xot, content_root)?;
-        match action {
-            TransformAction::Flatten | TransformAction::Skip | TransformAction::Continue => {
-                // Process children regardless — Flatten/Skip at the root just means
-                // "this wrapper is unimportant", but we can't remove the document element.
-                let children: Vec<XotNode> = xot.children(content_root)
-                    .filter(|&c| xot.element(c).is_some())
-                    .collect();
-                for child in children {
-                    walk_node(xot, child, &mut transform_fn)?;
-                }
-            }
-            TransformAction::Done => {}
-        }
-        Ok(())
-    } else {
-        walk_node(xot, content_root, &mut transform_fn)
-    }
-}
-
-/// Walk and transform starting from a specific node (no wrapper skipping).
-pub fn walk_transform_node<F>(xot: &mut Xot, node: XotNode, mut transform_fn: F) -> Result<(), xot::Error>
-where
-    F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>,
-{
-    walk_node(xot, node, &mut transform_fn)
-}
-
-/// Find the actual content root, skipping the document node wrapper
+/// Find the actual content root, skipping the document node wrapper.
+/// Used by the surviving xot-shape helpers
+/// (`wrap_expression_positions`, `flatten_nested_paths`, …) when
+/// they're handed a document handle rather than the root element.
 fn find_content_root(xot: &Xot, node: XotNode) -> XotNode {
     if xot.is_document(node) {
         if let Ok(elem) = xot.document_element(node) {
@@ -108,92 +86,6 @@ fn find_content_root(xot: &Xot, node: XotNode) -> XotNode {
         }
     }
     node
-}
-
-/// Apply per-language field-wrapping rules to the raw builder output.
-///
-/// The builder is mechanical: every element carries a `field="X"`
-/// attribute for tree-sitter's field name (if any), and no wrapping is
-/// performed. Each language then decides which fields should be wrapped
-/// in a semantic element (for example, TS wraps `return_type` in
-/// `<returns>`). `wrappings` is a slice of `(tree_sitter_field,
-/// wrapper_element_name)` pairs; elements with `field=X` matching a
-/// pair are moved inside a new `<Y>` wrapper that inherits the element's
-/// source location. The wrapper's *element name* is the JSON key
-/// (Principle #19); no `field=` is written on the wrapper or the inner
-/// element by this pass.
-///
-/// # Scope: GLOBAL per language
-///
-/// **This pass is unconditional**: every element with `field=X` gets
-/// wrapped, regardless of parent kind. If a field name appears on
-/// MULTIPLE tree-sitter kinds with different wrapping intent (e.g.
-/// `pattern` field on both `let_condition` AND `parameter`), this
-/// pass cannot distinguish them — all sites get wrapped uniformly.
-///
-/// **Use a Custom handler with [`helpers::wrap_field_child`] when:**
-/// - The wrap should apply to ONLY specific tree-sitter kinds.
-/// - Other kinds share the field name but require different shape.
-///
-/// Concrete examples in the codebase:
-/// - TS `conditional_type::alternative` → `<else>` (Custom + `wrap_field_child`),
-///   while if/while `alternative` is left unwrapped because `else_clause`
-///   already renames to `<else>` and a global wrap would double-nest.
-/// - PHP `class_constant_access` wraps `<object>`/`<property>` slots
-///   only on that specific kind, not via global field-wrap.
-///
-/// Lesson `tag/field-wrap-is-global` (todo/39 line 80-88) documents
-/// this pattern — re-read before adding new entries to any
-/// `*_FIELD_WRAPPINGS` table.
-pub fn apply_field_wrappings(
-    xot: &mut Xot,
-    root: XotNode,
-    wrappings: &[(&str, &str)],
-) -> Result<(), xot::Error> {
-    use helpers::*;
-    if wrappings.is_empty() {
-        return Ok(());
-    }
-    let root = find_content_root(xot, root);
-
-    // Collect (element, wrapper_name) pairs first so we can mutate afterwards.
-    let mut targets: Vec<(XotNode, String)> = Vec::new();
-    collect_wrap_targets(xot, root, wrappings, &mut targets);
-
-    for (element, wrapper_name) in targets {
-        let wrapper_id = xot.add_name(&wrapper_name);
-        let wrapper = xot.new_element(wrapper_id);
-        xot.with_source_location_from(wrapper, element)
-            .with_wrap_child(element, wrapper)?;
-        // The wrapper element's name IS the JSON key (Principle #19;
-        // role-uniform singleton wrappers). The inner element keeps any
-        // tree-sitter `field=` attribute it carried — preserved for
-        // `--meta` debug output, ignored by JSON.
-    }
-    Ok(())
-}
-
-fn collect_wrap_targets(
-    xot: &Xot,
-    node: XotNode,
-    wrappings: &[(&str, &str)],
-    out: &mut Vec<(XotNode, String)>,
-) {
-    use helpers::*;
-    if xot.element(node).is_none() {
-        return;
-    }
-    if let Some(field) = get_attr(xot, node, "field") {
-        for (ts_field, wrapper_name) in wrappings {
-            if field == *ts_field {
-                out.push((node, (*wrapper_name).to_string()));
-                break;
-            }
-        }
-    }
-    for child in xot.children(node) {
-        collect_wrap_targets(xot, child, wrappings, out);
-    }
 }
 
 /// Wrap the first element child of every "expression position" slot
@@ -698,59 +590,6 @@ fn collect_expression_position_targets(
     for child in xot.children(node) {
         collect_expression_position_targets(xot, child, slot_names, out);
     }
-}
-
-/// Recursively walk and transform a node
-fn walk_node<F>(xot: &mut Xot, node: XotNode, transform_fn: &mut F) -> Result<(), xot::Error>
-where
-    F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>,
-{
-    // Skip non-element nodes
-    if xot.element(node).is_none() {
-        return Ok(());
-    }
-
-    // Apply transform to this node
-    let action = transform_fn(xot, node)?;
-
-    match action {
-        TransformAction::Continue => {
-            // Process children recursively
-            let children: Vec<XotNode> = xot.children(node)
-                .filter(|&c| xot.element(c).is_some())
-                .collect();
-            for child in children {
-                walk_node(xot, child, transform_fn)?;
-            }
-        }
-        TransformAction::Skip => {
-            // Move children to parent, transform them, then remove this node
-            let children: Vec<XotNode> = xot.children(node).collect();
-            for child in children {
-                xot.detach(child)?;
-                xot.insert_before(node, child)?;
-                if xot.element(child).is_some() {
-                    walk_node(xot, child, transform_fn)?;
-                }
-            }
-            xot.detach(node)?;
-        }
-        TransformAction::Flatten => {
-            // Transform children first, then move them to parent and remove node
-            let children: Vec<XotNode> = xot.children(node)
-                .filter(|&c| xot.element(c).is_some())
-                .collect();
-            for child in children {
-                walk_node(xot, child, transform_fn)?;
-            }
-            helpers::flatten_node(xot, node)?;
-        }
-        TransformAction::Done => {
-            // Node fully handled, don't recurse
-        }
-    }
-
-    Ok(())
 }
 
 // =============================================================================
@@ -1546,27 +1385,6 @@ mod tests {
         let root = xot.document_element(doc).unwrap();
         set_attr(&mut xot, root, "op", "+");
         assert_eq!(get_attr(&xot, root, "op"), Some("+".to_string()));
-    }
-
-    #[test]
-    fn test_walk_transform_continue() {
-        let (mut xot, doc) = create_test_xot();
-        let root = xot.document_element(doc).unwrap();
-
-        // Add a child
-        let child_name = xot.add_name("child");
-        let child = xot.new_element(child_name);
-        xot.append(root, child).unwrap();
-
-        let mut visited = Vec::new();
-        walk_transform(&mut xot, doc, |xot, node| {
-            if let Some(name) = get_element_name(xot, node) {
-                visited.push(name);
-            }
-            Ok(TransformAction::Continue)
-        }).unwrap();
-
-        assert_eq!(visited, vec!["root", "child"]);
     }
 
     #[test]

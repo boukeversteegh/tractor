@@ -1116,6 +1116,37 @@ pub enum SyntaxTree {
         range: ByteRange,
         span: Span,
     },
+
+    /// Typed passthrough — the bare CST kind hierarchy with no
+    /// field-wrapping or per-language shape decisions.
+    ///
+    /// Two roles, distinguished by `is_named`:
+    /// - **Named (`is_named: true`)**: a grammar node that becomes an
+    ///   `<{kind}>{children…}</{kind}>` element. Used by
+    ///   [`lower_raw_passthrough`](crate::tree::lower_raw_passthrough)
+    ///   for `TreeKind::Syntax` passthrough languages, and by
+    ///   [`lower_raw_passthrough_all`](crate::tree::lower_raw_passthrough_all)
+    ///   for the named structural nodes inside `TreeMode::Raw`.
+    /// - **Anonymous (`is_named: false`)**: a tree-sitter token
+    ///   (punctuation, keyword, operator). Renders as bare source
+    ///   text — no enclosing element. Only produced by
+    ///   `lower_raw_passthrough_all` since named-only passthrough
+    ///   filters anonymous tokens out.
+    ///
+    /// Distinct from [`SyntaxTree::Unknown`]: `Unknown` is the
+    /// per-node escape hatch *inside* a partly-typed language ("this
+    /// kind isn't yet covered"). `Raw` is the whole-language stance
+    /// ("this language is intentionally passthrough"). They share
+    /// most plumbing but diverge in semantics — coverage audits
+    /// should treat `Unknown` as a debt to pay down and `Raw` as the
+    /// chosen shape.
+    Raw {
+        kind: String,
+        is_named: bool,
+        children: Vec<SyntaxTree>,
+        range: ByteRange,
+        span: Span,
+    },
 }
 
 /// Access modifier for class / method / field declarations. The
@@ -1545,7 +1576,8 @@ impl SyntaxTree {
             | SyntaxTree::Cast { span, .. }
             | SyntaxTree::Null { span, .. }
             | SyntaxTree::Inline { span, .. }
-            | SyntaxTree::Unknown { span, .. } => *span,
+            | SyntaxTree::Unknown { span, .. }
+            | SyntaxTree::Raw { span, .. } => *span,
         }
     }
 
@@ -1627,7 +1659,8 @@ impl SyntaxTree {
             | SyntaxTree::Cast { range, .. }
             | SyntaxTree::Null { range, .. }
             | SyntaxTree::Inline { range, .. }
-            | SyntaxTree::Unknown { range, .. } => *range,
+            | SyntaxTree::Unknown { range, .. }
+            | SyntaxTree::Raw { range, .. } => *range,
         }
     }
 
@@ -1913,6 +1946,7 @@ impl SyntaxTree {
                 if let Some(val) = value { v.push(&val.inner); }
             }
             SyntaxTree::Inline { children, .. } => v.extend(children.iter()),
+            SyntaxTree::Raw { children, .. } => v.extend(children.iter()),
             // Leaves and markers — no SyntaxTree children.
             SyntaxTree::Name { .. } | SyntaxTree::Int { .. } | SyntaxTree::Float { .. } | SyntaxTree::String { .. }
             | SyntaxTree::True { .. } | SyntaxTree::False { .. } | SyntaxTree::None { .. } | SyntaxTree::Null { .. }
@@ -2036,7 +2070,8 @@ impl TreeNode for SyntaxTree {
             | SyntaxTree::Cast { span, .. }
             | SyntaxTree::Null { span, .. }
             | SyntaxTree::Inline { span, .. }
-            | SyntaxTree::Unknown { span, .. } => span,
+            | SyntaxTree::Unknown { span, .. }
+            | SyntaxTree::Raw { span, .. } => span,
         }
     }
 
@@ -2250,6 +2285,7 @@ impl TreeNode for SyntaxTree {
                 if let Some(val) = value { v.push(&mut val.inner); }
             }
             SyntaxTree::Inline { children, .. } => v.extend(children.iter_mut()),
+            SyntaxTree::Raw { children, .. } => v.extend(children.iter_mut()),
             // Leaves and markers — no SyntaxTree children.
             SyntaxTree::Name { .. } | SyntaxTree::Int { .. } | SyntaxTree::Float { .. } | SyntaxTree::String { .. }
             | SyntaxTree::True { .. } | SyntaxTree::False { .. } | SyntaxTree::None { .. } | SyntaxTree::Null { .. }

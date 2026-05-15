@@ -6,8 +6,6 @@
 //! [`DataTree`] node by its `span()` (line, column) and records the
 //! byte range of its rendered value.
 
-#![cfg(feature = "native")]
-
 use crate::tree::data::DataTree;
 use super::data_common::{DataRenderOptions, DataSpanMap};
 
@@ -388,7 +386,7 @@ fn yaml_quote_key(key: &str) -> String {
     out
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "native"))]
 mod tests {
     use super::*;
     use crate::tree::lower_yaml_data_root;

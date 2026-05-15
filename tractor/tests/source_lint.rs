@@ -30,17 +30,14 @@ use std::process::Command;
 
 mod support;
 
-/// Each entry lists the candidate paths in priority order — Phase B2
-/// splits each `<lang>.rs` into `<lang>/{mod,semantic,transform}.rs`,
-/// so we accept either layout while the migration is in progress.
-const LANGUAGE_FILES: &[&[&str]] = &[
-    // C# / Python / Java / PHP moved entirely to the tree pipeline —
-    // `transform.rs` retired. The lint scans for `map_element_name`
-    // strings; on the tree side every element name is wired via `SyntaxTree`
-    // variant fields and doesn't need a string-keyed match arm. Skip
-    // those languages here.
-    &["tractor/src/languages/tsql/transform.rs", "tractor/src/languages/tsql.rs"],
-];
+/// Each entry lists the candidate paths in priority order. After
+/// S6B-Retire there are no surviving per-language transform files —
+/// every language flows through the typed pipeline where element
+/// names live on `SyntaxTree` variant fields rather than in a
+/// string-keyed `map_element_name` match. The lint is retained as
+/// scaffolding for future per-language helpers that might re-introduce
+/// the pattern; the current set is empty.
+const LANGUAGE_FILES: &[&[&str]] = &[];
 
 /// XPath that finds bare `string` literal arguments to `Some(...)`
 /// constructors inside the `map_element_name` function body.
