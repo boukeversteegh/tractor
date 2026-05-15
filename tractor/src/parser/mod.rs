@@ -30,52 +30,6 @@ pub static SUPPORTED_LANGUAGES: Lazy<Vec<(&'static str, &'static [&'static str])
     out
 });
 
-/// Parse result with xot document
-pub struct XotParseResult {
-    /// The xot document containing the AST
-    pub xot: xot::Xot,
-    /// Root node of the document
-    pub root: xot::Node,
-    /// Original source lines for location-based output
-    pub source_lines: Vec<String>,
-    /// File path or [`PATHLESS_LABEL`](crate::PATHLESS_LABEL) for pathless input
-    pub file_path: String,
-    /// Language used for parsing
-    pub language: String,
-    /// Typed tree root retained through to render time. `Some` for
-    /// programming languages on the tree pipeline; `None` for the
-    /// imperative path (and for data languages — they keep their
-    /// `DataTree` separately, see `data_tree`).
-    ///
-    /// JSON / YAML / structured-format output renders from this
-    /// instead of going through `xml_to_json`. That lets us drop the
-    /// `list=` / `field=` XML scaffolding the imperative pipeline
-    /// relied on for cardinality inference: the tree's typed slots
-    /// (Vec<SyntaxTree> = list, Box<SyntaxTree> = singleton) carry the same
-    /// information at the right semantic layer.
-    pub tree: Option<Box<crate::tree::SyntaxTree>>,
-
-    /// Typed `DataTree` root for data languages (JSON / YAML / TOML /
-    /// INI / env / markdown). `Some` only when the tree pipeline took
-    /// the data-language branch.
-    pub data_tree: Option<Box<crate::tree::DataTree>>,
-
-    /// Typed `SqlTree` root for SQL-family languages (TSQL today).
-    /// `Some` only when the tree pipeline took the SQL branch. SQL has
-    /// its own typed tree per-construct (Select/Insert/Update/...) so
-    /// JSON / XML output reads typed slots directly without the
-    /// projection heuristics that the cross-language `SyntaxTree` requires
-    /// for generic SimpleStatement wrappers.
-    #[cfg(feature = "native")]
-    pub sql_tree: Option<Box<crate::tree::sql::SqlTree>>,
-
-    /// The original source text. Needed alongside `tree` / `data_tree`
-    /// because both reference source byte ranges for leaf text
-    /// reconstruction; the tree-to-JSON renderers slice into this at
-    /// format time.
-    pub source: String,
-}
-
 /// Errors that can occur during parsing
 #[derive(Error, Debug)]
 pub enum ParseError {
@@ -174,211 +128,6 @@ fn check_ambiguous_extension(path: &Path) -> Result<(), ParseError> {
     Ok(())
 }
 
-/// Parse a file and return an xot document (new pipeline)
-pub fn parse_file_to_xot(path: &Path, lang_override: Option<&str>, tree_mode: Option<TreeMode>) -> Result<XotParseResult, ParseError> {
-    parse_file_to_xot_with_options(path, lang_override, tree_mode, false)
-}
-
-/// Parse a file and return an xot document with options (new pipeline)
-pub fn parse_file_to_xot_with_options(
-    path: &Path,
-    lang_override: Option<&str>,
-    tree_mode: Option<TreeMode>,
-    ignore_whitespace: bool,
-) -> Result<XotParseResult, ParseError> {
-    if lang_override.is_none() {
-        check_ambiguous_extension(path)?;
-    }
-    let source = fs::read_to_string(path)?;
-    let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
-    parse_string_to_xot_with_options(&source, lang, path.to_string_lossy().to_string(), tree_mode, ignore_whitespace)
-}
-
-/// Parse a source string and return an xot document (new pipeline)
-pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, tree_mode: Option<TreeMode>) -> Result<XotParseResult, ParseError> {
-    parse_string_to_xot_with_options(source, lang, file_path, tree_mode, false)
-}
-
-
-/// Parse a source string and return an xot document with options.
-///
-/// Dispatches on the registry's `tree_kind`: programming / sql / data
-/// languages go through the typed pipeline ([`parse_with_ir_pipeline`]);
-/// Raw tree mode and (future) `TreeKind::None` languages go through
-/// `lower_raw_passthrough_all` — the bare CST dump expressed as
-/// `SyntaxTree::Raw`. `ignore_whitespace` is accepted for backward
-/// compatibility but is a no-op in the typed pipeline (whitespace
-/// handling lives in the per-language lowerings).
-pub fn parse_string_to_xot_with_options(
-    source: &str,
-    lang: &str,
-    file_path: String,
-    tree_mode: Option<TreeMode>,
-    _ignore_whitespace: bool,
-) -> Result<XotParseResult, ParseError> {
-    let resolved = TreeMode::resolve(tree_mode, lang)
-        .map_err(ParseError::Parse)?;
-
-    if crate::languages::get_language(lang).map(|l| l.uses_tree(resolved)).unwrap_or(false) {
-        return parse_with_ir_pipeline(source, lang, file_path, resolved);
-    }
-
-    // Raw mode (or `TreeKind::None` language): tree-sitter → RawNode
-    // → `SyntaxTree::Raw` → render_to_xot. No transforms; anonymous
-    // tokens (punctuation, keywords) come through as text content.
-    let language = get_tree_sitter_language(lang)?;
-    let mut parser = tree_sitter::Parser::new();
-    parser.set_language(&language)
-        .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
-    let tree = parser.parse(source, None)
-        .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
-
-    let raw_root = crate::raw::RawNode::from_tree_sitter(tree.root_node(), source);
-    let mut ir_tree = crate::tree::lower_raw_passthrough_all(&raw_root, source);
-    crate::tree::assign_ids_syntax(&mut ir_tree);
-
-    let mut xot = xot::Xot::new();
-    let doc = xot.new_document();
-    crate::tree::render_to_xot(&mut xot, doc, &ir_tree, source)
-        .map_err(|e| ParseError::Parse(format!("raw passthrough render failed: {e}")))?;
-
-    Ok(XotParseResult {
-        xot,
-        root: doc,
-        source_lines: source.lines().map(|s| s.to_string()).collect(),
-        file_path,
-        language: lang.to_string(),
-        tree: Some(Box::new(ir_tree)),
-        data_tree: None,
-        #[cfg(feature = "native")]
-        sql_tree: None,
-        source: source.to_string(),
-    })
-}
-
-/// Parse via the typed-tree pipeline. Lowers tree-sitter CST through
-/// `tractor::tree::lower_<lang>_root`, then renders to xot using
-/// `render_to_xot`. The result is wrapped in a document so xot
-/// queries treat it like the imperative pipeline's output.
-#[cfg(feature = "native")]
-fn parse_with_ir_pipeline(
-    source: &str,
-    lang: &str,
-    file_path: String,
-    tree_mode: TreeMode,
-) -> Result<XotParseResult, ParseError> {
-    use crate::tree;
-    use crate::languages::TreeKind;
-
-    let language = get_tree_sitter_language(lang)?;
-    let mut parser = tree_sitter::Parser::new();
-    parser.set_language(&language)
-        .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
-    let tree = parser.parse(source, None)
-        .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
-
-    let lang_ops = crate::languages::get_language(lang).ok_or_else(|| {
-        ParseError::Parse(format!("Unknown language: {lang}"))
-    })?;
-
-    let mut xot = xot::Xot::new();
-    let doc = xot.new_document();
-    let source_lines: Vec<String> = source.lines().map(|s| s.to_string()).collect();
-
-    // Single dispatch on the `TreeKind` variant — the lower fn is
-    // carried by the variant, so no language-keyed match arm is
-    // needed here.
-    //
-    // Convert the tree-sitter CST root to an owned `RawNode` once.
-    // Lowerings receive `&RawNode` so the same lowering compiles for
-    // WASM (which deserialises `RawNode` from `web-tree-sitter` JSON).
-    let raw_root = crate::raw::RawNode::from_tree_sitter(tree.root_node(), source);
-    match lang_ops.tree_kind {
-        TreeKind::Syntax(lower) => {
-            let mut ir_tree = lower(&raw_root, source);
-            // Slice 1 invariant: every tree exiting the parser has a
-            // NodeId stamped on every node's Span. Downstream XPath →
-            // typed-node lookup paths depend on this.
-            tree::assign_ids_syntax(&mut ir_tree);
-            tree::render_to_xot(&mut xot, doc, &ir_tree, source)
-                .map_err(|e| ParseError::Parse(format!("tree render failed: {e}")))?;
-            Ok(XotParseResult {
-                xot,
-                root: doc,
-                source_lines,
-                file_path,
-                language: lang.to_string(),
-                tree: Some(Box::new(ir_tree)),
-                data_tree: None,
-                #[cfg(feature = "native")]
-                sql_tree: None,
-                source: source.to_string(),
-            })
-        }
-        TreeKind::Data { structure, content } => {
-            // Tree mode picks the parser: `--tree=structure` uses the
-            // syntax-tree projection; `--tree=data` uses the
-            // content/keys-as-elements projection. `uses_tree` filters
-            // out Raw mode upstream, so this match is exhaustive.
-            let parser = match tree_mode {
-                TreeMode::Structure => structure,
-                TreeMode::Data => content,
-                TreeMode::Raw => unreachable!(
-                    "uses_tree returns false for Raw mode on Data languages"
-                ),
-            };
-            let mut data_tree = (parser.lower)(&raw_root, source);
-            tree::assign_ids_data(&mut data_tree);
-            (parser.render)(&mut xot, doc, &data_tree, source)
-                .map_err(|e| ParseError::Parse(format!("DataTree render failed: {e}")))?;
-            Ok(XotParseResult {
-                xot,
-                root: doc,
-                source_lines,
-                file_path,
-                language: lang.to_string(),
-                tree: None,
-                data_tree: Some(Box::new(data_tree)),
-                #[cfg(feature = "native")]
-                sql_tree: None,
-                source: source.to_string(),
-            })
-        }
-        TreeKind::Sql(lower) => {
-            let mut sql_tree = lower(&raw_root, source);
-            tree::assign_ids_sql(&mut sql_tree);
-            tree::sql::to_xot::render_sql_to_xot(&mut xot, doc, &sql_tree, source)
-                .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
-            Ok(XotParseResult {
-                xot,
-                root: doc,
-                source_lines,
-                file_path,
-                language: lang.to_string(),
-                tree: None,
-                data_tree: None,
-                #[cfg(feature = "native")]
-                sql_tree: Some(Box::new(sql_tree)),
-                source: source.to_string(),
-            })
-        }
-        TreeKind::None => Err(ParseError::Parse(format!(
-            "tree pipeline not yet wired for language {lang}"
-        ))),
-    }
-}
-
-#[cfg(not(feature = "native"))]
-fn parse_with_ir_pipeline(
-    _source: &str,
-    _lang: &str,
-    _file_path: String,
-) -> Result<XotParseResult, ParseError> {
-    Err(ParseError::Parse(
-        "tree pipeline requires the `native` feature".to_string(),
-    ))
-}
-
 /// Parse via the typed-tree pipeline and return an `XeeParseResult`
 /// (the fast-query path used by `parse(...)`). Lowers CST → tree →
 /// xot, then serializes the xot document and re-parses it into an
@@ -408,8 +157,9 @@ fn parse_with_ir_pipeline_to_xee(
     let mut xot = xot::Xot::new();
     let holding = xot.new_document();
 
-    // See `parse_with_ir_pipeline` — convert CST to owned `RawNode`
-    // once; lowerings take `&RawNode`.
+    // Convert the tree-sitter CST root to an owned `RawNode` once.
+    // Lowerings receive `&RawNode` so the same lowering compiles for
+    // WASM (which deserialises `RawNode` from `web-tree-sitter` JSON).
     let raw_root = crate::raw::RawNode::from_tree_sitter(tree.root_node(), source);
 
     // Render to xot via the tree family-specific lower + render pair,
@@ -418,7 +168,9 @@ fn parse_with_ir_pipeline_to_xee(
     let root_tree = match lang_ops.tree_kind {
         TreeKind::Syntax(lower) => {
             let mut ir_tree = lower(&raw_root, source);
-            // Slice 1 invariant — see parse_with_ir_pipeline.
+            // Slice 1 invariant: every tree exiting the parser has a
+            // NodeId stamped on every node's Span. Downstream
+            // XPath → typed-node lookup paths depend on this.
             tree::assign_ids_syntax(&mut ir_tree);
             tree::render_to_xot(&mut xot, holding, &ir_tree, source)
                 .map_err(|e| ParseError::Parse(format!("tree render failed: {e}")))?;
@@ -548,24 +300,6 @@ impl XeeParseResult {
     }
 }
 
-/// Parse a source string directly into Documents for fast XPath queries
-///
-/// This is the fast path that avoids XML serialization/parsing roundtrip.
-/// Returns an XeeParseResult that can be queried with XPathEngine::query_documents().
-pub fn parse_string_to_xee(
-    source: &str,
-    lang: &str,
-    file_path: String,
-    tree_mode: Option<TreeMode>,
-) -> Result<XeeParseResult, ParseError> {
-    parse_string_to_xee_with_options(source, lang, file_path, tree_mode, false, None)
-}
-
-/// Parse a source string directly into Documents with options
-///
-/// This is the fast path that avoids XML serialization/parsing roundtrip.
-/// Returns an XeeParseResult that can be queried with XPathEngine::query_documents().
-/// Use `ignore_whitespace=true` to strip whitespace from text nodes during tree building.
 // Timing stats for profiling (in microseconds)
 use std::sync::atomic::{AtomicU64, Ordering};
 static TIMING_TS_PARSE: AtomicU64 = AtomicU64::new(0);
@@ -595,13 +329,18 @@ pub fn print_parse_timing_stats() {
         (ts_parse + xot_build + source_lines) as f64 / 1000.0 / count as f64);
 }
 
-/// Parse a source string directly into Documents with all options
+/// Inline source → `XeeParseResult` core. Drives the typed-tree
+/// pipeline for tree-supported languages and the
+/// `lower_raw_passthrough_all` raw dump for everything else, then
+/// serialises the xot document into xee `Documents` (the v1 stepping
+/// stone the typed path uses; S7 will eliminate this round-trip).
 ///
-/// This is the fast path that avoids XML serialization/parsing roundtrip.
-/// Returns an XeeParseResult that can be queried with XPathEngine::query_documents().
-/// Use `ignore_whitespace=true` to strip whitespace from text nodes during tree building.
-/// Use `max_depth` to limit tree building depth (skip deeper nodes for speed).
-pub fn parse_string_to_xee_with_options(
+/// Private because it is reached only through the unified [`parse`]
+/// entry point. `ignore_whitespace` is accepted to match `ParseOptions`
+/// but is a no-op in the typed pipeline (whitespace handling lives in
+/// the per-language lowerings); `max_depth` is accepted for parity
+/// with `ParseOptions::parse_depth` and currently ignored.
+fn parse_inline_to_xee(
     source: &str,
     lang: &str,
     file_path: String,
@@ -668,38 +407,18 @@ pub fn parse_string_to_xee_with_options(
     })
 }
 
-/// Parse a file directly into Documents for fast XPath queries
-pub fn parse_file_to_xee(
-    path: &Path,
-    lang_override: Option<&str>,
-    tree_mode: Option<TreeMode>,
-) -> Result<XeeParseResult, ParseError> {
-    parse_file_to_xee_with_options(path, lang_override, tree_mode, false)
-}
-
-/// Parse a file directly into Documents with options
-pub fn parse_file_to_xee_with_options(
-    path: &Path,
-    lang_override: Option<&str>,
-    tree_mode: Option<TreeMode>,
-    ignore_whitespace: bool,
-) -> Result<XeeParseResult, ParseError> {
-    if lang_override.is_none() {
-        check_ambiguous_extension(path)?;
-    }
-    let source = fs::read_to_string(path)?;
-    let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
-    parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), tree_mode, ignore_whitespace, None)
-}
-
 // ============================================================================
 // Unified parsing pipeline - always returns Documents
 // ============================================================================
 
-/// Load XML string directly into Documents for querying
+/// Load XML string directly into Documents for querying.
 ///
-/// This is the XML passthrough path - no TreeSitter parsing, just load the XML.
-pub fn load_xml_string_to_documents(xml: &str, file_path: String) -> Result<XeeParseResult, ParseError> {
+/// This is the XML passthrough path — no TreeSitter parsing, just load
+/// the XML. Reached through [`parse`] when the language is `"xml"`
+/// (either detected from path or set explicitly); the function is
+/// crate-internal because callers go through `parse(...)` for the
+/// public surface.
+pub(crate) fn load_xml_string_to_documents(xml: &str, file_path: String) -> Result<XeeParseResult, ParseError> {
     let mut documents = Documents::new();
 
     // Parse XML directly into Documents
@@ -718,8 +437,9 @@ pub fn load_xml_string_to_documents(xml: &str, file_path: String) -> Result<XeeP
     })
 }
 
-/// Load XML file directly into Documents for querying
-pub fn load_xml_file_to_documents(path: &Path) -> Result<XeeParseResult, ParseError> {
+/// Load XML file directly into Documents for querying. Crate-internal
+/// counterpart of [`load_xml_string_to_documents`] for the disk path.
+pub(crate) fn load_xml_file_to_documents(path: &Path) -> Result<XeeParseResult, ParseError> {
     let xml = fs::read_to_string(path)?;
     load_xml_string_to_documents(&xml, path.to_string_lossy().to_string())
 }
@@ -833,7 +553,7 @@ pub fn parse(
             } else {
                 // Source code: TreeSitter → XeeBuilder → Documents
                 let source = fs::read_to_string(path)?;
-                parse_string_to_xee_with_options(
+                parse_inline_to_xee(
                     &source,
                     lang,
                     path.to_string_lossy().to_string(),
@@ -854,7 +574,7 @@ pub fn parse(
             if lang == "xml" {
                 load_xml_string_to_documents(content, file_label.to_string())
             } else {
-                parse_string_to_xee_with_options(
+                parse_inline_to_xee(
                     content,
                     lang,
                     file_label.to_string(),

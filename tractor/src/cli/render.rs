@@ -1,7 +1,8 @@
 use std::io::Read;
 use clap::Args;
 use tractor::language_info::{get_language_info, get_language_for_extension};
-use tractor::parser::parse_string_to_xot;
+use tractor::parser::{parse, ParseInput, ParseOptions};
+use tractor::xpath::Tree;
 
 /// Render mode: round-trip parse source → tree → source.
 ///
@@ -32,24 +33,30 @@ pub fn run_render(args: RenderArgs) -> Result<(), Box<dyn std::error::Error>> {
     let input = read_input(&args)?;
     let file_label = args.file.clone().unwrap_or_else(|| "<stdin>".to_string());
 
-    let parsed = parse_string_to_xot(&input, &lang, file_label, None)
-        .map_err(|e| format!("parse failed: {e}"))?;
+    let parsed = parse(
+        ParseInput::Inline { content: &input, file_label: &file_label },
+        ParseOptions { language: Some(&lang), ..Default::default() },
+    ).map_err(|e| format!("parse failed: {e}"))?;
 
-    let rendered = if let Some(tree) = &parsed.tree {
-        // Syntax tree: anchored render slices the source
-        // verbatim, so the round-trip is byte-identical.
-        tractor::tree::render::render(tree, &lang, Some(&parsed.source))
-    } else if let Some(data_tree) = &parsed.data_tree {
-        // Data-language tree: anchored slice via DataTree::to_source.
-        data_tree.to_source(&parsed.source).to_string()
-    } else if let Some(sql_tree) = &parsed.sql_tree {
-        tractor::tree::render::render_sql(sql_tree, Some(&parsed.source))
-    } else {
-        return Err(format!(
-            "language '{}' is not on the tree pipeline; render is only available \
-             for tree-supported languages",
-            lang,
-        ).into());
+    let rendered = match parsed.root_tree.as_ref() {
+        Some(Tree::SyntaxTree { tree, source, .. }) => {
+            // Anchored render slices the source verbatim, so the
+            // round-trip is byte-identical.
+            tractor::tree::render::render(tree, &lang, Some(source))
+        }
+        Some(Tree::DataTree { tree, source, .. }) => {
+            tree.to_source(source).to_string()
+        }
+        Some(Tree::Sql { tree, source, .. }) => {
+            tractor::tree::render::render_sql(tree, Some(source))
+        }
+        _ => {
+            return Err(format!(
+                "language '{}' is not on the tree pipeline; render is only available \
+                 for tree-supported languages",
+                lang,
+            ).into());
+        }
     };
 
     if let Some(file) = &args.file {

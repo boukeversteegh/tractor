@@ -24,7 +24,7 @@
 
 use tractor::tree::{render_to_xot, to_source};
 use tractor::languages::python::lower_python_root;
-use tractor::parser::parse_string_to_xot;
+use tractor::{parse, ParseInput, ParseOptions};
 use xot::{Node as XotNode, Xot};
 
 /// Render a Xot subtree to a structural string: one line per element,
@@ -91,16 +91,20 @@ fn walk_text(xot: &Xot, node: XotNode, out: &mut String) {
 }
 
 /// Run the existing pipeline and return the structural view of its root.
-fn current_pipeline_view(source: &str) -> (String, XotResult) {
-    let result = parse_string_to_xot(source, "python", "<test>".to_string(), None)
-        .expect("current pipeline parse");
-    let root = if result.xot.is_document(result.root) {
-        result.xot.document_element(result.root).expect("doc element")
+fn current_pipeline_view(source: &str) -> String {
+    let result = parse(
+        ParseInput::Inline { content: source, file_label: "<test>" },
+        ParseOptions { language: Some("python"), ..Default::default() },
+    )
+    .expect("current pipeline parse");
+    let xot = result.documents.xot();
+    let doc_node = result.documents.document_node(result.doc_handle).expect("doc");
+    let root = if xot.is_document(doc_node) {
+        xot.document_element(doc_node).expect("doc element")
     } else {
-        result.root
+        doc_node
     };
-    let view = structural_view(&result.xot, root);
-    (view, XotResult { xot: result.xot, root })
+    structural_view(xot, root)
 }
 
 struct XotResult {
@@ -138,7 +142,7 @@ fn ir_pipeline_view(source: &str) -> (String, XotResult) {
 }
 
 fn assert_parity(source: &str, label: &str) {
-    let (cur, _) = current_pipeline_view(source);
+    let cur = current_pipeline_view(source);
     let (new, ir_xot) = ir_pipeline_view(source);
 
     // tree invariant 1: lossless source recovery. XPath string(.) on the

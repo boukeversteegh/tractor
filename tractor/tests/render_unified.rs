@@ -24,9 +24,10 @@
 
 #![cfg(feature = "native")]
 
-use tractor::parser::parse_string_to_xot;
+use tractor::{parse, ParseInput, ParseOptions};
 use tractor::tree::render::render;
 use tractor::tree::SyntaxTree;
+use tractor::xpath::Tree;
 
 /// `(lang, fixture_path)` pairs, one per tree-supported language.
 fn blueprint_fixtures() -> Vec<(&'static str, &'static str)> {
@@ -57,16 +58,19 @@ fn read_fixture(path: &str) -> String {
 fn round_trip_blueprint_is_byte_identical() {
     for (lang, path) in blueprint_fixtures() {
         let source = read_fixture(path);
-        let parsed = parse_string_to_xot(&source, lang, path.to_string(), None)
-            .unwrap_or_else(|e| panic!("parse {}: {}", path, e));
-        let tree = parsed
-            .tree
-            .as_ref()
-            .unwrap_or_else(|| panic!("{}: no SyntaxTree (expected for {})", path, lang));
+        let parsed = parse(
+            ParseInput::Inline { content: &source, file_label: path },
+            ParseOptions { language: Some(lang), ..Default::default() },
+        )
+        .unwrap_or_else(|e| panic!("parse {}: {}", path, e));
+        let (tree, src) = match parsed.root_tree.as_ref() {
+            Some(Tree::SyntaxTree { tree, source, .. }) => (tree.clone(), source.clone()),
+            _ => panic!("{}: no SyntaxTree (expected for {})", path, lang),
+        };
 
-        let rendered = render(tree, lang, Some(&parsed.source));
+        let rendered = render(&tree, lang, Some(&src));
         assert_eq!(
-            rendered, parsed.source,
+            rendered, *src,
             "{} ({}): anchored render is not byte-identical to source",
             path, lang
         );
@@ -105,12 +109,15 @@ fn canonical_render_re_parses_to_equivalent_root() {
         rendered
     );
 
-    let reparsed = parse_string_to_xot(&rendered, "python", "<synthetic>".to_string(), None)
-        .unwrap_or_else(|e| panic!("re-parse failed: {}", e));
-    let reparsed_tree = reparsed
-        .tree
-        .as_ref()
-        .expect("re-parsed Python must produce a SyntaxTree");
+    let reparsed = parse(
+        ParseInput::Inline { content: &rendered, file_label: "<synthetic>" },
+        ParseOptions { language: Some("python"), ..Default::default() },
+    )
+    .unwrap_or_else(|e| panic!("re-parse failed: {}", e));
+    let reparsed_tree = match reparsed.root_tree.as_ref() {
+        Some(Tree::SyntaxTree { tree, .. }) => tree.clone(),
+        _ => panic!("re-parsed Python must produce a SyntaxTree"),
+    };
     assert!(
         matches!(reparsed_tree.as_ref(), SyntaxTree::Module { .. }),
         "re-parsed tree must be a Module"
@@ -131,14 +138,21 @@ fn canonical_render_re_parses_to_equivalent_root() {
 #[test]
 fn mixed_render_preserves_anchored_and_emits_synthetic() {
     let source = "x = 1\n";
-    let parsed = parse_string_to_xot(source, "python", "<mixed>".to_string(), None)
-        .expect("parse Python");
-    let mut tree: Box<SyntaxTree> = parsed.tree.expect("python yields SyntaxTree");
+    let parsed = parse(
+        ParseInput::Inline { content: source, file_label: "<mixed>" },
+        ParseOptions { language: Some("python"), ..Default::default() },
+    )
+    .expect("parse Python");
+    let (tree_arc, src) = match parsed.root_tree.as_ref() {
+        Some(Tree::SyntaxTree { tree, source, .. }) => (tree.clone(), source.clone()),
+        _ => panic!("python yields SyntaxTree"),
+    };
+    let mut tree: SyntaxTree = (*tree_arc).clone();
 
     // Insert a synthetic identifier as a new top-level child. (The
     // synthetic node carries unanchored range; the surrounding Module
     // remains anchored to the parsed source.)
-    if let SyntaxTree::Module { children, .. } = tree.as_mut() {
+    if let SyntaxTree::Module { children, .. } = &mut tree {
         children.push(SyntaxTree::Name {
             text: "ZSYNTHETIC".to_string(),
             range: tractor::tree::ByteRange::synthetic_empty(),
@@ -148,7 +162,7 @@ fn mixed_render_preserves_anchored_and_emits_synthetic() {
         panic!("Python root should be a Module");
     }
 
-    let rendered = render(&tree, "python", Some(&parsed.source));
+    let rendered = render(&tree, "python", Some(&src));
     assert!(
         rendered.contains("ZSYNTHETIC"),
         "mixed render must emit the synthetic identifier text, got: {:?}",
@@ -200,16 +214,20 @@ fn data_fixtures() -> Vec<(&'static str, &'static str)> {
 #[test]
 fn datatree_round_trip_is_byte_identical() {
     for (lang, source) in data_fixtures() {
-        let parsed = parse_string_to_xot(source, lang, format!("<{}>", lang), None)
-            .unwrap_or_else(|e| panic!("parse {}: {}", lang, e));
-        let data_tree = parsed
-            .data_tree
-            .as_ref()
-            .unwrap_or_else(|| panic!("{}: no DataTree (expected for {})", lang, lang));
+        let label = format!("<{}>", lang);
+        let parsed = parse(
+            ParseInput::Inline { content: source, file_label: &label },
+            ParseOptions { language: Some(lang), ..Default::default() },
+        )
+        .unwrap_or_else(|e| panic!("parse {}: {}", lang, e));
+        let (data_tree, src) = match parsed.root_tree.as_ref() {
+            Some(Tree::DataTree { tree, source, .. }) => (tree.clone(), source.clone()),
+            _ => panic!("{}: no DataTree (expected for {})", lang, lang),
+        };
 
-        let rendered = data_tree.to_source(&parsed.source);
+        let rendered = data_tree.to_source(&src);
         assert_eq!(
-            rendered, parsed.source,
+            rendered, *src,
             "{}: DataTree::to_source not byte-identical to input",
             lang
         );
@@ -225,9 +243,15 @@ fn datatree_scalars_carry_text_and_quote_style() {
     use tractor::tree::types::QuoteStyle;
 
     let source = "{\n  \"key\": \"value\",\n  \"n\": 42,\n  \"flag\": true,\n  \"nil\": null\n}\n";
-    let parsed = parse_string_to_xot(source, "json", "<datatree-scalars>".to_string(), None)
-        .expect("parse JSON");
-    let data_tree = parsed.data_tree.expect("JSON yields DataTree");
+    let parsed = parse(
+        ParseInput::Inline { content: source, file_label: "<datatree-scalars>" },
+        ParseOptions { language: Some("json"), ..Default::default() },
+    )
+    .expect("parse JSON");
+    let data_tree = match parsed.root_tree.as_ref() {
+        Some(Tree::DataTree { tree, .. }) => tree.clone(),
+        _ => panic!("JSON yields DataTree"),
+    };
 
     fn collect_scalars<'a>(t: &'a DataTree, out: &mut Vec<&'a DataTree>) {
         match t {
@@ -363,9 +387,15 @@ fn syntax_children<'a>(tree: &'a SyntaxTree) -> Vec<&'a SyntaxTree> {
 #[test]
 fn parsed_syntax_tree_has_ids_assigned() {
     let source = "def foo(x):\n    return x\n";
-    let parsed = parse_string_to_xot(source, "python", "<ids>".to_string(), None)
-        .expect("parse Python");
-    let tree = parsed.tree.expect("python yields SyntaxTree");
+    let parsed = parse(
+        ParseInput::Inline { content: source, file_label: "<ids>" },
+        ParseOptions { language: Some("python"), ..Default::default() },
+    )
+    .expect("parse Python");
+    let tree = match parsed.root_tree.as_ref() {
+        Some(Tree::SyntaxTree { tree, .. }) => tree.clone(),
+        _ => panic!("python yields SyntaxTree"),
+    };
 
     let mut ids = Vec::new();
     collect_syntax_ids(&tree, &mut ids);
@@ -383,13 +413,15 @@ fn parsed_syntax_tree_has_ids_assigned() {
 /// `tractor set` (and future `replace`) will rely on.
 #[test]
 fn xpath_match_id_resolves_to_typed_syntax_node() {
-    use tractor::parser::parse_string_to_xee;
     use tractor::tree::{find_by_id, parse_id_attr};
     use tractor::xpath::XPathEngine;
 
     let source = "def foo():\n    return 1\n";
-    let mut parsed = parse_string_to_xee(source, "python", "<xpath-id>".to_string(), None)
-        .expect("parse python");
+    let mut parsed = parse(
+        ParseInput::Inline { content: source, file_label: "<xpath-id>" },
+        ParseOptions { language: Some("python"), ..Default::default() },
+    )
+    .expect("parse python");
 
     // Query for the function's <name> element. Renderer-typed XML uses
     // `<name>` for function names.
@@ -435,15 +467,17 @@ fn xpath_match_id_resolves_to_typed_syntax_node() {
 /// SqlTree (Tier 1: assign_ids_sql / find_by_id_sql / xot `@id`).
 #[test]
 fn xpath_match_id_resolves_to_typed_sql_node() {
-    use tractor::parser::parse_string_to_xee;
     use tractor::tree::{find_by_id, parse_id_attr};
 
     // Schemaless fixture — `//relation//name` resolves to the table
     // identifier without ambiguity. (With a `dbo.Users` qualifier the
     // first match would be the schema's `<name>dbo</name>`.)
     let source = "SELECT col FROM Users";
-    let mut parsed =
-        parse_string_to_xee(source, "tsql", "<xpath-id-sql>".to_string(), None).expect("parse tsql");
+    let mut parsed = parse(
+        ParseInput::Inline { content: source, file_label: "<xpath-id-sql>" },
+        ParseOptions { language: Some("tsql"), ..Default::default() },
+    )
+    .expect("parse tsql");
 
     let matches = parsed
         .query("//relation//name")
@@ -527,9 +561,15 @@ fn parsed_data_tree_has_ids_assigned() {
     }
 
     let source = "{\n  \"key\": \"value\",\n  \"n\": 42\n}\n";
-    let parsed = parse_string_to_xot(source, "json", "<ids>".to_string(), None)
-        .expect("parse JSON");
-    let tree = parsed.data_tree.expect("json yields DataTree");
+    let parsed = parse(
+        ParseInput::Inline { content: source, file_label: "<ids>" },
+        ParseOptions { language: Some("json"), ..Default::default() },
+    )
+    .expect("parse JSON");
+    let tree = match parsed.root_tree.as_ref() {
+        Some(Tree::DataTree { tree, .. }) => tree.clone(),
+        _ => panic!("json yields DataTree"),
+    };
 
     let mut ids = Vec::new();
     walk(&tree, &mut ids);
@@ -551,11 +591,12 @@ fn parsed_data_tree_has_ids_assigned() {
 /// that the executor's typed-set pipeline relies on.
 #[test]
 fn syntax_tree_matches_carry_node_id() {
-    use tractor::parser::parse_string_to_xee;
-
     let source = "def foo():\n    return 1\n";
-    let mut parsed = parse_string_to_xee(source, "python", "<id-on-match>".to_string(), None)
-        .expect("parse python");
+    let mut parsed = parse(
+        ParseInput::Inline { content: source, file_label: "<id-on-match>" },
+        ParseOptions { language: Some("python"), ..Default::default() },
+    )
+    .expect("parse python");
 
     let matches = parsed
         .query("//function/name")

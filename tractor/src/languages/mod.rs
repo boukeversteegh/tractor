@@ -471,7 +471,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
             },
         },
         // TOML flows entirely through `crate::tree::toml_data` (parser
-        // dispatches to `parse_with_ir_pipeline`). The tree's data
+        // dispatches to `parse_with_ir_pipeline_to_xee`). The tree's data
         // lowering already collapses array-of-tables; no post-pass
         // needed.
         syntax_category: toml::syntax_category,

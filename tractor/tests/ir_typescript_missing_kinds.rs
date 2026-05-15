@@ -49,19 +49,19 @@ fn typescript_missing_kinds() {
         eprintln!("  {n:>3}  {k}");
     }
 
-    let parsed = tractor::parser::parse_string_to_xot(
-        &source,
-        "typescript",
-        "<x>".to_string(),
-        None,
+    let parsed = tractor::parse(
+        tractor::ParseInput::Inline { content: &source, file_label: "<x>" },
+        tractor::ParseOptions { language: Some("typescript"), ..Default::default() },
     )
     .expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
+    let xot = parsed.documents.xot();
+    let doc_node = parsed.documents.document_node(parsed.doc_handle).expect("doc");
+    let root = if xot.is_document(doc_node) {
+        xot.document_element(doc_node).expect("doc")
     } else {
-        parsed.root
+        doc_node
     };
-    let final_xml = parsed.xot.to_string(root).unwrap();
+    let final_xml = xot.to_string(root).unwrap();
     let mut counts = std::collections::BTreeMap::<String, usize>::new();
     for token in final_xml.split("<unknown kind=\"").skip(1) {
         if let Some(end) = token.find('"') {

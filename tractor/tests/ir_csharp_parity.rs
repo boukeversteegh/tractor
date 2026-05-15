@@ -28,8 +28,42 @@
 
 use tractor::tree::{audit_coverage, render_to_xot, to_source};
 use tractor::languages::csharp::lower_csharp_root;
-use tractor::parser::parse_string_to_xot;
+use tractor::{parse, ParseInput, ParseOptions, XeeParseResult};
 use xot::{Node as XotNode, Xot};
+
+/// Parse a C# snippet through the unified `parse(...)` entry. Test
+/// helper that mirrors the legacy `parse_string_to_xot` shape so the
+/// per-case bodies stay short.
+fn parse_csharp(source: &str, file_label: &str) -> XeeParseResult {
+    parse(
+        ParseInput::Inline { content: source, file_label },
+        ParseOptions { language: Some("csharp"), ..Default::default() },
+    )
+    .expect("parse")
+}
+
+/// Render the parsed document to a single XML string, descending past
+/// the document node when present (matches the legacy
+/// `xot.to_string(root)` behaviour).
+fn parsed_to_xml(parsed: &XeeParseResult) -> String {
+    let xot = parsed.documents.xot();
+    let doc_node = parsed.documents.document_node(parsed.doc_handle).expect("doc handle");
+    let root = if xot.is_document(doc_node) {
+        xot.document_element(doc_node).expect("doc")
+    } else { doc_node };
+    xot.to_string(root).unwrap()
+}
+
+/// `(xot, root)` for a parsed C# document — for tests that need to
+/// walk the xot tree directly (`structural_view`, `find_expression_subtree`, …).
+fn parsed_xot_root<'a>(parsed: &'a XeeParseResult) -> (&'a Xot, XotNode) {
+    let xot = parsed.documents.xot();
+    let doc_node = parsed.documents.document_node(parsed.doc_handle).expect("doc handle");
+    let root = if xot.is_document(doc_node) {
+        xot.document_element(doc_node).expect("doc")
+    } else { doc_node };
+    (xot, root)
+}
 
 /// Named kinds the C# tree pipeline knows how to lower. The list is
 /// hand-curated for the ignored coverage tests below; the tree fall-
@@ -256,23 +290,16 @@ fn dump_for_raw_xml() {
 #[ignore]
 fn dump_csharp_field_value() {
     let s = "class C { int x = 1; }";
-    let parsed = tractor::parser::parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    let parsed = parse_csharp(s, "<x>");
+    println!("{}", parsed_to_xml(&parsed));
 }
 
 #[test]
 #[ignore]
 fn dump_for_render_xml() {
     let s = "class C { void M() { for (int i = 0; i < 3; i++) { } } }";
-    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml = r.xot.to_string(root).unwrap();
-    eprintln!("{xml}");
+    let r = parse_csharp(s, "<x>");
+    eprintln!("{}", parsed_to_xml(&r));
 }
 
 #[test]
@@ -304,24 +331,16 @@ fn dump_foreach_cst() {
 #[ignore]
 fn dump_file_scoped_ns_render() {
     let s = "namespace File;\nclass A {}\n";
-    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml = r.xot.to_string(root).unwrap();
-    eprintln!("{xml}");
+    let r = parse_csharp(s, "<x>");
+    eprintln!("{}", parsed_to_xml(&r));
 }
 
 #[test]
 #[ignore]
 fn dump_unsafe_block_render() {
     let s = "class C { void M(int x) { unsafe { int* p = &x; } } }";
-    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml = r.xot.to_string(root).unwrap();
-    eprintln!("{xml}");
+    let r = parse_csharp(s, "<x>");
+    eprintln!("{}", parsed_to_xml(&r));
 }
 
 #[test]
@@ -331,38 +350,26 @@ fn dump_blueprint_line96_render_xml() {
         .or_else(|_| std::fs::read_to_string("tests/integration/languages/csharp/blueprint.cs"))
         .expect("blueprint.cs");
     // Just take the relevant Demo class slice
-    let r = parse_string_to_xot(&source, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml = r.xot.to_string(root).unwrap();
+    let r = parse_csharp(&source, "<x>");
     // Print only the part around line 96 — find <block line=
     // Dump full content
-    eprintln!("{xml}");
+    eprintln!("{}", parsed_to_xml(&r));
 }
 
 #[test]
 #[ignore]
 fn dump_var_widget_render_xml() {
     let s = "class C { void M(int maybe) { var widget = maybe; } }";
-    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml = r.xot.to_string(root).unwrap();
-    eprintln!("{xml}");
+    let r = parse_csharp(s, "<x>");
+    eprintln!("{}", parsed_to_xml(&r));
 }
 
 #[test]
 #[ignore]
 fn dump_csharp_attr_render_xml() {
     let s = "class X { [Obsolete] [MaxLength(50)] public string Name; }";
-    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml = r.xot.to_string(root).unwrap();
-    eprintln!("{xml}");
+    let r = parse_csharp(s, "<x>");
+    eprintln!("{}", parsed_to_xml(&r));
 }
 
 #[test]
@@ -419,36 +426,24 @@ fn dump_csharp_where_cst() {
 #[ignore]
 fn dump_csharp_where_render_xml() {
     let s = "class Repo<T, U, V> where T : class, IComparable<T>, new() where U : struct where V : notnull { }";
-    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml = r.xot.to_string(root).unwrap();
-    eprintln!("{xml}");
+    let r = parse_csharp(s, "<x>");
+    eprintln!("{}", parsed_to_xml(&r));
 }
 
 #[test]
 #[ignore]
 fn dump_csharp_vocab_render_xml() {
     let s = "class Dog<T> : Animal, IBarker where T : Animal { public T Owner; public List<string> Tags; public void Bark() {} }";
-    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml = r.xot.to_string(root).unwrap();
-    eprintln!("{xml}");
+    let r = parse_csharp(s, "<x>");
+    eprintln!("{}", parsed_to_xml(&r));
 }
 
 #[test]
 #[ignore]
 fn dump_foreach_render_xml() {
     let s = "class C { void M() { foreach (var item in items) { Handle(item); } } }";
-    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml = r.xot.to_string(root).unwrap();
-    eprintln!("{xml}");
+    let r = parse_csharp(s, "<x>");
+    eprintln!("{}", parsed_to_xml(&r));
 }
 
 #[test]
@@ -457,11 +452,9 @@ fn dump_for_render() {
     use tractor::output::{render_query_tree_node, RenderOptions};
     use tractor::xpath::xot_node_to_xml_node;
     let s = "class C { void M() { for (int i = 0; i < 3; i++) { } } }";
-    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml_node = xot_node_to_xml_node(&r.xot, root);
+    let r = parse_csharp(s, "<x>");
+    let (xot, root) = parsed_xot_root(&r);
+    let xml_node = xot_node_to_xml_node(xot, root);
     let mut opts = RenderOptions::new();
     opts.include_meta = false;
     eprintln!("{}", render_query_tree_node(&xml_node, &opts));
@@ -533,11 +526,9 @@ fn dump_multiarg_indexer_render() {
     use tractor::output::{render_query_tree_node, RenderOptions};
     use tractor::xpath::xot_node_to_xml_node;
     let s = "class C { void M() { var x = arr[1, 2, 3]; } }";
-    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml_node = xot_node_to_xml_node(&r.xot, root);
+    let r = parse_csharp(s, "<x>");
+    let (xot, root) = parsed_xot_root(&r);
+    let xml_node = xot_node_to_xml_node(xot, root);
     let mut opts = RenderOptions::new();
     opts.include_meta = true;
     eprintln!("{}", render_query_tree_node(&xml_node, &opts));
@@ -549,11 +540,9 @@ fn dump_tuple_decon_render() {
     use tractor::output::{render_query_tree_node, RenderOptions};
     use tractor::xpath::xot_node_to_xml_node;
     let s = "class C { void M() { var (a, b) = pair; } }";
-    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let xml_node = xot_node_to_xml_node(&r.xot, root);
+    let r = parse_csharp(s, "<x>");
+    let (xot, root) = parsed_xot_root(&r);
+    let xml_node = xot_node_to_xml_node(xot, root);
     let mut opts = RenderOptions::new();
     opts.include_meta = false;
     eprintln!("{}", render_query_tree_node(&xml_node, &opts));
@@ -843,12 +832,9 @@ fn blueprint_tree_parity() {
     opts.include_meta = false;
 
     // Imperative pipeline tree.
-    let cur = parse_string_to_xot(&source, "csharp", "<bp>".to_string(), None)
-        .expect("imperative parse");
-    let cur_root = if cur.xot.is_document(cur.root) {
-        cur.xot.document_element(cur.root).expect("doc")
-    } else { cur.root };
-    let cur_xml = xot_node_to_xml_node(&cur.xot, cur_root);
+    let cur = parse_csharp(&source, "<bp>");
+    let (cur_xot, cur_root) = parsed_xot_root(&cur);
+    let cur_xml = xot_node_to_xml_node(cur_xot, cur_root);
     let cur_render = render_query_tree_node(&cur_xml, &opts);
 
     // tree pipeline tree.
@@ -900,12 +886,9 @@ fn blueprint_parity() {
         .expect("blueprint.cs");
 
     // Current pipeline view.
-    let cur_result = parse_string_to_xot(&source, "csharp", "<bp>".to_string(), None)
-        .expect("current pipeline parse");
-    let cur_root = if cur_result.xot.is_document(cur_result.root) {
-        cur_result.xot.document_element(cur_result.root).expect("doc")
-    } else { cur_result.root };
-    let cur_view = structural_view(&cur_result.xot, cur_root);
+    let cur_result = parse_csharp(&source, "<bp>");
+    let (cur_xot, cur_root) = parsed_xot_root(&cur_result);
+    let cur_view = structural_view(cur_xot, cur_root);
 
     // tree pipeline view.
     let mut p = tree_sitter::Parser::new();
@@ -1038,14 +1021,11 @@ fn assert_expression_parity(expr: &str, label: &str) {
     let source = format!("class C {{ void M() {{ var x = {expr}; }} }}\n");
 
     // Current pipeline.
-    let r = parse_string_to_xot(&source, "csharp", "<test>".to_string(), None)
-        .expect("current pipeline parse");
-    let cur_root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    let cur_expr = find_expression_subtree(&r.xot, cur_root)
+    let r = parse_csharp(&source, "<test>");
+    let (cur_xot, cur_root) = parsed_xot_root(&r);
+    let cur_expr = find_expression_subtree(cur_xot, cur_root)
         .expect("current pipeline: expression subtree not found");
-    let cur_view = structural_view(&r.xot, cur_expr);
+    let cur_view = structural_view(cur_xot, cur_expr);
 
     // tree pipeline.
     let mut p = tree_sitter::Parser::new();
@@ -1461,9 +1441,9 @@ fn cast_expression() {
 #[ignore]
 fn dump_existing_is_shape() {
     let s = "class C { void M() { var c = x is int; } }\n";
-    let r = parse_string_to_xot(s, "csharp", "<test>".to_string(), None).unwrap();
-    let root = r.xot.document_element(r.root).unwrap();
-    let view = structural_view(&r.xot, root);
+    let r = parse_csharp(s, "<test>");
+    let (xot, root) = parsed_xot_root(&r);
+    let view = structural_view(xot, root);
     eprintln!("{view}");
 }
 

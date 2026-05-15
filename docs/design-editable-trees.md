@@ -76,7 +76,7 @@ A meaningful optimisation within (B): **slot-aware projection.** When replacing 
 - Add `id: NodeId` to `Span`. Default `0` ("unassigned"). One-field struct edit, no per-variant churn.
 - Define `pub type NodeId = u32`. Newtype later if useful.
 - Write `assign_ids(&mut SyntaxTree)`, `assign_ids(&mut DataTree)`, `assign_ids(&mut SqlTree)` — depth-first walks that stamp every node from a fresh counter.
-- Wire into the parser exit point (`parse_string_to_xot` or wherever lowering finishes) so the invariant *"every tree exiting the parser has IDs"* holds without callers thinking about it.
+- Wire into the parser exit point (`parse_inline_to_xee` / `parse_with_ir_pipeline_to_xee`, where lowering finishes) so the invariant *"every tree exiting the parser has IDs"* holds without callers thinking about it.
 
 ### Slice 2 — xot-side IDs + locator
 

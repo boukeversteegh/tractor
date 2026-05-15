@@ -6,6 +6,22 @@ use tree_sitter::Parser;
 use tractor::tree::audit_coverage;
 use tractor::languages::java::lower_java_root;
 
+fn parse_java_to_xml(source: &str) -> String {
+    let parsed = tractor::parse(
+        tractor::ParseInput::Inline { content: source, file_label: "<x>" },
+        tractor::ParseOptions { language: Some("java"), ..Default::default() },
+    )
+    .expect("parse");
+    let xot = parsed.documents.xot();
+    let doc_node = parsed.documents.document_node(parsed.doc_handle).expect("doc handle");
+    let root = if xot.is_document(doc_node) {
+        xot.document_element(doc_node).expect("doc")
+    } else {
+        doc_node
+    };
+    xot.to_string(root).unwrap()
+}
+
 #[test]
 #[ignore]
 fn java_missing_kinds() {
@@ -44,19 +60,7 @@ fn java_missing_kinds() {
         eprintln!("  {n:>3}  {k}");
     }
 
-    let parsed = tractor::parser::parse_string_to_xot(
-        &source,
-        "java",
-        "<x>".to_string(),
-        None,
-    )
-    .expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else {
-        parsed.root
-    };
-    let final_xml = parsed.xot.to_string(root).unwrap();
+    let final_xml = parse_java_to_xml(&source);
     let mut counts = std::collections::BTreeMap::<String, usize>::new();
     for token in final_xml.split("<unknown kind=\"").skip(1) {
         if let Some(end) = token.find('"') {
@@ -73,11 +77,7 @@ fn java_missing_kinds() {
 #[ignore]
 fn dump_java_generic_bound_render() {
     let s = "class Dog<T extends Animal> extends Animal implements Barker, Runner { int a; double b; T owner; java.util.List<String> tags; public void bark() {} public void run() {} }";
-    let parsed = tractor::parser::parse_string_to_xot(s, "java", "<x>".to_string(), None).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    println!("{}", parse_java_to_xml(s));
 }
 
 #[test]
@@ -183,44 +183,28 @@ fn dump_java_variadic_cst() {
 #[ignore]
 fn dump_java_variadic_render() {
     let s = "class T { void f(int... xs) { } }";
-    let parsed = tractor::parser::parse_string_to_xot(s, "java", "<x>".to_string(), None).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    println!("{}", parse_java_to_xml(s));
 }
 
 #[test]
 #[ignore]
 fn dump_java_type_pattern_render() {
     let s = "class T { String f(Object o) { return switch (o) { case Integer i -> \"int\"; default -> \"other\"; }; } }";
-    let parsed = tractor::parser::parse_string_to_xot(s, "java", "<x>".to_string(), None).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    println!("{}", parse_java_to_xml(s));
 }
 
 #[test]
 #[ignore]
 fn dump_java_chain_render() {
     let s = "class X { void f() { obj.foo().bar.baz(); } }";
-    let parsed = tractor::parser::parse_string_to_xot(s, "java", "<x>".to_string(), None).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    println!("{}", parse_java_to_xml(s));
 }
 
 #[test]
 #[ignore]
 fn dump_java_void_render() {
     let s = "class X { void f() {} int g() { return 0; } }";
-    let parsed = tractor::parser::parse_string_to_xot(s, "java", "<x>".to_string(), None).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    println!("{}", parse_java_to_xml(s));
 }
 
 #[test]
@@ -252,22 +236,12 @@ fn dump_java_super_method() {
 #[ignore]
 fn dump_java_modifiers() {
     let s = "public abstract static class M { public static final int X = 1; public synchronized void s() {} int pkg = 4; }";
-    let parsed = tractor::parser::parse_string_to_xot(s, "java", "<x>".to_string(), None).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    println!("{}", parse_java_to_xml(s));
 }
 
 #[test]
 #[ignore]
 fn dump_java_field_render() {
     let s = "class C { int x = 1; int a = 1, b = 2; void f() { int u = 1, v = 2; } }\n";
-    let parsed = tractor::parser::parse_string_to_xot(
-        s, "java", "<x>".to_string(), None,
-    ).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    println!("{}", parse_java_to_xml(s));
 }

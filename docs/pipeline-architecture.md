@@ -136,7 +136,7 @@ The rayon worker pool uses a 16 MiB stack (`cli/context.rs`) because xee's XPath
 
 | Gap | Description | Tracked |
 |---|---|---|
-| Two parse APIs | `parse(ParseInput, ParseOptions)` (unified) + legacy `parse_string_to_xot` / `parse_file_to_xee` / `parse_string_to_xee` still exposed in `lib.rs` | TODO.md S9 |
+| ~~Two parse APIs~~ | Closed — `parse(ParseInput, ParseOptions)` is the only public entry; the legacy `parse_string_to_xot` / `parse_file_to_xee` / `parse_string_to_xee` functions and `XotParseResult` struct are gone (S9). | TODO.md S9 ✅ |
 | Two reverse renderers | XmlNode-based `render/*.rs` (3 languages, wired) and tree-based `ir/source/*.rs` (9 languages, unwired) | TODO.md S4 |
 | Two JSON projections | `xml_to_json` (legacy), `tree_to_json` (1087 LOC of heuristics), `data_to_json` (principled). Three concurrent paths. | TODO.md S5 |
 | Two language registries | `tractor/src/languages/mod.rs::LANGUAGES` + `tractor/src/languages/info.rs::LANGUAGES`, both claiming SSoT | TODO.md C5 |

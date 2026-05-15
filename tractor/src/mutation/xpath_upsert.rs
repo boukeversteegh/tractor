@@ -18,9 +18,11 @@
 //! All language-specific knowledge lives in the parser and renderer.
 //! The upsert algorithm itself is language-agnostic.
 
-use crate::parser::{parse, parse_string_to_xot, ParseInput, ParseOptions, XeeParseResult};
+use crate::parser::{parse, ParseInput, ParseOptions, XeeParseResult};
 use crate::tree_mode::TreeMode;
 pub use crate::xpath::Match;
+#[cfg(feature = "native")]
+use crate::xpath::Tree;
 
 #[cfg(feature = "native")]
 use crate::tree::data::{DataTree, ScalarKind};
@@ -296,19 +298,25 @@ fn update_existing_via_data_ir(
     value: &str,
     matches: &[Match],
 ) -> Result<UpsertResult, UpsertError> {
-    let parsed = parse_string_to_xot(
-        source,
-        lang,
-        "<update>".to_string(),
-        Some(TreeMode::Data),
+    let parsed = parse(
+        ParseInput::Inline { content: source, file_label: "<update>" },
+        ParseOptions {
+            language: Some(lang),
+            tree_mode: Some(TreeMode::Data),
+            ignore_whitespace: false,
+            parse_depth: None,
+        },
     )
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
-    let mut tree = *parsed.data_tree.ok_or_else(|| {
-        UpsertError::Parse(format!(
-            "language '{}' did not produce a DataTree on the tree pipeline",
-            lang,
-        ))
-    })?;
+    let mut tree: DataTree = match &parsed.root_tree {
+        Some(Tree::DataTree { tree, .. }) => (**tree).clone(),
+        _ => {
+            return Err(UpsertError::Parse(format!(
+                "language '{}' did not produce a DataTree on the tree pipeline",
+                lang,
+            )));
+        }
+    };
 
     // Step 1: Record original byte spans and mutate every matched
     // value in the typed tree. Each match's source position lines up
@@ -405,19 +413,25 @@ fn update_existing_via_syntax_ir(
     value: &str,
     matches: &[Match],
 ) -> Result<UpsertResult, UpsertError> {
-    let parsed = parse_string_to_xot(
-        source,
-        lang,
-        "<update>".to_string(),
-        None,
+    let parsed = parse(
+        ParseInput::Inline { content: source, file_label: "<update>" },
+        ParseOptions {
+            language: Some(lang),
+            tree_mode: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+        },
     )
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
-    let mut tree = *parsed.tree.ok_or_else(|| {
-        UpsertError::Parse(format!(
-            "language '{}' did not produce a SyntaxTree on the tree pipeline",
-            lang,
-        ))
-    })?;
+    let mut tree: crate::tree::SyntaxTree = match &parsed.root_tree {
+        Some(Tree::SyntaxTree { tree, .. }) => (**tree).clone(),
+        _ => {
+            return Err(UpsertError::Parse(format!(
+                "language '{}' did not produce a SyntaxTree on the tree pipeline",
+                lang,
+            )));
+        }
+    };
 
     let mut splice_info: Vec<(usize, usize, String)> = Vec::new();
 
@@ -608,20 +622,18 @@ fn insert_new_via_data_ir(
 
     let is_root_splice = existing_depth == 0;
 
-    // Re-parse the source to obtain a mutably-owned DataTree.
-    let parsed = parse_string_to_xot(
-        source,
-        lang,
-        "<insert>".to_string(),
-        Some(TreeMode::Data),
-    )
-    .map_err(|e| UpsertError::Parse(e.to_string()))?;
-    let mut tree = *parsed.data_tree.ok_or_else(|| {
-        UpsertError::Parse(format!(
-            "language '{}' did not produce a DataTree on the tree pipeline",
-            lang,
-        ))
-    })?;
+    // Take ownership of the typed DataTree from the parse already
+    // performed by the caller; cloning out of the Arc avoids a second
+    // tree-sitter parse pass.
+    let mut tree: DataTree = match result.root_tree.take() {
+        Some(Tree::DataTree { tree, .. }) => (*tree).clone(),
+        _ => {
+            return Err(UpsertError::Parse(format!(
+                "language '{}' did not produce a DataTree on the tree pipeline",
+                lang,
+            )));
+        }
+    };
 
     // Locate the insertion target — the deepest container
     // (Mapping / Sequence / Section) whose source range starts at

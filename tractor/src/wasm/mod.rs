@@ -185,7 +185,7 @@ fn raw_passthrough_xot(
 /// Route a `SerializedNode` AST through the typed `SyntaxTree`
 /// pipeline: RawNode (deserialised from JSON) → `lower(...)` →
 /// `assign_ids_syntax` → `render_to_xot` → XML string. Mirrors the
-/// native CLI's `parse_with_ir_pipeline` so WASM and CLI produce
+/// native CLI's `parse_with_ir_pipeline_to_xee` so WASM and CLI produce
 /// byte-identical output for the same source.
 fn parse_via_syntax_tree(
     ast: &SerializedNode,

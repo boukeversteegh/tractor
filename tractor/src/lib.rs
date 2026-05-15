@@ -90,7 +90,6 @@ pub use wasm::ast as wasm_ast;
 pub use parser::{
     detect_language, SUPPORTED_LANGUAGES,
     parse, ParseInput, ParseOptions,
-    load_xml_string_to_documents, load_xml_file_to_documents,
     XeeParseResult,
     get_language_abi_versions, LanguageAbiInfo,
     print_parse_timing_stats,

@@ -54,7 +54,7 @@ The tree path renders to xot, **serialises the xot to a string, and re-parses it
 - **W7.** `XmlNode` mixes XML markup (Element/Text/Comment/PI) with XPath atomic data (Map/Array/Number/Boolean/Null) in one enum. → S8.
 - **W8.** Cardinality plumbed twice — typed `Vec<SyntaxTree>` slots *and* `list="X"` attributes on rendered xot. → S3D.
 - **W9.** `field_wrappings` and per-language `TractorNode` strum enums are dead-data for migrated languages. → C1, C2.
-- **W10.** Old parse API surface (`parse_string_to_xot`, `parse_file_to_xee`, …) still exposed alongside the unified `parse()`. → S9.
+- ~~**W10.** Old parse API surface (`parse_string_to_xot`, `parse_file_to_xee`, …) still exposed alongside the unified `parse()`.~~ → S9 ✅.
 
 The tree design itself (typed slots, byte-range anchoring, `Inline`/`Unknown` escape hatches, coverage audit) is sound — none of these slices refactor it. The three tree families staying separate as types is also fine; the cost only goes away if dispatch + projection + rendering stop being copy-pasted three ways (S2 + S5).
 
@@ -62,7 +62,7 @@ The tree design itself (typed slots, byte-range anchoring, `Inline`/`Unknown` es
 
 With the imperative pipeline retired and the typed pipeline serving every parse on every target, the next slices fall into a clear sequence. Open slices doable now are marked 1️⃣ … 🔟 on their headers below; ones not numbered are either closed, blocked, or explicitly deferred.
 
-1. **1️⃣ S9** — Retire the legacy parse API (`parse_string_to_xot`, …). Small, mechanical, reduces public surface confusion before any other refactor touches the parse entry points.
+1. ~~**1️⃣ S9** — Retire the legacy parse API~~ — done; closed below.
 2. **2️⃣ S16** — Address the 11 pre-existing snapshot regressions. They block `task test:snapshots:check` from going green, which makes every subsequent refactor harder to validate.
 3. **3️⃣ S5B/S5D/S5E** — Delete `tree::to_json` (~1000 LOC of heuristics). S5A-Z7 already proved the typed `data_to_json` path is exhaustive; this is the cleanup.
 4. **4️⃣ S7** — Drop the xot serialise / xee reparse "v1 stepping stone". Real per-parse latency win, cleanly bounded to `parser/mod.rs`.
@@ -305,6 +305,35 @@ The user's intent (recorded 2026-05-14): "stick as close to raw as possible, onl
 - No `LanguageOps` row carries `TreeKind::None` on the native build.
 - `apply_field_wrappings` is not called for passthrough languages (conscious behaviour change — see below).
 
+## S9 ✅ — Retire the old parse API surface (kills W10)
+
+**Goal.** The library exposes one parse function: `parse(ParseInput, ParseOptions)`. The legacy multi-function API is gone.
+
+**Why now.** `parser/mod.rs` previously exposed a unified `parse()` *and* the legacy multi-function API (`parse_string_to_xot`, `parse_file_to_xot`, `parse_string_to_xee`, `parse_file_to_xee`, `load_xml_string_to_documents`, `load_xml_file_to_documents`, plus `*_with_options` variants). All were re-exported from `lib.rs`; tests still called them. The "one principled parse entry point" comment was intent, not fact.
+
+**Depends on.** Nothing.
+**Unblocks.** Library API stability.
+**Independent of.** Other slices.
+
+**Size.** S. Mechanical migration + delete.
+**Reversibility.** High in test code; medium for the public API removal.
+
+**Invariants when closed:**
+- No caller in the repo uses `parse_string_to_xot`, `parse_file_to_xee`, etc.
+- `lib.rs` re-exports only `parse()` (plus `ParseInput`, `ParseOptions`, `XeeParseResult`, `detect_language`, supporting types).
+- The `parse_*_with_options` functions do not exist in `parser/mod.rs`; only `parse()` plus a private `parse_inline_to_xee` helper.
+- `load_xml_*` survives as `pub(crate)` — internal to the XML passthrough branch of `parse()` and to the `xpath::engine` tests; not part of the public library surface.
+
+### Tasks
+
+- [x] [S9A] **No test calls `parse_string_to_xot` / `parse_file_to_xee` / their variants.** Migrated `tests/wasm_parity.rs`, `tests/ir_csharp_parity.rs`, `tests/ir_python_parity.rs`, `tests/ir_python_blueprint.rs`, `tests/ir_python_missing_kinds.rs`, `tests/ir_java_missing_kinds.rs`, `tests/ir_rust_missing_kinds.rs`, `tests/ir_typescript_missing_kinds.rs`, `tests/coverage_report.rs`, `tests/render_unified.rs`, `tests/core_integration_tests.rs`. Production callers in `cli/render.rs` and `mutation/xpath_upsert.rs` also moved to `parse(...)`.
+
+- [x] [S9B] **`lib.rs` does not re-export the legacy parse functions.** Removed `load_xml_string_to_documents` and `load_xml_file_to_documents` from the flat re-exports; the file-based variants of `parse_*` were never exported to begin with.
+
+- [x] [S9C] **`parse_*_with_options` functions do not exist in `parser/mod.rs`; only `parse()` remains.** Deleted `parse_string_to_xot`, `parse_string_to_xot_with_options`, `parse_file_to_xot`, `parse_file_to_xot_with_options`, `parse_string_to_xee`, `parse_string_to_xee_with_options`, `parse_file_to_xee`, `parse_file_to_xee_with_options`, the `XotParseResult` struct, and the `parse_with_ir_pipeline` (non-`_to_xee`) helper. The xee-pipeline body lives in a private `parse_inline_to_xee` helper called from `parse()`.
+
+---
+
 ### Behaviour change to accept
 
 Passthrough languages currently get `apply_field_wrappings` from the imperative path (children of certain kinds wrapped in `<name>`/`<body>`/etc.). The typed passthrough deliberately omits this — wrappings are a per-language semantic shape decision that belongs in a real `lower_<lang>_root`, not in a generic catch-all. Net effect: XML for HTML/CSS/C/C++/etc. drops the field-wrap layer. These languages are barely used in queries today; the simplification is worth the small shape shift.
@@ -322,6 +351,92 @@ Passthrough languages currently get `apply_field_wrappings` from the imperative 
 ### Follow-up — S6D (landed) ✅
 
 WASM-side data-language parsing routes through the typed pipeline: `tree::data`, `tree::data::to_xot`, `tree::data::to_json`, `tree::render::data_*` no longer carry the `feature = "native"` gate; `TreeKind::Data { structure, content }` is registered unconditionally on every data row; `wasm::parse_ast_to_xml` and `get_schema_tree` dispatch on `TreeKind::Data` the same way they do on `Syntax` / `Sql`. The `wasm_parity` suite covers json / yaml / toml / ini / markdown.
+
+---
+
+## 2️⃣ S16 — Typed-tree migration: known shape regressions
+
+**Goal.** Restore semantic-shape information that the typed-tree migration accidentally flattened. The typed catalogue (`SyntaxTree::{Name, String, Int, ...}`) is generic by design; per-language semantic wrappers and markers that the imperative pipeline minted didn't all carry over. Each item below is a concrete diff between current output and the committed snapshot (pre-typed-migration imperative output) — surfaced 2026-05-14 during a snapshot regen audit.
+
+**Why now.** Alpha-stage so query compatibility doesn't matter, but the snapshots are the historical record of the project's curated tree shape and several losses look like genuine design regressions, not intentional simplifications. Each regression is small in isolation; collectively they erode the "principled semantic tree" property.
+
+**Reversibility.** High. Each is a localized fix in one or two lowering files. After fixing, re-run `task test:snapshots:update` to clear the staged regression.
+
+**Affected snapshots (currently failing `task test:snapshots`):** the 11 files reverted on 2026-05-14 — all 8 blueprint `*.snapshot.json` plus `php.php.snapshot.txt`, `ruby.rb.snapshot.txt`, `typescript.ts.snapshot.txt`. They will fail snapshot-check until the underlying regressions are addressed or the user explicitly opts to bake in the new shape.
+
+### Tasks
+
+- [ ] [S16-Z1] **TypeScript: restore `<path>` semantic node for import paths.** `import './barrel'` currently lowers the path string to `SyntaxTree::String`, which projects as `<string>"./barrel"</string>`. The pre-migration shape was `<path>./barrel</path>` (semantic role: "module path"). Either add a `SyntaxTree::Path { text }` leaf variant (cross-language, lines up with the `From/Path` segments structure that already exists) or wrap the import target in a typed slot whose projection emits `<path>` instead of `<string>`.
+
+- [ ] [S16-Z2] **TypeScript: restore `import[sideeffect]` marker.** `import './barrel'` (no specifiers, side-effect-only) currently emits `<import>...</import>` indistinguishable from `import { x } from './barrel'`. The marker carried a real distinction. Add a `side_effect: bool` field to whatever variant lowers TS imports, project it as a `<sideeffect/>` marker.
+
+- [ ] [S16-Z3] **PHP: restore `use[alias]` marker + `<path>` / `<aliased>` wrappers.** `use App\Foo as Log;` was `<use[alias]><path><name>App</name>...</path><aliased><name>Log</name></aliased></use>`; now flattened to `<use><name>App</name>...<name>Log</name></use>` — both the alias marker and the path/aliased distinction are lost. Restore the alias marker and slot wrappers in the PHP lowering.
+
+- [ ] [S16-Z4] **PHP + Ruby: restore `<type>` wrapper on `extends` / `implements`.** `class Foo extends Base` was `<extends><type><name>Base</name></type></extends>`; now `<extends><name>Base</name></extends>`. `<type>` is the stable place to attach generic args / qualified names later. Restore via a typed slot on Class.
+
+- [ ] [S16-Z5] **All 8 SyntaxTree languages: restore JSON projection's `$type` discriminator.** `data_to_json` no longer emits the `"$type": "program"` / `"$type": "file"` / etc. key on Module root. Useful for downstream consumers to disambiguate. Re-emit on the data-projection root.
+
+- [ ] [S16-Z6] **All 8 SyntaxTree languages: restore curated top-level field grouping in JSON projection.** Pre-migration JSON had `imports: [...]`, `namespaces: [...]`, `consts: [...]`, `expressions: [...]` etc. — items grouped by kind. Current `data_to_json` collects everything under `nodes: [...]`. Either re-introduce per-language grouping rules in `to_data` or document that flat `nodes` is the new canonical shape.
+
+- [ ] [S16-Z7] **All languages: restore `leading: bool` on comments.** Comment objects in JSON were `{leading: true, text: "..."}`; now flattened to `"..."`. The `leading` flag distinguished leading from trailing comments. Re-emit via `DataTree::Comment { leading, text }` or whatever the projection chain looks like for comments.
+
+- [ ] [S16-Z8] **JSON `path` typed field flattening.** Java `path: {names: ["com.example"]}` is now split into `path: {names: ["com", "example"]}` (segment split — may be improvement). Python `path: {names: ["os"]}` is now `node: {name: "os"}` (lost the `path` semantic field). Audit each per-language: keep the segment-split if intentional, restore the `path` field name if dropped accidentally.
+
+- [ ] [S16-Z9] **JSON typed-field flattening across primitives.** Ruby `int: "3"` → `node: 3`; PHP `int: "1"` → `node: 1`; Go `string: "\"fmt\""` → `node: "\"fmt\""`. The typed field name was the kind discriminator. Decide policy: either keep `int`/`string`/etc. as the field name in the JSON projection, or commit to generic `node` everywhere and document.
+
+- [ ] [S16-Z10] **Re-regenerate the 11 reverted snapshots once Z1–Z9 land.** Run `task test:snapshots:update` after each fix and verify only the targeted shape changes apply.
+
+---
+
+## 3️⃣ S5 — Single JSON projection: `SyntaxTree → DataTree → JSON` (kills part of W1)
+
+**Goal.** One JSON projection algorithm for all three tree families. The principled `data_to_json` (typed `DataTree` reader) is the only path; the heuristic blocks in `tree_to_json` are gone.
+
+**Why now.** Three concurrent JSON projection strategies coexist: legacy `xml_node_to_json` (XmlNode-based fallback), heuristic `tree_to_json` (1087 LOC of `$inline`/`$skip`/`$type`/plural-collapse rules papering over tree↔JSON impedance), and the principled `data_to_json` reading a typed `DataTree`. The `to_data` projection was completed in S5A-Z7: every `SyntaxTree` variant has its own arm with compile-enforced exhaustiveness (verified 2026-05-13). What remains is a snapshot-reconciliation audit (S5A-Z8), retiring `tree_to_json` and `tree/to_json.rs` (S5B + S5D), and routing `SqlTree` JSON output through `DataTree` (S5E).
+
+**Depends on.** Nothing structural.
+**Unblocks.** Removing ~1000 LOC of heuristics (`tree/to_json.rs`).
+**Independent of.** S2, S3, S4, S6, S7, S8, S9.
+
+**Size.** M. The bulk is rule migration and parity audit.
+**Reversibility.** Medium. Requires snapshot regen for JSON output; revert is one commit but disruptive if downstream readers exist.
+
+**Invariants when closed:**
+- `tree::to_data::lower_to_data_ir` covers every `SyntaxTree` variant.
+- `tractor/src/tree/to_json.rs` does not exist.
+- `Tree::to_json` for `Tree::SyntaxTree` calls `data_to_json(to_data(tree, source))`.
+- `SqlTree` JSON output also flows through `DataTree`.
+
+### Tasks
+
+- [x] [S5A] **`tree::to_data::lower_to_data_ir` covers every `SyntaxTree` variant deterministically.** Coverage invariant met 2026-05-08 (S5A-Z7); independently re-verified 2026-05-13 (74/74 variant arms in `tractor/src/tree/to_data.rs::project`; no `unhandled:` markers in production code paths). Z8 (snapshot reconciliation) and the boilerplate-reduction OPTIONS remain — both subsumed by S11, which restructures the tree so the per-variant arms collapse into a generic walker. The status note below is kept for the historical record of how coverage was sliced.
+  - **Direction (chosen 2026-05-08).** Wire S5C first (done — see below) with a `has_unhandled` fallback that keeps documents on `tree_to_json` while any of their variants still hit the catch-all. Migrate variants here incrementally; documents flip to the typed path organically as their last unhandled variant gets covered, giving per-variant snapshot bisectability. The strict invariant ("no fixture ever trips `has_unhandled`") closes the slice and lets S5D delete `tree_to_json`.
+    - [x] [S5A-Z1] **Foundation: `Name`, `Atom`, `Module`, `Class`, `Inline`, `Skip` projected.** Done in iter 39 + S5A start.
+    - [x] [S5A-Z2] **Declarations batch: `Body`, `Function`, `Variable`, `Property`, `Returns`, `Parameter`, `SimpleStatement` (non-marker), `Comment`, `Return`, `Decorator`, `Import`.** Done 2026-05-08.
+    - [x] [S5A-Z3] **Expressions batch: `Expression`, `Binary`, `Unary`, `Comparison`, `Call`, `Ternary`, `Is`, `Cast`, `KeywordArgument`, `ListSplat`, `DictSplat`, `Pair`.** Done 2026-05-08 (`Access` deferred to Z6). New `make_op_mapping` helper for op-bearing variants.
+    - [x] [S5A-Z4] **Collections + scalar literals: `Tuple`, `List`, `Set`, `Dictionary`, `Int`, `Float`, `String`, `True`, `False`, `None`, `Null`.** Done 2026-05-08. Scalars map to natural `DataTree` variants; collections to `Sequence`/`Mapping`.
+    - [x] [S5A-Z5] **Control flow: `If`, `ElseIf`, `Else`, `For`, `Foreach`, `CFor`, `While`, `DoWhile`, `Break`, `Continue`, `Try`, `ExceptHandler`.** Done 2026-05-08. Body's children flatten directly into the parent.
+    - [x] [S5A-Z6] **Misc tail: `Lambda`, `ObjectCreation`, `Constructor`, `Generic`, `TypeParameter`, `GenericType`, `TypeAlias`, `Enum`, `EnumMember`, `Accessor`, `Using`, `Namespace`, `From`, `FromImport`, `Path`, `Aliased`, `Assign`, `FieldWrap`, `PositionalSeparator`, `KeywordSeparator`, `Unknown` + the `Access` chain.** Done 2026-05-08. New `project_access_segment` helper.
+    - [x] [S5A-Z7] **`has_unhandled` returns `false` for every fixture; `Tree::SyntaxTree::to_json` reaches `tree_to_json` from no test path.**
+      - Done 2026-05-08. Catch-all removed from `project()`; Rust's exhaustiveness check enforces every `SyntaxTree` variant has its own arm. Legacy `tree_to_json` fallback unreachable. New tests: `has_unhandled_predicate_trips_on_unhandled_marker`, `projection_is_exhaustive_for_all_ir_variants`.
+    - [ ] [S5A-Z8] **Snapshot reconciliation: any JSON snapshots that move when fixtures flip from legacy to typed path are reviewed and updated.**
+      - Status: needs audit. New path is LIVE post-Z7 but no snapshots broke under `cargo test` — likely because most snapshot tests render via XPath→XmlNode→`xml_node_to_json` rather than `Tree::SyntaxTree::to_json` (only reached via `format::json.rs::Projection::Tree`, i.e. `--projection=tree`). Enumerate fixtures that hit that path, regenerate, review diff. Expected: `$type` keys disappear; `$inline` / `$skip` / plural-of-self cease to exist.
+  - **Coverage status.** Complete after Z7: every `SyntaxTree` variant has its own arm in `tractor/src/tree/to_data.rs::project`; compile-enforced exhaustiveness.
+  - **OPTIONS: Boilerplate reduction in `to_data.rs`** (2026-05-08, raised by user). The `project` function is ~500 LOC of mechanically-similar match arms — declaration variants do `push_modifier_flags + named slots`, control-flow variants do `condition + body-flatten + else?`, op-bearing expressions do `op + operands`, etc. Three plausible reduction approaches; pick one (mark `[x]`) to commit. **Note 2026-05-13:** This OPTIONS block is subsumed by S11 — the structural fix there obviates the boilerplate-reduction question. Leave unselected; revisit only if S11 is not pursued.
+    - [ ] **(a) `project!` macro.** Takes a variant name and a list of `(slot_key, expr)` pairs, expands to the boilerplate. Reduces 5–10 lines per variant to 2–3. Cost: introduces a macro layer that obscures projection rules; harder to step-through with a debugger.
+    - [ ] **(b) `MappingBuilder` helper toolkit (recommended).** Extend `make_pair` / `make_flag` / `push_modifier_flags` / `collect_member_pairs` with a small builder API: `MappingBuilder::new(range, span).flag(name).pair(key, value).inline_body(body).build()`. Codifies the four recurring shapes (`flags + name + slots`, `condition + body`, `op + operands`, `transparent passthrough`) without macros. ~30% verbosity reduction. Each arm becomes a few-line builder pipeline; `project` stays as the dispatch.
+    - [ ] **(c) Per-variant `SyntaxTree::project_to_data` methods.** Move each arm to where the variant is defined in `types.rs`. Pro: variant-local. Con: scatters the projection ruleset across `types.rs` (meant to be data-only), and breaks "one place to read all projection rules".
+
+- [ ] [S5B] **All JSON shape decisions (`$inline`, `$skip`, `$type:"expression"`, plural-of-self collapse, marker-vs-leaf) live as uniform projection rules in `to_data`, not in `to_json`.**
+
+- [x] [S5C] **`Tree::to_json` for the `Tree::SyntaxTree` arm calls `data_to_json(to_data(tree, source))`.**
+  - Done 2026-05-08. Hybrid dispatch in `xpath/match_result.rs`: project via `lower_to_data_ir` first; if `has_unhandled` is false render via `data_to_json`, else fall back to legacy `tree_to_json`. After S5A-Z7 the fallback is unreachable. `Tree::DataTree` keeps direct `data_to_json`; `Tree::SqlTree` keeps `sql_to_json` until S5E.
+
+- [ ] [S5D] **`tractor/src/tree/to_json.rs` does not exist.**
+  - Depends on S5C (no caller).
+
+- [ ] [S5E] **`SqlTree` JSON output flows through `DataTree` projection.**
+  - All three tree families share one JSON projection algorithm with three entry points.
 
 ---
 
@@ -372,113 +487,6 @@ WASM-side data-language parsing routes through the typed pipeline: `tree::data`,
 - `XmlNode::{Map, Array, Number, Boolean, Null}` variants do not exist.
 - `Tree` variant set is `Tree::Xml(XmlMarkup) | Tree::Atom(XpathValue) | Tree::SyntaxTree{..} | Tree::DataTree{..} | Tree::SqlTree{..}`.
 - No renderer pattern-matches across markup-and-atom in one expression.
-
-### Tasks
-
-- [ ] [S8A] **`XmlMarkup` and `XpathValue` types exist; `XmlNode` is `XmlMarkup` only.**
-
-- [ ] [S8B] **`Tree` is `Tree::Xml(XmlMarkup) | Tree::Atom(XpathValue) | Tree::SyntaxTree{..} | Tree::DataTree{..} | Tree::SqlTree{..}`.**
-
-- [ ] [S8C] **No renderer branches on `XmlNode::{Map, Array, Number, Boolean, Null}`.**
-  - Likely sites: `format/json.rs`, `format/xml.rs`, `output/*`.
-
----
-
-## 1️⃣ S9 — Retire the old parse API surface (kills W10)
-
-**Goal.** The library exposes one parse function: `parse(ParseInput, ParseOptions)`. The legacy multi-function API is gone.
-
-**Why now.** `parser/mod.rs` exposes a unified `parse()` *and* the legacy multi-function API (`parse_string_to_xot`, `parse_file_to_xot`, `parse_string_to_xee`, `parse_file_to_xee`, `load_xml_string_to_documents`, `load_xml_file_to_documents`, plus `*_with_options` variants). All re-exported from `lib.rs`; tests still call them. The "one principled parse entry point" comment at `parser/mod.rs:1091` is intent, not fact.
-
-**Depends on.** Nothing.
-**Unblocks.** Library API stability.
-**Independent of.** Other slices.
-
-**Size.** S. Mechanical migration + delete.
-**Reversibility.** High in test code; medium for the public API removal.
-
-**Invariants when closed:**
-- No caller in the repo uses `parse_string_to_xot`, `parse_file_to_xee`, etc.
-- `lib.rs` re-exports only `parse()`.
-- The `parse_*_with_options` functions do not exist in `parser/mod.rs`.
-
-### Tasks
-
-- [ ] [S9A] **No test calls `parse_string_to_xot` / `parse_file_to_xee` / their variants.**
-  - Files: `tests/ir_csharp_parity.rs`, `tests/ir_python_parity.rs`, `tests/ir_python_blueprint.rs`, `tests/ir_*_missing_kinds.rs`, `tests/coverage_report.rs`.
-
-- [ ] [S9B] **`lib.rs` does not re-export the legacy parse functions.**
-  - Targets at `lib.rs:87–99`. Depends on S9A.
-
-- [ ] [S9C] **`parse_*_with_options` functions do not exist in `parser/mod.rs`; only `parse()` remains.**
-  - Depends on S9B.
-
----
-
-## 🔟 S10 — Per-language directory consolidation
-
-**Goal.** All language-specific code for one language lives in one directory: `languages/<lang>/` carries the kinds, vocabulary, lowering, and canonical-source emitter. The shared tree machinery is small and clearly demarcated under `tree/`.
-
-**Why now.** Today, language-specific code is split across two top-level directories — `languages/<lang>/` for kinds + vocabulary + post-transform, and `tree/<lang>.rs` (1.5–3K LOC each) + `tree/source/<lang>.rs` for the lowering and canonical emitter. The split reflects the tree migration history (the new pipeline grew sideways under `tree/`), not current ownership. The principle "languages decide what transformations they use, nothing forced top-down" survives if and only if the per-language code physically clusters.
-
-The shared tree machinery — `tree/types.rs` (the unified `SyntaxTree` enum), `tree/to_xot.rs`, `tree/to_json.rs`, `tree/to_data.rs`, `tree/coverage.rs`, `tree/lower_helpers.rs`, `tree/source/common.rs` (the `Syntax` + `write_ir` engine) — is language-agnostic by design and stays in `tree/`. The cross-language unification at the tree layer is the architectural commitment of the design and isn't undone by this reorg. What changes is *where the per-language code physically lives*.
-
-**Depends on.** S2-Z4 (registry pointers in place — the moves update one row each), and ideally S3B-Z1c (so the moved directories don't carry `post_transform.rs` files about to be deleted).
-**Unblocks.** A reader can answer "show me all csharp-specific code" with one `ls`.
-**Independent of.** S4, S5, S6, S7, S8, S9 — they don't read these paths.
-
-**Size.** L. ~14 KLOC of file moves across 8 languages × 2 file types, plus directory regrouping for data-tree (9 files) and sql-tree (5 files).
-**Reversibility.** High. Pure file moves with import updates; one-commit revert.
-
-**Invariants when closed:**
-- `tree/<lang>.rs` does not exist for any programming language; `languages/<lang>/lower.rs` exists instead.
-- `tree/source/<lang>.rs` does not exist for any programming language; `languages/<lang>/render_source.rs` exists instead.
-- `tree/data/` is a directory containing all `DataTree` types, lowering, and renderers.
-- `tree/sql/` is a directory containing all `SqlTree` types and renderers (T-SQL lowering is at `languages/tsql/lower.rs`, consistent with S10A).
-- Per-language `input.rs` is `kinds.rs`; per-language `output.rs` is `vocabulary.rs` (or fold into `mod.rs`).
-- `tree/source/` (post-rename: `tree/render/`) holds only `common.rs` + `mod.rs`.
-
-### Tasks
-
-- [x] [S10A] **No `tree/<lang>.rs` lowering file exists for any programming language; `languages/<lang>/lower.rs` exists in its place.**
-  - Each move: `git mv tree/<lang>.rs languages/<lang>/lower.rs`; add `pub mod lower;` to `languages/<lang>/mod.rs`; drop `pub mod <lang>;` from `tree/mod.rs`; update the `tree_kind: Syntax(<lang>::lower::lower_<lang>_root)` pointer in the `LANGUAGES` registry.
-  - Per-language sub-tasks:
-    - [x] [S10A-Z1] csharp — `tree/csharp.rs` (2886 LOC) → `languages/csharp/lower.rs`.
-    - [x] [S10A-Z2] python — `tree/python.rs` (2238 LOC) → `languages/python/lower.rs`.
-    - [x] [S10A-Z3] java — `tree/java.rs` (2053 LOC) → `languages/java/lower.rs`.
-    - [x] [S10A-Z4] typescript — `tree/typescript.rs` (2079 LOC) → `languages/typescript/lower.rs` (covers ts/tsx/js/jsx).
-    - [x] [S10A-Z5] rust_lang — `tree/rust_lang.rs` (1967 LOC) → `languages/rust_lang/lower.rs`.
-    - [x] [S10A-Z6] go — `tree/go_lang.rs` (1507 LOC) → `languages/go/lower.rs`.
-    - [x] [S10A-Z7] ruby — `tree/ruby.rs` (688 LOC) → `languages/ruby/lower.rs`.
-    - [x] [S10A-Z8] php — `tree/php.rs` (1563 LOC) → `languages/php/lower.rs`.
-
-- [x] [S10B] **No `tree/render/<lang>.rs` per-language emitter exists; `languages/<lang>/render_source.rs` exists in its place.** Closed by S13-Z7: the unified dispatcher in `tree/render/mod.rs::render` consumes each language's `syntax()` config; the per-language `match lang` fork is gone, so the originally-deferred `render_canonical` registry field is moot — there's no dispatch left to convert.
-  - Per-language sub-tasks: [S10B-Z1..Z8] csharp / java / python / typescript / rust_lang / go / ruby / php — all moved.
-  - SQL handled by S10D.
-
-- [x] [S10C] **`tree/data/` is a directory; the nine flat `data*.rs` / `*_data.rs` files at `tree/` root do not exist.**
-  - Today's flat layout: `data.rs` (226), `data_to_xot.rs` (501), `data_to_json.rs` (222), `to_data.rs` (465 — `SyntaxTree → DataTree` projection, stays at tree root), `json_data.rs` (187), `yaml_data.rs` (265), `toml_data.rs` (367), `ini_data.rs` (152), `markdown_data.rs` (324).
-  - Target: `tree/data/{types.rs, to_xot.rs, to_json.rs, lower_json.rs, lower_yaml.rs, lower_toml.rs, lower_ini.rs, lower_markdown.rs}`.
-
-- [x] [S10D] **`tree/sql/` is a directory; the five flat `sql*.rs` files at `tree/` root and `tree/source/sql.rs` do not exist. T-SQL lowering lives at `languages/tsql/lower.rs`.**
-  - Today's flat layout: `sql.rs` (741), `sql_lower.rs` (2243), `sql_to_xot.rs` (908), `sql_to_json.rs` (684), `tree/source/sql.rs` (147).
-  - Target: `tree/sql/{types.rs, to_xot.rs, to_json.rs, render_source.rs}` + `languages/tsql/lower.rs`.
-
-- [x] [S10E] **No `languages/<lang>/input.rs` file exists; `kinds.rs` exists in its place.**
-  - Files contain only the generated `CsKind` / `PyKind` / `JavaKind` / etc. enum (CST-kind catalogue), used by `tests/kind_catalogue.rs` and the `SyntaxTree::Unknown` audit. The "input" name dates from the retired imperative pipeline.
-  - Update `task gen:kinds` codegen to write `kinds.rs`. Update test imports.
-
-- [ ] [S10F] **No `languages/<lang>/output.rs` file exists; `vocabulary.rs` exists in its place (or contents are folded into `mod.rs`).**
-  - Cross-reference C2: if C2 chooses (a) "drive shape contracts off `SyntaxTree` variants alone and delete `TractorNode`", S10F is moot — delete the files instead.
-
-- [x] [S10G] **`tree/source/` does not exist; `tree/render/` exists in its place (or `tree/source/mod.rs::render` is gone entirely if S10B's registry field replaces it).**
-
-- [ ] [S10H] **Either `transform/` has a clear sole-purpose role (with a name that matches), or it is gone.**
-  - After S3A + S3B + S3D + S3E + C3, the survivors are: `walk_transform`, `apply_field_wrappings`, possibly `singletons.rs`, possibly `builder.rs`. These serve only the legacy `XeeBuilder` path (data languages JSON/YAML's syntax branch + Raw mode + WASM until S6).
-  - Decide: rename `transform/` to `legacy_xot/` (or similar) to mark it non-tree, or delete what's actually dead.
-  - Depends on S3, S6, C3.
-
----
 
 ## 6️⃣ S11 — tree-as-data-shape: drop accidental wrappers, normalize fields (kills the `to_data.rs` boilerplate at the source)
 
@@ -560,6 +568,53 @@ Listed roughly by blast radius (smaller first). Each Z step:
 
 - [ ] [S11-Z11] **`to_data::project` is < 200 LOC; the only special cases are scalar atoms + sequence-shape variants. Mapping-shape variants project via a generic field-walker.**
   - The closing condition. Once Z1–Z9 (and optionally Z10) land, the special cases enumerated under "Genuinely fundamental" earlier in this convo are the only arms that remain. The rest fall through to the generic walker.
+
+---
+
+### Tasks
+
+- [ ] [S8A] **`XmlMarkup` and `XpathValue` types exist; `XmlNode` is `XmlMarkup` only.**
+
+- [ ] [S8B] **`Tree` is `Tree::Xml(XmlMarkup) | Tree::Atom(XpathValue) | Tree::SyntaxTree{..} | Tree::DataTree{..} | Tree::SqlTree{..}`.**
+
+- [ ] [S8C] **No renderer branches on `XmlNode::{Map, Array, Number, Boolean, Null}`.**
+  - Likely sites: `format/json.rs`, `format/xml.rs`, `output/*`.
+
+---
+
+## 7️⃣ S15 — Editable trees: NodeId-based mutation pipeline
+
+**Goal.** `tractor set` (and future mutation verbs) flow through the typed tree, not byte-splicing on source. Address by XPath against the xot projection; the matched xot element carries an `@id` that resolves to the typed-tree node via a stable per-node `NodeId`; mutation happens on the typed tree; render via the unified renderer (S13) reproduces source. Same pipeline for SyntaxTree, DataTree, SqlTree.
+
+**Why now.** S13 made typed-tree rendering authoritative for source emission. Today's `apply_set_mapping` still byte-splices for SyntaxTree-pipeline languages (the DataTree side already mutates the typed tree). Lifting SyntaxTree to the same shape closes the last "two source-of-truth" gap and removes ~1k LOC of legacy splice code.
+
+**Depends on.** S13 (typed renderer authoritative). **Unblocks.** S4B-Z4 (SyntaxTree upsert for all 8 tree-pipeline languages); future structural-mutation verbs (replace, clone-and-modify).
+
+**Size.** M. **Reversibility.** High — each slice independent; revert is one commit.
+
+**Design doc.** [`docs/design-editable-trees.md`](docs/design-editable-trees.md).
+
+### Tasks
+
+- [x] [S15-Z1] **Slice 1 — `NodeId` on `Span` + `assign_ids` walkers.** Done — `pub type NodeId = u32` with `0` as the unassigned sentinel; `id: NodeId` field added to `Span` (threads through every existing accessor for free, same trick as S13-Z2's `anchored` flag on `ByteRange`). `tree::assign_ids` module exports `assign_ids_syntax` / `assign_ids_data` / `assign_ids_sql`, each a thin wrapper around one generic depth-first walker `walk<T: TreeNode>` that stamps every node from a fresh counter. Per-variant child knowledge lives on each tree's `TreeNode::children_mut` impl (see follow-up below), not in the walker. Wired into both `parse_with_ir_pipeline` (xot output) and `parse_with_ir_pipeline_to_xee` (xee path); every tree exiting either parser path satisfies "non-zero unique id on every node".
+
+  **Follow-up (post-original-landing):** introduced `pub trait TreeNode { span, span_mut, range, children, children_mut, is_anchored (default), to_source (default) }` in `tree/types.rs`, implemented on `SyntaxTree`, `DataTree`, `SqlTree`. `assign_ids.rs` collapsed from 731 → 158 lines: three parallel per-variant walkers became one generic `fn walk<T: TreeNode>(tree: &mut T, next: &mut NodeId)`. Adding a new tree variant requires no change in `assign_ids` — only in the tree's `children_mut` arm.
+
+- [x] [S15-Z2] **Slice 2 — xot-side `@id` + `find_by_id` locators.** Done — `set_span_attrs` in `tree/to_xot.rs`, `tree/data/to_xot.rs`, and `tree/sql/to_xot.rs` stamps `@id="N"` on every xot element when the typed node carries a non-zero NodeId; omitted for synthetic / pre-`assign_ids` paths. `tree::locator` exports one generic `find_by_id<T: TreeNode>(tree: &mut T, id: NodeId) -> Option<&mut T>` plus `parse_id_attr` for converting an XML attribute string to a `NodeId`. End-to-end test `xpath_match_id_resolves_to_typed_syntax_node` exercises the full parse → query → `@id` → `find_by_id` → typed-mutation pipeline.
+
+  **Follow-up (post-original-landing):** the original implementation had three parallel `find_by_id_syntax` / `_data` / `_sql` walkers, each with its own per-variant descent (~1000 LOC total in `locator.rs`). After `TreeNode` landed (see Z1 follow-up), all three walkers collapsed to one generic function reading `span()` + `children_mut()`. `locator.rs`: 1025 → 151 lines. The three per-tree shims were removed entirely; callers ([`mutation/xpath_upsert.rs`](tractor/src/mutation/xpath_upsert.rs), [`tests/render_unified.rs`](tractor/tests/render_unified.rs)) now call `find_by_id` directly — Rust's type inference picks the tree type from the `&mut tree` argument.
+
+- [x] [S15-Z2-Sql] **SqlTree Tier 1 — bring SqlTree to Slice 1+2 parity.** Done — recursive `assign_ids_sql` covering all 57 variants (was skeletal "stamps root only"); recursive `find_by_id_sql` covering all 57 variants; `set_span_attrs` added to SqlTree's xot projection (SqlTree xot previously carried no `@line`/`@column` attrs either — added in this slice); inline `<name>` leaves inside `<relation>` / `<reference>` / `<column>` / standalone Identifier/Schema/Alias paths stamped with the corresponding typed node's NodeId via the `name_leaf_with_span` helper. End-to-end test `xpath_match_id_resolves_to_typed_sql_node` validates the SqlTree XPath → `@id` → typed-node round-trip.
+
+  **Follow-up (post-original-landing):** with `TreeNode` (see Z1 / Z2 follow-ups), SqlTree's 57-variant walks no longer exist as separate functions — `assign_ids_sql` and the former `find_by_id_sql` share the generic walker with the other two trees. The 57 variants are now declared *once*, in the `TreeNode::children` / `children_mut` impl on `SqlTree` in [`tree/sql/types.rs`](tractor/src/tree/sql/types.rs). The `name_leaf_with_span` helper for inline `<name>` leaves inside relations / references / columns is unchanged.
+
+- [x] [S15-Z3] **Slice 3 — wire SyntaxTree `set` through `find_by_id`.** Done — XPath matches against syntax-tree projections now carry the typed node's `NodeId` (xot `@id` extracted in `xpath::engine::extract_location_and_id_from_xot` and surfaced on `Match.node_id`); `mutation::xpath_upsert::update_existing_via_syntax_ir` walks each match, locates the typed node via the generic `find_by_id` (originally `find_by_id_syntax` — see Z2 follow-up), mutates its `text` field via the new `SyntaxTree::set_scalar_text`, renders that single leaf via `tree::render::render(leaf, lang, None)`, and splices the result into the original source at the match's byte range. `lang_supports_upsert` now includes all 8 SyntaxTree-pipeline languages; CLI surface unchanged. No-match for syntax-tree languages returns a no-op result (Slice 3 is update-only — insertion is Slice 4). Property tests in `tests/render_unified.rs`: `syntax_tree_matches_carry_node_id`, `upsert_renames_python_function_via_typed_pipeline`, `upsert_renames_typescript_string_literal`, `upsert_no_match_on_syntax_tree_is_noop`. Closes S4B-Z4 for the 8 SyntaxTree-pipeline languages. SqlTree-pipeline `set` is **not** wired through here (`lang_uses_syntax_tree("tsql")` is `false`) — SqlTree mutation lands with Tier 2 once a canonical scalar-surround renderer exists.
+
+- [ ] [S15-Z4] **Slice 4 — `replace <xpath> <xml-literal>` CLI verb.** Pending. API syntax TBD (open questions: how is the XML literal supplied — stdin / `--xml '...'` / file path? batched multiple `(xpath, xml)` pairs in one invocation?). The "universal mutation primitive" decision: subtree replacement is the only structural mutation operation; no per-variant `--set` / `--push` / `--remove` API. Rename / add / delete are all expressed as "replace this subtree with that one." Defer until Slice 3 lands.
+
+- [ ] [S15-Z5] **Slice 5 — full XML → typed projection.** Deferred until the full code-synthesis roadmap item lands. The slot-aware projection from Slice 4 (which projects an XML literal against the parent slot's expected variant) covers most realistic substitution; generic XML → typed (a `SyntaxTree`-from-arbitrary-XML parser per language) is only needed when the substitution shape can't be inferred from the parent slot.
+
+- [ ] [S15-SqlTier2] **SqlTree Tier 2 — canonical renderer for scalar mutations on anchored trees.** Pending. Today's SqlTree renderer mostly emits `/*todo:*/` placeholders for composite variants. With Slice 3, scalar mutations work via the byte-slice fast path for anchored subtrees (the renderer slices source for unchanged Select/From/Join/etc., emits typed text for the mutated scalar). Tier 2 is the per-variant `Syntax`-config-style emission only for the structural surrounds of scalars (~200–300 LOC). Composite variants stay byte-sliced; Tier 3 (full canonical SQL renderer) is reserved for synthesis / subtree replacement on SQL.
 
 ---
 
@@ -670,128 +725,6 @@ The original S13 entry called out `DataTree` as out-of-scope ("revisit unifying 
 
 ---
 
-## 7️⃣ S15 — Editable trees: NodeId-based mutation pipeline
-
-**Goal.** `tractor set` (and future mutation verbs) flow through the typed tree, not byte-splicing on source. Address by XPath against the xot projection; the matched xot element carries an `@id` that resolves to the typed-tree node via a stable per-node `NodeId`; mutation happens on the typed tree; render via the unified renderer (S13) reproduces source. Same pipeline for SyntaxTree, DataTree, SqlTree.
-
-**Why now.** S13 made typed-tree rendering authoritative for source emission. Today's `apply_set_mapping` still byte-splices for SyntaxTree-pipeline languages (the DataTree side already mutates the typed tree). Lifting SyntaxTree to the same shape closes the last "two source-of-truth" gap and removes ~1k LOC of legacy splice code.
-
-**Depends on.** S13 (typed renderer authoritative). **Unblocks.** S4B-Z4 (SyntaxTree upsert for all 8 tree-pipeline languages); future structural-mutation verbs (replace, clone-and-modify).
-
-**Size.** M. **Reversibility.** High — each slice independent; revert is one commit.
-
-**Design doc.** [`docs/design-editable-trees.md`](docs/design-editable-trees.md).
-
-### Tasks
-
-- [x] [S15-Z1] **Slice 1 — `NodeId` on `Span` + `assign_ids` walkers.** Done — `pub type NodeId = u32` with `0` as the unassigned sentinel; `id: NodeId` field added to `Span` (threads through every existing accessor for free, same trick as S13-Z2's `anchored` flag on `ByteRange`). `tree::assign_ids` module exports `assign_ids_syntax` / `assign_ids_data` / `assign_ids_sql`, each a thin wrapper around one generic depth-first walker `walk<T: TreeNode>` that stamps every node from a fresh counter. Per-variant child knowledge lives on each tree's `TreeNode::children_mut` impl (see follow-up below), not in the walker. Wired into both `parse_with_ir_pipeline` (xot output) and `parse_with_ir_pipeline_to_xee` (xee path); every tree exiting either parser path satisfies "non-zero unique id on every node".
-
-  **Follow-up (post-original-landing):** introduced `pub trait TreeNode { span, span_mut, range, children, children_mut, is_anchored (default), to_source (default) }` in `tree/types.rs`, implemented on `SyntaxTree`, `DataTree`, `SqlTree`. `assign_ids.rs` collapsed from 731 → 158 lines: three parallel per-variant walkers became one generic `fn walk<T: TreeNode>(tree: &mut T, next: &mut NodeId)`. Adding a new tree variant requires no change in `assign_ids` — only in the tree's `children_mut` arm.
-
-- [x] [S15-Z2] **Slice 2 — xot-side `@id` + `find_by_id` locators.** Done — `set_span_attrs` in `tree/to_xot.rs`, `tree/data/to_xot.rs`, and `tree/sql/to_xot.rs` stamps `@id="N"` on every xot element when the typed node carries a non-zero NodeId; omitted for synthetic / pre-`assign_ids` paths. `tree::locator` exports one generic `find_by_id<T: TreeNode>(tree: &mut T, id: NodeId) -> Option<&mut T>` plus `parse_id_attr` for converting an XML attribute string to a `NodeId`. End-to-end test `xpath_match_id_resolves_to_typed_syntax_node` exercises the full parse → query → `@id` → `find_by_id` → typed-mutation pipeline.
-
-  **Follow-up (post-original-landing):** the original implementation had three parallel `find_by_id_syntax` / `_data` / `_sql` walkers, each with its own per-variant descent (~1000 LOC total in `locator.rs`). After `TreeNode` landed (see Z1 follow-up), all three walkers collapsed to one generic function reading `span()` + `children_mut()`. `locator.rs`: 1025 → 151 lines. The three per-tree shims were removed entirely; callers ([`mutation/xpath_upsert.rs`](tractor/src/mutation/xpath_upsert.rs), [`tests/render_unified.rs`](tractor/tests/render_unified.rs)) now call `find_by_id` directly — Rust's type inference picks the tree type from the `&mut tree` argument.
-
-- [x] [S15-Z2-Sql] **SqlTree Tier 1 — bring SqlTree to Slice 1+2 parity.** Done — recursive `assign_ids_sql` covering all 57 variants (was skeletal "stamps root only"); recursive `find_by_id_sql` covering all 57 variants; `set_span_attrs` added to SqlTree's xot projection (SqlTree xot previously carried no `@line`/`@column` attrs either — added in this slice); inline `<name>` leaves inside `<relation>` / `<reference>` / `<column>` / standalone Identifier/Schema/Alias paths stamped with the corresponding typed node's NodeId via the `name_leaf_with_span` helper. End-to-end test `xpath_match_id_resolves_to_typed_sql_node` validates the SqlTree XPath → `@id` → typed-node round-trip.
-
-  **Follow-up (post-original-landing):** with `TreeNode` (see Z1 / Z2 follow-ups), SqlTree's 57-variant walks no longer exist as separate functions — `assign_ids_sql` and the former `find_by_id_sql` share the generic walker with the other two trees. The 57 variants are now declared *once*, in the `TreeNode::children` / `children_mut` impl on `SqlTree` in [`tree/sql/types.rs`](tractor/src/tree/sql/types.rs). The `name_leaf_with_span` helper for inline `<name>` leaves inside relations / references / columns is unchanged.
-
-- [x] [S15-Z3] **Slice 3 — wire SyntaxTree `set` through `find_by_id`.** Done — XPath matches against syntax-tree projections now carry the typed node's `NodeId` (xot `@id` extracted in `xpath::engine::extract_location_and_id_from_xot` and surfaced on `Match.node_id`); `mutation::xpath_upsert::update_existing_via_syntax_ir` walks each match, locates the typed node via the generic `find_by_id` (originally `find_by_id_syntax` — see Z2 follow-up), mutates its `text` field via the new `SyntaxTree::set_scalar_text`, renders that single leaf via `tree::render::render(leaf, lang, None)`, and splices the result into the original source at the match's byte range. `lang_supports_upsert` now includes all 8 SyntaxTree-pipeline languages; CLI surface unchanged. No-match for syntax-tree languages returns a no-op result (Slice 3 is update-only — insertion is Slice 4). Property tests in `tests/render_unified.rs`: `syntax_tree_matches_carry_node_id`, `upsert_renames_python_function_via_typed_pipeline`, `upsert_renames_typescript_string_literal`, `upsert_no_match_on_syntax_tree_is_noop`. Closes S4B-Z4 for the 8 SyntaxTree-pipeline languages. SqlTree-pipeline `set` is **not** wired through here (`lang_uses_syntax_tree("tsql")` is `false`) — SqlTree mutation lands with Tier 2 once a canonical scalar-surround renderer exists.
-
-- [ ] [S15-Z4] **Slice 4 — `replace <xpath> <xml-literal>` CLI verb.** Pending. API syntax TBD (open questions: how is the XML literal supplied — stdin / `--xml '...'` / file path? batched multiple `(xpath, xml)` pairs in one invocation?). The "universal mutation primitive" decision: subtree replacement is the only structural mutation operation; no per-variant `--set` / `--push` / `--remove` API. Rename / add / delete are all expressed as "replace this subtree with that one." Defer until Slice 3 lands.
-
-- [ ] [S15-Z5] **Slice 5 — full XML → typed projection.** Deferred until the full code-synthesis roadmap item lands. The slot-aware projection from Slice 4 (which projects an XML literal against the parent slot's expected variant) covers most realistic substitution; generic XML → typed (a `SyntaxTree`-from-arbitrary-XML parser per language) is only needed when the substitution shape can't be inferred from the parent slot.
-
-- [ ] [S15-SqlTier2] **SqlTree Tier 2 — canonical renderer for scalar mutations on anchored trees.** Pending. Today's SqlTree renderer mostly emits `/*todo:*/` placeholders for composite variants. With Slice 3, scalar mutations work via the byte-slice fast path for anchored subtrees (the renderer slices source for unchanged Select/From/Join/etc., emits typed text for the mutated scalar). Tier 2 is the per-variant `Syntax`-config-style emission only for the structural surrounds of scalars (~200–300 LOC). Composite variants stay byte-sliced; Tier 3 (full canonical SQL renderer) is reserved for synthesis / subtree replacement on SQL.
-
----
-
-## 3️⃣ S5 — Single JSON projection: `SyntaxTree → DataTree → JSON` (kills part of W1)
-
-**Goal.** One JSON projection algorithm for all three tree families. The principled `data_to_json` (typed `DataTree` reader) is the only path; the heuristic blocks in `tree_to_json` are gone.
-
-**Why now.** Three concurrent JSON projection strategies coexist: legacy `xml_node_to_json` (XmlNode-based fallback), heuristic `tree_to_json` (1087 LOC of `$inline`/`$skip`/`$type`/plural-collapse rules papering over tree↔JSON impedance), and the principled `data_to_json` reading a typed `DataTree`. The `to_data` projection was completed in S5A-Z7: every `SyntaxTree` variant has its own arm with compile-enforced exhaustiveness (verified 2026-05-13). What remains is a snapshot-reconciliation audit (S5A-Z8), retiring `tree_to_json` and `tree/to_json.rs` (S5B + S5D), and routing `SqlTree` JSON output through `DataTree` (S5E).
-
-**Depends on.** Nothing structural.
-**Unblocks.** Removing ~1000 LOC of heuristics (`tree/to_json.rs`).
-**Independent of.** S2, S3, S4, S6, S7, S8, S9.
-
-**Size.** M. The bulk is rule migration and parity audit.
-**Reversibility.** Medium. Requires snapshot regen for JSON output; revert is one commit but disruptive if downstream readers exist.
-
-**Invariants when closed:**
-- `tree::to_data::lower_to_data_ir` covers every `SyntaxTree` variant.
-- `tractor/src/tree/to_json.rs` does not exist.
-- `Tree::to_json` for `Tree::SyntaxTree` calls `data_to_json(to_data(tree, source))`.
-- `SqlTree` JSON output also flows through `DataTree`.
-
-### Tasks
-
-- [x] [S5A] **`tree::to_data::lower_to_data_ir` covers every `SyntaxTree` variant deterministically.** Coverage invariant met 2026-05-08 (S5A-Z7); independently re-verified 2026-05-13 (74/74 variant arms in `tractor/src/tree/to_data.rs::project`; no `unhandled:` markers in production code paths). Z8 (snapshot reconciliation) and the boilerplate-reduction OPTIONS remain — both subsumed by S11, which restructures the tree so the per-variant arms collapse into a generic walker. The status note below is kept for the historical record of how coverage was sliced.
-  - **Direction (chosen 2026-05-08).** Wire S5C first (done — see below) with a `has_unhandled` fallback that keeps documents on `tree_to_json` while any of their variants still hit the catch-all. Migrate variants here incrementally; documents flip to the typed path organically as their last unhandled variant gets covered, giving per-variant snapshot bisectability. The strict invariant ("no fixture ever trips `has_unhandled`") closes the slice and lets S5D delete `tree_to_json`.
-    - [x] [S5A-Z1] **Foundation: `Name`, `Atom`, `Module`, `Class`, `Inline`, `Skip` projected.** Done in iter 39 + S5A start.
-    - [x] [S5A-Z2] **Declarations batch: `Body`, `Function`, `Variable`, `Property`, `Returns`, `Parameter`, `SimpleStatement` (non-marker), `Comment`, `Return`, `Decorator`, `Import`.** Done 2026-05-08.
-    - [x] [S5A-Z3] **Expressions batch: `Expression`, `Binary`, `Unary`, `Comparison`, `Call`, `Ternary`, `Is`, `Cast`, `KeywordArgument`, `ListSplat`, `DictSplat`, `Pair`.** Done 2026-05-08 (`Access` deferred to Z6). New `make_op_mapping` helper for op-bearing variants.
-    - [x] [S5A-Z4] **Collections + scalar literals: `Tuple`, `List`, `Set`, `Dictionary`, `Int`, `Float`, `String`, `True`, `False`, `None`, `Null`.** Done 2026-05-08. Scalars map to natural `DataTree` variants; collections to `Sequence`/`Mapping`.
-    - [x] [S5A-Z5] **Control flow: `If`, `ElseIf`, `Else`, `For`, `Foreach`, `CFor`, `While`, `DoWhile`, `Break`, `Continue`, `Try`, `ExceptHandler`.** Done 2026-05-08. Body's children flatten directly into the parent.
-    - [x] [S5A-Z6] **Misc tail: `Lambda`, `ObjectCreation`, `Constructor`, `Generic`, `TypeParameter`, `GenericType`, `TypeAlias`, `Enum`, `EnumMember`, `Accessor`, `Using`, `Namespace`, `From`, `FromImport`, `Path`, `Aliased`, `Assign`, `FieldWrap`, `PositionalSeparator`, `KeywordSeparator`, `Unknown` + the `Access` chain.** Done 2026-05-08. New `project_access_segment` helper.
-    - [x] [S5A-Z7] **`has_unhandled` returns `false` for every fixture; `Tree::SyntaxTree::to_json` reaches `tree_to_json` from no test path.**
-      - Done 2026-05-08. Catch-all removed from `project()`; Rust's exhaustiveness check enforces every `SyntaxTree` variant has its own arm. Legacy `tree_to_json` fallback unreachable. New tests: `has_unhandled_predicate_trips_on_unhandled_marker`, `projection_is_exhaustive_for_all_ir_variants`.
-    - [ ] [S5A-Z8] **Snapshot reconciliation: any JSON snapshots that move when fixtures flip from legacy to typed path are reviewed and updated.**
-      - Status: needs audit. New path is LIVE post-Z7 but no snapshots broke under `cargo test` — likely because most snapshot tests render via XPath→XmlNode→`xml_node_to_json` rather than `Tree::SyntaxTree::to_json` (only reached via `format::json.rs::Projection::Tree`, i.e. `--projection=tree`). Enumerate fixtures that hit that path, regenerate, review diff. Expected: `$type` keys disappear; `$inline` / `$skip` / plural-of-self cease to exist.
-  - **Coverage status.** Complete after Z7: every `SyntaxTree` variant has its own arm in `tractor/src/tree/to_data.rs::project`; compile-enforced exhaustiveness.
-  - **OPTIONS: Boilerplate reduction in `to_data.rs`** (2026-05-08, raised by user). The `project` function is ~500 LOC of mechanically-similar match arms — declaration variants do `push_modifier_flags + named slots`, control-flow variants do `condition + body-flatten + else?`, op-bearing expressions do `op + operands`, etc. Three plausible reduction approaches; pick one (mark `[x]`) to commit. **Note 2026-05-13:** This OPTIONS block is subsumed by S11 — the structural fix there obviates the boilerplate-reduction question. Leave unselected; revisit only if S11 is not pursued.
-    - [ ] **(a) `project!` macro.** Takes a variant name and a list of `(slot_key, expr)` pairs, expands to the boilerplate. Reduces 5–10 lines per variant to 2–3. Cost: introduces a macro layer that obscures projection rules; harder to step-through with a debugger.
-    - [ ] **(b) `MappingBuilder` helper toolkit (recommended).** Extend `make_pair` / `make_flag` / `push_modifier_flags` / `collect_member_pairs` with a small builder API: `MappingBuilder::new(range, span).flag(name).pair(key, value).inline_body(body).build()`. Codifies the four recurring shapes (`flags + name + slots`, `condition + body`, `op + operands`, `transparent passthrough`) without macros. ~30% verbosity reduction. Each arm becomes a few-line builder pipeline; `project` stays as the dispatch.
-    - [ ] **(c) Per-variant `SyntaxTree::project_to_data` methods.** Move each arm to where the variant is defined in `types.rs`. Pro: variant-local. Con: scatters the projection ruleset across `types.rs` (meant to be data-only), and breaks "one place to read all projection rules".
-
-- [ ] [S5B] **All JSON shape decisions (`$inline`, `$skip`, `$type:"expression"`, plural-of-self collapse, marker-vs-leaf) live as uniform projection rules in `to_data`, not in `to_json`.**
-
-- [x] [S5C] **`Tree::to_json` for the `Tree::SyntaxTree` arm calls `data_to_json(to_data(tree, source))`.**
-  - Done 2026-05-08. Hybrid dispatch in `xpath/match_result.rs`: project via `lower_to_data_ir` first; if `has_unhandled` is false render via `data_to_json`, else fall back to legacy `tree_to_json`. After S5A-Z7 the fallback is unreachable. `Tree::DataTree` keeps direct `data_to_json`; `Tree::SqlTree` keeps `sql_to_json` until S5E.
-
-- [ ] [S5D] **`tractor/src/tree/to_json.rs` does not exist.**
-  - Depends on S5C (no caller).
-
-- [ ] [S5E] **`SqlTree` JSON output flows through `DataTree` projection.**
-  - All three tree families share one JSON projection algorithm with three entry points.
-
----
-
-## 2️⃣ S16 — Typed-tree migration: known shape regressions
-
-**Goal.** Restore semantic-shape information that the typed-tree migration accidentally flattened. The typed catalogue (`SyntaxTree::{Name, String, Int, ...}`) is generic by design; per-language semantic wrappers and markers that the imperative pipeline minted didn't all carry over. Each item below is a concrete diff between current output and the committed snapshot (pre-typed-migration imperative output) — surfaced 2026-05-14 during a snapshot regen audit.
-
-**Why now.** Alpha-stage so query compatibility doesn't matter, but the snapshots are the historical record of the project's curated tree shape and several losses look like genuine design regressions, not intentional simplifications. Each regression is small in isolation; collectively they erode the "principled semantic tree" property.
-
-**Reversibility.** High. Each is a localized fix in one or two lowering files. After fixing, re-run `task test:snapshots:update` to clear the staged regression.
-
-**Affected snapshots (currently failing `task test:snapshots`):** the 11 files reverted on 2026-05-14 — all 8 blueprint `*.snapshot.json` plus `php.php.snapshot.txt`, `ruby.rb.snapshot.txt`, `typescript.ts.snapshot.txt`. They will fail snapshot-check until the underlying regressions are addressed or the user explicitly opts to bake in the new shape.
-
-### Tasks
-
-- [ ] [S16-Z1] **TypeScript: restore `<path>` semantic node for import paths.** `import './barrel'` currently lowers the path string to `SyntaxTree::String`, which projects as `<string>"./barrel"</string>`. The pre-migration shape was `<path>./barrel</path>` (semantic role: "module path"). Either add a `SyntaxTree::Path { text }` leaf variant (cross-language, lines up with the `From/Path` segments structure that already exists) or wrap the import target in a typed slot whose projection emits `<path>` instead of `<string>`.
-
-- [ ] [S16-Z2] **TypeScript: restore `import[sideeffect]` marker.** `import './barrel'` (no specifiers, side-effect-only) currently emits `<import>...</import>` indistinguishable from `import { x } from './barrel'`. The marker carried a real distinction. Add a `side_effect: bool` field to whatever variant lowers TS imports, project it as a `<sideeffect/>` marker.
-
-- [ ] [S16-Z3] **PHP: restore `use[alias]` marker + `<path>` / `<aliased>` wrappers.** `use App\Foo as Log;` was `<use[alias]><path><name>App</name>...</path><aliased><name>Log</name></aliased></use>`; now flattened to `<use><name>App</name>...<name>Log</name></use>` — both the alias marker and the path/aliased distinction are lost. Restore the alias marker and slot wrappers in the PHP lowering.
-
-- [ ] [S16-Z4] **PHP + Ruby: restore `<type>` wrapper on `extends` / `implements`.** `class Foo extends Base` was `<extends><type><name>Base</name></type></extends>`; now `<extends><name>Base</name></extends>`. `<type>` is the stable place to attach generic args / qualified names later. Restore via a typed slot on Class.
-
-- [ ] [S16-Z5] **All 8 SyntaxTree languages: restore JSON projection's `$type` discriminator.** `data_to_json` no longer emits the `"$type": "program"` / `"$type": "file"` / etc. key on Module root. Useful for downstream consumers to disambiguate. Re-emit on the data-projection root.
-
-- [ ] [S16-Z6] **All 8 SyntaxTree languages: restore curated top-level field grouping in JSON projection.** Pre-migration JSON had `imports: [...]`, `namespaces: [...]`, `consts: [...]`, `expressions: [...]` etc. — items grouped by kind. Current `data_to_json` collects everything under `nodes: [...]`. Either re-introduce per-language grouping rules in `to_data` or document that flat `nodes` is the new canonical shape.
-
-- [ ] [S16-Z7] **All languages: restore `leading: bool` on comments.** Comment objects in JSON were `{leading: true, text: "..."}`; now flattened to `"..."`. The `leading` flag distinguished leading from trailing comments. Re-emit via `DataTree::Comment { leading, text }` or whatever the projection chain looks like for comments.
-
-- [ ] [S16-Z8] **JSON `path` typed field flattening.** Java `path: {names: ["com.example"]}` is now split into `path: {names: ["com", "example"]}` (segment split — may be improvement). Python `path: {names: ["os"]}` is now `node: {name: "os"}` (lost the `path` semantic field). Audit each per-language: keep the segment-split if intentional, restore the `path` field name if dropped accidentally.
-
-- [ ] [S16-Z9] **JSON typed-field flattening across primitives.** Ruby `int: "3"` → `node: 3`; PHP `int: "1"` → `node: 1`; Go `string: "\"fmt\""` → `node: "\"fmt\""`. The typed field name was the kind discriminator. Decide policy: either keep `int`/`string`/etc. as the field name in the JSON projection, or commit to generic `node` everywhere and document.
-
-- [ ] [S16-Z10] **Re-regenerate the 11 reverted snapshots once Z1–Z9 land.** Run `task test:snapshots:update` after each fix and verify only the targeted shape changes apply.
-
----
-
 ## 9️⃣ S12 — Drop the IR vocabulary entirely; per-domain tree types (`SyntaxTree` / `DataTree` / `SqlTree` / `DocumentTree`)
 
 **Status: structural rename shipped 2026-05-12 (commits `0e08dffd` … `28dac866`); residual mop-up open per 2026-05-14 audit.** The eleven original Z-steps (type renames `Ir/DataIr/SqlIr → SyntaxTree/DataTree/SqlTree`, module `crate::ir → crate::tree`, `IrFamily → TreeKind`, spec dir `semantic-tree/ → tree/`, living-doc scrub, TODO.md scrub) all landed and are no longer enumerated here — see the git log for those commits. A subsequent audit (below) found that the rename sweep stopped at type names and missed a substantial tail of internal function names, ~150 local-variable bindings, 11 test files, and stale `src/ir/` path references in two design docs.
@@ -827,6 +760,71 @@ Search: `\bIr[A-Z]|\bir_|_ir\b` across `tractor/src` and `tractor/tests`. 306 hi
 - [ ] [S12-Z17] **Decide: rename `docs/design-ir-and-renderings.md` itself?** The filename still carries the old vocabulary. The body deliberately documents the IR→tree rename (§9 — that section's IR mentions are intentional historical record), so renaming the file forces an update to every link that points to `design-ir-and-renderings.md`. Candidates: `design-trees-and-renderings.md` or leave as-is with a terminology banner in the header. Decision deferred — flag only.
 
 - [ ] [S12-Z18] **`tractor/todo/41-ir-migration-status.md` — archive or delete.** Pre-S12 planning snapshot from 2026-05-07. Content is fully superseded by the shipped renames. Either move under a clearly-archived path or delete.
+
+---
+
+## 🔟 S10 — Per-language directory consolidation
+
+**Goal.** All language-specific code for one language lives in one directory: `languages/<lang>/` carries the kinds, vocabulary, lowering, and canonical-source emitter. The shared tree machinery is small and clearly demarcated under `tree/`.
+
+**Why now.** Today, language-specific code is split across two top-level directories — `languages/<lang>/` for kinds + vocabulary + post-transform, and `tree/<lang>.rs` (1.5–3K LOC each) + `tree/source/<lang>.rs` for the lowering and canonical emitter. The split reflects the tree migration history (the new pipeline grew sideways under `tree/`), not current ownership. The principle "languages decide what transformations they use, nothing forced top-down" survives if and only if the per-language code physically clusters.
+
+The shared tree machinery — `tree/types.rs` (the unified `SyntaxTree` enum), `tree/to_xot.rs`, `tree/to_json.rs`, `tree/to_data.rs`, `tree/coverage.rs`, `tree/lower_helpers.rs`, `tree/source/common.rs` (the `Syntax` + `write_ir` engine) — is language-agnostic by design and stays in `tree/`. The cross-language unification at the tree layer is the architectural commitment of the design and isn't undone by this reorg. What changes is *where the per-language code physically lives*.
+
+**Depends on.** S2-Z4 (registry pointers in place — the moves update one row each), and ideally S3B-Z1c (so the moved directories don't carry `post_transform.rs` files about to be deleted).
+**Unblocks.** A reader can answer "show me all csharp-specific code" with one `ls`.
+**Independent of.** S4, S5, S6, S7, S8, S9 — they don't read these paths.
+
+**Size.** L. ~14 KLOC of file moves across 8 languages × 2 file types, plus directory regrouping for data-tree (9 files) and sql-tree (5 files).
+**Reversibility.** High. Pure file moves with import updates; one-commit revert.
+
+**Invariants when closed:**
+- `tree/<lang>.rs` does not exist for any programming language; `languages/<lang>/lower.rs` exists instead.
+- `tree/source/<lang>.rs` does not exist for any programming language; `languages/<lang>/render_source.rs` exists instead.
+- `tree/data/` is a directory containing all `DataTree` types, lowering, and renderers.
+- `tree/sql/` is a directory containing all `SqlTree` types and renderers (T-SQL lowering is at `languages/tsql/lower.rs`, consistent with S10A).
+- Per-language `input.rs` is `kinds.rs`; per-language `output.rs` is `vocabulary.rs` (or fold into `mod.rs`).
+- `tree/source/` (post-rename: `tree/render/`) holds only `common.rs` + `mod.rs`.
+
+### Tasks
+
+- [x] [S10A] **No `tree/<lang>.rs` lowering file exists for any programming language; `languages/<lang>/lower.rs` exists in its place.**
+  - Each move: `git mv tree/<lang>.rs languages/<lang>/lower.rs`; add `pub mod lower;` to `languages/<lang>/mod.rs`; drop `pub mod <lang>;` from `tree/mod.rs`; update the `tree_kind: Syntax(<lang>::lower::lower_<lang>_root)` pointer in the `LANGUAGES` registry.
+  - Per-language sub-tasks:
+    - [x] [S10A-Z1] csharp — `tree/csharp.rs` (2886 LOC) → `languages/csharp/lower.rs`.
+    - [x] [S10A-Z2] python — `tree/python.rs` (2238 LOC) → `languages/python/lower.rs`.
+    - [x] [S10A-Z3] java — `tree/java.rs` (2053 LOC) → `languages/java/lower.rs`.
+    - [x] [S10A-Z4] typescript — `tree/typescript.rs` (2079 LOC) → `languages/typescript/lower.rs` (covers ts/tsx/js/jsx).
+    - [x] [S10A-Z5] rust_lang — `tree/rust_lang.rs` (1967 LOC) → `languages/rust_lang/lower.rs`.
+    - [x] [S10A-Z6] go — `tree/go_lang.rs` (1507 LOC) → `languages/go/lower.rs`.
+    - [x] [S10A-Z7] ruby — `tree/ruby.rs` (688 LOC) → `languages/ruby/lower.rs`.
+    - [x] [S10A-Z8] php — `tree/php.rs` (1563 LOC) → `languages/php/lower.rs`.
+
+- [x] [S10B] **No `tree/render/<lang>.rs` per-language emitter exists; `languages/<lang>/render_source.rs` exists in its place.** Closed by S13-Z7: the unified dispatcher in `tree/render/mod.rs::render` consumes each language's `syntax()` config; the per-language `match lang` fork is gone, so the originally-deferred `render_canonical` registry field is moot — there's no dispatch left to convert.
+  - Per-language sub-tasks: [S10B-Z1..Z8] csharp / java / python / typescript / rust_lang / go / ruby / php — all moved.
+  - SQL handled by S10D.
+
+- [x] [S10C] **`tree/data/` is a directory; the nine flat `data*.rs` / `*_data.rs` files at `tree/` root do not exist.**
+  - Today's flat layout: `data.rs` (226), `data_to_xot.rs` (501), `data_to_json.rs` (222), `to_data.rs` (465 — `SyntaxTree → DataTree` projection, stays at tree root), `json_data.rs` (187), `yaml_data.rs` (265), `toml_data.rs` (367), `ini_data.rs` (152), `markdown_data.rs` (324).
+  - Target: `tree/data/{types.rs, to_xot.rs, to_json.rs, lower_json.rs, lower_yaml.rs, lower_toml.rs, lower_ini.rs, lower_markdown.rs}`.
+
+- [x] [S10D] **`tree/sql/` is a directory; the five flat `sql*.rs` files at `tree/` root and `tree/source/sql.rs` do not exist. T-SQL lowering lives at `languages/tsql/lower.rs`.**
+  - Today's flat layout: `sql.rs` (741), `sql_lower.rs` (2243), `sql_to_xot.rs` (908), `sql_to_json.rs` (684), `tree/source/sql.rs` (147).
+  - Target: `tree/sql/{types.rs, to_xot.rs, to_json.rs, render_source.rs}` + `languages/tsql/lower.rs`.
+
+- [x] [S10E] **No `languages/<lang>/input.rs` file exists; `kinds.rs` exists in its place.**
+  - Files contain only the generated `CsKind` / `PyKind` / `JavaKind` / etc. enum (CST-kind catalogue), used by `tests/kind_catalogue.rs` and the `SyntaxTree::Unknown` audit. The "input" name dates from the retired imperative pipeline.
+  - Update `task gen:kinds` codegen to write `kinds.rs`. Update test imports.
+
+- [ ] [S10F] **No `languages/<lang>/output.rs` file exists; `vocabulary.rs` exists in its place (or contents are folded into `mod.rs`).**
+  - Cross-reference C2: if C2 chooses (a) "drive shape contracts off `SyntaxTree` variants alone and delete `TractorNode`", S10F is moot — delete the files instead.
+
+- [x] [S10G] **`tree/source/` does not exist; `tree/render/` exists in its place (or `tree/source/mod.rs::render` is gone entirely if S10B's registry field replaces it).**
+
+- [ ] [S10H] **Either `transform/` has a clear sole-purpose role (with a name that matches), or it is gone.**
+  - After S3A + S3B + S3D + S3E + C3, the survivors are: `walk_transform`, `apply_field_wrappings`, possibly `singletons.rs`, possibly `builder.rs`. These serve only the legacy `XeeBuilder` path (data languages JSON/YAML's syntax branch + Raw mode + WASM until S6).
+  - Decide: rename `transform/` to `legacy_xot/` (or similar) to mark it non-tree, or delete what's actually dead.
+  - Depends on S3, S6, C3.
 
 ---
 

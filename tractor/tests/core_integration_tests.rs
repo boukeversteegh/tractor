@@ -6,7 +6,6 @@
 /// 3. XPath querying against parsed code
 
 use tractor::{
-    load_xml_string_to_documents,
     parse, ParseInput, ParseOptions,
     XPathEngine, XeeParseResult, SchemaCollector,
 };
@@ -44,8 +43,11 @@ fn test_load_xml_passthrough() {
   </function>
 </file>"#;
 
-    let result = load_xml_string_to_documents(xml, "test.xml".to_string())
-        .expect("Should load XML");
+    let result = parse(
+        ParseInput::Inline { content: xml, file_label: "test.xml" },
+        ParseOptions { language: Some("xml"), ..Default::default() },
+    )
+    .expect("Should load XML");
 
     assert_eq!(result.file_path, "test.xml");
     assert_eq!(result.language, "xml");
@@ -59,8 +61,11 @@ fn test_query_xml_passthrough() {
   <function>fn <name><type>main</type></name></function>
 </file>"#;
 
-    let mut result = load_xml_string_to_documents(xml, "test.xml".to_string())
-        .expect("Should load XML");
+    let mut result = parse(
+        ParseInput::Inline { content: xml, file_label: "test.xml" },
+        ParseOptions { language: Some("xml"), ..Default::default() },
+    )
+    .expect("Should load XML");
 
     let engine = XPathEngine::new();
     let matches = engine.query_documents(

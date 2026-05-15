@@ -14,7 +14,7 @@
 
 use tractor::tree::{audit_coverage, render_to_xot, to_source};
 use tractor::languages::python::lower_python_root;
-use tractor::parser::parse_string_to_xot;
+use tractor::{parse, ParseInput, ParseOptions};
 use xot::{Node as XotNode, Xot};
 
 /// Empty list — `PyKind` no longer exists post-tree-migration; the
@@ -55,12 +55,17 @@ fn walk(xot: &Xot, node: XotNode, depth: usize, out: &mut String) {
 }
 
 fn current_view(source: &str) -> String {
-    let r = parse_string_to_xot(source, "python", "<bp>".to_string(), None)
-        .expect("current pipeline parse");
-    let root = if r.xot.is_document(r.root) {
-        r.xot.document_element(r.root).expect("doc")
-    } else { r.root };
-    structural_view(&r.xot, root)
+    let r = parse(
+        ParseInput::Inline { content: source, file_label: "<bp>" },
+        ParseOptions { language: Some("python"), ..Default::default() },
+    )
+    .expect("current pipeline parse");
+    let xot = r.documents.xot();
+    let doc_node = r.documents.document_node(r.doc_handle).expect("doc");
+    let root = if xot.is_document(doc_node) {
+        xot.document_element(doc_node).expect("doc")
+    } else { doc_node };
+    structural_view(xot, root)
 }
 
 fn ir_view(source: &str) -> (String, String, usize) {

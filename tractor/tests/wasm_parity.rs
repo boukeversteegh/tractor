@@ -16,7 +16,7 @@
 //! `SerializedNode` (the JSON shape `web-tree-sitter` produces) from a
 //! tree-sitter parse, then routes it through
 //! `wasm::parse_ast_to_xml` — the same function the WASM module calls.
-//! The CLI path runs via the public `tractor::parse(...)` API.
+//! The CLI path runs via the unified `tractor::parse(...)` API.
 //!
 //! Any divergence indicates a bug in the JSON↔RawNode bridge, the
 //! lowering signature, or the render path — all of which S6
@@ -38,22 +38,26 @@ fn raw_to_serialized(raw: &RawNode) -> SerializedNode {
     serde_json::from_str(&json).expect("JSON → SerializedNode")
 }
 
-/// Build the CLI XML by parsing through `parse_string_to_xot` (the
-/// xot-producing native entry) and rendering with the same
-/// `RenderOptions` the WASM path uses. Restricts to
-/// `tree_mode=structure` so the comparison covers the typed pipeline.
+/// Build the CLI XML by parsing through the unified `parse(...)` entry
+/// and rendering with the same `RenderOptions` the WASM path uses.
+/// Restricts to `tree_mode=structure` so the comparison covers the
+/// typed pipeline.
 fn cli_xml(language: &str, source: &str) -> String {
-    let res = tractor::parser::parse_string_to_xot(
-        source,
-        language,
-        "input".to_string(),
-        Some(tractor::TreeMode::Structure),
+    let res = tractor::parse(
+        tractor::ParseInput::Inline { content: source, file_label: "input" },
+        tractor::ParseOptions {
+            language: Some(language),
+            tree_mode: Some(tractor::TreeMode::Structure),
+            ..Default::default()
+        },
     )
     .expect("CLI parse");
     let options = tractor::RenderOptions::new()
         .with_meta(false)
         .with_pretty_print(true);
-    tractor::render_document(&res.xot, res.root, &options)
+    let xot = res.documents.xot();
+    let doc_node = res.documents.document_node(res.doc_handle).expect("doc");
+    tractor::render_document(xot, doc_node, &options)
 }
 
 /// Build the WASM XML by going `tree-sitter → RawNode →

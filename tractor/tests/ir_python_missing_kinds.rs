@@ -10,6 +10,22 @@ use tree_sitter::Parser;
 use tractor::tree::audit_coverage;
 use tractor::languages::python::lower_python_root;
 
+fn parse_python_to_xml(source: &str) -> String {
+    let parsed = tractor::parse(
+        tractor::ParseInput::Inline { content: source, file_label: "<x>" },
+        tractor::ParseOptions { language: Some("python"), ..Default::default() },
+    )
+    .expect("parse");
+    let xot = parsed.documents.xot();
+    let doc_node = parsed.documents.document_node(parsed.doc_handle).expect("doc handle");
+    let root = if xot.is_document(doc_node) {
+        xot.document_element(doc_node).expect("doc")
+    } else {
+        doc_node
+    };
+    xot.to_string(root).unwrap()
+}
+
 #[test]
 #[ignore]
 fn python_missing_kinds() {
@@ -62,19 +78,10 @@ fn python_missing_kinds() {
         eprintln!("  {n:>3}  {k}");
     }
 
-    // Final-pipeline check: parse via the actual parser entry
-    // (which runs tree + post_transform) and grep the final XML for
-    // `<unknown` to see what survives the full pipeline.
-    let parsed = tractor::parser::parse_string_to_xot(
-        &source,
-        "python",
-        "<x>".to_string(),
-        None,
-    ).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    let final_xml = parsed.xot.to_string(root).unwrap();
+    // Final-pipeline check: parse via the unified entry point and grep
+    // the final XML for `<unknown` to see what survives the full
+    // pipeline.
+    let final_xml = parse_python_to_xml(&source);
     let mut final_counts = std::collections::BTreeMap::<String, usize>::new();
     for token in final_xml.split("<unknown kind=\"").skip(1) {
         if let Some(end) = token.find('"') {
@@ -105,39 +112,21 @@ fn python_missing_kinds() {
 #[ignore]
 fn dump_chain_render() {
     let s = "obj.foo().bar.baz()\n";
-    let parsed = tractor::parser::parse_string_to_xot(
-        s, "python", "<x>".to_string(), None,
-    ).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    println!("{}", parse_python_to_xml(s));
 }
 
 #[test]
 #[ignore]
 fn dump_except_render() {
     let s = "try:\n    f()\nexcept ValueError as err:\n    g()\n";
-    let parsed = tractor::parser::parse_string_to_xot(
-        s, "python", "<x>".to_string(), None,
-    ).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    println!("{}", parse_python_to_xml(s));
 }
 
 #[test]
 #[ignore]
 fn dump_list_pattern_render() {
     let s = "match x:\n    case [1, 2, *rest]:\n        pass\n";
-    let parsed = tractor::parser::parse_string_to_xot(
-        s, "python", "<x>".to_string(), None,
-    ).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    println!("{}", parse_python_to_xml(s));
 }
 
 #[test]
@@ -190,11 +179,5 @@ fn dump_dict_pattern_cst() {
 #[ignore]
 fn dump_dict_pattern_render() {
     let s = "match x:\n    case {\"a\": 1, \"b\": 2}:\n        pass\n";
-    let parsed = tractor::parser::parse_string_to_xot(
-        s, "python", "<x>".to_string(), None,
-    ).expect("parse");
-    let root = if parsed.xot.is_document(parsed.root) {
-        parsed.xot.document_element(parsed.root).expect("doc")
-    } else { parsed.root };
-    println!("{}", parsed.xot.to_string(root).unwrap());
+    println!("{}", parse_python_to_xml(s));
 }

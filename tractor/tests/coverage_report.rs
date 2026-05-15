@@ -76,11 +76,9 @@ fn coverage_summary_all_languages() {
                 continue;
             }
         };
-        let parsed = match tractor::parser::parse_string_to_xot(
-            &source,
-            case.name,
-            "<x>".to_string(),
-            None,
+        let parsed = match tractor::parse(
+            tractor::ParseInput::Inline { content: &source, file_label: "<x>" },
+            tractor::ParseOptions { language: Some(case.name), ..Default::default() },
         ) {
             Ok(p) => p,
             Err(e) => {
@@ -88,15 +86,14 @@ fn coverage_summary_all_languages() {
                 continue;
             }
         };
-        let root = if parsed.xot.is_document(parsed.root) {
-            parsed
-                .xot
-                .document_element(parsed.root)
-                .expect("doc element")
+        let xot = parsed.documents.xot();
+        let doc_node = parsed.documents.document_node(parsed.doc_handle).expect("doc handle");
+        let root = if xot.is_document(doc_node) {
+            xot.document_element(doc_node).expect("doc element")
         } else {
-            parsed.root
+            doc_node
         };
-        let xml = parsed.xot.to_string(root).unwrap();
+        let xml = xot.to_string(root).unwrap();
         let counts = count_unknowns(&xml);
         if counts.is_empty() {
             println!("  [{}]  100% covered — 0 unknown kinds", case.name);
