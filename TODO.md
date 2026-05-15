@@ -562,11 +562,11 @@ The originally-listed Z1–Z9 were sampled from the 11 reverted snapshots only. 
 
 **Pattern catalogue (folded in 2026-05-15).** Renderer escape hatches that must all disappear under (a) — invariant when closed: `to_xot.rs` does NO inspection beyond reading the types of variant members and marshalling them to XML values.
 
-- **P1.** `SimpleStatement{element_name: "type"|"extends"|"implements"|"value"}` wrappers — renderer's `already_typed` / `already_wrapped` / `inner_already_wrapped` checks at L335 / L345 / L654 / L948 / L977 / L1424 / L2062 must go. Lowering produces typed wrappers; renderer marshals.
-- **P2.** `<expression>` host conditional wrap (L251 / L719 — gone for Assign now in render_tree_assign post-cleanup). Lowering decides Expression presence at each call site; renderer never wraps/skips.
+- **P1.** `SimpleStatement{element_name: "type"|"extends"|"implements"|"value"}` wrappers — groundwork (`wrap_type` helper) landed 2026-05-15; per-site lowering migration is follow-up work. See S11-Z15.
+- **P2.** ✅ done 2026-05-15. Conditional `<expression>` wrap-or-skip removed from to_xot (commit 3e08acd8). Lowering wraps Assign values and FieldWrap value/condition slots via `wrap_expression()`. The unconditional `<expression>` wraps in other renderers are not escape hatches — they always wrap, never check.
 - **P3.** ✅ done 2026-05-15. ExceptHandler unified — single shape for Python/C#/Java.
 - **P4.** ✅ done 2026-05-15. Class/Function generics field is `Vec<SyntaxTree>` directly (no optional Generic wrapper).
-- **P5.** `body` field becomes its own type (`Box<Body>` not `Box<SyntaxTree>`) so `matches!(body, SyntaxTree::Body { .. })` at L845 disappears.
+- **P5.** ✅ done 2026-05-15. Typed `LambdaBody` enum on `Lambda.body` (commit 0c9fed69) — closed-enum dispatch, not shape inspection. Other body fields stay `Box<SyntaxTree>` since they have no shape-conditional renderers.
 - **P6.** ✅ done 2026-05-15. Typed `AccessReceiver` enum on `SyntaxTree::Access.receiver` — no text inspection in `render_tree_access`.
 
 **Invariants when closed (under option a):**
@@ -632,7 +632,11 @@ Listed roughly by blast radius (smaller first). Each Z step:
 
 - [x] [S11-Z14] [P4] **Class/Function generics field is `Vec<SyntaxTree>` directly.** Done 2026-05-15 (commit ede35820). Was `Option<Box<SyntaxTree>>` (may contain `SyntaxTree::Generic { items }` or bare TypeParameter); now `Vec<SyntaxTree>` of items directly. Renderer iterates unconditionally — no `if let SyntaxTree::Generic { .. } = g.as_ref()` unwrap branch. `SyntaxTree::Generic` variant retained for standalone use.
 
-- [ ] [S11-Z15] [P1] **`SimpleStatement{element_name: "type"|"extends"|"implements"|"value"}` ad-hoc wrappers gone.** The renderer's `already_typed` / `already_wrapped` / `inner_already_wrapped` checks at L335 / L345 / L654 / L948 / L977 / L1424 / L2062 all disappear. Replace with typed variants (`SyntaxTree::TypeRef`, `Extends`, `Implements`, `Value` — or fold into parent fields). Lowering produces final wrapped shape; renderer marshals only. ~31 lowering sites construct these wrappers today.
+- [ ] [S11-Z15] [P1] **`SimpleStatement{element_name: "type"|"extends"|"implements"|"value"}` ad-hoc wrappers gone.** The renderer's `already_typed` / `already_wrapped` / `inner_already_wrapped` checks at L328 / L338 / L647 / L934 / L963 / L1410 / L2048 all disappear.
+  - **Groundwork:** `SyntaxTree::wrap_type()` helper added 2026-05-15 (commit 2eb0fcf9), idempotent — already-typed shapes pass through. Companion to `SyntaxTree::wrap_expression()` from P2.
+  - **Remaining:** every lowering site that produces a type-position slot (Variable.type_ann, Returns.type_ann, Parameter.type_ann, Cast.type_ann, Foreach.type_ann, ...) must call `.wrap_type()`. ~30+ sites across 9 languages. Once migrated, the renderer's 4 `already_typed` arms can become unconditional renders (no wrap, no check).
+  - Class.bases (`<extends>` wrap) and `<implements>` shape similarly need lowering migration.
+  - Per-site work; commit each language as it's converted.
 
 ---
 
