@@ -23,22 +23,28 @@
 
 use xot::{Node as XotNode, Xot};
 
+use super::element_naming::element_name_for_lang;
 use super::metadata_generated::{element_name_of, flags_of};
 use super::types::{ByteRange, Marker, Span, SyntaxTree};
 
 /// Render `tree` under `parent` and return the appended wrapper
-/// element (or `parent` itself when `tree` has no wrapper — `Inline`
-/// at the top level inlines its children directly into `parent`).
+/// element. `lang` selects the per-language element-name vocabulary
+/// (Python "module" / C# "unit" / etc.); `None` keeps the universal
+/// variant-tag names.
 pub fn render_to_xot(
     xot: &mut Xot,
     parent: XotNode,
     tree: &SyntaxTree,
     source: &str,
+    lang: Option<&str>,
 ) -> Result<XotNode, xot::Error> {
     match element_name_of(tree) {
-        Some(name) => render_element(xot, parent, tree, source, name),
+        Some(tag) => {
+            let display = element_name_for_lang(tag, lang);
+            render_element(xot, parent, tree, source, display, lang)
+        }
         None => {
-            render_inline_into(xot, parent, tree, source)?;
+            render_inline_into(xot, parent, tree, source, lang)?;
             Ok(parent)
         }
     }
@@ -52,13 +58,14 @@ fn render_element(
     tree: &SyntaxTree,
     source: &str,
     name: &str,
+    lang: Option<&str>,
 ) -> Result<XotNode, xot::Error> {
     let name_id = xot.add_name(name);
     let node = xot.new_element(name_id);
     xot.append(parent, node)?;
     set_span_attrs(xot, node, tree.span());
 
-    render_body(xot, node, tree, source)?;
+    render_body(xot, node, tree, source, lang)?;
     Ok(node)
 }
 
@@ -70,6 +77,7 @@ fn render_body(
     node: XotNode,
     tree: &SyntaxTree,
     source: &str,
+    lang: Option<&str>,
 ) -> Result<(), xot::Error> {
     let parent_range = tree.range();
     let anchored = parent_range.is_anchored();
@@ -107,10 +115,11 @@ fn render_body(
                 emit_marker(xot, node, m)?;
             }
             RenderItem::Child(child) => {
-                if let Some(child_name) = element_name_of(child) {
-                    render_element(xot, node, child, source, child_name)?;
+                if let Some(tag) = element_name_of(child) {
+                    let display = element_name_for_lang(tag, lang);
+                    render_element(xot, node, child, source, display, lang)?;
                 } else {
-                    render_inline_into(xot, node, child, source)?;
+                    render_inline_into(xot, node, child, source, lang)?;
                 }
             }
         }
@@ -146,8 +155,9 @@ fn render_inline_into(
     parent: XotNode,
     tree: &SyntaxTree,
     source: &str,
+    lang: Option<&str>,
 ) -> Result<(), xot::Error> {
-    render_body(xot, parent, tree, source)
+    render_body(xot, parent, tree, source, lang)
 }
 
 fn emit_text(

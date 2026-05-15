@@ -23,6 +23,7 @@
 pub mod types;
 pub mod to_xot;
 pub mod to_json;
+pub mod element_naming;
 
 // The on-disk filename keeps a `.generated.` infix to signal that it
 // is auto-emitted; the Rust module name uses an underscore because

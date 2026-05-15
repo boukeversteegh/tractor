@@ -35,6 +35,7 @@ use std::collections::BTreeMap;
 
 use serde_json::{Map, Value};
 
+use super::element_naming::element_name_for_lang;
 use super::metadata_generated::{element_name_of, flags_of};
 use super::types::{SyntaxTree, TreeNode};
 
@@ -42,66 +43,50 @@ const KEY_TYPE: &str = "$type";
 const KEY_CHILDREN: &str = "$children";
 
 /// Entry point. Render `tree` (with its `source`) to a JSON Value.
-/// The root keeps its `$type` (no parent key conveys it).
-pub fn tree_to_json(tree: &SyntaxTree, source: &str) -> Value {
-    render(tree, source, /*strip_type=*/ false)
+/// `lang` selects per-language element naming; `None` uses universal
+/// variant tags throughout (useful for invertible JSON round-trips).
+pub fn tree_to_json(tree: &SyntaxTree, source: &str, lang: Option<&str>) -> Value {
+    render(tree, source, lang, /*strip_type=*/ false)
 }
 
 /// Variant-blind render. `strip_type` is set by the parent when the
 /// child sits under a key that already names its type — then the
-/// child's `$type` field is omitted to avoid `{"body": {"$type":
-/// "body", …}}` duplication.
-fn render(tree: &SyntaxTree, source: &str, strip_type: bool) -> Value {
-    // 1. Inline / Skip: no wrapper. Inline children at parent — but
-    //    a value can't carry siblings, so collapse to:
-    //      • the single child rendered, if exactly one,
-    //      • a $children array otherwise.
-    let elem_name = match element_name_of(tree) {
-        Some(n) => n,
-        None => return render_inline(tree, source),
+/// child's `$type` field is omitted to avoid duplication.
+fn render(tree: &SyntaxTree, source: &str, lang: Option<&str>, strip_type: bool) -> Value {
+    let tag = match element_name_of(tree) {
+        Some(t) => t,
+        None => return render_inline(tree, source, lang),
     };
+    let display = element_name_for_lang(tag, lang);
 
     let flags = flags_of(tree);
     let children = tree.children();
 
-    // 2. Scalar leaf: no children, no flags, has stored text. Emit
-    //    the text as a bare JSON string. The parent keys it under
-    //    this node's element name.
     if children.is_empty() && flags.is_empty() {
         if let Some(text) = leaf_text(tree, source) {
             return Value::String(text);
         }
     }
 
-    // 3. Structural node: build an object.
     let mut obj: Map<String, Value> = Map::new();
     if !strip_type {
-        obj.insert(KEY_TYPE.to_string(), Value::String(elem_name.to_string()));
+        obj.insert(KEY_TYPE.to_string(), Value::String(display.to_string()));
     }
 
-    // Flags as boolean fields.
     for marker in &flags {
         obj.insert(marker.name.to_string(), Value::Bool(true));
     }
 
-    // Group children by their element name so JSON keys stay unique.
-    // Inline children flatten their grandchildren into the parent's
-    // group set, so a `<expression>` wrapping a `<name>` contributes
-    // a `name` entry rather than a `$children` overflow.
     let mut groups: BTreeMap<String, Vec<&SyntaxTree>> = BTreeMap::new();
     let mut inline_overflow: Vec<&SyntaxTree> = Vec::new();
     for child in &children {
-        push_child(child, &mut groups, &mut inline_overflow);
+        push_child(child, lang, &mut groups, &mut inline_overflow);
     }
 
     for (key, items) in groups {
         if items.len() == 1 {
-            // Singleton child → keyed by element name, $type stripped.
-            obj.insert(key, render(items[0], source, /*strip_type=*/ true));
+            obj.insert(key, render(items[0], source, lang, /*strip_type=*/ true));
         } else {
-            // Multiple same-named siblings: overflow into $children.
-            // Each entry keeps its $type so callers can tell them
-            // apart by name without inspecting JSON shape.
             for item in items {
                 inline_overflow.push(item);
             }
@@ -117,7 +102,7 @@ fn render(tree: &SyntaxTree, source: &str, strip_type: bool) -> Value {
             })
             .unwrap_or_default();
         for item in inline_overflow {
-            existing.push(render(item, source, /*strip_type=*/ false));
+            existing.push(render(item, source, lang, /*strip_type=*/ false));
         }
         obj.insert(KEY_CHILDREN.to_string(), Value::Array(existing));
     }
@@ -125,19 +110,15 @@ fn render(tree: &SyntaxTree, source: &str, strip_type: bool) -> Value {
     Value::Object(obj)
 }
 
-/// Inline render: a node whose `element_name_of` is `None` (Inline,
-/// Skip) carries children but no wrapper of its own. As a JSON value
-/// it has no natural shape — fall through to either a single child or
-/// a $children array.
-fn render_inline(tree: &SyntaxTree, source: &str) -> Value {
+fn render_inline(tree: &SyntaxTree, source: &str, lang: Option<&str>) -> Value {
     let children = tree.children();
     match children.len() {
         0 => Value::Null,
-        1 => render(children[0], source, /*strip_type=*/ false),
+        1 => render(children[0], source, lang, /*strip_type=*/ false),
         _ => Value::Array(
             children
                 .iter()
-                .map(|c| render(c, source, /*strip_type=*/ false))
+                .map(|c| render(c, source, lang, /*strip_type=*/ false))
                 .collect(),
         ),
     }
@@ -149,16 +130,18 @@ fn render_inline(tree: &SyntaxTree, source: &str) -> Value {
 /// `name` entries to the parent (which then promote to `$children`).
 fn push_child<'a>(
     child: &'a SyntaxTree,
+    lang: Option<&str>,
     groups: &mut BTreeMap<String, Vec<&'a SyntaxTree>>,
     inline_overflow: &mut Vec<&'a SyntaxTree>,
 ) {
     match element_name_of(child) {
-        Some(name) => {
-            groups.entry(name.to_string()).or_default().push(child);
+        Some(tag) => {
+            let display = element_name_for_lang(tag, lang);
+            groups.entry(display.to_string()).or_default().push(child);
         }
         None => {
             for grand in child.children() {
-                push_child(grand, groups, inline_overflow);
+                push_child(grand, lang, groups, inline_overflow);
             }
         }
     }

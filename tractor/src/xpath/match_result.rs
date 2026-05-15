@@ -112,6 +112,10 @@ pub enum Tree {
         tree: Arc<crate::tree::SyntaxTree>,
         source: Arc<String>,
         xml: XmlNode,
+        /// Language hint used for per-language element-name
+        /// resolution (`element_naming::OVERRIDES`). `&'static str`
+        /// because language identifiers are interned literals.
+        lang: &'static str,
     },
     /// Data-language tree (root-document match). Native-only.
     #[cfg(feature = "native")]
@@ -148,8 +152,8 @@ impl Tree {
     pub fn to_json(&self, max_depth: Option<usize>) -> serde_json::Value {
         match self {
             #[cfg(feature = "native")]
-            Tree::SyntaxTree { tree, source, .. } => {
-                crate::tree::tree_to_json(tree, source)
+            Tree::SyntaxTree { tree, source, lang, .. } => {
+                crate::tree::tree_to_json(tree, source, Some(lang))
             }
             #[cfg(feature = "native")]
             Tree::DataTree { tree, .. } => crate::tree::data_to_json(tree),

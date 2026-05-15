@@ -172,16 +172,18 @@ fn parse_with_ir_pipeline_to_xee(
             // NodeId stamped on every node's Span. Downstream
             // XPath → typed-node lookup paths depend on this.
             tree::assign_ids_syntax(&mut ir_tree);
-            tree::render_to_xot(&mut xot, holding, &ir_tree, source)
+            tree::render_to_xot(&mut xot, holding, &ir_tree, source, Some(lang))
                 .map_err(|e| ParseError::Parse(format!("tree render failed: {e}")))?;
             let xml_node = xot.children(holding)
                 .find(|&c| xot.element(c).is_some())
                 .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
             let source_arc = std::sync::Arc::new(source.to_string());
+            let canonical_lang = lang_ops.ids.first().copied().unwrap_or("");
             xml_node.map(|x| crate::xpath::Tree::SyntaxTree {
                 tree: std::sync::Arc::new(ir_tree),
                 source: source_arc,
                 xml: x,
+                lang: canonical_lang,
             })
         }
         TreeKind::Data { structure, content } => {
@@ -377,7 +379,7 @@ fn parse_inline_to_xee(
 
     let mut xot = xot::Xot::new();
     let holding = xot.new_document();
-    crate::tree::render_to_xot(&mut xot, holding, &ir_tree, source)
+    crate::tree::render_to_xot(&mut xot, holding, &ir_tree, source, Some(lang))
         .map_err(|e| ParseError::Parse(format!("raw passthrough render failed: {e}")))?;
 
     let xml = xot.to_string(holding)
