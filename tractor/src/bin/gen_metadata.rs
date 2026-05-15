@@ -1,8 +1,10 @@
-//! Generate variant-blind XML accessors for `SyntaxTree`.
+//! Generate variant-blind reflection metadata for `SyntaxTree`.
 //!
-//! Reads `tractor/src/tree/types.rs`, parses the `SyntaxTree` enum with
-//! `syn`, and emits `tractor/src/tree/render_generated.rs` containing
-//! two accessors used by the variant-blind walker in `to_xot.rs`:
+//! Reads `tractor/src/tree/syntax/types.rs`, parses the `SyntaxTree`
+//! enum with `syn`, and emits
+//! `tractor/src/tree/syntax/metadata.generated.rs` containing two
+//! accessors consumed by the variant-blind walkers in `to_xot.rs`
+//! and `to_json.rs`:
 //!
 //! - `element_name_of(&SyntaxTree) -> Option<&'static str>` — the XML
 //!   element name for this node (`None` means "no wrapper element;
@@ -25,7 +27,7 @@
 //! - Any `Flag`-typed field → emit a marker named after the field with
 //!   any trailing underscore stripped (`async_` → `async`).
 //!
-//! Output is committed; CI runs `task verify:gen-walker` to enforce
+//! Output is committed; CI runs `task verify:gen-metadata` to enforce
 //! freshness.
 
 use std::fs;
@@ -35,8 +37,8 @@ use anyhow::{anyhow, Context, Result};
 use quote::ToTokens;
 use syn::{Fields, Item, ItemEnum, Variant};
 
-const INPUT: &str = "tractor/src/tree/types.rs";
-const OUTPUT: &str = "tractor/src/tree/render_generated.rs";
+const INPUT: &str = "tractor/src/tree/syntax/types.rs";
+const OUTPUT: &str = "tractor/src/tree/syntax/metadata.generated.rs";
 
 fn main() -> Result<()> {
     let src = fs::read_to_string(INPUT)
@@ -58,12 +60,13 @@ fn main() -> Result<()> {
 }
 
 const HEADER: &str = "\
-// DO NOT EDIT — regenerate via `task gen:walker`.
-// Source: SyntaxTree enum in tractor/src/tree/types.rs.
+// DO NOT EDIT — regenerate via `task gen:metadata`.
+// Source: SyntaxTree enum in tractor/src/tree/syntax/types.rs.
 //
-// Variant-blind accessors that drive the XML renderer's mechanical
-// walk in `to_xot.rs`. Rules are derived from field types only — no
-// per-variant special cases. See `tractor/src/bin/gen_walker.rs`.
+// Variant-blind reflection metadata that drives the XML and JSON
+// renderers' mechanical walks (`to_xot.rs`, `to_json.rs`). Rules
+// are derived from field types only — no per-variant special cases.
+// See `tractor/src/bin/gen_metadata.rs`.
 
 #![cfg(feature = \"native\")]
 

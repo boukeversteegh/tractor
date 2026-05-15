@@ -4,9 +4,9 @@
 //! XML intermediate. Uses the same generated metadata as the XML
 //! walker:
 //!
-//! - [`element_name_of`](super::render_generated::element_name_of)
+//! - [`element_name_of`](super::metadata_generated::element_name_of)
 //!   produces the JSON key / `$type` value for the node.
-//! - [`flags_of`](super::render_generated::flags_of) produces the
+//! - [`flags_of`](super::metadata_generated::flags_of) produces the
 //!   boolean flag fields.
 //! - [`SyntaxTree::children`] gives the variant-blind child list.
 //!
@@ -35,7 +35,7 @@ use std::collections::BTreeMap;
 
 use serde_json::{Map, Value};
 
-use super::render_generated::{element_name_of, flags_of};
+use super::metadata_generated::{element_name_of, flags_of};
 use super::types::{SyntaxTree, TreeNode};
 
 const KEY_TYPE: &str = "$type";

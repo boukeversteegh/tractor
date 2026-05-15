@@ -23,7 +23,7 @@
 
 use xot::{Node as XotNode, Xot};
 
-use super::render_generated::{element_name_of, flags_of};
+use super::metadata_generated::{element_name_of, flags_of};
 use super::types::{ByteRange, Marker, Span, SyntaxTree};
 
 /// Render `tree` under `parent` and return the appended wrapper

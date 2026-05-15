@@ -1,9 +1,10 @@
-// DO NOT EDIT — regenerate via `task gen:walker`.
-// Source: SyntaxTree enum in tractor/src/tree/types.rs.
+// DO NOT EDIT — regenerate via `task gen:metadata`.
+// Source: SyntaxTree enum in tractor/src/tree/syntax/types.rs.
 //
-// Variant-blind accessors that drive the XML renderer's mechanical
-// walk in `to_xot.rs`. Rules are derived from field types only — no
-// per-variant special cases. See `tractor/src/bin/gen_walker.rs`.
+// Variant-blind reflection metadata that drives the XML and JSON
+// renderers' mechanical walks (`to_xot.rs`, `to_json.rs`). Rules
+// are derived from field types only — no per-variant special cases.
+// See `tractor/src/bin/gen_metadata.rs`.
 
 #![cfg(feature = "native")]
 
