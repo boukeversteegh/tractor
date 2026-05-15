@@ -56,6 +56,14 @@ pub fn generate() {
     out.push_str(&render_element_name_of(enum_item));
     out.push('\n');
     out.push_str(&render_flags_of(enum_item));
+    out.push('\n');
+    out.push_str(&render_range_of(enum_item));
+    out.push('\n');
+    out.push_str(&render_span_of(enum_item));
+    out.push('\n');
+    out.push_str(&render_scalar_text_of(enum_item));
+    out.push('\n');
+    out.push_str(&render_children_of(enum_item));
 
     write_if_changed(OUTPUT, &out);
 }
@@ -72,7 +80,9 @@ const HEADER: &str = "\
 #![cfg(feature = \"native\")]
 
 #[allow(unused_imports)]
-use super::types::{ByteRange, Flag, Marker, Span, SyntaxTree};
+use super::types::{
+    AccessReceiver, AccessSegment, ByteRange, Flag, Marker, Span, SyntaxTree,
+};
 
 ";
 
@@ -262,6 +272,217 @@ fn flags_arm(v: &Variant) -> String {
         "        SyntaxTree::{} {{ {}, .. }} => {{
 {}
         }}
+",
+        name, binding_list, body
+    )
+}
+
+fn render_range_of(en: &ItemEnum) -> String {
+    let mut out = String::new();
+    out.push_str(
+        "/// Source byte range of this node. Used for verbatim-source
+/// recovery (`source[range]`) and for gap-text computation in the
+/// renderer. Every variant carries a `range: ByteRange` field.
+pub fn range_of(tree: &SyntaxTree) -> ByteRange {
+    match tree {
+",
+    );
+    for v in &en.variants {
+        out.push_str(&format!(
+            "        SyntaxTree::{} {{ range, .. }} => *range,\n",
+            v.ident
+        ));
+    }
+    out.push_str(
+        "    }
+}
+",
+    );
+    out
+}
+
+fn render_span_of(en: &ItemEnum) -> String {
+    let mut out = String::new();
+    out.push_str(
+        "/// Source-location span of this node. Used for XML attribute
+/// emission (`line` / `column` / `end_line` / `end_column` / `id`).
+/// Every variant carries a `span: Span` field.
+pub fn span_of(tree: &SyntaxTree) -> Span {
+    match tree {
+",
+    );
+    for v in &en.variants {
+        out.push_str(&format!(
+            "        SyntaxTree::{} {{ span, .. }} => *span,\n",
+            v.ident
+        ));
+    }
+    out.push_str(
+        "    }
+}
+",
+    );
+    out
+}
+
+fn render_scalar_text_of(en: &ItemEnum) -> String {
+    let mut out = String::new();
+    out.push_str(
+        "/// Stored text for scalar-leaf variants (`Name`, `Atom`, `Int`,
+/// `Float`, `String`, `True`, `False`, `None`, `Null`). Returns
+/// `None` for compound variants. The renderer uses this to emit
+/// leaf literals without consulting the source string (S13-Z1).
+pub fn scalar_text_of(tree: &SyntaxTree) -> Option<&str> {
+    match tree {
+",
+    );
+    for v in &en.variants {
+        // A variant counts as a scalar-text carrier when it has a
+        // `text: String` field. Detected mechanically; no whitelist.
+        let has_text = find_field(v, "text")
+            .map(|f| type_str(&f.ty) == "String")
+            .unwrap_or(false);
+        if has_text {
+            out.push_str(&format!(
+                "        SyntaxTree::{} {{ text, .. }} => Some(text.as_str()),\n",
+                v.ident
+            ));
+        }
+    }
+    out.push_str(
+        "        _ => None,
+    }
+}
+",
+    );
+    out
+}
+
+/// Generate `children_of`: walks each variant's fields and produces a
+/// source-sorted `Vec<&SyntaxTree>` of every reachable sub-tree.
+///
+/// Field-type rules:
+///  - `Box<SyntaxTree>`              → push.
+///  - `Option<Box<SyntaxTree>>`      → if let Some, push.
+///  - `Vec<SyntaxTree>`              → extend.
+///  - `Expression`                   → push the inner SyntaxTree.
+///  - `Option<Expression>`           → if let Some, push inner.
+///  - `LambdaBody`                   → push `.inner()`.
+///  - `AccessReceiver`               → match Instance, push.
+///  - `Vec<AccessSegment>`           → iterate, unpack Index/Call.
+///
+/// Other field types (markers, modifiers, ranges, strings, …) are
+/// ignored — they're shape metadata, not tree children. Output is
+/// sorted by `range.start` so consumers don't have to repeat it.
+fn render_children_of(en: &ItemEnum) -> String {
+    let mut out = String::new();
+    out.push_str(
+        "/// Direct tree children of this node, in source order. Excludes
+/// synthetic render-time wrappers, modifier markers, and other shape
+/// metadata. Used by every variant-blind walker (`to_xot.rs`,
+/// `to_json.rs`, …) as the single source of truth for tree traversal.
+pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
+    let mut v: Vec<&SyntaxTree> = Vec::new();
+    match tree {
+",
+    );
+    for variant in &en.variants {
+        out.push_str(&children_arm(variant));
+    }
+    out.push_str(
+        "    }
+    v.sort_by_key(|c| range_of(c).start);
+    v
+}
+",
+    );
+    out
+}
+
+fn children_arm(v: &Variant) -> String {
+    let name = v.ident.to_string();
+    let mut bindings: Vec<String> = Vec::new();
+    let mut body = String::new();
+
+    if let Fields::Named(named) = &v.fields {
+        for field in &named.named {
+            let Some(ident) = &field.ident else { continue };
+            let fname = ident.to_string();
+            let ty = type_str(&field.ty);
+            match ty.as_str() {
+                "Box<SyntaxTree>" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!("            v.push({});\n", fname));
+                }
+                "Option<Box<SyntaxTree>>" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            if let Some(__t) = {} {{ v.push(__t); }}\n",
+                        fname
+                    ));
+                }
+                "Vec<SyntaxTree>" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            v.extend({}.iter());\n",
+                        fname
+                    ));
+                }
+                "Expression" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            v.push(&{}.inner);\n",
+                        fname
+                    ));
+                }
+                "Option<Expression>" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            if let Some(__e) = {} {{ v.push(&__e.inner); }}\n",
+                        fname
+                    ));
+                }
+                "LambdaBody" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            v.push({}.inner());\n",
+                        fname
+                    ));
+                }
+                "AccessReceiver" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            if let AccessReceiver::Instance(__t) = {} {{ v.push(__t); }}\n",
+                        fname
+                    ));
+                }
+                "Vec<AccessSegment>" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            for __s in {} {{
+                match __s {{
+                    AccessSegment::Member {{ .. }} => {{}}
+                    AccessSegment::Index {{ indices, .. }} => v.extend(indices.iter()),
+                    AccessSegment::Call {{ arguments, .. }} => v.extend(arguments.iter()),
+                }}
+            }}
+",
+                        fname
+                    ));
+                }
+                _ => {}
+            }
+        }
+    }
+
+    if bindings.is_empty() {
+        return format!("        SyntaxTree::{} {{ .. }} => {{}}\n", name);
+    }
+
+    let binding_list = bindings.join(", ");
+    format!(
+        "        SyntaxTree::{} {{ {}, .. }} => {{
+{}        }}
 ",
         name, binding_list, body
     )
