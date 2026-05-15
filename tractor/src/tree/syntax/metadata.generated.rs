@@ -751,3 +751,368 @@ pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
     v.sort_by_key(|c| range_of(c).start);
     v
 }
+
+/// Mutable access to the source-location span. Used by
+/// `assign_ids` to stamp `NodeId`s into existing spans without
+/// rebuilding nodes. Delegates from `TreeNode::span_mut`.
+pub fn span_mut_of(tree: &mut SyntaxTree) -> &mut Span {
+    match tree {
+        SyntaxTree::Module { span, .. } => span,
+        SyntaxTree::Expression { span, .. } => span,
+        SyntaxTree::Access { span, .. } => span,
+        SyntaxTree::Binary { span, .. } => span,
+        SyntaxTree::Unary { span, .. } => span,
+        SyntaxTree::Tuple { span, .. } => span,
+        SyntaxTree::List { span, .. } => span,
+        SyntaxTree::Set { span, .. } => span,
+        SyntaxTree::Dictionary { span, .. } => span,
+        SyntaxTree::Pair { span, .. } => span,
+        SyntaxTree::GenericType { span, .. } => span,
+        SyntaxTree::Comparison { span, .. } => span,
+        SyntaxTree::If { span, .. } => span,
+        SyntaxTree::ElseIf { span, .. } => span,
+        SyntaxTree::Else { span, .. } => span,
+        SyntaxTree::For { span, .. } => span,
+        SyntaxTree::While { span, .. } => span,
+        SyntaxTree::Foreach { span, .. } => span,
+        SyntaxTree::CFor { span, .. } => span,
+        SyntaxTree::DoWhile { span, .. } => span,
+        SyntaxTree::Break { span, .. } => span,
+        SyntaxTree::Continue { span, .. } => span,
+        SyntaxTree::FieldWrap { span, .. } => span,
+        SyntaxTree::SimpleStatement { span, .. } => span,
+        SyntaxTree::Try { span, .. } => span,
+        SyntaxTree::ExceptHandler { span, .. } => span,
+        SyntaxTree::TypeAlias { span, .. } => span,
+        SyntaxTree::KeywordArgument { span, .. } => span,
+        SyntaxTree::ListSplat { span, .. } => span,
+        SyntaxTree::DictSplat { span, .. } => span,
+        SyntaxTree::Ternary { span, .. } => span,
+        SyntaxTree::ObjectCreation { span, .. } => span,
+        SyntaxTree::Lambda { span, .. } => span,
+        SyntaxTree::Function { span, .. } => span,
+        SyntaxTree::Class { span, .. } => span,
+        SyntaxTree::Body { span, .. } => span,
+        SyntaxTree::Parameter { span, .. } => span,
+        SyntaxTree::Skip { span, .. } => span,
+        SyntaxTree::PositionalSeparator { span, .. } => span,
+        SyntaxTree::KeywordSeparator { span, .. } => span,
+        SyntaxTree::Decorator { span, .. } => span,
+        SyntaxTree::Returns { span, .. } => span,
+        SyntaxTree::Generic { span, .. } => span,
+        SyntaxTree::TypeParameter { span, .. } => span,
+        SyntaxTree::Return { span, .. } => span,
+        SyntaxTree::Comment { span, .. } => span,
+        SyntaxTree::Assign { span, .. } => span,
+        SyntaxTree::Import { span, .. } => span,
+        SyntaxTree::From { span, .. } => span,
+        SyntaxTree::FromImport { span, .. } => span,
+        SyntaxTree::Path { span, .. } => span,
+        SyntaxTree::Aliased { span, .. } => span,
+        SyntaxTree::Call { span, .. } => span,
+        SyntaxTree::Name { span, .. } => span,
+        SyntaxTree::Int { span, .. } => span,
+        SyntaxTree::Float { span, .. } => span,
+        SyntaxTree::String { span, .. } => span,
+        SyntaxTree::True { span, .. } => span,
+        SyntaxTree::False { span, .. } => span,
+        SyntaxTree::None { span, .. } => span,
+        SyntaxTree::Atom { span, .. } => span,
+        SyntaxTree::Enum { span, .. } => span,
+        SyntaxTree::EnumMember { span, .. } => span,
+        SyntaxTree::Property { span, .. } => span,
+        SyntaxTree::Accessor { span, .. } => span,
+        SyntaxTree::Constructor { span, .. } => span,
+        SyntaxTree::Using { span, .. } => span,
+        SyntaxTree::Namespace { span, .. } => span,
+        SyntaxTree::Variable { span, .. } => span,
+        SyntaxTree::Is { span, .. } => span,
+        SyntaxTree::Cast { span, .. } => span,
+        SyntaxTree::Null { span, .. } => span,
+        SyntaxTree::Inline { span, .. } => span,
+        SyntaxTree::Unknown { span, .. } => span,
+        SyntaxTree::Raw { span, .. } => span,
+    }
+}
+
+/// Mutable mirror of `children_of`. Source-sorted
+/// `Vec<&mut SyntaxTree>` covering every reachable sub-tree.
+pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
+    let mut v: Vec<&mut SyntaxTree> = Vec::new();
+    match tree {
+        SyntaxTree::Module { children, .. } => {
+            v.extend(children.iter_mut());
+        }
+        SyntaxTree::Expression { inner, .. } => {
+            v.push(inner.as_mut());
+        }
+        SyntaxTree::Access { receiver, segments, .. } => {
+            if let AccessReceiver::Instance(__t) = receiver { v.push(__t.as_mut()); }
+            for __s in segments.iter_mut() {
+                match __s {
+                    AccessSegment::Member { .. } => {}
+                    AccessSegment::Index { indices, .. } => v.extend(indices.iter_mut()),
+                    AccessSegment::Call { arguments, .. } => v.extend(arguments.iter_mut()),
+                }
+            }
+        }
+        SyntaxTree::Binary { left, right, .. } => {
+            v.push(left.as_mut());
+            v.push(right.as_mut());
+        }
+        SyntaxTree::Unary { operand, .. } => {
+            v.push(operand.as_mut());
+        }
+        SyntaxTree::Tuple { children, .. } => {
+            v.extend(children.iter_mut());
+        }
+        SyntaxTree::List { children, .. } => {
+            v.extend(children.iter_mut());
+        }
+        SyntaxTree::Set { children, .. } => {
+            v.extend(children.iter_mut());
+        }
+        SyntaxTree::Dictionary { pairs, .. } => {
+            v.extend(pairs.iter_mut());
+        }
+        SyntaxTree::Pair { key, value, .. } => {
+            v.push(key.as_mut());
+            v.push(value.as_mut());
+        }
+        SyntaxTree::GenericType { name, params, .. } => {
+            v.push(name.as_mut());
+            v.extend(params.iter_mut());
+        }
+        SyntaxTree::Comparison { left, right, .. } => {
+            v.push(left.as_mut());
+            v.push(right.as_mut());
+        }
+        SyntaxTree::If { condition, body, else_branch, .. } => {
+            v.push(condition.as_mut());
+            v.push(body.as_mut());
+            if let Some(__t) = else_branch { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::ElseIf { condition, body, else_branch, .. } => {
+            v.push(condition.as_mut());
+            v.push(body.as_mut());
+            if let Some(__t) = else_branch { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::Else { body, .. } => {
+            v.push(body.as_mut());
+        }
+        SyntaxTree::For { targets, iterables, body, else_body, .. } => {
+            v.extend(targets.iter_mut());
+            v.extend(iterables.iter_mut());
+            v.push(body.as_mut());
+            if let Some(__t) = else_body { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::While { condition, body, else_body, .. } => {
+            v.push(condition.as_mut());
+            v.push(body.as_mut());
+            if let Some(__t) = else_body { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::Foreach { type_ann, target, iterable, body, .. } => {
+            if let Some(__t) = type_ann { v.push(__t.as_mut()); }
+            v.push(target.as_mut());
+            v.push(iterable.as_mut());
+            v.push(body.as_mut());
+        }
+        SyntaxTree::CFor { initializer, condition, updates, body, .. } => {
+            if let Some(__t) = initializer { v.push(__t.as_mut()); }
+            if let Some(__t) = condition { v.push(__t.as_mut()); }
+            v.extend(updates.iter_mut());
+            v.push(body.as_mut());
+        }
+        SyntaxTree::DoWhile { body, condition, .. } => {
+            v.push(body.as_mut());
+            v.push(condition.as_mut());
+        }
+        SyntaxTree::Break { .. } => {}
+        SyntaxTree::Continue { .. } => {}
+        SyntaxTree::FieldWrap { inner, .. } => {
+            v.push(inner.as_mut());
+        }
+        SyntaxTree::SimpleStatement { children, .. } => {
+            v.extend(children.iter_mut());
+        }
+        SyntaxTree::Try { try_body, handlers, else_body, finally_body, .. } => {
+            v.push(try_body.as_mut());
+            v.extend(handlers.iter_mut());
+            if let Some(__t) = else_body { v.push(__t.as_mut()); }
+            if let Some(__t) = finally_body { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::ExceptHandler { type_target, binding, filter, body, .. } => {
+            if let Some(__t) = type_target { v.push(__t.as_mut()); }
+            if let Some(__t) = binding { v.push(__t.as_mut()); }
+            if let Some(__t) = filter { v.push(__t.as_mut()); }
+            v.push(body.as_mut());
+        }
+        SyntaxTree::TypeAlias { name, type_params, value, .. } => {
+            v.push(name.as_mut());
+            if let Some(__t) = type_params { v.push(__t.as_mut()); }
+            v.push(value.as_mut());
+        }
+        SyntaxTree::KeywordArgument { name, value, .. } => {
+            v.push(name.as_mut());
+            v.push(value.as_mut());
+        }
+        SyntaxTree::ListSplat { inner, .. } => {
+            v.push(inner.as_mut());
+        }
+        SyntaxTree::DictSplat { inner, .. } => {
+            v.push(inner.as_mut());
+        }
+        SyntaxTree::Ternary { condition, if_true, if_false, .. } => {
+            v.push(condition.as_mut());
+            v.push(if_true.as_mut());
+            v.push(if_false.as_mut());
+        }
+        SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {
+            if let Some(__t) = type_target { v.push(__t.as_mut()); }
+            v.extend(arguments.iter_mut());
+            if let Some(__t) = initializer { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::Lambda { parameters, body, .. } => {
+            v.extend(parameters.iter_mut());
+            v.push(body.inner_mut());
+        }
+        SyntaxTree::Function { decorators, name, generics, parameters, returns, throws, body, .. } => {
+            v.extend(decorators.iter_mut());
+            v.push(name.as_mut());
+            v.extend(generics.iter_mut());
+            v.extend(parameters.iter_mut());
+            if let Some(__t) = returns { v.push(__t.as_mut()); }
+            v.extend(throws.iter_mut());
+            if let Some(__t) = body { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::Class { decorators, name, generics, bases, where_clauses, body, .. } => {
+            v.extend(decorators.iter_mut());
+            v.push(name.as_mut());
+            v.extend(generics.iter_mut());
+            v.extend(bases.iter_mut());
+            v.extend(where_clauses.iter_mut());
+            v.push(body.as_mut());
+        }
+        SyntaxTree::Body { children, .. } => {
+            v.extend(children.iter_mut());
+        }
+        SyntaxTree::Parameter { name, type_ann, default, .. } => {
+            v.push(name.as_mut());
+            if let Some(__t) = type_ann { v.push(__t.as_mut()); }
+            if let Some(__t) = default { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::Skip { .. } => {}
+        SyntaxTree::PositionalSeparator { .. } => {}
+        SyntaxTree::KeywordSeparator { .. } => {}
+        SyntaxTree::Decorator { inner, .. } => {
+            v.push(inner.as_mut());
+        }
+        SyntaxTree::Returns { type_ann, .. } => {
+            v.push(type_ann.as_mut());
+        }
+        SyntaxTree::Generic { items, .. } => {
+            v.extend(items.iter_mut());
+        }
+        SyntaxTree::TypeParameter { name, constraint, .. } => {
+            v.push(name.as_mut());
+            if let Some(__t) = constraint { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::Return { value, .. } => {
+            if let Some(__t) = value { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::Comment { .. } => {}
+        SyntaxTree::Assign { targets, type_annotation, values, .. } => {
+            v.extend(targets.iter_mut());
+            if let Some(__t) = type_annotation { v.push(__t.as_mut()); }
+            v.extend(values.iter_mut());
+        }
+        SyntaxTree::Import { children, .. } => {
+            v.extend(children.iter_mut());
+        }
+        SyntaxTree::From { path, imports, .. } => {
+            if let Some(__t) = path { v.push(__t.as_mut()); }
+            v.extend(imports.iter_mut());
+        }
+        SyntaxTree::FromImport { name, alias, .. } => {
+            v.push(name.as_mut());
+            if let Some(__t) = alias { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::Path { segments, .. } => {
+            v.extend(segments.iter_mut());
+        }
+        SyntaxTree::Aliased { inner, .. } => {
+            v.push(inner.as_mut());
+        }
+        SyntaxTree::Call { callee, arguments, .. } => {
+            v.push(callee.as_mut());
+            v.extend(arguments.iter_mut());
+        }
+        SyntaxTree::Name { .. } => {}
+        SyntaxTree::Int { .. } => {}
+        SyntaxTree::Float { .. } => {}
+        SyntaxTree::String { .. } => {}
+        SyntaxTree::True { .. } => {}
+        SyntaxTree::False { .. } => {}
+        SyntaxTree::None { .. } => {}
+        SyntaxTree::Atom { .. } => {}
+        SyntaxTree::Enum { decorators, name, underlying_type, members, .. } => {
+            v.extend(decorators.iter_mut());
+            v.push(name.as_mut());
+            if let Some(__t) = underlying_type { v.push(__t.as_mut()); }
+            v.extend(members.iter_mut());
+        }
+        SyntaxTree::EnumMember { decorators, name, value, .. } => {
+            v.extend(decorators.iter_mut());
+            v.push(name.as_mut());
+            if let Some(__t) = value { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::Property { decorators, type_ann, name, accessors, value, .. } => {
+            v.extend(decorators.iter_mut());
+            if let Some(__t) = type_ann { v.push(__t.as_mut()); }
+            v.push(name.as_mut());
+            v.extend(accessors.iter_mut());
+            if let Some(__t) = value { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::Accessor { body, .. } => {
+            if let Some(__t) = body { v.push(__t.as_mut()); }
+        }
+        SyntaxTree::Constructor { decorators, name, parameters, body, .. } => {
+            v.extend(decorators.iter_mut());
+            v.push(name.as_mut());
+            v.extend(parameters.iter_mut());
+            v.push(body.as_mut());
+        }
+        SyntaxTree::Using { alias, path, .. } => {
+            if let Some(__t) = alias { v.push(__t.as_mut()); }
+            v.push(path.as_mut());
+        }
+        SyntaxTree::Namespace { name, children, .. } => {
+            v.push(name.as_mut());
+            v.extend(children.iter_mut());
+        }
+        SyntaxTree::Variable { decorators, type_ann, name, value, .. } => {
+            v.extend(decorators.iter_mut());
+            if let Some(__t) = type_ann { v.push(__t.as_mut()); }
+            v.push(name.as_mut());
+            if let Some(__e) = value { v.push(&mut __e.inner); }
+        }
+        SyntaxTree::Is { value, type_target, .. } => {
+            v.push(value.as_mut());
+            v.push(type_target.as_mut());
+        }
+        SyntaxTree::Cast { type_ann, value, .. } => {
+            v.push(type_ann.as_mut());
+            v.push(value.as_mut());
+        }
+        SyntaxTree::Null { .. } => {}
+        SyntaxTree::Inline { children, .. } => {
+            v.extend(children.iter_mut());
+        }
+        SyntaxTree::Unknown { .. } => {}
+        SyntaxTree::Raw { children, .. } => {
+            v.extend(children.iter_mut());
+        }
+    }
+    v.sort_by_key(|c| range_of(c).start);
+    v
+}

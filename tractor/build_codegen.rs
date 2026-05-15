@@ -64,6 +64,10 @@ pub fn generate() {
     out.push_str(&render_scalar_text_of(enum_item));
     out.push('\n');
     out.push_str(&render_children_of(enum_item));
+    out.push('\n');
+    out.push_str(&render_span_mut_of(enum_item));
+    out.push('\n');
+    out.push_str(&render_children_mut_of(enum_item));
 
     write_if_changed(OUTPUT, &out);
 }
@@ -464,6 +468,148 @@ fn children_arm(v: &Variant) -> String {
                     AccessSegment::Member {{ .. }} => {{}}
                     AccessSegment::Index {{ indices, .. }} => v.extend(indices.iter()),
                     AccessSegment::Call {{ arguments, .. }} => v.extend(arguments.iter()),
+                }}
+            }}
+",
+                        fname
+                    ));
+                }
+                _ => {}
+            }
+        }
+    }
+
+    if bindings.is_empty() {
+        return format!("        SyntaxTree::{} {{ .. }} => {{}}\n", name);
+    }
+
+    let binding_list = bindings.join(", ");
+    format!(
+        "        SyntaxTree::{} {{ {}, .. }} => {{
+{}        }}
+",
+        name, binding_list, body
+    )
+}
+
+fn render_span_mut_of(en: &ItemEnum) -> String {
+    let mut out = String::new();
+    out.push_str(
+        "/// Mutable access to the source-location span. Used by
+/// `assign_ids` to stamp `NodeId`s into existing spans without
+/// rebuilding nodes. Delegates from `TreeNode::span_mut`.
+pub fn span_mut_of(tree: &mut SyntaxTree) -> &mut Span {
+    match tree {
+",
+    );
+    for v in &en.variants {
+        out.push_str(&format!(
+            "        SyntaxTree::{} {{ span, .. }} => span,\n",
+            v.ident
+        ));
+    }
+    out.push_str(
+        "    }
+}
+",
+    );
+    out
+}
+
+/// Mutable mirror of `children_of`. Same field-type rules as the
+/// immutable version, but produces `Vec<&mut SyntaxTree>` so callers
+/// can mutate sub-trees in place (used by editable-trees mutations).
+fn render_children_mut_of(en: &ItemEnum) -> String {
+    let mut out = String::new();
+    out.push_str(
+        "/// Mutable mirror of `children_of`. Source-sorted
+/// `Vec<&mut SyntaxTree>` covering every reachable sub-tree.
+pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
+    let mut v: Vec<&mut SyntaxTree> = Vec::new();
+    match tree {
+",
+    );
+    for variant in &en.variants {
+        out.push_str(&children_mut_arm(variant));
+    }
+    out.push_str(
+        "    }
+    v.sort_by_key(|c| range_of(c).start);
+    v
+}
+",
+    );
+    out
+}
+
+fn children_mut_arm(v: &Variant) -> String {
+    let name = v.ident.to_string();
+    let mut bindings: Vec<String> = Vec::new();
+    let mut body = String::new();
+
+    if let Fields::Named(named) = &v.fields {
+        for field in &named.named {
+            let Some(ident) = &field.ident else { continue };
+            let fname = ident.to_string();
+            let ty = type_str(&field.ty);
+            match ty.as_str() {
+                "Box<SyntaxTree>" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            v.push({}.as_mut());\n",
+                        fname
+                    ));
+                }
+                "Option<Box<SyntaxTree>>" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            if let Some(__t) = {} {{ v.push(__t.as_mut()); }}\n",
+                        fname
+                    ));
+                }
+                "Vec<SyntaxTree>" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            v.extend({}.iter_mut());\n",
+                        fname
+                    ));
+                }
+                "Expression" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            v.push(&mut {}.inner);\n",
+                        fname
+                    ));
+                }
+                "Option<Expression>" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            if let Some(__e) = {} {{ v.push(&mut __e.inner); }}\n",
+                        fname
+                    ));
+                }
+                "LambdaBody" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            v.push({}.inner_mut());\n",
+                        fname
+                    ));
+                }
+                "AccessReceiver" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            if let AccessReceiver::Instance(__t) = {} {{ v.push(__t.as_mut()); }}\n",
+                        fname
+                    ));
+                }
+                "Vec<AccessSegment>" => {
+                    bindings.push(fname.clone());
+                    body.push_str(&format!(
+                        "            for __s in {}.iter_mut() {{
+                match __s {{
+                    AccessSegment::Member {{ .. }} => {{}}
+                    AccessSegment::Index {{ indices, .. }} => v.extend(indices.iter_mut()),
+                    AccessSegment::Call {{ arguments, .. }} => v.extend(arguments.iter_mut()),
                 }}
             }}
 ",
