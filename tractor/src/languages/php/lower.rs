@@ -191,7 +191,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             if has_group {
                 php_use_group(node, source)
             } else {
-                simple_statement(node, "use", source)
+                php_use_single(node, source)
             }
         }
         "namespace_use_clause" | "use_as_clause"
@@ -220,8 +220,8 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "trait_declaration" => php_class_like(node, source, "trait"),
         "enum_declaration" => php_class_like(node, source, "enum"),
         "anonymous_class" => simple_statement_marked(node, "class", vec![Marker::implicit("anonymous")], source),
-        "base_clause" => simple_statement(node, "extends", source),
-        "class_interface_clause" => simple_statement(node, "implements", source),
+        "base_clause" => php_wrap_extends_implements(node, "extends", source),
+        "class_interface_clause" => php_wrap_extends_implements(node, "implements", source),
         "method_declaration" => php_method_declaration(node, source),
         "property_declaration" => php_property_declaration(node, source),
         "property_element" => SyntaxTree::Inline {
@@ -714,6 +714,43 @@ fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) ->
     }
 }
 
+/// Lower a PHP `base_clause` (`extends Foo`) or `class_interface_clause`
+/// (`implements A, B`) into `<extends>/<type>/<name>` shape. Wraps each
+/// base/interface identifier in a `<type>` slot so the canonical
+/// type-reference vocabulary applies (Principle #14, mirrors the
+/// Go/Ruby/Java analogues — see `wrap_go_interface_embed`).
+fn php_wrap_extends_implements(node: &RawNode, element_name: &'static str, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let children: Vec<SyntaxTree> = node
+        .named_children()
+        .map(|c| {
+            let inner = lower_node(c, source);
+            let inner_range = inner.range();
+            let inner_span = inner.span();
+            match &inner {
+                SyntaxTree::SimpleStatement { element_name: "type", .. } => inner,
+                _ => SyntaxTree::SimpleStatement {
+                    element_name: "type",
+                    modifiers: Modifiers::default(),
+                    extra_markers: Vec::new(),
+                    children: vec![inner],
+                    range: inner_range,
+                    span: inner_span,
+                },
+            }
+        })
+        .collect();
+    SyntaxTree::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers: Vec::new(),
+        children,
+        range,
+        span,
+    }
+}
+
 /// Lower PHP `throw expr` so the thrown expression sits under an
 /// `<expression>` host (Principle #5 — matches the throw shapes
 /// across Java / C# / TypeScript and the equivalent yield / raise
@@ -1146,6 +1183,116 @@ fn php_do_statement(node: &RawNode, source: &str) -> SyntaxTree {
 /// Lower a PHP `use Foo\{Bar, Baz};` group-form. Produces
 /// `<use[group]><path>Foo</path><use>Bar</use><use>Baz</use>...</use>`
 /// matching the imperative shape.
+/// Lower a single (non-group) `use Foo\Bar [as Baz];` declaration
+/// into `<use[?alias]><path><name>+</name></path>[<aliased><name></aliased>]</use>`.
+/// Aliasing carries the `[alias]` exhaustive marker; the path
+/// segments live under `<path>` so queries can target the import path
+/// independently of alias targets (Principle #9 markers, Principle #19
+/// role-mixed leaves wrap).
+fn php_use_single(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut children: Vec<SyntaxTree> = Vec::new();
+    let mut extra_markers: Vec<Marker> = Vec::new();
+    let push_path = |inner: &RawNode, children: &mut Vec<SyntaxTree>, source: &str| {
+        let path_children: Vec<SyntaxTree> =
+            inner.named_children().map(|n| lower_node(n, source)).collect();
+        children.push(SyntaxTree::SimpleStatement {
+            element_name: "path",
+            modifiers: Modifiers::default(),
+            extra_markers: Vec::new(),
+            children: path_children,
+            range: range_of(inner),
+            span: span_of(inner),
+        });
+    };
+    let push_aliased = |inner: &RawNode, children: &mut Vec<SyntaxTree>, source: &str| {
+        let aliased_children: Vec<SyntaxTree> = vec![lower_node(inner, source)];
+        children.push(SyntaxTree::SimpleStatement {
+            element_name: "aliased",
+            modifiers: Modifiers::default(),
+            extra_markers: Vec::new(),
+            children: aliased_children,
+            range: range_of(inner),
+            span: span_of(inner),
+        });
+    };
+    let handle_clause = |
+        clause: &RawNode,
+        children: &mut Vec<SyntaxTree>,
+        extra_markers: &mut Vec<Marker>,
+        source: &str,
+    | {
+        // tree-sitter-php exposes `use_as_clause` (older grammar) or
+        // `namespace_use_clause` with a trailing `name` sibling (newer
+        // grammar) for `Foo\Bar as Baz`. Detect alias structurally: a
+        // `name` child that follows a `qualified_name` / `namespace_name`
+        // is the alias target.
+        let inner_kids: Vec<_> = clause.named_children().collect();
+        let path_idx = inner_kids
+            .iter()
+            .position(|c| matches!(c.kind(), "qualified_name" | "namespace_name"));
+        let alias_idx = match path_idx {
+            Some(p) => inner_kids
+                .iter()
+                .enumerate()
+                .skip(p + 1)
+                .find(|(_, c)| c.kind() == "name")
+                .map(|(i, _)| i),
+            None => None,
+        };
+        let is_aliased = clause.kind() == "use_as_clause" || alias_idx.is_some();
+        if is_aliased && !extra_markers.iter().any(|m| m.name == "alias") {
+            extra_markers.push(Marker::implicit("alias"));
+        }
+        for (i, inner) in inner_kids.iter().enumerate() {
+            match inner.kind() {
+                "qualified_name" | "namespace_name" => push_path(inner, children, source),
+                "name" if Some(i) == alias_idx => push_aliased(inner, children, source),
+                _ => children.push(lower_node(*inner, source)),
+            }
+        }
+    };
+    // Some tree-sitter-php versions expose the alias name as a sibling
+    // of the qualified-name at the declaration level (not wrapped in
+    // a `use_as_clause`). Detect this case: alias is the last `name`
+    // child when it follows a `qualified_name` / `namespace_name`.
+    let top_kids: Vec<_> = node.named_children().collect();
+    let top_path_idx = top_kids
+        .iter()
+        .position(|c| matches!(c.kind(), "qualified_name" | "namespace_name"));
+    let top_alias_idx = match top_path_idx {
+        Some(p) => top_kids
+            .iter()
+            .enumerate()
+            .skip(p + 1)
+            .find(|(_, c)| c.kind() == "name")
+            .map(|(i, _)| i),
+        None => None,
+    };
+    if top_alias_idx.is_some() && !extra_markers.iter().any(|m| m.name == "alias") {
+        extra_markers.push(Marker::implicit("alias"));
+    }
+    for (i, c) in top_kids.iter().enumerate() {
+        match c.kind() {
+            "namespace_use_clause" | "use_as_clause" => {
+                handle_clause(c, &mut children, &mut extra_markers, source);
+            }
+            "qualified_name" | "namespace_name" => push_path(c, &mut children, source),
+            "name" if Some(i) == top_alias_idx => push_aliased(c, &mut children, source),
+            _ => children.push(lower_node(*c, source)),
+        }
+    }
+    SyntaxTree::SimpleStatement {
+        element_name: "use",
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children,
+        range,
+        span,
+    }
+}
+
 fn php_use_group(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);

@@ -476,7 +476,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         },
 
         // ----- Inheritance ---------------------------------------------
-        "superclass" => simple_statement(node, "extends", source),
+        "superclass" => ruby_wrap_extends(node, source),
 
         // ----- Aliasing ------------------------------------------------
         "alias" => simple_statement(node, "alias", source),
@@ -766,6 +766,42 @@ fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) ->
         children,
         range: range_of(node),
         span: span_of(node),
+    }
+}
+
+/// Lower Ruby `class Foo < Bar` superclass clause into
+/// `<extends>/<type>/<name>` so the canonical type-reference shape
+/// applies (Principle #14, matches Go/PHP/Java extends/implements
+/// — see `wrap_go_interface_embed` / `php_wrap_extends_implements`).
+fn ruby_wrap_extends(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let children: Vec<SyntaxTree> = node
+        .named_children()
+        .map(|c| {
+            let inner = lower_node(c, source);
+            let inner_range = inner.range();
+            let inner_span = inner.span();
+            match &inner {
+                SyntaxTree::SimpleStatement { element_name: "type", .. } => inner,
+                _ => SyntaxTree::SimpleStatement {
+                    element_name: "type",
+                    modifiers: Modifiers::default(),
+                    extra_markers: Vec::new(),
+                    children: vec![inner],
+                    range: inner_range,
+                    span: inner_span,
+                },
+            }
+        })
+        .collect();
+    SyntaxTree::SimpleStatement {
+        element_name: "extends",
+        modifiers: Modifiers::default(),
+        extra_markers: Vec::new(),
+        children,
+        range,
+        span,
     }
 }
 
