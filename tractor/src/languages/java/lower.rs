@@ -461,7 +461,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "if_statement" => {
             let cond = node
                 .child_by_field_name("condition")
-                .map(|n| Box::new(lower_node(n, source)));
+                .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
             let body = node
                 .child_by_field_name("consequence")
                 .map(|n| Box::new(lower_block_like(n, source)));
@@ -486,7 +486,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "while_statement" => {
             let cond = node
                 .child_by_field_name("condition")
-                .map(|n| Box::new(lower_node(n, source)));
+                .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
             let body = node
                 .child_by_field_name("body")
                 .map(|n| Box::new(lower_block_like(n, source)));
@@ -1104,9 +1104,9 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let if_false = node.child_by_field_name("alternative").map(|n| lower_node(n, source));
             match (cond, if_true, if_false) {
                 (Some(c), Some(t), Some(f)) => SyntaxTree::Ternary {
-                    condition: Box::new(c),
-                    if_true: Box::new(t),
-                    if_false: Box::new(f),
+                    condition: Box::new(c.wrap_slot("condition")),
+                    if_true: Box::new(t.wrap_slot("then")),
+                    if_false: Box::new(f.wrap_slot("else")),
                     range,
                     span,
                 },
@@ -1485,7 +1485,7 @@ fn lower_java_else_chain(node: &RawNode, source: &str) -> SyntaxTree {
     if node.kind() == "if_statement" {
         let cond = node
             .child_by_field_name("condition")
-            .map(|n| Box::new(lower_node(n, source)));
+            .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
         let body = node
             .child_by_field_name("consequence")
             .map(|n| Box::new(lower_block_like(n, source)));

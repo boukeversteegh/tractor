@@ -295,8 +295,8 @@ unit/
   │   │       │       │   ├─ left/expression/name = "id"
   │   │       │       │   ├─ op[equals] = "=="
   │   │       │       │   └─ right/expression/name = "Id"
-  │   │       │       ├─ then/name = "this"
-  │   │       │       └─ else/null = "null"
+  │   │       │       ├─ then/expression/name = "this"
+  │   │       │       └─ else/expression/null = "null"
   │   │       ├─ method[public and async]/
   │   │       │   ├─ name = "AllAsync"
   │   │       │   └─ body/block/
@@ -382,8 +382,8 @@ unit/
   │               │       │       │   ├─ name = "Name"
   │               │       │       │   └─ member/name = "Length"
   │               │       │       └─ pattern[relational]/int = "0"
-  │               │       ├─ then/string = "\"named\""
-  │               │       └─ else/string = "\"blank\""
+  │               │       ├─ then/expression/string = "\"named\""
+  │               │       └─ else/expression/string = "\"blank\""
   │               ├─ comment[leading] = "// switch expression + pattern matching"
   │               ├─ variable/
   │               │   ├─ type/name = "string"
@@ -750,8 +750,8 @@ unit/
   │                   │       │   ├─ left/expression/name = "label"
   │                   │       │   ├─ op[equals] = "=="
   │                   │       │   └─ right/expression/name = "kind"
-  │                   │       ├─ then/int = "0"
-  │                   │       └─ else/int = "1"
+  │                   │       ├─ then/expression/int = "0"
+  │                   │       └─ else/expression/int = "1"
   │                   ├─ op[plus] = "+"
   │                   └─ right/expression/object[access]/
   │                       ├─ name = "shouted"

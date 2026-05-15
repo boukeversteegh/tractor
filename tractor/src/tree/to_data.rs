@@ -464,15 +464,22 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
         }
 
         // ----- Ternary — `<condition><then><else>` shape.
-        SyntaxTree::Ternary { condition, if_true, if_false, range, span } => DataTree::Mapping {
-            pairs: vec![
-                make_pair("condition", project(condition, source), condition.range(), condition.span()),
-                make_pair("then", project(if_true, source), if_true.range(), if_true.span()),
-                make_pair("else", project(if_false, source), if_false.range(), if_false.span()),
-            ],
-            range: *range,
-            span: *span,
-        },
+        // Lowering pre-wraps each slot via `wrap_slot`; unwrap to
+        // project the operand directly.
+        SyntaxTree::Ternary { condition, if_true, if_false, range, span } => {
+            let c = condition.unwrap_slot();
+            let t = if_true.unwrap_slot();
+            let f = if_false.unwrap_slot();
+            DataTree::Mapping {
+                pairs: vec![
+                    make_pair("condition", project(c, source), c.range(), c.span()),
+                    make_pair("then", project(t, source), t.range(), t.span()),
+                    make_pair("else", project(f, source), f.range(), f.span()),
+                ],
+                range: *range,
+                span: *span,
+            }
+        }
 
         // ----- Is — `value is type_target`. Projects to a Mapping
         // with `left` (value) and `right` (type) for symmetry with
@@ -533,7 +540,8 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
         // is its own pair under the parent if's `else_if` slot).
         SyntaxTree::If { condition, body, else_branch, range, span } => {
             let mut pairs: Vec<DataTree> = Vec::new();
-            pairs.push(make_pair("condition", project(condition, source), condition.range(), condition.span()));
+            let c = condition.unwrap_slot();
+            pairs.push(make_pair("condition", project(c, source), c.range(), c.span()));
             if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
@@ -547,7 +555,8 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
         }
         SyntaxTree::ElseIf { condition, body, else_branch, range, span } => {
             let mut pairs: Vec<DataTree> = Vec::new();
-            pairs.push(make_pair("condition", project(condition, source), condition.range(), condition.span()));
+            let c = condition.unwrap_slot();
+            pairs.push(make_pair("condition", project(c, source), c.range(), c.span()));
             if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
@@ -596,7 +605,8 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
         // While — `condition`, body members flat, optional `else`.
         SyntaxTree::While { condition, body, else_body, range, span } => {
             let mut pairs: Vec<DataTree> = Vec::new();
-            pairs.push(make_pair("condition", project(condition, source), condition.range(), condition.span()));
+            let c = condition.unwrap_slot();
+            pairs.push(make_pair("condition", project(c, source), c.range(), c.span()));
             if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {

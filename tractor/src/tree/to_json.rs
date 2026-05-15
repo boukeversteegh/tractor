@@ -253,14 +253,14 @@ impl<'a> Renderer<'a> {
                 shape.singleton("right", self.wrap_expression_host(right));
             }
             SyntaxTree::If { condition, body, else_branch, .. } => {
-                shape.singleton("condition", self.wrap_expression_host(condition));
+                shape.singleton("condition", self.wrap_expression_host(condition.unwrap_slot()));
                 shape.singleton("body", self.render(body, true));
                 if let Some(e) = else_branch {
                     self.add_else_chain(shape, e);
                 }
             }
             SyntaxTree::ElseIf { condition, body, else_branch, .. } => {
-                shape.singleton("condition", self.wrap_expression_host(condition));
+                shape.singleton("condition", self.wrap_expression_host(condition.unwrap_slot()));
                 shape.singleton("body", self.render(body, true));
                 if let Some(e) = else_branch {
                     self.add_else_chain(shape, e);
@@ -291,7 +291,7 @@ impl<'a> Renderer<'a> {
                 }
             }
             SyntaxTree::While { condition, body, else_body, .. } => {
-                shape.singleton("condition", self.wrap_expression_host(condition));
+                shape.singleton("condition", self.wrap_expression_host(condition.unwrap_slot()));
                 shape.singleton("body", self.render(body, true));
                 if let Some(e) = else_body {
                     shape.singleton("else", self.render(e, true));
@@ -341,9 +341,9 @@ impl<'a> Renderer<'a> {
                 }
             }
             SyntaxTree::Ternary { condition, if_true, if_false, .. } => {
-                shape.singleton("condition", self.wrap_expression_host(condition));
-                shape.singleton("then", self.wrap_expression_host(if_true));
-                shape.singleton("else", self.wrap_expression_host(if_false));
+                shape.singleton("condition", self.wrap_expression_host(condition.unwrap_slot()));
+                shape.singleton("then", self.wrap_expression_host(if_true.unwrap_slot()));
+                shape.singleton("else", self.wrap_expression_host(if_false.unwrap_slot()));
             }
             SyntaxTree::FieldWrap { inner, .. } => {
                 self.add_singleton_or_text(shape, inner);

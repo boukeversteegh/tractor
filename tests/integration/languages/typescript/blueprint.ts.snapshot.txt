@@ -512,8 +512,8 @@ program/
   │           │   ├─ left/expression/name = "n"
   │           │   ├─ op[compare and greater] = ">"
   │           │   └─ right/expression/number = "0"
-  │           ├─ then/name = "status"
-  │           └─ else/string = "\"idle\""
+  │           ├─ then/expression/name = "status"
+  │           └─ else/expression/string = "\"idle\""
   ├─ variable[const]/
   │   ├─ name = "arrow"
   │   └─ value/expression/arrow/

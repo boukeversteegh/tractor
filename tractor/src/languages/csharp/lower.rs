@@ -716,7 +716,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         // shared rendering arms (which expect Body) work uniformly.
         "if_statement" => {
             let cond = node.child_by_field_name("condition")
-                .map(|n| Box::new(lower_node(n, source)));
+                .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
             let body = node.child_by_field_name("consequence")
                 .map(|n| Box::new(lower_csharp_consequence(n, source)));
             // The `else` part is exposed either as a child kind
@@ -740,7 +740,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 
         "while_statement" => {
             let cond = node.child_by_field_name("condition")
-                .map(|n| Box::new(lower_node(n, source)));
+                .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
             let body = node.child_by_field_name("body")
                 .map(|n| Box::new(lower_csharp_consequence(n, source)));
             match (cond, body) {
@@ -1232,9 +1232,9 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let alt = node.child_by_field_name("alternative");
             match (cond, cons, alt) {
                 (Some(c), Some(t), Some(f)) => SyntaxTree::Ternary {
-                    condition: Box::new(lower_node(c, source)),
-                    if_true: Box::new(lower_node(t, source)),
-                    if_false: Box::new(lower_node(f, source)),
+                    condition: Box::new(lower_node(c, source).wrap_slot("condition")),
+                    if_true: Box::new(lower_node(t, source).wrap_slot("then")),
+                    if_false: Box::new(lower_node(f, source).wrap_slot("else")),
                     range, span,
                 },
                 _ => SyntaxTree::Unknown {
@@ -2152,7 +2152,7 @@ fn lower_csharp_else_chain(node: &RawNode, source: &str) -> SyntaxTree {
     };
     if inner_node.kind() == "if_statement" {
         let cond = inner_node.child_by_field_name("condition")
-            .map(|n| Box::new(lower_node(n, source)));
+            .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
         let body = inner_node.child_by_field_name("consequence")
             .map(|n| Box::new(lower_csharp_consequence(n, source)));
         let else_node = inner_node.child_by_field_name("alternative").or_else(|| {

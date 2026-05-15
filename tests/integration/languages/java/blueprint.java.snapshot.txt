@@ -126,14 +126,14 @@ program/
   │       │       │   ├─ left/expression/name = "n"
   │       │       │   ├─ op[compare and greater] = ">"
   │       │       │   └─ right/expression/int = "0"
-  │       │       ├─ then/string = "\"positive\""
-  │       │       └─ else/ternary/
+  │       │       ├─ then/expression/string = "\"positive\""
+  │       │       └─ else/expression/ternary/
   │       │           ├─ condition/expression/binary/
   │       │           │   ├─ left/expression/name = "n"
   │       │           │   ├─ op[compare and less] = "<"
   │       │           │   └─ right/expression/int = "0"
-  │       │           ├─ then/string = "\"negative\""
-  │       │           └─ else/string = "\"zero\""
+  │       │           ├─ then/expression/string = "\"negative\""
+  │       │           └─ else/expression/string = "\"zero\""
   │       ├─ method[public]/
   │       │   ├─ returns/type/name = "int"
   │       │   ├─ name = "sum"

@@ -121,13 +121,13 @@ def classify(n):
     claim("no `elif` raw element leaks",
         &mut if_chain, "//elif", 0);
 
-    claim("Python ternary wraps then/condition/else slots (iter 219)",
+    claim("Python ternary wraps then/condition/else slots in <expression> (Principle #15)",
         &mut parse_src("python", "\"positive\" if n > 0 else \"non-positive\"\n"),
         &multi_xpath(r#"
             //ternary
-                [then/string]
+                [then/expression/string]
                 [condition/expression/compare]
-                [else/string]
+                [else/expression/string]
         "#),
         1);
 }

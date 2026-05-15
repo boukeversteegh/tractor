@@ -474,13 +474,10 @@ fn render_tree_if(
         else { unreachable!() };
     let node = element(xot, "if", *span);
     xot.append(parent, node)?;
+    // Lowering pre-wraps condition via `wrap_slot("condition")`.
     let cr = condition.range();
     emit_gap(xot, node, source, range.start, cr.start)?;
-    let cond_slot = element(xot, "condition", condition.span());
-    xot.append(node, cond_slot)?;
-    let cond_expr = element(xot, "expression", condition.span());
-    xot.append(cond_slot, cond_expr)?;
-    render_to_xot(xot, cond_expr, condition, source)?;
+    render_to_xot(xot, node, condition, source)?;
     let br = body.range();
     emit_gap(xot, node, source, cr.end, br.start)?;
     render_to_xot(xot, node, body, source)?;
@@ -497,13 +494,10 @@ fn render_tree_if(
             SyntaxTree::ElseIf { condition: ec, body: eb, else_branch: deeper, span: es, range: er } => {
                 let elseif = element(xot, "else_if", *es);
                 xot.append(node, elseif)?;
+                // Lowering pre-wraps condition via `wrap_slot("condition")`.
                 let ecr = ec.range();
                 emit_gap(xot, elseif, source, er.start, ecr.start)?;
-                let cs = element(xot, "condition", ec.span());
-                xot.append(elseif, cs)?;
-                let ce = element(xot, "expression", ec.span());
-                xot.append(cs, ce)?;
-                render_to_xot(xot, ce, ec, source)?;
+                render_to_xot(xot, elseif, ec, source)?;
                 let ebr = eb.range();
                 emit_gap(xot, elseif, source, ecr.end, ebr.start)?;
                 render_to_xot(xot, elseif, eb, source)?;
@@ -640,42 +634,16 @@ fn render_tree_ternary(
         else { unreachable!() };
     let node = element(xot, "ternary", *span);
     xot.append(parent, node)?;
-    #[derive(Clone, Copy)]
-    enum Slot<'a> { Cond(&'a SyntaxTree), True(&'a SyntaxTree), False(&'a SyntaxTree) }
-    let mut order: Vec<Slot> = vec![
-        Slot::Cond(condition),
-        Slot::True(if_true),
-        Slot::False(if_false),
-    ];
-    order.sort_by_key(|s| match s {
-        Slot::Cond(i) | Slot::True(i) | Slot::False(i) => i.range().start,
-    });
+    // Lowering pre-wraps each slot via `wrap_slot("condition" / "then"
+    // / "else")` — the renderer walks in source order and renders
+    // what's there.
+    let mut order: Vec<&SyntaxTree> = vec![condition.as_ref(), if_true.as_ref(), if_false.as_ref()];
+    order.sort_by_key(|i| i.range().start);
     let mut cursor = range.start;
-    for slot in &order {
-        let inner: &SyntaxTree = match slot {
-            Slot::Cond(i) | Slot::True(i) | Slot::False(i) => i,
-        };
+    for inner in &order {
         let cr = inner.range();
         emit_gap(xot, node, source, cursor, cr.start)?;
-        match slot {
-            Slot::Cond(_) => {
-                let cs = element(xot, "condition", inner.span());
-                xot.append(node, cs)?;
-                let expr = element(xot, "expression", inner.span());
-                xot.append(cs, expr)?;
-                render_to_xot(xot, expr, inner, source)?;
-            }
-            Slot::True(_) => {
-                let then = element(xot, "then", inner.span());
-                xot.append(node, then)?;
-                render_to_xot(xot, then, inner, source)?;
-            }
-            Slot::False(_) => {
-                let el = element(xot, "else", inner.span());
-                xot.append(node, el)?;
-                render_to_xot(xot, el, inner, source)?;
-            }
-        }
+        render_to_xot(xot, node, inner, source)?;
         cursor = cr.end;
     }
     emit_gap(xot, node, source, cursor, range.end)?;
@@ -961,13 +929,10 @@ fn render_tree_while(
     let SyntaxTree::While { condition, body, else_body, range, span } = tree else { unreachable!() };
     let node = element(xot, "while", *span);
     xot.append(parent, node)?;
+    // Lowering pre-wraps condition via `wrap_slot("condition")`.
     let cr = condition.range();
     emit_gap(xot, node, source, range.start, cr.start)?;
-    let cond_slot = element(xot, "condition", condition.span());
-    xot.append(node, cond_slot)?;
-    let cond_expr = element(xot, "expression", condition.span());
-    xot.append(cond_slot, cond_expr)?;
-    render_to_xot(xot, cond_expr, condition, source)?;
+    render_to_xot(xot, node, condition, source)?;
     let br = body.range();
     emit_gap(xot, node, source, cr.end, br.start)?;
     render_to_xot(xot, node, body, source)?;
@@ -1294,13 +1259,10 @@ fn render_tree_else_if(
     let SyntaxTree::ElseIf { condition, body, else_branch, range, span } = tree else { unreachable!() };
     let node = element(xot, "else_if", *span);
     xot.append(parent, node)?;
+    // Lowering pre-wraps condition via `wrap_slot("condition")`.
     let cr = condition.range();
     emit_gap(xot, node, source, range.start, cr.start)?;
-    let cond_slot = element(xot, "condition", condition.span());
-    xot.append(node, cond_slot)?;
-    let cond_expr = element(xot, "expression", condition.span());
-    xot.append(cond_slot, cond_expr)?;
-    render_to_xot(xot, cond_expr, condition, source)?;
+    render_to_xot(xot, node, condition, source)?;
     let br = body.range();
     emit_gap(xot, node, source, cr.end, br.start)?;
     render_to_xot(xot, node, body, source)?;
