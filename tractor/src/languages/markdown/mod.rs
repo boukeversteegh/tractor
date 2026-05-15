@@ -10,6 +10,11 @@
 
 pub mod kinds;
 pub mod output;
+#[cfg(feature = "native")]
+pub mod lower;
+
+#[cfg(feature = "native")]
+pub use lower::lower_markdown_data_root;
 
 use crate::output::syntax_highlight::SyntaxCategory;
 

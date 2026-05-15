@@ -7,7 +7,7 @@
 //! byte range of its rendered value.
 
 use crate::tree::data::DataTree;
-use super::data_common::{DataRenderOptions, DataSpanMap};
+use crate::tree::data::render_common::{DataRenderOptions, DataSpanMap};
 
 /// Legacy alias for the shared [`DataRenderOptions`].
 pub type YamlRenderOptions = DataRenderOptions;
@@ -312,7 +312,7 @@ fn record_value_span(
 }
 
 // scalar_text() lifted to data_common; re-import for local use.
-use super::data_common::scalar_text;
+use crate::tree::data::render_common::scalar_text;
 
 fn emit_scalar_string(value: &str, buf: &mut String) {
     // YAML auto-promotes `Plain` to `Double` when the value would be

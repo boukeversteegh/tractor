@@ -9,7 +9,7 @@
 //! re-rendered tree back into the original source.
 
 use crate::tree::data::DataTree;
-use super::data_common::{DataRenderOptions, DataSpanMap};
+use crate::tree::data::render_common::{DataRenderOptions, DataSpanMap};
 
 /// Legacy alias for the shared [`DataRenderOptions`]. Kept so existing
 /// callers (e.g. [`crate::mutation::xpath_upsert`]) compile against

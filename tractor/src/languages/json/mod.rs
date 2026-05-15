@@ -1,16 +1,19 @@
 //! JSON language module.
 //!
-//! After S6B-Retire, this module only carries the bits the typed
-//! pipeline still consults: the kind enum (used by the kind-coverage
-//! catalogue test), the output element-name table, and the syntax-
-//! highlighting category fn. Lowering happens through
-//! `crate::tree::data::lower_json`; rendering through
-//! `crate::tree::data::to_xot`. The legacy imperative `syntax_transform`
-//! / `data_transform` / `rules` / `transformations` modules were
-//! deleted alongside `walk_transform`.
+//! Symmetric with code-language modules (python/csharp/…): hosts the
+//! kind enum, element-name vocabulary, CST → DataTree lowering, and
+//! the DataTree → JSON source-text renderer. Cross-format rendering
+//! to xot/serde_json::Value lives shared at `crate::tree::data::*`.
 
 pub mod kinds;
 pub mod output;
+#[cfg(feature = "native")]
+pub mod lower;
+#[cfg(feature = "native")]
+pub mod render_source;
+
+#[cfg(feature = "native")]
+pub use lower::lower_json_data_root;
 
 use crate::output::syntax_highlight::SyntaxCategory;
 

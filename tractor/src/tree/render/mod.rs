@@ -33,15 +33,12 @@ pub mod common;
 // Per-language canonical-source emitters live under
 // `languages/<lang>/render_source.rs`; each exposes
 // `pub fn syntax() -> common::Syntax` consumed by the unified walker.
+// Data-language renderers (DataTree → JSON / YAML source text) also
+// live per-language at `languages/{json,yaml}/render_source.rs`,
+// matching the code-language pattern. Their shared helpers are at
+// `tree::data::render_common`.
 // SQL-family canonical-source emitter is at `tree::sql::render_source`
 // — SqlTree has its own engine in [`render_sql`] below.
-// Data-language tree-direct source emitters (S4B-Z2). Read [`DataTree`]
-// directly and produce JSON / YAML text with optional span tracking
-// — replaces the [`crate::render`] XmlNode roundtrip for tree-pipeline
-// data languages.
-pub mod data_common;
-pub mod data_json;
-pub mod data_yaml;
 
 use super::SyntaxTree;
 use common::{Indent, Syntax};

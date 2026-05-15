@@ -124,11 +124,19 @@ pub use syntax::to_xot::render_to_xot;
 pub use syntax::to_json::tree_to_json;
 pub use lower_raw_passthrough::{lower_raw_passthrough, lower_raw_passthrough_all};
 pub use data::DataTree;
-pub use data::lower_json::lower_json_data_root;
-pub use data::lower_yaml::lower_yaml_data_root;
-pub use data::lower_toml::lower_toml_data_root;
-pub use data::lower_ini::lower_ini_data_root;
-pub use data::lower_markdown::lower_markdown_data_root;
+// Per-language data lowerings moved to `crate::languages::<lang>::lower`.
+// Re-exported here for back-compat with the many `crate::tree::lower_*_data_root`
+// call sites in the parser, mutation, and tests.
+#[cfg(feature = "native")]
+pub use crate::languages::json::lower::lower_json_data_root;
+#[cfg(feature = "native")]
+pub use crate::languages::yaml::lower::lower_yaml_data_root;
+#[cfg(feature = "native")]
+pub use crate::languages::toml::lower::lower_toml_data_root;
+#[cfg(feature = "native")]
+pub use crate::languages::ini::lower::lower_ini_data_root;
+#[cfg(feature = "native")]
+pub use crate::languages::markdown::lower::lower_markdown_data_root;
 pub use data::to_xot::{render_data_to_xot_json, render_data_to_xot_keyed};
 pub use data::to_json::data_to_json;
 #[cfg(feature = "native")]

@@ -11,6 +11,13 @@
 
 pub mod kinds;
 pub mod output;
+#[cfg(feature = "native")]
+pub mod lower;
+#[cfg(feature = "native")]
+pub mod render_source;
+
+#[cfg(feature = "native")]
+pub use lower::lower_yaml_data_root;
 
 use crate::output::syntax_highlight::SyntaxCategory;
 
