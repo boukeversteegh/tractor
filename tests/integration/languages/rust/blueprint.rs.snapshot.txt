@@ -212,7 +212,7 @@ file/
   │       │   ├─ name = "async_clone"
   │       │   ├─ parameter[self]/name = "self"
   │       │   ├─ returns/type/name = "Self"
-  │       │   └─ body/object[access and self]/call/name = "clone"
+  │       │   └─ body/access = "self.clone()"
   │       ├─ function[pub]/
   │       │   ├─ name = "const_fn"
   │       │   ├─ returns/type/name = "u32"
@@ -223,9 +223,7 @@ file/
   │           │   ├─ name = "ptr"
   │           │   └─ type[pointer]/name = "T"
   │           ├─ returns/type/name = "T"
-  │           └─ body/object[access]/
-  │               ├─ unary/name = "ptr"
-  │               └─ call/name = "clone"
+  │           └─ body/access/unary/name = "ptr"
   ├─ impl/
   │   ├─ lifetime/name = "a"
   │   ├─ generic/name = "T"
@@ -338,7 +336,6 @@ file/
   │       │       ├─ name = "b"
   │       │       └─ binary/
   │       │           ├─ left/expression/name = "a"
-  │       │           ├─ op[plus] = "+"
   │       │           └─ right/expression/name = "b"
   │       ├─ let/
   │       │   ├─ name = "s"
@@ -418,15 +415,11 @@ file/
   │       │           └─ int = "3"
   │       └─ let/
   │           ├─ name = "parsed"
-  │           └─ value/expression/object[access]/
+  │           └─ value/expression/access/
   │               ├─ call/call[generic]/
-  │               │   ├─ object[access]/
-  │               │   │   ├─ string = "\"42\""
-  │               │   │   └─ member/name = "parse"
+  │               │   ├─ access/string = "\"42\""
   │               │   └─ name = "i32"
-  │               └─ call/
-  │                   ├─ name = "unwrap_or"
-  │                   └─ int = "0"
+  │               └─ int = "0"
   ├─ function[pub]/
   │   ├─ name = "patterns"
   │   ├─ parameter/
@@ -454,9 +447,7 @@ file/
   │       │           ├─ field/
   │       │           │   ├─ name = "y"
   │       │           │   └─ value/expression/int = "20"
-  │       │           └─ field[base]/object[access]/
-  │       │               ├─ name = "p"
-  │       │               └─ call/name = "clone"
+  │       │           └─ field[base]/access/name = "p"
   │       ├─ let/
   │       │   ├─ name = "result"
   │       │   └─ value/expression/match/
@@ -489,11 +480,9 @@ file/
   │       │           │   │   ├─ name = "y"
   │       │           │   │   └─ condition/binary/
   │       │           │   │       ├─ left/expression/name = "x"
-  │       │           │   │       ├─ op[equals] = "=="
   │       │           │   │       └─ right/expression/name = "y"
   │       │           │   └─ value/binary/
   │       │           │       ├─ left/expression/name = "x"
-  │       │           │       ├─ op[plus] = "+"
   │       │           │       └─ right/expression/name = "y"
   │       │           ├─ arm/
   │       │           │   ├─ pattern/
@@ -505,12 +494,10 @@ file/
   │       │           │   │   │   └─ pattern[field]/name = "h"
   │       │           │   │   └─ condition/binary/
   │       │           │   │       ├─ left/expression/name = "w"
-  │       │           │   │       ├─ op[compare and greater] = ">"
   │       │           │   │       └─ right/expression/int = "0"
   │       │           │   └─ value/cast/
   │       │           │       ├─ value/expression/binary/
   │       │           │       │   ├─ left/expression/name = "w"
-  │       │           │       │   ├─ op[multiply] = "*"
   │       │           │       │   └─ right/expression/name = "h"
   │       │           │       └─ type/name = "i32"
   │       │           ├─ arm/
@@ -520,9 +507,7 @@ file/
   │       │           │   │   │   └─ name = "Labeled"
   │       │           │   │   └─ pattern[ref]/name = "name"
   │       │           │   └─ value/cast/
-  │       │           │       ├─ value/expression/object[access]/
-  │       │           │       │   ├─ name = "name"
-  │       │           │       │   └─ call/name = "len"
+  │       │           │       ├─ value/expression/access/name = "name"
   │       │           │       └─ type/name = "i32"
   │       │           └─ arm/
   │       │               ├─ pattern = "_"
@@ -557,20 +542,16 @@ file/
   │       │       └─ value/expression/name = "v"
   │       ├─ let[mut]/
   │       │   ├─ name = "it"
-  │       │   └─ value/expression/object[access]/
-  │       │       ├─ macro/
-  │       │       │   ├─ name = "vec"
-  │       │       │   ├─ int = "1"
-  │       │       │   ├─ int = "2"
-  │       │       │   └─ int = "3"
-  │       │       └─ call/name = "into_iter"
+  │       │   └─ value/expression/access/macro/
+  │       │       ├─ name = "vec"
+  │       │       ├─ int = "1"
+  │       │       ├─ int = "2"
+  │       │       └─ int = "3"
   │       ├─ while/
   │       │   ├─ condition/expression/
   │       │   │   ├─ name = "Some"
   │       │   │   ├─ name = "x"
-  │       │   │   └─ object[access]/
-  │       │   │       ├─ name = "it"
-  │       │   │       └─ call/name = "next"
+  │       │   │   └─ access/name = "it"
   │       │   └─ body/
   │       │       ├─ let/
   │       │       │   ├─ name = "_shadow"
@@ -600,9 +581,7 @@ file/
   │       │           ├─ condition/binary/
   │       │           │   ├─ left/expression/binary/
   │       │           │   │   ├─ left/expression/name = "i"
-  │       │           │   │   ├─ op[multiply] = "*"
   │       │           │   │   └─ right/expression/name = "j"
-  │       │           │   ├─ op[compare and greater] = ">"
   │       │           │   └─ right/expression/int = "20"
   │       │           └─ then/block/expression/break/name = "'outer"
   │       ├─ let[mut]/
@@ -611,7 +590,6 @@ file/
   │       ├─ while/
   │       │   ├─ condition/expression/binary/
   │       │   │   ├─ left/expression/name = "n"
-  │       │   │   ├─ op[compare and less] = "<"
   │       │   │   └─ right/expression/int = "3"
   │       │   └─ body/expression/assign/
   │       │       ├─ name = "n"
@@ -634,9 +612,7 @@ file/
   │       ├─ let/
   │       │   ├─ name = "parsed"
   │       │   ├─ type/name = "i32"
-  │       │   └─ value/expression/try/object[access]/
-  │       │       ├─ string = "\"10\""
-  │       │       └─ call/name = "parse"
+  │       │   └─ value/expression/try/access/string = "\"10\""
   │       ├─ let/
   │       │   ├─ name = "casted"
   │       │   └─ value/expression/cast/
@@ -683,7 +659,6 @@ file/
   │       │   ├─ name = "block"
   │       │   └─ value/expression/block[async]/binary/
   │       │       ├─ left/expression/int = "1u32"
-  │       │       ├─ op[plus] = "+"
   │       │       └─ right/expression/int = "2"
   │       └─ await/name = "block"
   ├─ function[pub]/
@@ -833,7 +808,6 @@ file/
   │       │           │   │   └─ name = "_c"
   │       │           │   └─ value/binary/
   │       │           │       ├─ left/expression/name = "a"
-  │       │           │       ├─ op[plus] = "+"
   │       │           │       └─ right/expression/name = "b"
   │       │           └─ arm/
   │       │               ├─ pattern/pattern[tuple]/
@@ -843,9 +817,7 @@ file/
   │       │               └─ value/binary/
   │       │                   ├─ left/expression/binary/
   │       │                   │   ├─ left/expression/name = "a"
-  │       │                   │   ├─ op[plus] = "+"
   │       │                   │   └─ right/expression/name = "b"
-  │       │                   ├─ op[plus] = "+"
   │       │                   └─ right/expression/name = "c"
   │       ├─ comment[leading] = "// slice_pattern."
   │       ├─ let/
@@ -859,9 +831,9 @@ file/
   │       ├─ let/
   │       │   ├─ name = "head_tail"
   │       │   └─ value/expression/match/
-  │       │       ├─ value/expression/ref/object[access]/
+  │       │       ├─ value/expression/ref/access/
   │       │       │   ├─ name = "arr"
-  │       │       │   └─ index/range[exclusive] = ".."
+  │       │       │   └─ range[exclusive] = ".."
   │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ pattern/pattern[slice]/
@@ -870,7 +842,6 @@ file/
   │       │           │   │   └─ name = "last"
   │       │           │   └─ value/binary/
   │       │           │       ├─ left/expression/name = "first"
-  │       │           │       ├─ op[plus] = "+"
   │       │           │       └─ right/expression/name = "last"
   │       │           ├─ arm/
   │       │           │   ├─ pattern/pattern[slice]/name = "only"
@@ -886,7 +857,6 @@ file/
   │       │   ├─ name = "counter"
   │       │   └─ binary/
   │       │       ├─ left/expression/name = "total"
-  │       │       ├─ op[plus] = "+"
   │       │       └─ right/expression/name = "head_tail"
   │       ├─ comment[leading] = "// array_expression."
   │       ├─ let/
@@ -895,11 +865,9 @@ file/
   │       │       ├─ name = "counter"
   │       │       ├─ binary/
   │       │       │   ├─ left/expression/name = "counter"
-  │       │       │   ├─ op[multiply] = "*"
   │       │       │   └─ right/expression/int = "2"
   │       │       └─ binary/
   │       │           ├─ left/expression/name = "counter"
-  │       │           ├─ op[multiply] = "*"
   │       │           └─ right/expression/int = "3"
   │       ├─ comment[leading] = "// unit_expression as value."
   │       ├─ let/
@@ -923,11 +891,9 @@ file/
   │       │   │   ├─ name = "inner"
   │       │   │   └─ binary/
   │       │   │       ├─ left/expression/name = "ix"
-  │       │   │       ├─ op[compare and greater] = ">"
   │       │   │       └─ right/expression/int = "0"
   │       │   └─ then/block/expression/return/binary/
   │       │       ├─ left/expression/name = "ix"
-  │       │       ├─ op[plus] = "+"
   │       │       └─ right/expression/name = "x"
   │       ├─ comment[leading] = "// negative_literal in pattern position."
   │       ├─ let/
@@ -959,14 +925,11 @@ file/
   │       │       └─ name = "new"
   │       └─ binary/
   │           ├─ left/expression/cast/
-  │           │   ├─ value/expression/object[access]/
-  │           │   │   ├─ name = "v"
-  │           │   │   └─ call/name = "len"
+  │           │   ├─ value/expression/access/name = "v"
   │           │   └─ type/name = "i32"
-  │           ├─ op[plus] = "+"
-  │           └─ right/expression/object[access]/
+  │           └─ right/expression/access/
   │               ├─ name = "triples"
-  │               └─ index/int = "0"
+  │               └─ int = "0"
   └─ function[private]/
       ├─ name = "main"
       └─ body/

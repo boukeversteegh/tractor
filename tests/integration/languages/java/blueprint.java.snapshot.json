@@ -1,24 +1,1219 @@
 {
-  "comments": [
-    "// Blueprint fixture — exercises every major Java construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented; every\n// cycle of improvements should regenerate the snapshot.",
-    "/** Javadoc comment on the class. */",
-    "// Iter 19: new shapes — control flow, expressions, literals, patterns.",
-    "/** @interface (annotation type) with a constant. */",
-    "/** Static initializer + try-with-resources + labeled loops + misc. */"
-  ],
+  "$type": "program",
+  "interface": {
+    "body": {
+      "$children": [
+        {
+          "$type": "method",
+          "string": "\"default\"",
+          "$children": [
+            "String",
+            "value"
+          ]
+        },
+        {
+          "$type": "method",
+          "int": "30",
+          "$children": [
+            "int",
+            "timeout"
+          ]
+        }
+      ]
+    },
+    "name": "Config"
+  },
   "package": {
-    "node": {
-      "names": [
+    "path": {
+      "$children": [
         "com",
         "example",
         "blueprint"
       ]
     }
   },
-  "imports": [
+  "$children": [
     {
-      "node": {
-        "names": [
+      "$type": "class",
+      "public": true,
+      "final": true,
+      "annotation": {
+        "name": "SuppressWarnings",
+        "string": "\"unchecked\""
+      },
+      "body": {
+        "class": {
+          "public": true,
+          "body": {
+            "method": {
+              "public": true,
+              "body": {
+                "return": {
+                  "expression": {
+                    "switch": {
+                      "this": "this",
+                      "$children": [
+                        {
+                          "$type": "arm",
+                          "case": {
+                            "name": "RED"
+                          },
+                          "expression": {
+                            "int": "0xFF0000"
+                          }
+                        },
+                        {
+                          "$type": "arm",
+                          "case": {
+                            "name": "GREEN"
+                          },
+                          "expression": {
+                            "int": "0x00FF00"
+                          }
+                        },
+                        {
+                          "$type": "arm",
+                          "case": {
+                            "name": "BLUE"
+                          },
+                          "expression": {
+                            "int": "0x0000FF"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "name": "rgb",
+              "returns": {
+                "type": {
+                  "name": "int"
+                }
+              }
+            },
+            "$children": [
+              {
+                "$type": "constant",
+                "name": "RED"
+              },
+              {
+                "$type": "constant",
+                "name": "GREEN"
+              },
+              {
+                "$type": "constant",
+                "name": "BLUE"
+              }
+            ]
+          },
+          "name": "Color"
+        },
+        "interface": {
+          "private": true,
+          "body": {
+            "method": {
+              "public": true,
+              "name": "process",
+              "parameter": {
+                "name": "input",
+                "type": {
+                  "name": "U"
+                }
+              },
+              "returns": {
+                "type": {
+                  "name": "U"
+                }
+              },
+              "throws": {
+                "type": {
+                  "name": "IllegalArgumentException"
+                }
+              }
+            }
+          },
+          "generic": {
+            "name": "U"
+          },
+          "name": "Handler"
+        },
+        "record": {
+          "public": true,
+          "body": {
+            "constructor": {
+              "public": true,
+              "body": {
+                "if": {
+                  "body": {
+                    "object_creation": {
+                      "name": "IllegalArgumentException"
+                    }
+                  },
+                  "condition": {
+                    "expression": {
+                      "binary": {
+                        "left": {
+                          "expression": {
+                            "binary": {
+                              "left": {
+                                "expression": {
+                                  "name": "x"
+                                }
+                              },
+                              "right": {
+                                "expression": {
+                                  "int": "0"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "right": {
+                          "expression": {
+                            "binary": {
+                              "left": {
+                                "expression": {
+                                  "name": "y"
+                                }
+                              },
+                              "right": {
+                                "expression": {
+                                  "int": "0"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "name": "Point"
+            }
+          },
+          "name": "Point"
+        },
+        "$children": [
+          "// Line comment before a field",
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "trailing": true
+          },
+          {
+            "$type": "constructor",
+            "public": true,
+            "body": {
+              "call": {
+                "this": true,
+                "null": "null"
+              }
+            },
+            "name": "Demo"
+          },
+          {
+            "$type": "constructor",
+            "public": true,
+            "body": {
+              "call": {
+                "super": true
+              },
+              "expression": {
+                "assign": {
+                  "$children": [
+                    {
+                      "$type": "expression",
+                      "access": {
+                        "this": "this"
+                      }
+                    },
+                    {
+                      "$type": "expression",
+                      "name": "name"
+                    }
+                  ]
+                }
+              }
+            },
+            "name": "Demo",
+            "parameter": {
+              "name": "name",
+              "type": {
+                "name": "String"
+              }
+            }
+          },
+          {
+            "$type": "field",
+            "public": true,
+            "static": true,
+            "final": true,
+            "expression": {
+              "int": "100"
+            },
+            "name": "MAX",
+            "type": {
+              "name": "int"
+            }
+          },
+          {
+            "$type": "field",
+            "private": true,
+            "name": "name",
+            "type": {
+              "name": "String"
+            }
+          },
+          {
+            "$type": "field",
+            "protected": true,
+            "generic_type": {
+              "generic_type": {
+                "$children": [
+                  "Map",
+                  "String",
+                  "T"
+                ]
+              },
+              "name": "List"
+            },
+            "name": "items"
+          },
+          {
+            "$type": "field",
+            "package": true,
+            "name": "pkg",
+            "type": {
+              "name": "int"
+            }
+          },
+          {
+            "$type": "field",
+            "package": true,
+            "volatile": true,
+            "transient": true,
+            "name": "ready",
+            "type": {
+              "name": "boolean"
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "static": true,
+            "body": {
+              "return": {
+                "expression": {
+                  "access": {
+                    "name": "mapper",
+                    "string": "\"hello\""
+                  }
+                }
+              }
+            },
+            "generic": {
+              "name": "R"
+            },
+            "name": "factory",
+            "parameter": {
+              "generic_type": {
+                "$children": [
+                  "Function",
+                  "String",
+                  "R"
+                ]
+              },
+              "name": "mapper"
+            },
+            "returns": {
+              "type": {
+                "name": "R"
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "synchronized": true,
+            "annotation": {
+              "name": "Override"
+            },
+            "body": {
+              "if": {
+                "body": {
+                  "throw": {
+                    "expression": {
+                      "object_creation": {
+                        "name": "IllegalArgumentException",
+                        "string": "\"null\""
+                      }
+                    }
+                  }
+                },
+                "condition": {
+                  "expression": {
+                    "binary": {
+                      "left": {
+                        "expression": {
+                          "name": "input"
+                        }
+                      },
+                      "right": {
+                        "expression": {
+                          "null": "null"
+                        }
+                      }
+                    }
+                  }
+                },
+                "else_if": {
+                  "body": {
+                    "return": {
+                      "expression": {
+                        "null": "null"
+                      }
+                    }
+                  },
+                  "condition": {
+                    "expression": {
+                      "unary": {
+                        "name": "ready"
+                      }
+                    }
+                  },
+                  "else": {
+                    "body": {
+                      "return": {
+                        "expression": {
+                          "name": "input"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "name": "process",
+            "parameter": {
+              "name": "input",
+              "type": {
+                "name": "T"
+              }
+            },
+            "returns": {
+              "type": {
+                "name": "T"
+              }
+            },
+            "throws": {
+              "type": {
+                "name": "IllegalArgumentException"
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "body": {
+              "return": {
+                "expression": {
+                  "ternary": {
+                    "condition": {
+                      "expression": {
+                        "binary": {
+                          "left": {
+                            "expression": {
+                              "name": "n"
+                            }
+                          },
+                          "right": {
+                            "expression": {
+                              "int": "0"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "else": {
+                      "expression": {
+                        "ternary": {
+                          "condition": {
+                            "expression": {
+                              "binary": {
+                                "left": {
+                                  "expression": {
+                                    "name": "n"
+                                  }
+                                },
+                                "right": {
+                                  "expression": {
+                                    "int": "0"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "else": {
+                            "expression": {
+                              "string": "\"zero\""
+                            }
+                          },
+                          "then": {
+                            "expression": {
+                              "string": "\"negative\""
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "then": {
+                      "expression": {
+                        "string": "\"positive\""
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "name": "describe",
+            "parameter": {
+              "name": "n",
+              "type": {
+                "name": "int"
+              }
+            },
+            "returns": {
+              "type": {
+                "name": "String"
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "body": {
+              "foreach": {
+                "body": {
+                  "expression": {
+                    "assign": {
+                      "$children": [
+                        {
+                          "$type": "expression",
+                          "name": "total"
+                        },
+                        {
+                          "$type": "expression",
+                          "name": "x"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "name": "x",
+                "type": {
+                  "name": "int"
+                },
+                "value": {
+                  "expression": {
+                    "name": "xs"
+                  }
+                }
+              },
+              "return": {
+                "expression": {
+                  "name": "total"
+                }
+              },
+              "while": {
+                "body": {
+                  "expression": {
+                    "assign": {
+                      "$children": [
+                        {
+                          "$type": "expression",
+                          "name": "i"
+                        },
+                        {
+                          "$type": "expression",
+                          "binary": {
+                            "left": {
+                              "expression": {
+                                "name": "i"
+                              }
+                            },
+                            "right": {
+                              "expression": {
+                                "int": "1"
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                "condition": {
+                  "expression": {
+                    "binary": {
+                      "left": {
+                        "expression": {
+                          "name": "i"
+                        }
+                      },
+                      "right": {
+                        "expression": {
+                          "int": "3"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "$children": [
+                {
+                  "$type": "variable",
+                  "expression": {
+                    "int": "0"
+                  },
+                  "name": "total",
+                  "type": {
+                    "name": "int"
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "expression": {
+                    "int": "0"
+                  },
+                  "name": "i",
+                  "type": {
+                    "name": "int"
+                  }
+                }
+              ]
+            },
+            "name": "sum",
+            "parameter": {
+              "variadic": true,
+              "name": "xs",
+              "type": {
+                "name": "int"
+              }
+            },
+            "returns": {
+              "type": {
+                "name": "int"
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "body": {
+              "return": {
+                "expression": {
+                  "switch": {
+                    "name": "o",
+                    "$children": [
+                      {
+                        "$type": "arm",
+                        "case": {
+                          "pattern": {
+                            "name": "i",
+                            "type": {
+                              "name": "Integer"
+                            }
+                          }
+                        },
+                        "expression": {
+                          "binary": {
+                            "left": {
+                              "expression": {
+                                "string": "\"int \""
+                              }
+                            },
+                            "right": {
+                              "expression": {
+                                "name": "i"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "$type": "arm",
+                        "case": {
+                          "guard": {
+                            "unary": {
+                              "access": {
+                                "name": "s"
+                              }
+                            }
+                          },
+                          "pattern": {
+                            "name": "s",
+                            "type": {
+                              "name": "String"
+                            }
+                          }
+                        },
+                        "expression": {
+                          "binary": {
+                            "left": {
+                              "expression": {
+                                "string": "\"non-empty: \""
+                              }
+                            },
+                            "right": {
+                              "expression": {
+                                "name": "s"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "$type": "arm",
+                        "case": "default",
+                        "expression": {
+                          "string": "\"other\""
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "name": "match",
+            "parameter": {
+              "name": "o",
+              "type": {
+                "name": "Object"
+              }
+            },
+            "returns": {
+              "type": {
+                "name": "String"
+              }
+            }
+          }
+        ]
+      },
+      "extends": {
+        "type": {
+          "name": "Base"
+        }
+      },
+      "generic": {
+        "extends": {
+          "generic_type": {
+            "$children": [
+              "Comparable",
+              "T"
+            ]
+          }
+        },
+        "name": "T"
+      },
+      "implements": {
+        "generic_type": {
+          "$children": [
+            "Handler",
+            "T"
+          ]
+        }
+      },
+      "name": "Demo"
+    },
+    {
+      "$type": "class",
+      "package": true,
+      "body": {
+        "method": {
+          "package": true,
+          "body": {
+            "return": {
+              "expression": {
+                "access": {
+                  "access": {
+                    "call": {
+                      "name": "getClass"
+                    }
+                  },
+                  "name": "String",
+                  "string": "\"hello from %s\""
+                }
+              }
+            }
+          },
+          "name": "greet",
+          "returns": {
+            "type": {
+              "name": "String"
+            }
+          }
+        }
+      },
+      "name": "Base"
+    },
+    {
+      "$type": "class",
+      "package": true,
+      "body": {
+        "block": {
+          "static": true,
+          "expression": {
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "name": "SEED"
+                },
+                {
+                  "$type": "expression",
+                  "int": "42"
+                }
+              ]
+            }
+          }
+        },
+        "field": {
+          "package": true,
+          "static": true,
+          "final": true,
+          "name": "SEED",
+          "type": {
+            "name": "int"
+          }
+        },
+        "$children": [
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "method",
+            "package": true,
+            "body": {
+              "$children": [
+                {
+                  "$type": "variable",
+                  "expression": {
+                    "array": {
+                      "literal": true,
+                      "$children": [
+                        "1",
+                        "2",
+                        "3"
+                      ]
+                    }
+                  },
+                  "name": "arr",
+                  "type": {
+                    "array": true,
+                    "name": "int",
+                    "type": "[]"
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "expression": {
+                    "string": "'A'"
+                  },
+                  "name": "ch",
+                  "type": {
+                    "name": "char"
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "expression": {
+                    "type": {
+                      "name": "String"
+                    }
+                  },
+                  "generic_type": {
+                    "name": "Class",
+                    "type": "?"
+                  },
+                  "name": "cls"
+                },
+                {
+                  "$type": "variable",
+                  "expression": {
+                    "member": {
+                      "$children": [
+                        "String",
+                        "valueOf"
+                      ]
+                    }
+                  },
+                  "generic_type": {
+                    "$children": [
+                      "java.util.function.Function",
+                      "Object",
+                      "String"
+                    ]
+                  },
+                  "name": "ref"
+                }
+              ]
+            },
+            "name": "literals",
+            "returns": {
+              "type": {
+                "void": true,
+                "name": "void"
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "package": true,
+            "body": {
+              "assert": {
+                "binary": {
+                  "left": {
+                    "expression": {
+                      "name": "n"
+                    }
+                  },
+                  "right": {
+                    "expression": {
+                      "int": "0"
+                    }
+                  }
+                },
+                "string": "\"non-negative\""
+              },
+              "do_while": {
+                "binary": {
+                  "left": {
+                    "expression": {
+                      "name": "k"
+                    }
+                  },
+                  "right": {
+                    "expression": {
+                      "int": "3"
+                    }
+                  }
+                },
+                "body": {
+                  "expression": {
+                    "unary": {
+                      "postfix": true,
+                      "name": "k"
+                    }
+                  }
+                }
+              },
+              "label": {
+                "c_for": {
+                  "binary": {
+                    "left": {
+                      "expression": {
+                        "name": "i"
+                      }
+                    },
+                    "right": {
+                      "expression": {
+                        "int": "5"
+                      }
+                    }
+                  },
+                  "body": {
+                    "$children": [
+                      {
+                        "$type": "if",
+                        "body": {
+                          "name": "outer"
+                        },
+                        "condition": {
+                          "expression": {
+                            "binary": {
+                              "left": {
+                                "expression": {
+                                  "name": "i"
+                                }
+                              },
+                              "right": {
+                                "expression": {
+                                  "int": "1"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "$type": "if",
+                        "body": {
+                          "name": "outer"
+                        },
+                        "condition": {
+                          "expression": {
+                            "binary": {
+                              "left": {
+                                "expression": {
+                                  "name": "i"
+                                }
+                              },
+                              "right": {
+                                "expression": {
+                                  "int": "3"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "unary": {
+                    "postfix": true,
+                    "name": "i"
+                  },
+                  "variable": {
+                    "expression": {
+                      "int": "0"
+                    },
+                    "name": "i",
+                    "type": {
+                      "name": "int"
+                    }
+                  }
+                },
+                "name": "outer"
+              },
+              "$children": [
+                {
+                  "$type": "variable",
+                  "expression": {
+                    "cast": {
+                      "int": "0L",
+                      "type": {
+                        "name": "int"
+                      }
+                    }
+                  },
+                  "name": "n",
+                  "type": {
+                    "name": "int"
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "expression": {
+                    "is": {
+                      "$children": [
+                        "o",
+                        "String"
+                      ]
+                    }
+                  },
+                  "name": "isStr",
+                  "type": {
+                    "name": "boolean"
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "expression": {
+                    "int": "0"
+                  },
+                  "name": "k",
+                  "type": {
+                    "name": "int"
+                  }
+                }
+              ]
+            },
+            "name": "controlFlow",
+            "parameter": {
+              "name": "o",
+              "type": {
+                "name": "Object"
+              }
+            },
+            "returns": {
+              "type": {
+                "void": true,
+                "name": "void"
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "package": true,
+            "body": {
+              "lock": {
+                "body": {
+                  "expression": {
+                    "name": "SEED"
+                  }
+                },
+                "this": "this"
+              },
+              "try": {
+                "body": {
+                  "if": {
+                    "body": {
+                      "object_creation": {
+                        "name": "java.io.IOException"
+                      }
+                    },
+                    "condition": {
+                      "expression": {
+                        "binary": {
+                          "left": {
+                            "expression": {
+                              "name": "s"
+                            }
+                          },
+                          "right": {
+                            "expression": {
+                              "null": "null"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "catch": {
+                  "as": {
+                    "expression": {
+                      "name": "e"
+                    }
+                  },
+                  "body": {
+                    "throw": {
+                      "expression": {
+                        "name": "e"
+                      }
+                    }
+                  },
+                  "type": {
+                    "$children": [
+                      "java.io.IOException",
+                      "RuntimeException"
+                    ]
+                  }
+                }
+              }
+            },
+            "name": "resources",
+            "returns": {
+              "type": {
+                "void": true,
+                "name": "void"
+              }
+            },
+            "throws": {
+              "type": {
+                "name": "Exception"
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "package": true,
+            "body": {
+              "return": {
+                "expression": {
+                  "name": "v"
+                }
+              },
+              "variable": {
+                "expression": {
+                  "switch": {
+                    "name": "o",
+                    "$children": [
+                      {
+                        "$type": "arm",
+                        "case": {
+                          "pattern": {
+                            "name": "i",
+                            "type": {
+                              "name": "Integer"
+                            }
+                          }
+                        },
+                        "expression": {
+                          "name": "i"
+                        }
+                      },
+                      {
+                        "$type": "arm",
+                        "body": {
+                          "yield": {
+                            "int": "0"
+                          }
+                        },
+                        "case": "default"
+                      }
+                    ]
+                  }
+                },
+                "name": "v",
+                "type": {
+                  "name": "int"
+                }
+              }
+            },
+            "name": "yieldDemo",
+            "parameter": {
+              "name": "o",
+              "type": {
+                "name": "Object"
+              }
+            },
+            "returns": {
+              "type": {
+                "name": "int"
+              }
+            }
+          }
+        ]
+      },
+      "name": "Extras"
+    },
+    "// Blueprint fixture — exercises every major Java construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented; every\n// cycle of improvements should regenerate the snapshot.",
+    {
+      "$type": "comment",
+      "leading": true
+    },
+    "// Iter 19: new shapes — control flow, expressions, literals, patterns.",
+    {
+      "$type": "comment",
+      "leading": true
+    },
+    {
+      "$type": "comment",
+      "leading": true
+    },
+    {
+      "$type": "import",
+      "path": {
+        "$children": [
           "java",
           "util",
           "List"
@@ -26,8 +1221,9 @@
       }
     },
     {
-      "node": {
-        "names": [
+      "$type": "import",
+      "path": {
+        "$children": [
           "java",
           "util",
           "Map"
@@ -35,8 +1231,9 @@
       }
     },
     {
-      "node": {
-        "names": [
+      "$type": "import",
+      "path": {
+        "$children": [
           "java",
           "util",
           "function",
@@ -45,9 +1242,10 @@
       }
     },
     {
+      "$type": "import",
       "static": true,
-      "node": {
-        "names": [
+      "path": {
+        "$children": [
           "java",
           "util",
           "Collections",
@@ -55,945 +1253,5 @@
         ]
       }
     }
-  ],
-  "classes": [
-    {
-      "public": true,
-      "final": true,
-      "name": "Demo",
-      "comments": [
-        "// Line comment before a field",
-        "/* block comment */",
-        "// trailing line comment"
-      ],
-      "nodes": [
-        {
-          "public": true,
-          "static": true,
-          "final": true,
-          "type": {
-            "name": "int"
-          },
-          "name": "MAX",
-          "value": 100
-        },
-        {
-          "private": true,
-          "type": {
-            "name": "String"
-          },
-          "name": "name"
-        },
-        {
-          "protected": true,
-          "type": {
-            "generic": true,
-            "name": "List",
-            "node": {
-              "generic": true,
-              "names": [
-                "Map",
-                "String",
-                "T"
-              ]
-            }
-          },
-          "name": "items"
-        },
-        {
-          "package": true,
-          "type": {
-            "name": "int"
-          },
-          "name": "pkg"
-        },
-        {
-          "package": true,
-          "volatile": true,
-          "transient": true,
-          "type": {
-            "name": "boolean"
-          },
-          "name": "ready"
-        }
-      ],
-      "constructors": [
-        {
-          "public": true,
-          "name": "Demo",
-          "call": {
-            "this": true,
-            "node": null
-          }
-        },
-        {
-          "public": true,
-          "name": "Demo",
-          "parameter": {
-            "type": {
-              "name": "String"
-            },
-            "name": "name"
-          },
-          "call": {
-            "super": true
-          },
-          "node": {
-            "left": {
-              "access": true,
-              "receiver": {},
-              "member": {
-                "name": "name"
-              }
-            },
-            "right": "name"
-          }
-        }
-      ],
-      "methods": [
-        {
-          "public": true,
-          "static": true,
-          "name": "factory",
-          "parameter": {
-            "type": {
-              "generic": true,
-              "names": [
-                "Function",
-                "String",
-                "R"
-              ]
-            },
-            "name": "mapper"
-          },
-          "returns": {
-            "type": {
-              "name": "R"
-            }
-          },
-          "node": {
-            "expression": {
-              "access": true,
-              "receiver": "mapper",
-              "call": {
-                "name": "apply",
-                "node": "\"hello\""
-              }
-            }
-          }
-        },
-        {
-          "public": true,
-          "synchronized": true,
-          "name": "process",
-          "parameter": {
-            "type": {
-              "name": "T"
-            },
-            "name": "input"
-          },
-          "returns": {
-            "type": {
-              "name": "T"
-            }
-          },
-          "node": {
-            "condition": {
-              "node": {
-                "left": {
-                  "node": "input"
-                },
-                "op": {
-                  "text": "==",
-                  "equal": true
-                },
-                "right": {
-                  "node": null
-                }
-              }
-            },
-            "throw": {
-              "expression": {
-                "node": {
-                  "type": "IllegalArgumentException",
-                  "node": "\"null\""
-                }
-              }
-            },
-            "node": {
-              "condition": {
-                "node": {
-                  "op": {
-                    "text": "!",
-                    "not": true
-                  },
-                  "operand": "ready"
-                }
-              },
-              "nodes": [
-                {
-                  "expression": null
-                },
-                {
-                  "node": {
-                    "expression": "input"
-                  }
-                }
-              ]
-            }
-          }
-        },
-        {
-          "public": true,
-          "name": "describe",
-          "parameter": {
-            "type": {
-              "name": "int"
-            },
-            "name": "n"
-          },
-          "returns": {
-            "type": {
-              "name": "String"
-            }
-          },
-          "node": {
-            "expression": {
-              "condition": {
-                "node": {
-                  "left": {
-                    "node": "n"
-                  },
-                  "op": {
-                    "text": ">",
-                    "greater": true
-                  },
-                  "right": {
-                    "node": 0
-                  }
-                }
-              },
-              "then": {
-                "node": "\"positive\""
-              },
-              "else": {
-                "node": {
-                  "condition": {
-                    "node": {
-                      "left": {
-                        "node": "n"
-                      },
-                      "op": {
-                        "text": "<",
-                        "less": true
-                      },
-                      "right": {
-                        "node": 0
-                      }
-                    }
-                  },
-                  "then": {
-                    "node": "\"negative\""
-                  },
-                  "else": {
-                    "node": "\"zero\""
-                  }
-                }
-              }
-            }
-          }
-        },
-        {
-          "public": true,
-          "name": "sum",
-          "parameter": {
-            "variadic": true,
-            "type": {
-              "name": "int"
-            },
-            "name": "xs"
-          },
-          "returns": {
-            "type": {
-              "name": "int"
-            }
-          },
-          "nodes": [
-            {
-              "type": {
-                "name": "int"
-              },
-              "name": "total",
-              "value": 0
-            },
-            {
-              "type": {
-                "name": "int"
-              },
-              "name": "i",
-              "value": 0
-            },
-            {
-              "condition": {
-                "node": {
-                  "left": {
-                    "node": "i"
-                  },
-                  "op": {
-                    "text": "<",
-                    "less": true
-                  },
-                  "right": {
-                    "node": 3
-                  }
-                }
-              },
-              "node": {
-                "left": "i",
-                "right": {
-                  "left": {
-                    "node": "i"
-                  },
-                  "op": {
-                    "text": "+",
-                    "plus": true
-                  },
-                  "right": {
-                    "node": 1
-                  }
-                }
-              }
-            },
-            {
-              "expression": "total"
-            }
-          ],
-          "foreach": {
-            "type": {
-              "name": "int"
-            },
-            "name": "x",
-            "value": {
-              "node": "xs"
-            },
-            "body": {
-              "node": {
-                "left": "total",
-                "right": "x"
-              }
-            }
-          }
-        },
-        {
-          "public": true,
-          "name": "match",
-          "parameter": {
-            "type": {
-              "name": "Object"
-            },
-            "name": "o"
-          },
-          "returns": {
-            "type": {
-              "name": "String"
-            }
-          },
-          "node": {
-            "expression": {
-              "name": "o",
-              "arms": [
-                {
-                  "case": {
-                    "pattern": {
-                      "type": {
-                        "name": "Integer"
-                      },
-                      "name": "i"
-                    }
-                  },
-                  "node": {
-                    "left": {
-                      "node": "\"int \""
-                    },
-                    "op": {
-                      "text": "+",
-                      "plus": true
-                    },
-                    "right": {
-                      "node": "i"
-                    }
-                  }
-                },
-                {
-                  "case": {
-                    "pattern": {
-                      "type": {
-                        "name": "String"
-                      },
-                      "name": "s"
-                    },
-                    "guard": {
-                      "node": {
-                        "op": {
-                          "text": "!",
-                          "not": true
-                        },
-                        "operand": {
-                          "access": true,
-                          "receiver": "s",
-                          "call": {
-                            "name": "isEmpty"
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "node": {
-                    "left": {
-                      "node": "\"non-empty: \""
-                    },
-                    "op": {
-                      "text": "+",
-                      "plus": true
-                    },
-                    "right": {
-                      "node": "s"
-                    }
-                  }
-                },
-                {
-                  "case": true,
-                  "node": "\"other\""
-                }
-              ]
-            }
-          }
-        }
-      ],
-      "interface": {
-        "private": true,
-        "name": "Handler",
-        "method": {
-          "public": true,
-          "name": "process",
-          "parameter": {
-            "type": {
-              "name": "U"
-            },
-            "name": "input"
-          },
-          "returns": {
-            "type": {
-              "name": "U"
-            }
-          }
-        }
-      },
-      "enum": {
-        "public": true,
-        "name": "Color",
-        "constants": [
-          {
-            "name": "RED"
-          },
-          {
-            "name": "GREEN"
-          },
-          {
-            "name": "BLUE"
-          }
-        ],
-        "method": {
-          "public": true,
-          "name": "rgb",
-          "returns": {
-            "type": {
-              "name": "int"
-            }
-          },
-          "node": {
-            "expression": {
-              "this": true,
-              "arms": [
-                {
-                  "case": {
-                    "name": "RED"
-                  },
-                  "node": "0xFF0000"
-                },
-                {
-                  "case": {
-                    "name": "GREEN"
-                  },
-                  "node": "0x00FF00"
-                },
-                {
-                  "case": {
-                    "name": "BLUE"
-                  },
-                  "node": "0x0000FF"
-                }
-              ]
-            }
-          }
-        }
-      },
-      "record": {
-        "public": true,
-        "name": "Point",
-        "constructor": {
-          "public": true,
-          "name": "Point",
-          "node": {
-            "condition": {
-              "node": {
-                "left": {
-                  "node": {
-                    "left": {
-                      "node": "x"
-                    },
-                    "op": {
-                      "text": "<",
-                      "less": true
-                    },
-                    "right": {
-                      "node": 0
-                    }
-                  }
-                },
-                "op": {
-                  "text": "||",
-                  "or": true
-                },
-                "right": {
-                  "node": {
-                    "left": {
-                      "node": "y"
-                    },
-                    "op": {
-                      "text": "<",
-                      "less": true
-                    },
-                    "right": {
-                      "node": 0
-                    }
-                  }
-                }
-              }
-            },
-            "node": {
-              "type": "IllegalArgumentException"
-            }
-          }
-        }
-      }
-    },
-    {
-      "package": true,
-      "name": "Base",
-      "method": {
-        "package": true,
-        "name": "greet",
-        "returns": {
-          "type": {
-            "name": "String"
-          }
-        },
-        "node": {
-          "expression": {
-            "access": true,
-            "receiver": "String",
-            "call": {
-              "name": "format",
-              "nodes": [
-                "\"hello from %s\"",
-                {
-                  "access": true,
-                  "receiver": {
-                    "callee": "getClass"
-                  },
-                  "call": {
-                    "name": "getSimpleName"
-                  }
-                }
-              ]
-            }
-          }
-        }
-      }
-    },
-    {
-      "package": true,
-      "name": "Extras",
-      "node": {
-        "package": true,
-        "static": true,
-        "final": true,
-        "type": {
-          "name": "int"
-        },
-        "name": "SEED"
-      },
-      "block": {
-        "static": true,
-        "node": {
-          "left": "SEED",
-          "right": 42
-        }
-      },
-      "comments": [
-        "/** Array initializer, char literal, class literal, method reference. */",
-        "/** Cast, instanceof, assert, break/continue with label. */",
-        "/** Try-with-resources + multi-catch + synchronized block. */",
-        "/** Yield in block-switch + switch with underscore/record pattern. */"
-      ],
-      "methods": [
-        {
-          "package": true,
-          "name": "literals",
-          "returns": {
-            "type": {
-              "void": true,
-              "name": "void"
-            }
-          },
-          "nodes": [
-            {
-              "type": {
-                "array": true,
-                "name": "int",
-                "type": true
-              },
-              "name": "arr",
-              "value": {
-                "literal": true,
-                "nodes": [
-                  1,
-                  2,
-                  3
-                ]
-              }
-            },
-            {
-              "type": {
-                "name": "char"
-              },
-              "name": "ch",
-              "value": "'A'"
-            },
-            {
-              "type": {
-                "generic": true,
-                "name": "Class",
-                "type": {}
-              },
-              "name": "cls",
-              "value": {
-                "name": "String"
-              }
-            },
-            {
-              "type": {
-                "generic": true,
-                "names": [
-                  "java.util.function.Function",
-                  "Object",
-                  "String"
-                ]
-              },
-              "name": "ref",
-              "value": {
-                "names": [
-                  "String",
-                  "valueOf"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "package": true,
-          "name": "controlFlow",
-          "parameter": {
-            "type": {
-              "name": "Object"
-            },
-            "name": "o"
-          },
-          "returns": {
-            "type": {
-              "void": true,
-              "name": "void"
-            }
-          },
-          "nodes": [
-            {
-              "type": {
-                "name": "int"
-              },
-              "name": "n",
-              "value": {
-                "type": {
-                  "name": "int"
-                },
-                "value": "0L"
-              }
-            },
-            {
-              "type": {
-                "name": "boolean"
-              },
-              "name": "isStr",
-              "value": {
-                "left": "o",
-                "right": "String"
-              }
-            },
-            {
-              "type": {
-                "name": "int"
-              },
-              "name": "k",
-              "value": 0
-            },
-            {
-              "node": {
-                "postfix": true,
-                "op": {
-                  "text": "++",
-                  "increment": true
-                },
-                "operand": "k"
-              },
-              "condition": {
-                "left": {
-                  "node": "k"
-                },
-                "op": {
-                  "text": "<",
-                  "less": true
-                },
-                "right": {
-                  "node": 3
-                }
-              }
-            }
-          ],
-          "assert": {
-            "nodes": [
-              {
-                "left": {
-                  "node": "n"
-                },
-                "op": {
-                  "text": ">=",
-                  "greater_or_equal": true
-                },
-                "right": {
-                  "node": 0
-                }
-              },
-              "\"non-negative\""
-            ]
-          },
-          "label": {
-            "name": "outer",
-            "node": {
-              "condition": {
-                "left": {
-                  "node": "i"
-                },
-                "op": {
-                  "text": "<",
-                  "less": true
-                },
-                "right": {
-                  "node": 5
-                }
-              },
-              "nodes": [
-                {
-                  "type": {
-                    "name": "int"
-                  },
-                  "name": "i",
-                  "value": 0
-                },
-                {
-                  "postfix": true,
-                  "op": {
-                    "text": "++",
-                    "increment": true
-                  },
-                  "operand": "i"
-                },
-                [
-                  {
-                    "condition": {
-                      "node": {
-                        "left": {
-                          "node": "i"
-                        },
-                        "op": {
-                          "text": "==",
-                          "equal": true
-                        },
-                        "right": {
-                          "node": 1
-                        }
-                      }
-                    },
-                    "name": "outer"
-                  },
-                  {
-                    "condition": {
-                      "node": {
-                        "left": {
-                          "node": "i"
-                        },
-                        "op": {
-                          "text": "==",
-                          "equal": true
-                        },
-                        "right": {
-                          "node": 3
-                        }
-                      }
-                    },
-                    "name": "outer"
-                  }
-                ]
-              ]
-            }
-          }
-        },
-        {
-          "package": true,
-          "name": "resources",
-          "returns": {
-            "type": {
-              "void": true,
-              "name": "void"
-            }
-          },
-          "node": {
-            "nodes": [
-              {
-                "condition": {
-                  "node": {
-                    "left": {
-                      "node": "s"
-                    },
-                    "op": {
-                      "text": "==",
-                      "equal": true
-                    },
-                    "right": {
-                      "node": null
-                    }
-                  }
-                },
-                "node": {
-                  "type": "java.io.IOException"
-                }
-              },
-              {
-                "type": {
-                  "names": [
-                    "java.io.IOException",
-                    "RuntimeException"
-                  ]
-                },
-                "as": {
-                  "node": "e"
-                },
-                "throw": {
-                  "expression": {
-                    "name": "e"
-                  }
-                }
-              }
-            ]
-          },
-          "lock": {
-            "this": true,
-            "body": {
-              "node": "SEED"
-            }
-          }
-        },
-        {
-          "package": true,
-          "name": "yieldDemo",
-          "parameter": {
-            "type": {
-              "name": "Object"
-            },
-            "name": "o"
-          },
-          "returns": {
-            "type": {
-              "name": "int"
-            }
-          },
-          "nodes": [
-            {
-              "type": {
-                "name": "int"
-              },
-              "name": "v",
-              "value": {
-                "name": "o",
-                "arms": [
-                  {
-                    "case": {
-                      "pattern": {
-                        "type": {
-                          "name": "Integer"
-                        },
-                        "name": "i"
-                      }
-                    },
-                    "node": "i"
-                  },
-                  {
-                    "case": true,
-                    "body": {
-                      "yield": {
-                        "node": 0
-                      }
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "expression": "v"
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "interface": {
-    "name": "Config",
-    "body": {
-      "methods": [
-        {
-          "names": [
-            "String",
-            "value"
-          ],
-          "node": "\"default\""
-        },
-        {
-          "names": [
-            "int",
-            "timeout"
-          ],
-          "node": 30
-        }
-      ]
-    }
-  }
+  ]
 }

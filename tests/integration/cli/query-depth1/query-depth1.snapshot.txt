@@ -3,11 +3,11 @@ class[public]/
   ├─ "public class"
   ├─ name = "Calculator"
   └─ body/
-      └─ ... (72 children)
+      └─ ... (63 children)
 
 tests/integration/sample.cs:9
 class[public]/
   ├─ "public class"
   ├─ name = "Greeter"
   └─ body/
-      └─ ... (45 children)
+      └─ ... (38 children)

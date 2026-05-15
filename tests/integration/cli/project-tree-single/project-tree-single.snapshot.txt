@@ -4,9 +4,9 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ method[public]/
-      │   └─ ... (23 children)
+      │   └─ ... (20 children)
       ├─ method[public]/
-      │   └─ ... (23 children)
+      │   └─ ... (20 children)
       ├─ method[public]/
-      │   └─ ... (23 children)
+      │   └─ ... (20 children)
       └─ "}"

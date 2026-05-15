@@ -19,23 +19,17 @@
               }
             },
             "body": {
-              "block": {
-                "return": {
-                  "expression": {
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "name": "b"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "a"
-                        }
-                      },
-                      "op": {
-                        "text": "-",
-                        "minus": true
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "name": "b"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "a"
                       }
                     }
                   }
@@ -63,23 +57,17 @@
               }
             },
             "body": {
-              "block": {
-                "return": {
-                  "expression": {
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "name": "b"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "a"
-                        }
-                      },
-                      "op": {
-                        "text": "*",
-                        "multiply": true
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "name": "b"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "a"
                       }
                     }
                   }
@@ -116,23 +104,17 @@
             }
           },
           "body": {
-            "block": {
-              "return": {
-                "expression": {
-                  "binary": {
-                    "right": {
-                      "expression": {
-                        "name": "b"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "a"
-                      }
-                    },
-                    "op": {
-                      "text": "+",
-                      "plus": true
+            "return": {
+              "expression": {
+                "binary": {
+                  "right": {
+                    "expression": {
+                      "name": "b"
+                    }
+                  },
+                  "left": {
+                    "expression": {
+                      "name": "a"
                     }
                   }
                 }
@@ -164,23 +146,17 @@
               }
             },
             "body": {
-              "block": {
-                "return": {
-                  "expression": {
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "name": "name"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "string": "\"Goodbye, \""
-                        }
-                      },
-                      "op": {
-                        "text": "+",
-                        "plus": true
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "name": "name"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "string": "\"Goodbye, \""
                       }
                     }
                   }
@@ -192,30 +168,22 @@
             "$type": "method",
             "public": true,
             "name": "Reset",
-            "body": {
-              "block": "{ }"
-            }
+            "body": "{ }"
           }
         ],
         "method": {
           "body": {
-            "block": {
-              "return": {
-                "expression": {
-                  "binary": {
-                    "right": {
-                      "expression": {
-                        "name": "name"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "string": "\"Hello, \""
-                      }
-                    },
-                    "op": {
-                      "text": "+",
-                      "plus": true
+            "return": {
+              "expression": {
+                "binary": {
+                  "right": {
+                    "expression": {
+                      "name": "name"
+                    }
+                  },
+                  "left": {
+                    "expression": {
+                      "string": "\"Hello, \""
                     }
                   }
                 }

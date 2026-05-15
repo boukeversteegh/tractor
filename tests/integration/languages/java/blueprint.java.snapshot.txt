@@ -30,30 +30,30 @@ program/
   │   ├─ name = "Demo"
   │   ├─ generic/
   │   │   ├─ name = "T"
-  │   │   └─ extends/type[generic]/
+  │   │   └─ extends/generic_type/
   │   │       ├─ name = "Comparable"
-  │   │       └─ type/name = "T"
+  │   │       └─ name = "T"
   │   ├─ extends/type/name = "Base"
-  │   ├─ implements/type[generic]/
+  │   ├─ implements/generic_type/
   │   │   ├─ name = "Handler"
-  │   │   └─ type/name = "T"
+  │   │   └─ name = "T"
   │   └─ body/
   │       ├─ comment = "// Line comment before a field"
   │       ├─ comment[leading] = "/* block comment */"
   │       ├─ field[public and static and final]/
   │       │   ├─ type/name = "int"
   │       │   ├─ name = "MAX"
-  │       │   └─ value/expression/int = "100"
+  │       │   └─ expression/int = "100"
   │       ├─ field[private]/
   │       │   ├─ type/name = "String"
   │       │   └─ name = "name"
   │       ├─ field[protected]/
-  │       │   ├─ type[generic]/
+  │       │   ├─ generic_type/
   │       │   │   ├─ name = "List"
-  │       │   │   └─ type/type[generic]/
+  │       │   │   └─ generic_type/
   │       │   │       ├─ name = "Map"
-  │       │   │       ├─ type/name = "String"
-  │       │   │       └─ type/name = "T"
+  │       │   │       ├─ name = "String"
+  │       │   │       └─ name = "T"
   │       │   └─ name = "items"
   │       ├─ field[package]/
   │       │   ├─ type/name = "int"
@@ -73,26 +73,21 @@ program/
   │       │   └─ body/
   │       │       ├─ call[super] = "();"
   │       │       └─ expression/assign/
-  │       │           ├─ left/expression/object[access]/
-  │       │           │   ├─ this = "this"
-  │       │           │   └─ member/name = "name"
-  │       │           ├─ op = "="
-  │       │           └─ right/expression/name = "name"
+  │       │           ├─ expression/access/this = "this"
+  │       │           └─ expression/name = "name"
   │       ├─ method[public and static]/
   │       │   ├─ generic/name = "R"
   │       │   ├─ returns/type/name = "R"
   │       │   ├─ name = "factory"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[generic]/
+  │       │   │   ├─ generic_type/
   │       │   │   │   ├─ name = "Function"
-  │       │   │   │   ├─ type/name = "String"
-  │       │   │   │   └─ type/name = "R"
+  │       │   │   │   ├─ name = "String"
+  │       │   │   │   └─ name = "R"
   │       │   │   └─ name = "mapper"
-  │       │   └─ body/return/expression/object[access]/
+  │       │   └─ body/return/expression/access/
   │       │       ├─ name = "mapper"
-  │       │       └─ call/
-  │       │           ├─ name = "apply"
-  │       │           └─ string = "\"hello\""
+  │       │       └─ string = "\"hello\""
   │       ├─ method[public and synchronized]/
   │       │   ├─ annotation/name = "Override"
   │       │   ├─ returns/type/name = "T"
@@ -104,17 +99,14 @@ program/
   │       │   └─ body/if/
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/name = "input"
-  │       │       │   ├─ op[equals] = "=="
   │       │       │   └─ right/expression/null = "null"
-  │       │       ├─ body/throw/expression/new/
+  │       │       ├─ body/throw/expression/object_creation/
   │       │       │   ├─ name = "IllegalArgumentException"
   │       │       │   └─ string = "\"null\""
-  │       │       ├─ else_if/
-  │       │       │   ├─ condition/expression/unary/
-  │       │       │   │   ├─ op[logical and not] = "!"
-  │       │       │   │   └─ name = "ready"
-  │       │       │   └─ body/return/expression/null = "null"
-  │       │       └─ else/body/return/expression/name = "input"
+  │       │       └─ else_if/
+  │       │           ├─ condition/expression/unary/name = "ready"
+  │       │           ├─ body/return/expression/null = "null"
+  │       │           └─ else/body/return/expression/name = "input"
   │       ├─ method[public]/
   │       │   ├─ returns/type/name = "String"
   │       │   ├─ name = "describe"
@@ -124,13 +116,11 @@ program/
   │       │   └─ body/return/expression/ternary/
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/name = "n"
-  │       │       │   ├─ op[compare and greater] = ">"
   │       │       │   └─ right/expression/int = "0"
   │       │       ├─ then/expression/string = "\"positive\""
   │       │       └─ else/expression/ternary/
   │       │           ├─ condition/expression/binary/
   │       │           │   ├─ left/expression/name = "n"
-  │       │           │   ├─ op[compare and less] = "<"
   │       │           │   └─ right/expression/int = "0"
   │       │           ├─ then/expression/string = "\"negative\""
   │       │           └─ else/expression/string = "\"zero\""
@@ -144,30 +134,26 @@ program/
   │       │       ├─ variable/
   │       │       │   ├─ type/name = "int"
   │       │       │   ├─ name = "total"
-  │       │       │   └─ value/expression/int = "0"
+  │       │       │   └─ expression/int = "0"
   │       │       ├─ foreach/
   │       │       │   ├─ type/name = "int"
   │       │       │   ├─ name = "x"
   │       │       │   ├─ value/expression/name = "xs"
   │       │       │   └─ body/expression/assign/
-  │       │       │       ├─ left/expression/name = "total"
-  │       │       │       ├─ op[assign and plus] = "+="
-  │       │       │       └─ right/expression/name = "x"
+  │       │       │       ├─ expression/name = "total"
+  │       │       │       └─ expression/name = "x"
   │       │       ├─ variable/
   │       │       │   ├─ type/name = "int"
   │       │       │   ├─ name = "i"
-  │       │       │   └─ value/expression/int = "0"
+  │       │       │   └─ expression/int = "0"
   │       │       ├─ while/
   │       │       │   ├─ condition/expression/binary/
   │       │       │   │   ├─ left/expression/name = "i"
-  │       │       │   │   ├─ op[compare and less] = "<"
   │       │       │   │   └─ right/expression/int = "3"
   │       │       │   └─ body/expression/assign/
-  │       │       │       ├─ left/expression/name = "i"
-  │       │       │       ├─ op = "="
-  │       │       │       └─ right/expression/binary/
+  │       │       │       ├─ expression/name = "i"
+  │       │       │       └─ expression/binary/
   │       │       │           ├─ left/expression/name = "i"
-  │       │       │           ├─ op[plus] = "+"
   │       │       │           └─ right/expression/int = "1"
   │       │       └─ return/expression/name = "total"
   │       ├─ method[public]/
@@ -184,21 +170,15 @@ program/
   │       │       │   │   └─ name = "i"
   │       │       │   └─ expression/binary/
   │       │       │       ├─ left/expression/string = "\"int \""
-  │       │       │       ├─ op[plus] = "+"
   │       │       │       └─ right/expression/name = "i"
   │       │       ├─ arm/
   │       │       │   ├─ case/
   │       │       │   │   ├─ pattern/
   │       │       │   │   │   ├─ type/name = "String"
   │       │       │   │   │   └─ name = "s"
-  │       │       │   │   └─ guard/unary/
-  │       │       │   │       ├─ op[logical and not] = "!"
-  │       │       │   │       └─ object[access]/
-  │       │       │   │           ├─ name = "s"
-  │       │       │   │           └─ call/name = "isEmpty"
+  │       │       │   │   └─ guard/unary/access/name = "s"
   │       │       │   └─ expression/binary/
   │       │       │       ├─ left/expression/string = "\"non-empty: \""
-  │       │       │       ├─ op[plus] = "+"
   │       │       │       └─ right/expression/name = "s"
   │       │       └─ arm/
   │       │           ├─ case = "default"
@@ -213,7 +193,7 @@ program/
   │       │       │   ├─ type/name = "U"
   │       │       │   └─ name = "input"
   │       │       └─ throws/type/name = "IllegalArgumentException"
-  │       ├─ enum[public]/
+  │       ├─ class[public]/
   │       │   ├─ name = "Color"
   │       │   └─ body/
   │       │       ├─ constant/name = "RED"
@@ -241,27 +221,20 @@ program/
   │                   ├─ condition/expression/binary/
   │                   │   ├─ left/expression/binary/
   │                   │   │   ├─ left/expression/name = "x"
-  │                   │   │   ├─ op[compare and less] = "<"
   │                   │   │   └─ right/expression/int = "0"
-  │                   │   ├─ op[logical and or] = "||"
   │                   │   └─ right/expression/binary/
   │                   │       ├─ left/expression/name = "y"
-  │                   │       ├─ op[compare and less] = "<"
   │                   │       └─ right/expression/int = "0"
-  │                   └─ body/new/name = "IllegalArgumentException"
+  │                   └─ body/object_creation/name = "IllegalArgumentException"
   ├─ class[package]/
   │   ├─ name = "Base"
   │   └─ body/method[package]/
   │       ├─ returns/type/name = "String"
   │       ├─ name = "greet"
-  │       └─ body/return/expression/object[access]/
+  │       └─ body/return/expression/access/
   │           ├─ name = "String"
-  │           └─ call/
-  │               ├─ name = "format"
-  │               ├─ string = "\"hello from %s\""
-  │               └─ object[access]/
-  │                   ├─ call/name = "getClass"
-  │                   └─ call/name = "getSimpleName"
+  │           ├─ string = "\"hello from %s\""
+  │           └─ access/call/name = "getClass"
   ├─ comment = "// Iter 19: new shapes — control flow, expressions, literals, patterns."
   ├─ comment[leading] = "/** @interface (annotation type) with a constant. */"
   ├─ interface/
@@ -283,9 +256,8 @@ program/
           │   ├─ type/name = "int"
           │   └─ name = "SEED"
           ├─ block[static]/expression/assign/
-          │   ├─ left/expression/name = "SEED"
-          │   ├─ op = "="
-          │   └─ right/expression/int = "42"
+          │   ├─ expression/name = "SEED"
+          │   └─ expression/int = "42"
           ├─ comment[leading] = "/** Array initializer, char literal, class literal, method reference. */"
           ├─ method[package]/
           │   ├─ returns/type[void]/name = "void"
@@ -296,27 +268,27 @@ program/
           │       │   │   ├─ name = "int"
           │       │   │   └─ type = "[]"
           │       │   ├─ name = "arr"
-          │       │   └─ value/expression/array[literal]/
+          │       │   └─ expression/array[literal]/
           │       │       ├─ int = "1"
           │       │       ├─ int = "2"
           │       │       └─ int = "3"
           │       ├─ variable/
           │       │   ├─ type/name = "char"
           │       │   ├─ name = "ch"
-          │       │   └─ value/expression/string = "'A'"
+          │       │   └─ expression/string = "'A'"
           │       ├─ variable/
-          │       │   ├─ type[generic]/
+          │       │   ├─ generic_type/
           │       │   │   ├─ name = "Class"
-          │       │   │   └─ type/type = "?"
+          │       │   │   └─ type = "?"
           │       │   ├─ name = "cls"
-          │       │   └─ value/expression/type/name = "String"
+          │       │   └─ expression/type/name = "String"
           │       └─ variable/
-          │           ├─ type[generic]/
+          │           ├─ generic_type/
           │           │   ├─ name = "java.util.function.Function"
-          │           │   ├─ type/name = "Object"
-          │           │   └─ type/name = "String"
+          │           │   ├─ name = "Object"
+          │           │   └─ name = "String"
           │           ├─ name = "ref"
-          │           └─ value/expression/member/
+          │           └─ expression/member/
           │               ├─ name = "String"
           │               └─ name = "valueOf"
           ├─ comment[leading] = "/** Cast, instanceof, assert, break/continue with label. */"
@@ -330,59 +302,50 @@ program/
           │       ├─ variable/
           │       │   ├─ type/name = "int"
           │       │   ├─ name = "n"
-          │       │   └─ value/expression/cast/
-          │       │       ├─ type/type/name = "int"
-          │       │       └─ value/expression/int = "0L"
+          │       │   └─ expression/cast/
+          │       │       ├─ type/name = "int"
+          │       │       └─ int = "0L"
           │       ├─ assert/
           │       │   ├─ binary/
           │       │   │   ├─ left/expression/name = "n"
-          │       │   │   ├─ op[compare and greater and equal] = ">="
           │       │   │   └─ right/expression/int = "0"
           │       │   └─ string = "\"non-negative\""
           │       ├─ variable/
           │       │   ├─ type/name = "boolean"
           │       │   ├─ name = "isStr"
-          │       │   └─ value/expression/is/
-          │       │       ├─ left/expression/name = "o"
-          │       │       └─ right/expression/type/name = "String"
+          │       │   └─ expression/is/
+          │       │       ├─ name = "o"
+          │       │       └─ name = "String"
           │       ├─ label/
           │       │   ├─ name = "outer"
-          │       │   └─ for/
+          │       │   └─ c_for/
           │       │       ├─ variable/
           │       │       │   ├─ type/name = "int"
           │       │       │   ├─ name = "i"
-          │       │       │   └─ value/expression/int = "0"
-          │       │       ├─ condition/expression/binary/
+          │       │       │   └─ expression/int = "0"
+          │       │       ├─ binary/
           │       │       │   ├─ left/expression/name = "i"
-          │       │       │   ├─ op[compare and less] = "<"
           │       │       │   └─ right/expression/int = "5"
-          │       │       ├─ unary[postfix]/
-          │       │       │   ├─ name = "i"
-          │       │       │   └─ op[increment] = "++"
+          │       │       ├─ unary[postfix]/name = "i"
           │       │       └─ body/
           │       │           ├─ if/
           │       │           │   ├─ condition/expression/binary/
           │       │           │   │   ├─ left/expression/name = "i"
-          │       │           │   │   ├─ op[equals] = "=="
           │       │           │   │   └─ right/expression/int = "1"
           │       │           │   └─ body/name = "outer"
           │       │           └─ if/
           │       │               ├─ condition/expression/binary/
           │       │               │   ├─ left/expression/name = "i"
-          │       │               │   ├─ op[equals] = "=="
           │       │               │   └─ right/expression/int = "3"
           │       │               └─ body/name = "outer"
           │       ├─ variable/
           │       │   ├─ type/name = "int"
           │       │   ├─ name = "k"
-          │       │   └─ value/expression/int = "0"
-          │       └─ do/
-          │           ├─ body/expression/unary[postfix]/
-          │           │   ├─ name = "k"
-          │           │   └─ op[increment] = "++"
-          │           └─ condition/expression/binary/
+          │       │   └─ expression/int = "0"
+          │       └─ do_while/
+          │           ├─ body/expression/unary[postfix]/name = "k"
+          │           └─ binary/
           │               ├─ left/expression/name = "k"
-          │               ├─ op[compare and less] = "<"
           │               └─ right/expression/int = "3"
           ├─ comment[leading] = "/** Try-with-resources + multi-catch + synchronized block. */"
           ├─ method[package]/
@@ -394,9 +357,8 @@ program/
           │       │   ├─ body/if/
           │       │   │   ├─ condition/expression/binary/
           │       │   │   │   ├─ left/expression/name = "s"
-          │       │   │   │   ├─ op[equals] = "=="
           │       │   │   │   └─ right/expression/null = "null"
-          │       │   │   └─ body/new/name = "java.io.IOException"
+          │       │   │   └─ body/object_creation/name = "java.io.IOException"
           │       │   └─ catch/
           │       │       ├─ type/
           │       │       │   ├─ name = "java.io.IOException"
@@ -417,7 +379,7 @@ program/
                   ├─ variable/
                   │   ├─ type/name = "int"
                   │   ├─ name = "v"
-                  │   └─ value/expression/switch/
+                  │   └─ expression/switch/
                   │       ├─ name = "o"
                   │       ├─ arm/
                   │       │   ├─ case/pattern/

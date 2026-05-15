@@ -1,348 +1,389 @@
 {
-  "tag": {
-    "open": true
-  },
-  "comments": [
-    "// Blueprint fixture — exercises every major PHP construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented.",
-    "/**\n * Demo class with various PHP features.\n */",
-    "// Iter 17 shapes: nullsafe, anonymous class, intersection / DNF / bottom\n// type, function-static / global vars, dynamic var name, property\n// promotion, cast type, list-destructure, clone / unset / unique-label,\n// shell command, error suppression, augmented assignment, sequence /\n// reference assignment, first-class callable, heredoc / nowdoc.",
-    "// Intersection type in parameter position.",
-    "// DNF type in parameter position.",
-    "// Bottom type (`never`) in return position."
-  ],
+  "$type": "program",
   "declare": {
-    "node": 1
+    "int": "1"
+  },
+  "echo": {
+    "binary": {
+      "left": {
+        "expression": {
+          "binary": {
+            "left": {
+              "expression": {
+                "string": {}
+              }
+            },
+            "right": {
+              "expression": {
+                "call": {
+                  "argument": {
+                    "int": "5"
+                  },
+                  "variable": {
+                    "name": "closure"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "right": {
+        "expression": {
+          "string": {}
+        }
+      }
+    }
+  },
+  "enum": {
+    "method": {
+      "public": true,
+      "body": {
+        "return": {
+          "match": {
+            "condition": {
+              "expression": {
+                "variable": {
+                  "name": "this"
+                }
+              }
+            },
+            "$children": [
+              {
+                "$type": "arm",
+                "member": {
+                  "static": true,
+                  "$children": [
+                    "Status",
+                    "Active"
+                  ]
+                },
+                "string": {}
+              },
+              {
+                "$type": "arm",
+                "member": {
+                  "static": true,
+                  "$children": [
+                    "Status",
+                    "Inactive"
+                  ]
+                },
+                "string": {}
+              },
+              {
+                "$type": "arm",
+                "member": {
+                  "static": true,
+                  "$children": [
+                    "Status",
+                    "Pending"
+                  ]
+                },
+                "string": {}
+              }
+            ]
+          }
+        }
+      },
+      "name": "label",
+      "type": "string"
+    },
+    "name": "Status",
+    "type": "string",
+    "$children": [
+      {
+        "$type": "constant",
+        "name": "Active",
+        "string": {}
+      },
+      {
+        "$type": "constant",
+        "name": "Inactive",
+        "string": {}
+      },
+      {
+        "$type": "constant",
+        "name": "Pending",
+        "string": {}
+      }
+    ]
   },
   "namespace": {
-    "names": [
+    "$children": [
       "App",
       "Blueprint"
     ]
   },
-  "uses": [
-    {
-      "names": [
-        "App",
-        "Base"
-      ]
-    },
-    {
-      "names": [
-        "App",
-        "Logger"
-      ],
-      "name": "Log"
-    },
-    {
-      "group": true,
-      "path": {
-        "name": "App"
-      },
-      "uses": [
-        {
-          "name": "First"
-        },
-        {
-          "name": "Second"
+  "tag": {
+    "open": true
+  },
+  "trait": {
+    "method": {
+      "protected": true,
+      "body": {
+        "echo": {
+          "string": {
+            "interpolation": {
+              "variable": {
+                "name": "msg"
+              }
+            }
+          }
         }
-      ]
-    }
-  ],
-  "classes": [
+      },
+      "name": "log",
+      "parameter": {
+        "type": "string",
+        "variable": {
+          "name": "msg"
+        }
+      },
+      "type": "void"
+    },
+    "name": "Loggable"
+  },
+  "$children": [
     {
+      "$type": "class",
       "abstract": true,
       "attribute": {
-        "name": "Attribute",
-        "arguments": [
+        "argument": {
+          "member": {
+            "static": true,
+            "$children": [
+              "Attribute",
+              "TARGET_CLASS"
+            ]
+          }
+        },
+        "name": "Attribute"
+      },
+      "extends": {
+        "type": {
+          "name": "Base"
+        }
+      },
+      "implements": {
+        "$children": [
           {
-            "member": {
-              "static": true,
-              "names": [
-                "Attribute",
-                "TARGET_CLASS"
-              ]
-            }
+            "$type": "type",
+            "name": "Speaker"
+          },
+          {
+            "$type": "type",
+            "name": "Countable"
           }
         ]
       },
       "name": "Demo",
-      "extends": {
-        "name": "Base"
-      },
-      "implements": {
-        "names": [
-          "Speaker",
-          "Countable"
-        ]
-      },
       "use": {
         "name": "Loggable"
       },
-      "consts": [
+      "$children": [
         {
+          "$type": "const",
           "public": true,
           "constant": {
-            "name": "MAX",
-            "node": 100
+            "int": "100",
+            "name": "MAX"
           }
         },
         {
+          "$type": "const",
           "private": true,
           "constant": {
             "name": "DEFAULT_NAME",
             "string": {}
           }
-        }
-      ],
-      "fields": [
-        {
-          "private": true,
-          "type": true,
-          "name": "$name"
         },
         {
+          "$type": "field",
+          "private": true,
+          "name": "$name",
+          "type": "string"
+        },
+        {
+          "$type": "field",
           "public": true,
           "readonly": true,
-          "type": true,
-          "name": "$count"
+          "name": "$count",
+          "type": "int"
         },
         {
+          "$type": "field",
           "protected": true,
+          "name": "$label",
+          "null": "null",
           "type": {
             "optional": true,
-            "type": true
-          },
-          "name": "$label",
-          "node": null
+            "type": "string"
+          }
         },
         {
+          "$type": "field",
           "public": true,
           "static": true,
-          "type": true,
+          "int": "0",
           "name": "$registry",
-          "node": 0
-        }
-      ],
-      "methods": [
+          "type": "int"
+        },
         {
+          "$type": "method",
           "public": true,
-          "name": "__construct",
-          "parameters": [
-            {
-              "type": true,
-              "variable": {
-                "name": "name"
-              }
-            },
-            {
-              "type": true,
-              "variable": {
-                "name": "count"
-              },
-              "node": 0
-            }
-          ],
           "body": {
-            "expressions": [
+            "$children": [
               {
-                "node": {
-                  "assign": true,
-                  "left": {
-                    "access": true,
-                    "receiver": {
-                      "name": "this"
+                "$type": "expression",
+                "assign": {
+                  "$children": [
+                    {
+                      "$type": "expression",
+                      "access": {
+                        "variable": {
+                          "name": "this"
+                        }
+                      }
                     },
-                    "member": {
-                      "name": "name"
-                    }
-                  },
-                  "right": {
-                    "name": "name"
-                  }
-                }
-              },
-              {
-                "node": {
-                  "assign": true,
-                  "left": {
-                    "access": true,
-                    "receiver": {
-                      "name": "this"
-                    },
-                    "member": {
-                      "name": "count"
-                    }
-                  },
-                  "right": {
-                    "name": "count"
-                  }
-                }
-              }
-            ]
-          }
-        },
-        {
-          "public": true,
-          "abstract": true,
-          "name": "render",
-          "parameters": [],
-          "type": true
-        },
-        {
-          "public": true,
-          "static": true,
-          "final": true,
-          "name": "create",
-          "parameters": [
-            {
-              "type": true,
-              "variable": {
-                "name": "name"
-              }
-            }
-          ],
-          "type": {
-            "name": "static"
-          },
-          "body": {
-            "return": {
-              "new": {
-                "name": "static",
-                "arguments": [
-                  {
-                    "variable": {
-                      "name": "name"
-                    }
-                  }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "public": true,
-          "name": "greet",
-          "parameters": [
-            {
-              "type": {
-                "optional": true,
-                "type": true
-              },
-              "variable": {
-                "name": "who"
-              },
-              "node": null
-            },
-            {
-              "variadic": true,
-              "type": true,
-              "variable": {
-                "name": "extras"
-              }
-            }
-          ],
-          "type": true,
-          "body": {
-            "expression": {
-              "node": {
-                "assign": true,
-                "left": {
-                  "name": "target"
-                },
-                "right": {
-                  "left": {
-                    "node": {
-                      "name": "who"
-                    }
-                  },
-                  "op": {
-                    "text": "??",
-                    "null_coalesce": true
-                  },
-                  "right": {
-                    "node": {
-                      "access": true,
-                      "receiver": {
-                        "name": "this"
-                      },
-                      "member": {
+                    {
+                      "$type": "expression",
+                      "variable": {
                         "name": "name"
                       }
                     }
-                  }
+                  ]
                 }
+              },
+              {
+                "$type": "expression",
+                "assign": {
+                  "$children": [
+                    {
+                      "$type": "expression",
+                      "access": {
+                        "variable": {
+                          "name": "this"
+                        }
+                      }
+                    },
+                    {
+                      "$type": "expression",
+                      "variable": {
+                        "name": "count"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "name": "__construct",
+          "$children": [
+            {
+              "$type": "parameter",
+              "type": "string",
+              "variable": {
+                "name": "name"
+              }
+            },
+            {
+              "$type": "parameter",
+              "int": "0",
+              "type": "int",
+              "variable": {
+                "name": "count"
+              }
+            }
+          ]
+        },
+        {
+          "$type": "method",
+          "public": true,
+          "abstract": true,
+          "name": "render",
+          "type": "string"
+        },
+        {
+          "$type": "method",
+          "public": true,
+          "static": true,
+          "final": true,
+          "body": {
+            "return": {
+              "new": {
+                "argument": {
+                  "variable": {
+                    "name": "name"
+                  }
+                },
+                "name": "static"
+              }
+            }
+          },
+          "name": "create",
+          "parameter": {
+            "type": "string",
+            "variable": {
+              "name": "name"
+            }
+          },
+          "type": {
+            "name": "static"
+          }
+        },
+        {
+          "$type": "method",
+          "public": true,
+          "body": {
+            "expression": {
+              "assign": {
+                "$children": [
+                  {
+                    "$type": "expression",
+                    "variable": {
+                      "name": "target"
+                    }
+                  },
+                  {
+                    "$type": "expression",
+                    "binary": {
+                      "left": {
+                        "expression": {
+                          "variable": {
+                            "name": "who"
+                          }
+                        }
+                      },
+                      "right": {
+                        "expression": {
+                          "access": {
+                            "variable": {
+                              "name": "this"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
               }
             },
             "if": {
               "condition": {
                 "expression": {
-                  "node": {
+                  "binary": {
                     "left": {
-                      "node": {
-                        "access": true,
-                        "receiver": {
-                          "name": "this"
-                        },
-                        "member": {
-                          "name": "count"
-                        }
-                      }
-                    },
-                    "op": {
-                      "text": ">",
-                      "greater": true
-                    },
-                    "right": {
-                      "node": 10
-                    }
-                  }
-                }
-              },
-              "then": {
-                "body": {
-                  "return": {
-                    "string": {
-                      "interpolation": {
-                        "variable": {
-                          "name": "target"
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "else_if": {
-                "condition": {
-                  "expression": {
-                    "node": {
-                      "left": {
-                        "node": {
-                          "access": true,
-                          "receiver": {
+                      "expression": {
+                        "access": {
+                          "variable": {
                             "name": "this"
-                          },
-                          "member": {
-                            "name": "count"
                           }
                         }
-                      },
-                      "op": {
-                        "text": ">",
-                        "greater": true
-                      },
-                      "right": {
-                        "node": 0
                       }
-                    }
-                  }
-                },
-                "body": {
-                  "return": {
-                    "string": {
-                      "interpolation": {
-                        "variable": {
-                          "name": "target"
-                        }
+                    },
+                    "right": {
+                      "expression": {
+                        "int": "10"
                       }
                     }
                   }
@@ -360,130 +401,195 @@
                     }
                   }
                 }
+              },
+              "else_if": {
+                "body": {
+                  "return": {
+                    "string": {
+                      "interpolation": {
+                        "variable": {
+                          "name": "target"
+                        }
+                      }
+                    }
+                  }
+                },
+                "condition": {
+                  "expression": {
+                    "binary": {
+                      "left": {
+                        "expression": {
+                          "access": {
+                            "variable": {
+                              "name": "this"
+                            }
+                          }
+                        }
+                      },
+                      "right": {
+                        "expression": {
+                          "int": "0"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "then": {
+                "body": {
+                  "return": {
+                    "string": {
+                      "interpolation": {
+                        "variable": {
+                          "name": "target"
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
-          }
+          },
+          "name": "greet",
+          "type": "string",
+          "$children": [
+            {
+              "$type": "parameter",
+              "null": "null",
+              "type": {
+                "optional": true,
+                "type": "string"
+              },
+              "variable": {
+                "name": "who"
+              }
+            },
+            {
+              "$type": "parameter",
+              "variadic": true,
+              "type": "string",
+              "variable": {
+                "name": "extras"
+              }
+            }
+          ]
         },
         {
+          "$type": "method",
           "public": true,
-          "name": "describe",
-          "parameters": [
-            {
-              "type": true,
-              "variable": {
-                "name": "n"
-              }
-            }
-          ],
-          "type": true,
           "body": {
             "return": {
               "ternary": {
-                "node": {
+                "binary": {
                   "left": {
-                    "node": {
-                      "name": "n"
+                    "expression": {
+                      "variable": {
+                        "name": "n"
+                      }
                     }
                   },
-                  "op": {
-                    "text": ">",
-                    "greater": true
-                  },
                   "right": {
-                    "node": 0
+                    "expression": {
+                      "int": "0"
+                    }
                   }
                 },
                 "string": {},
                 "ternary": {
-                  "node": {
+                  "binary": {
                     "left": {
-                      "node": {
-                        "name": "n"
+                      "expression": {
+                        "variable": {
+                          "name": "n"
+                        }
                       }
                     },
-                    "op": {
-                      "text": "<",
-                      "less": true
-                    },
                     "right": {
-                      "node": 0
+                      "expression": {
+                        "int": "0"
+                      }
                     }
                   },
-                  "strings": [
-                    {},
-                    {}
+                  "$children": [
+                    {
+                      "$type": "string"
+                    },
+                    {
+                      "$type": "string"
+                    }
                   ]
                 }
               }
             }
-          }
+          },
+          "name": "describe",
+          "parameter": {
+            "type": "int",
+            "variable": {
+              "name": "n"
+            }
+          },
+          "type": "string"
         },
         {
+          "$type": "method",
           "public": true,
-          "name": "categorize",
-          "parameters": [
-            {
-              "type": true,
-              "variable": {
-                "name": "value"
-              }
-            }
-          ],
-          "type": true,
           "body": {
             "return": {
               "match": {
                 "condition": {
                   "expression": {
-                    "bool": true
+                    "bool": "true"
                   }
                 },
-                "arms": [
+                "$children": [
                   {
-                    "node": {
-                      "callee": "is_int",
+                    "$type": "arm",
+                    "call": {
                       "argument": {
                         "variable": {
                           "name": "value"
                         }
-                      }
+                      },
+                      "name": "is_int"
                     },
                     "string": {}
                   },
                   {
-                    "node": {
+                    "$type": "arm",
+                    "logical": {
                       "left": {
-                        "node": {
-                          "callee": "is_string",
-                          "argument": {
-                            "variable": {
-                              "name": "value"
-                            }
+                        "expression": {
+                          "call": {
+                            "argument": {
+                              "variable": {
+                                "name": "value"
+                              }
+                            },
+                            "name": "is_string"
                           }
                         }
-                      },
-                      "op": {
-                        "text": "&&",
-                        "and": true
                       },
                       "right": {
-                        "node": {
-                          "left": {
-                            "node": {
-                              "callee": "strlen",
-                              "argument": {
-                                "variable": {
-                                  "name": "value"
+                        "expression": {
+                          "binary": {
+                            "left": {
+                              "expression": {
+                                "call": {
+                                  "argument": {
+                                    "variable": {
+                                      "name": "value"
+                                    }
+                                  },
+                                  "name": "strlen"
                                 }
                               }
+                            },
+                            "right": {
+                              "expression": {
+                                "int": "0"
+                              }
                             }
-                          },
-                          "op": {
-                            "text": ">",
-                            "greater": true
-                          },
-                          "right": {
-                            "node": 0
                           }
                         }
                       }
@@ -491,129 +597,123 @@
                     "string": {}
                   },
                   {
-                    "node": {
-                      "callee": "is_array",
+                    "$type": "arm",
+                    "call": {
                       "argument": {
                         "variable": {
                           "name": "value"
                         }
-                      }
+                      },
+                      "name": "is_array"
                     },
                     "string": {}
                   },
                   {
+                    "$type": "arm",
                     "default": true,
                     "string": {}
                   }
                 ]
               }
             }
-          }
+          },
+          "name": "categorize",
+          "parameter": {
+            "type": "mixed",
+            "variable": {
+              "name": "value"
+            }
+          },
+          "type": "string"
         },
         {
+          "$type": "method",
           "public": true,
-          "name": "process",
-          "parameters": [
-            {
-              "type": true,
-              "variable": {
-                "name": "items"
-              }
-            }
-          ],
-          "type": true,
           "body": {
             "expression": {
-              "node": {
-                "assign": true,
-                "left": {
-                  "name": "results"
-                },
-                "right": {}
+              "assign": {
+                "$children": [
+                  {
+                    "$type": "expression",
+                    "variable": {
+                      "name": "results"
+                    }
+                  },
+                  {
+                    "$type": "expression",
+                    "array": "[]"
+                  }
+                ]
               }
             },
             "foreach": {
-              "right": {
-                "expression": {
-                  "variable": {
-                    "name": "items"
-                  }
-                }
-              },
-              "left": {
-                "expression": {
-                  "pair": {
-                    "variables": [
-                      {
-                        "name": "key"
-                      },
-                      {
-                        "name": "item"
-                      }
-                    ]
-                  }
-                }
-              },
               "body": {
                 "if": {
                   "condition": {
                     "expression": {
-                      "node": {
+                      "binary": {
                         "left": {
-                          "node": {
-                            "name": "item"
+                          "expression": {
+                            "variable": {
+                              "name": "item"
+                            }
                           }
                         },
-                        "op": {
-                          "text": "===",
-                          "identical": true
-                        },
                         "right": {
-                          "node": null
+                          "expression": {
+                            "null": "null"
+                          }
                         }
                       }
                     }
                   },
                   "then": {
                     "body": {
-                      "continue": true
+                      "continue": "continue;"
                     }
                   }
                 },
                 "try": {
                   "body": {
                     "expression": {
-                      "node": {
-                        "assign": true,
-                        "left": {
-                          "access": true,
-                          "receiver": {
-                            "name": "results"
-                          },
-                          "index": {
-                            "variable": {
-                              "name": "key"
+                      "assign": {
+                        "$children": [
+                          {
+                            "$type": "expression",
+                            "access": {
+                              "$children": [
+                                {
+                                  "$type": "variable",
+                                  "name": "results"
+                                },
+                                {
+                                  "$type": "variable",
+                                  "name": "key"
+                                }
+                              ]
                             }
-                          }
-                        },
-                        "right": {
-                          "access": true,
-                          "receiver": {
-                            "name": "this"
                           },
-                          "call": {
-                            "name": "transform",
-                            "argument": {
+                          {
+                            "$type": "expression",
+                            "access": {
+                              "argument": {
+                                "variable": {
+                                  "name": "item"
+                                }
+                              },
                               "variable": {
-                                "name": "item"
+                                "name": "this"
                               }
                             }
                           }
-                        }
+                        ]
                       }
                     }
                   },
                   "catch": {
+                    "body": {
+                      "continue": "continue;"
+                    },
                     "types": {
                       "type": {
                         "name": "Throwable"
@@ -621,10 +721,30 @@
                     },
                     "variable": {
                       "name": "e"
-                    },
-                    "body": {
-                      "continue": true
                     }
+                  }
+                }
+              },
+              "left": {
+                "expression": {
+                  "pair": {
+                    "$children": [
+                      {
+                        "$type": "variable",
+                        "name": "key"
+                      },
+                      {
+                        "$type": "variable",
+                        "name": "item"
+                      }
+                    ]
+                  }
+                }
+              },
+              "right": {
+                "expression": {
+                  "variable": {
+                    "name": "items"
                   }
                 }
               }
@@ -634,655 +754,356 @@
                 "name": "results"
               }
             }
-          }
+          },
+          "name": "process",
+          "parameter": {
+            "type": "iterable",
+            "variable": {
+              "name": "items"
+            }
+          },
+          "type": "array"
         },
         {
+          "$type": "method",
           "private": true,
-          "name": "transform",
-          "parameters": [
-            {
-              "type": true,
-              "variable": {
-                "name": "item"
-              }
-            }
-          ],
-          "type": true,
           "body": {
             "return": {
               "variable": {
                 "name": "item"
               }
             }
-          }
+          },
+          "name": "transform",
+          "parameter": {
+            "type": "mixed",
+            "variable": {
+              "name": "item"
+            }
+          },
+          "type": "mixed"
         }
       ]
     },
     {
-      "name": "PromotedDemo",
+      "$type": "class",
       "method": {
         "public": true,
+        "body": "{}",
         "name": "__construct",
-        "parameters": [
+        "$children": [
           {
+            "$type": "parameter",
             "public": true,
             "readonly": true,
             "promoted": true,
-            "type": true,
+            "type": "string",
             "variable": {
               "name": "name"
             }
           },
           {
+            "$type": "parameter",
             "protected": true,
             "promoted": true,
-            "type": true,
+            "int": "0",
+            "type": "int",
             "variable": {
               "name": "count"
-            },
-            "node": 0
+            }
           }
-        ],
-        "body": true
-      }
-    }
-  ],
-  "interfaces": [
+        ]
+      },
+      "name": "PromotedDemo"
+    },
+    "// Blueprint fixture — exercises every major PHP construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented.",
     {
-      "name": "Speaker",
-      "method": {
-        "public": true,
-        "name": "greet",
-        "parameters": [
+      "$type": "comment",
+      "leading": true
+    },
+    "// Iter 17 shapes: nullsafe, anonymous class, intersection / DNF / bottom\n// type, function-static / global vars, dynamic var name, property\n// promotion, cast type, list-destructure, clone / unset / unique-label,\n// shell command, error suppression, augmented assignment, sequence /\n// reference assignment, first-class callable, heredoc / nowdoc.",
+    {
+      "$type": "comment",
+      "leading": true
+    },
+    {
+      "$type": "comment",
+      "leading": true
+    },
+    {
+      "$type": "comment",
+      "leading": true
+    },
+    {
+      "$type": "expression",
+      "assign": {
+        "$children": [
           {
-            "type": {
-              "optional": true,
-              "type": true
-            },
+            "$type": "expression",
             "variable": {
-              "name": "who"
+              "name": "pipeline"
             }
-          }
-        ],
-        "type": true
-      }
-    },
-    {
-      "name": "Countable",
-      "method": {
-        "public": true,
-        "name": "count",
-        "parameters": [],
-        "type": true
-      }
-    },
-    {
-      "name": "Stringable",
-      "method": {
-        "public": true,
-        "name": "__toString",
-        "parameters": [],
-        "type": true
-      }
-    },
-    {
-      "name": "Countable2",
-      "method": {
-        "public": true,
-        "name": "size",
-        "parameters": [],
-        "type": true
-      }
-    }
-  ],
-  "trait": {
-    "name": "Loggable",
-    "method": {
-      "protected": true,
-      "name": "log",
-      "parameters": [
-        {
-          "type": true,
-          "variable": {
-            "name": "msg"
-          }
-        }
-      ],
-      "type": true,
-      "body": {
-        "echo": {
-          "string": {
-            "interpolation": {
-              "variable": {
-                "name": "msg"
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "enum": {
-    "name": "Status",
-    "type": true,
-    "constants": [
-      {
-        "name": "Active",
-        "string": {}
-      },
-      {
-        "name": "Inactive",
-        "string": {}
-      },
-      {
-        "name": "Pending",
-        "string": {}
-      }
-    ],
-    "method": {
-      "public": true,
-      "name": "label",
-      "parameters": [],
-      "type": true,
-      "body": {
-        "return": {
-          "match": {
-            "condition": {
-              "expression": {
-                "variable": {
-                  "name": "this"
+          },
+          {
+            "$type": "expression",
+            "arrow": {
+              "body": {
+                "binary": {
+                  "left": {
+                    "expression": {
+                      "variable": {
+                        "name": "x"
+                      }
+                    }
+                  },
+                  "right": {
+                    "expression": {
+                      "int": "2"
+                    }
+                  }
                 }
-              }
-            },
-            "arms": [
-              {
-                "member": {
-                  "static": true,
-                  "names": [
-                    "Status",
-                    "Active"
-                  ]
-                },
-                "string": {}
               },
-              {
-                "member": {
-                  "static": true,
-                  "names": [
-                    "Status",
-                    "Inactive"
-                  ]
-                },
-                "string": {}
+              "parameter": {
+                "type": "int",
+                "variable": {
+                  "name": "x"
+                }
               },
-              {
-                "member": {
-                  "static": true,
-                  "names": [
-                    "Status",
-                    "Pending"
-                  ]
-                },
-                "string": {}
-              }
-            ]
+              "type": "int"
+            }
           }
-        }
+        ]
       }
-    }
-  },
-  "functions": [
+    },
     {
-      "name": "factory",
-      "parameters": [
-        {
-          "type": true,
-          "variable": {
-            "name": "fn"
+      "$type": "expression",
+      "assign": {
+        "$children": [
+          {
+            "$type": "expression",
+            "variable": {
+              "name": "doubled"
+            }
+          },
+          {
+            "$type": "expression",
+            "call": {
+              "name": "array_map",
+              "$children": [
+                {
+                  "$type": "argument",
+                  "variable": {
+                    "name": "pipeline"
+                  }
+                },
+                {
+                  "$type": "argument",
+                  "array": {
+                    "$children": [
+                      "1",
+                      "2",
+                      "3"
+                    ]
+                  }
+                }
+              ]
+            }
           }
-        },
-        {
-          "variadic": true,
-          "type": true,
-          "variable": {
-            "name": "args"
+        ]
+      }
+    },
+    {
+      "$type": "expression",
+      "assign": {
+        "$children": [
+          {
+            "$type": "expression",
+            "variable": {
+              "name": "closure"
+            }
+          },
+          {
+            "$type": "expression",
+            "function": {
+              "anonymous": true,
+              "body": {
+                "return": {
+                  "binary": {
+                    "left": {
+                      "expression": {
+                        "call": {
+                          "argument": {
+                            "variable": {
+                              "name": "x"
+                            }
+                          },
+                          "variable": {
+                            "name": "pipeline"
+                          }
+                        }
+                      }
+                    },
+                    "right": {
+                      "expression": {
+                        "int": "1"
+                      }
+                    }
+                  }
+                }
+              },
+              "parameter": {
+                "type": "int",
+                "variable": {
+                  "name": "x"
+                }
+              },
+              "type": "int",
+              "variable": {
+                "name": "pipeline"
+              }
+            }
           }
-        }
-      ],
-      "type": true,
+        ]
+      }
+    },
+    {
+      "$type": "function",
       "body": {
         "return": {
-          "node": {
-            "callee": {
-              "name": "fn"
-            },
+          "call": {
             "argument": {
               "spread": {
                 "variable": {
                   "name": "args"
                 }
               }
+            },
+            "variable": {
+              "name": "fn"
             }
           }
         }
-      }
-    },
-    {
-      "name": "shapes",
-      "parameters": [
+      },
+      "name": "factory",
+      "type": "mixed",
+      "$children": [
         {
-          "type": {
-            "optional": true,
-            "type": {
-              "name": "PromotedDemo"
-            }
-          },
+          "$type": "parameter",
+          "type": "callable",
           "variable": {
-            "name": "thing"
+            "name": "fn"
           }
         },
         {
-          "type": true,
+          "$type": "parameter",
+          "variadic": true,
+          "type": "mixed",
           "variable": {
-            "name": "value"
+            "name": "args"
           }
         }
-      ],
-      "type": true,
+      ]
+    },
+    {
+      "$type": "function",
       "body": {
-        "comments": [
-          "// Nullsafe member access + call.",
-          "// Anonymous class.",
-          "// First-class callable + augmented assignment.",
-          "// Reference assignment + by-ref foreach.",
-          "// List destructure.",
-          "// Function-local static + global.",
-          "// Dynamic variable name + cast type.",
-          "// Clone, error suppression, shell.",
-          "// Heredoc / nowdoc.",
-          "// Sequence in a for header.",
-          "// Goto + named label.",
-          "// Match-arm; intersection / DNF / bottom types appear in\n    // declarative positions (parameters / returns), not in\n    // `instanceof` expressions, so the type-shape exercises live in\n    // sibling functions below."
-        ],
-        "expressions": [
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "name"
-              },
-              "right": {
-                "nullsafe": true,
-                "variable": {
-                  "name": "thing"
-                },
-                "name": "name"
-              }
-            }
+        "for": {
+          "body": {
+            "comment": "/* ... */"
           },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "size"
-              },
-              "right": {
-                "access": true,
-                "receiver": {
-                  "name": "thing"
+          "condition": {
+            "expression": {
+              "binary": {
+                "left": {
+                  "expression": {
+                    "variable": {
+                      "name": "i"
+                    }
+                  }
                 },
-                "call": {
-                  "name": "describe"
-                }
-              }
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "anon"
-              },
-              "right": {
-                "class": {
-                  "anonymous": true,
-                  "implements": {
-                    "name": "Stringable"
-                  },
-                  "method": {
-                    "public": true,
-                    "name": "__toString",
-                    "parameters": [],
-                    "type": true,
-                    "body": {
-                      "return": {
-                        "string": {}
-                      }
+                "right": {
+                  "expression": {
+                    "variable": {
+                      "name": "j"
                     }
                   }
                 }
               }
             }
           },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "maker"
-              },
-              "right": {
-                "callee": "strtoupper",
-                "argument": {
-                  "variadic": true
-                }
-              }
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "count"
-              },
-              "right": 0
-            }
-          },
-          {
-            "node": {
-              "plus": true,
-              "left": {
-                "name": "count"
-              },
-              "right": 5
-            }
-          },
-          {
-            "node": {
-              "multiply": true,
-              "left": {
-                "name": "count"
-              },
-              "right": 2
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "items"
-              },
-              "right": {
-                "nodes": [
-                  1,
-                  2,
-                  3
-                ]
-              }
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "alias"
-              },
-              "right": {
-                "access": true,
-                "receiver": {
-                  "name": "items"
+          "$children": [
+            {
+              "$type": "assign",
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "i"
+                  }
                 },
-                "index": {
-                  "node": 0
+                {
+                  "$type": "expression",
+                  "int": "0"
                 }
-              }
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "variables": [
-                  {
-                    "name": "first"
-                  },
-                  {
-                    "name": "second"
+              ]
+            },
+            {
+              "$type": "assign",
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "j"
                   }
-                ]
-              },
-              "right": {
-                "name": "items"
-              }
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "variables": [
-                  {
-                    "name": "third"
-                  },
-                  {
-                    "name": "fifth"
-                  }
-                ]
-              },
-              "right": {
-                "nodes": [
-                  10,
-                  20,
-                  30,
-                  40,
-                  50
-                ]
-              }
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "varname"
-              },
-              "right": {}
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "dynamic": true,
-                "variable": {
-                  "name": "varname"
-                }
-              },
-              "right": 42
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "cast"
-              },
-              "right": {
-                "type": true,
-                "variable": {
-                  "name": "value"
-                }
-              }
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "copy"
-              },
-              "right": {
-                "variable": {
-                  "name": "anon"
-                }
-              }
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "maybe"
-              },
-              "right": {
-                "op": {
-                  "text": "@",
-                  "suppress": true
                 },
-                "operand": {
-                  "callee": "file_get_contents",
-                  "argument": {
-                    "string": {}
-                  }
+                {
+                  "$type": "expression",
+                  "int": "10"
                 }
-              }
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "output"
-              },
-              "right": {}
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "here"
-              },
-              "right": {
-                "heredoc": true
-              }
-            }
-          },
-          {
-            "node": {
-              "assign": true,
-              "left": {
-                "name": "now"
-              },
-              "right": {
-                "nowdoc": true
-              }
-            }
-          }
-        ],
-        "foreach": {
-          "right": {
-            "expression": {
+              ]
+            },
+            {
+              "$type": "unary",
               "variable": {
-                "name": "items"
+                "name": "i"
+              }
+            },
+            {
+              "$type": "unary",
+              "variable": {
+                "name": "j"
+              }
+            }
+          ]
+        },
+        "foreach": {
+          "body": {
+            "expression": {
+              "assign": {
+                "$children": [
+                  {
+                    "$type": "expression",
+                    "variable": {
+                      "name": "x"
+                    }
+                  },
+                  {
+                    "$type": "expression",
+                    "int": "10"
+                  }
+                ]
               }
             }
           },
           "left": {
             "expression": {}
           },
-          "body": {
+          "right": {
             "expression": {
-              "node": {
-                "multiply": true,
-                "left": {
-                  "name": "x"
-                },
-                "right": 10
+              "variable": {
+                "name": "items"
               }
             }
-          }
-        },
-        "unset": {
-          "variable": {
-            "name": "x"
-          }
-        },
-        "variables": [
-          {
-            "static": true,
-            "variable": {
-              "name": "cached"
-            },
-            "node": null
-          },
-          {
-            "global": true,
-            "variable": {
-              "name": "REGISTRY"
-            }
-          }
-        ],
-        "for": {
-          "nodeses": [
-            [
-              {
-                "assign": true,
-                "left": {
-                  "name": "i"
-                },
-                "right": 0
-              },
-              {
-                "assign": true,
-                "left": {
-                  "name": "j"
-                },
-                "right": 10
-              }
-            ],
-            [
-              {
-                "op": {
-                  "text": "++",
-                  "increment": true
-                },
-                "operand": {
-                  "name": "i"
-                }
-              },
-              {
-                "op": {
-                  "text": "--",
-                  "decrement": true
-                },
-                "operand": {
-                  "name": "j"
-                }
-              }
-            ]
-          ],
-          "condition": {
-            "expression": {
-              "node": {
-                "left": {
-                  "node": {
-                    "name": "i"
-                  }
-                },
-                "op": {
-                  "text": "<",
-                  "less": true
-                },
-                "right": {
-                  "node": {
-                    "name": "j"
-                  }
-                }
-              }
-            }
-          },
-          "body": {
-            "comment": "/* ... */"
           }
         },
         "goto": {
@@ -1295,304 +1116,752 @@
           "match": {
             "condition": {
               "expression": {
-                "bool": true
+                "bool": "true"
               }
             },
-            "arms": [
+            "$children": [
               {
-                "nodes": [
-                  {
-                    "left": {
-                      "node": {
+                "$type": "arm",
+                "binary": {
+                  "left": {
+                    "expression": {
+                      "variable": {
                         "name": "value"
                       }
-                    },
-                    "op": {
-                      "text": "instanceof",
-                      "instanceof": true
-                    },
-                    "right": {
-                      "node": "Stringable"
                     }
                   },
-                  1
-                ]
+                  "right": {
+                    "expression": {
+                      "name": "Stringable"
+                    }
+                  }
+                },
+                "int": "1"
               },
               {
-                "nodes": [
-                  {
-                    "left": {
-                      "node": {
+                "$type": "arm",
+                "binary": {
+                  "left": {
+                    "expression": {
+                      "variable": {
                         "name": "value"
                       }
-                    },
-                    "op": {
-                      "text": "instanceof",
-                      "instanceof": true
-                    },
-                    "right": {
-                      "node": "Countable2"
                     }
                   },
-                  2
-                ]
+                  "right": {
+                    "expression": {
+                      "name": "Countable2"
+                    }
+                  }
+                },
+                "int": "2"
               },
               {
+                "$type": "arm",
                 "default": true,
-                "node": 0
+                "int": "0"
               }
             ]
           }
-        }
-      }
-    },
-    {
-      "name": "require_both",
-      "parameters": [
+        },
+        "unset": {
+          "variable": {
+            "name": "x"
+          }
+        },
+        "$children": [
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "comment",
+            "leading": true
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "name"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "member": {
+                    "nullsafe": true,
+                    "name": "name",
+                    "variable": {
+                      "name": "thing"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "size"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "access": {
+                    "variable": {
+                      "name": "thing"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "anon"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "new": {
+                    "class": {
+                      "anonymous": true,
+                      "implements": {
+                        "type": {
+                          "name": "Stringable"
+                        }
+                      },
+                      "method": {
+                        "public": true,
+                        "body": {
+                          "return": {
+                            "string": {}
+                          }
+                        },
+                        "name": "__toString",
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "maker"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "call": {
+                    "argument": {
+                      "variadic": true
+                    },
+                    "name": "strtoupper"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "count"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "int": "0"
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "count"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "int": "5"
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "count"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "int": "2"
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "items"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "array": {
+                    "$children": [
+                      "1",
+                      "2",
+                      "3"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "alias"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "access": {
+                    "int": "0",
+                    "variable": {
+                      "name": "items"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "array": {
+                    "$children": [
+                      {
+                        "$type": "variable",
+                        "name": "first"
+                      },
+                      {
+                        "$type": "variable",
+                        "name": "second"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "items"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "array": {
+                    "$children": [
+                      {
+                        "$type": "variable",
+                        "name": "third"
+                      },
+                      {
+                        "$type": "variable",
+                        "name": "fifth"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "array": {
+                    "$children": [
+                      "10",
+                      "20",
+                      "30",
+                      "40",
+                      "50"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "varname"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "string": {}
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "dynamic": true,
+                    "variable": {
+                      "name": "varname"
+                    }
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "int": "42"
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "cast"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "cast": {
+                    "type": "int",
+                    "variable": {
+                      "name": "value"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "copy"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "clone": {
+                    "variable": {
+                      "name": "anon"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "maybe"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "unary": {
+                    "call": {
+                      "argument": {
+                        "string": {}
+                      },
+                      "name": "file_get_contents"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "output"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "shell": {}
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "here"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "string": {
+                    "heredoc": true
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "expression",
+            "assign": {
+              "$children": [
+                {
+                  "$type": "expression",
+                  "variable": {
+                    "name": "now"
+                  }
+                },
+                {
+                  "$type": "expression",
+                  "string": {
+                    "nowdoc": true
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "variable",
+            "static": true,
+            "null": "null",
+            "variable": {
+              "name": "cached"
+            }
+          },
+          {
+            "$type": "variable",
+            "global": true,
+            "variable": {
+              "name": "REGISTRY"
+            }
+          }
+        ]
+      },
+      "name": "shapes",
+      "type": "mixed",
+      "$children": [
         {
+          "$type": "parameter",
           "type": {
-            "intersection": true,
-            "types": [
-              {
-                "name": "Stringable"
-              },
-              {
-                "name": "Countable2"
-              }
-            ]
+            "optional": true,
+            "type": {
+              "name": "PromotedDemo"
+            }
           },
           "variable": {
             "name": "thing"
           }
+        },
+        {
+          "$type": "parameter",
+          "type": "mixed",
+          "variable": {
+            "name": "value"
+          }
         }
-      ],
-      "type": true,
+      ]
+    },
+    {
+      "$type": "function",
       "body": {
         "return": {
-          "node": {
-            "access": true,
-            "receiver": {
+          "access": {
+            "variable": {
               "name": "thing"
-            },
-            "call": {
-              "name": "size"
             }
           }
         }
-      }
+      },
+      "name": "require_both",
+      "parameter": {
+        "type": {
+          "intersection": true,
+          "$children": [
+            {
+              "$type": "type",
+              "name": "Stringable"
+            },
+            {
+              "$type": "type",
+              "name": "Countable2"
+            }
+          ]
+        },
+        "variable": {
+          "name": "thing"
+        }
+      },
+      "type": "int"
     },
     {
-      "name": "dnf_demo",
-      "parameters": [
-        {
-          "type": {
-            "disjunctive": true,
-            "types": [
-              {
-                "intersection": true,
-                "types": [
-                  {
-                    "name": "Stringable"
-                  },
-                  {
-                    "name": "Countable2"
-                  }
-                ]
-              },
-              true
-            ]
-          },
-          "variable": {
-            "name": "thing"
-          }
-        }
-      ],
-      "type": true,
+      "$type": "function",
       "body": {
         "return": {
-          "node": {
+          "binary": {
             "left": {
-              "node": {
-                "name": "thing"
+              "expression": {
+                "variable": {
+                  "name": "thing"
+                }
               }
-            },
-            "op": {
-              "text": "!==",
-              "not_identical": true
             },
             "right": {
-              "node": null
+              "expression": {
+                "null": "null"
+              }
             }
           }
         }
-      }
+      },
+      "name": "dnf_demo",
+      "parameter": {
+        "type": {
+          "disjunctive": true,
+          "$children": [
+            {
+              "$type": "type",
+              "intersection": true,
+              "$children": [
+                {
+                  "$type": "type",
+                  "name": "Stringable"
+                },
+                {
+                  "$type": "type",
+                  "name": "Countable2"
+                }
+              ]
+            },
+            "null"
+          ]
+        },
+        "variable": {
+          "name": "thing"
+        }
+      },
+      "type": "bool"
     },
     {
-      "name": "never_returns",
-      "parameters": [],
-      "type": {
-        "bottom": true
-      },
+      "$type": "function",
       "body": {
         "expression": {
           "throw": {
             "expression": {
               "new": {
-                "name": "RuntimeException",
-                "arguments": [
-                  {
-                    "string": {}
-                  }
-                ]
+                "argument": {
+                  "string": {}
+                },
+                "name": "RuntimeException"
               }
             }
           }
         }
-      }
-    }
-  ],
-  "expressions": [
-    {
-      "node": {
-        "assign": true,
-        "left": {
-          "name": "pipeline"
-        },
-        "right": {
-          "parameters": [
-            {
-              "type": true,
-              "variable": {
-                "name": "x"
-              }
-            }
-          ],
-          "type": true,
-          "body": {
-            "node": {
-              "left": {
-                "node": {
-                  "name": "x"
-                }
-              },
-              "op": {
-                "text": "*",
-                "multiply": true
-              },
-              "right": {
-                "node": 2
-              }
-            }
-          }
-        }
+      },
+      "name": "never_returns",
+      "type": {
+        "bottom": true
       }
     },
     {
-      "node": {
-        "assign": true,
-        "left": {
-          "name": "doubled"
-        },
-        "right": {
-          "callee": "array_map",
-          "arguments": [
-            {
-              "variable": {
-                "name": "pipeline"
-              }
-            },
-            {
-              "array": {
-                "nodes": [
-                  1,
-                  2,
-                  3
-                ]
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "node": {
-        "assign": true,
-        "left": {
-          "name": "closure"
-        },
-        "right": {
-          "anonymous": true,
-          "parameters": [
-            {
-              "type": true,
-              "variable": {
-                "name": "x"
-              }
-            }
-          ],
+      "$type": "interface",
+      "method": {
+        "public": true,
+        "name": "greet",
+        "parameter": {
+          "type": {
+            "optional": true,
+            "type": "string"
+          },
           "variable": {
-            "name": "pipeline"
-          },
-          "type": true,
-          "body": {
-            "return": {
-              "node": {
-                "left": {
-                  "node": {
-                    "callee": {
-                      "name": "pipeline"
-                    },
-                    "argument": {
-                      "variable": {
-                        "name": "x"
-                      }
-                    }
-                  }
-                },
-                "op": {
-                  "text": "+",
-                  "plus": true
-                },
-                "right": {
-                  "node": 1
-                }
-              }
-            }
+            "name": "who"
           }
-        }
-      }
-    }
-  ],
-  "echo": {
-    "node": {
-      "left": {
-        "node": {
-          "left": {
-            "node": {}
-          },
-          "op": {
-            "text": ".",
-            "concat": true
-          },
-          "right": {
-            "node": {
-              "callee": {
-                "name": "closure"
-              },
-              "argument": {
-                "node": 5
-              }
-            }
-          }
-        }
+        },
+        "type": "string"
       },
-      "op": {
-        "text": ".",
-        "concat": true
+      "name": "Speaker"
+    },
+    {
+      "$type": "interface",
+      "method": {
+        "public": true,
+        "name": "count",
+        "type": "int"
       },
-      "right": {
-        "node": {}
+      "name": "Countable"
+    },
+    {
+      "$type": "interface",
+      "method": {
+        "public": true,
+        "name": "__toString",
+        "type": "string"
+      },
+      "name": "Stringable"
+    },
+    {
+      "$type": "interface",
+      "method": {
+        "public": true,
+        "name": "size",
+        "type": "int"
+      },
+      "name": "Countable2"
+    },
+    {
+      "$type": "use",
+      "path": {
+        "$children": [
+          "App",
+          "Base"
+        ]
       }
+    },
+    {
+      "$type": "use",
+      "alias": true,
+      "aliased": {
+        "name": "Log"
+      },
+      "path": {
+        "$children": [
+          "App",
+          "Logger"
+        ]
+      }
+    },
+    {
+      "$type": "use",
+      "group": true,
+      "path": {
+        "name": "App"
+      },
+      "$children": [
+        {
+          "$type": "use",
+          "name": "First"
+        },
+        {
+          "$type": "use",
+          "name": "Second"
+        }
+      ]
     }
-  }
+  ]
 }

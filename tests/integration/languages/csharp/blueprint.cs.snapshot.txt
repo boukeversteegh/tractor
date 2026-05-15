@@ -1,18 +1,18 @@
 unit/
   ├─ comment = "// Kitchen-sink C# blueprint fixture. Exercises every major construct so\n// design-principle changes to the C# transform surface as visible snapshot diffs."
-  ├─ import/name = "System"
-  ├─ import/path/
+  ├─ using/name = "System"
+  ├─ using/path/
   │   ├─ name = "System"
   │   ├─ name = "Collections"
   │   └─ name = "Generic"
-  ├─ import/path/
+  ├─ using/path/
   │   ├─ name = "System"
   │   └─ name = "Linq"
-  ├─ import/path/
+  ├─ using/path/
   │   ├─ name = "System"
   │   ├─ name = "Threading"
   │   └─ name = "Tasks"
-  ├─ import/path/
+  ├─ using/path/
   │   ├─ name = "System"
   │   └─ name = "Math"
   ├─ namespace/
@@ -47,6 +47,10 @@ unit/
   │   ├─ interface[public]/
   │   │   ├─ name = "IRepository"
   │   │   ├─ generic[class and new]/name = "T"
+  │   │   ├─ where/
+  │   │   │   ├─ name = "T"
+  │   │   │   ├─ constraint = "class"
+  │   │   │   └─ constraint/new = "new()"
   │   │   └─ body/
   │   │       ├─ method[public]/
   │   │       │   ├─ name = "Find"
@@ -55,9 +59,9 @@ unit/
   │   │       │       └─ name = "id"
   │   │       ├─ method[public]/name = "AllAsync"
   │   │       └─ event[private]/
-  │   │           ├─ type[nullable]/type[generic]/
+  │   │           ├─ type[nullable]/generic_type/
   │   │           │   ├─ name = "EventHandler"
-  │   │           │   └─ type/name = "T"
+  │   │           │   └─ name = "T"
   │   │           └─ name = "Added"
   │   ├─ struct[public and readonly]/
   │   │   ├─ name = "Point"
@@ -66,12 +70,12 @@ unit/
   │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "X"
   │   │       │   ├─ get = "get;"
-  │   │       │   └─ value/name = "x"
+  │   │       │   └─ name = "x"
   │   │       ├─ property[public]/
   │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "Y"
   │   │       │   ├─ get = "get;"
-  │   │       │   └─ value/name = "y"
+  │   │       │   └─ name = "y"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "Point"
   │   │       │   ├─ parameter/
@@ -80,23 +84,13 @@ unit/
   │   │       │   ├─ parameter/
   │   │       │   │   ├─ type/name = "Point"
   │   │       │   │   └─ name = "b"
-  │   │       │   └─ body/new/
+  │   │       │   └─ body/object_creation/
   │   │       │       ├─ binary/
-  │   │       │       │   ├─ left/expression/object[access]/
-  │   │       │       │   │   ├─ name = "a"
-  │   │       │       │   │   └─ member/name = "X"
-  │   │       │       │   ├─ op[plus] = "+"
-  │   │       │       │   └─ right/expression/object[access]/
-  │   │       │       │       ├─ name = "b"
-  │   │       │       │       └─ member/name = "X"
+  │   │       │       │   ├─ left/expression/access/name = "a"
+  │   │       │       │   └─ right/expression/access/name = "b"
   │   │       │       └─ binary/
-  │   │       │           ├─ left/expression/object[access]/
-  │   │       │           │   ├─ name = "a"
-  │   │       │           │   └─ member/name = "Y"
-  │   │       │           ├─ op[plus] = "+"
-  │   │       │           └─ right/expression/object[access]/
-  │   │       │               ├─ name = "b"
-  │   │       │               └─ member/name = "Y"
+  │   │       │           ├─ left/expression/access/name = "a"
+  │   │       │           └─ right/expression/access/name = "b"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "bool"
   │   │       │   ├─ parameter/
@@ -107,22 +101,11 @@ unit/
   │   │       │   │   └─ name = "b"
   │   │       │   └─ body/logical/
   │   │       │       ├─ left/expression/binary/
-  │   │       │       │   ├─ left/expression/object[access]/
-  │   │       │       │   │   ├─ name = "a"
-  │   │       │       │   │   └─ member/name = "X"
-  │   │       │       │   ├─ op[equals] = "=="
-  │   │       │       │   └─ right/expression/object[access]/
-  │   │       │       │       ├─ name = "b"
-  │   │       │       │       └─ member/name = "X"
-  │   │       │       ├─ op[logical and and] = "&&"
+  │   │       │       │   ├─ left/expression/access/name = "a"
+  │   │       │       │   └─ right/expression/access/name = "b"
   │   │       │       └─ right/expression/binary/
-  │   │       │           ├─ left/expression/object[access]/
-  │   │       │           │   ├─ name = "a"
-  │   │       │           │   └─ member/name = "Y"
-  │   │       │           ├─ op[equals] = "=="
-  │   │       │           └─ right/expression/object[access]/
-  │   │       │               ├─ name = "b"
-  │   │       │               └─ member/name = "Y"
+  │   │       │           ├─ left/expression/access/name = "a"
+  │   │       │           └─ right/expression/access/name = "b"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "bool"
   │   │       │   ├─ parameter/
@@ -131,12 +114,9 @@ unit/
   │   │       │   ├─ parameter/
   │   │       │   │   ├─ type/name = "Point"
   │   │       │   │   └─ name = "b"
-  │   │       │   └─ body/unary/
-  │   │       │       ├─ op[logical and not] = "!"
-  │   │       │       └─ binary/
-  │   │       │           ├─ left/expression/name = "a"
-  │   │       │           ├─ op[equals] = "=="
-  │   │       │           └─ right/expression/name = "b"
+  │   │       │   └─ body/unary/binary/
+  │   │       │       ├─ left/expression/name = "a"
+  │   │       │       └─ right/expression/name = "b"
   │   │       ├─ method[public and override]/
   │   │       │   ├─ name = "Equals"
   │   │       │   ├─ parameter/
@@ -148,19 +128,15 @@ unit/
   │   │       │       │   └─ pattern[declaration]/
   │   │       │       │       ├─ type/name = "Point"
   │   │       │       │       └─ name = "p"
-  │   │       │       ├─ op[logical and and] = "&&"
   │   │       │       └─ right/expression/binary/
   │   │       │           ├─ left/expression/name = "p"
-  │   │       │           ├─ op[equals] = "=="
   │   │       │           └─ right/expression/name = "this"
   │   │       └─ method[public and override]/
   │   │           ├─ name = "GetHashCode"
-  │   │           └─ body/object[access]/
+  │   │           └─ body/access/
   │   │               ├─ name = "HashCode"
-  │   │               └─ call/
-  │   │                   ├─ name = "Combine"
-  │   │                   ├─ name = "X"
-  │   │                   └─ name = "Y"
+  │   │               ├─ name = "X"
+  │   │               └─ name = "Y"
   │   ├─ record[public and body]/name = "Money"
   │   ├─ record[public and body]/
   │   │   ├─ name = "TaxedMoney"
@@ -179,11 +155,11 @@ unit/
   │   │       ├─ field[public and const]/
   │   │       │   ├─ type/name = "int"
   │   │       │   ├─ name = "MaxNameLength"
-  │   │       │   └─ value/expression/int = "128"
+  │   │       │   └─ expression/int = "128"
   │   │       ├─ field[protected and internal and static and readonly]/
   │   │       │   ├─ type/name = "DateTime"
   │   │       │   ├─ name = "Epoch"
-  │   │       │   └─ value/expression/new/
+  │   │       │   └─ expression/object_creation/
   │   │       │       ├─ int = "1970"
   │   │       │       ├─ int = "1"
   │   │       │       └─ int = "1"
@@ -200,66 +176,57 @@ unit/
   │   │       │   ├─ name = "Name"
   │   │       │   ├─ get = "get;"
   │   │       │   ├─ set = "set;"
-  │   │       │   └─ value/string = "\"\""
+  │   │       │   └─ string = "\"\""
   │   │       ├─ property[public and virtual]/
   │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
   │   │       │   ├─ get = "get;"
   │   │       │   ├─ set[protected] = "protected set;"
-  │   │       │   └─ value/object[access]/
-  │   │       │       ├─ name = "Priority"
-  │   │       │       └─ member/name = "Low"
+  │   │       │   └─ access/name = "Priority"
   │   │       ├─ indexer[public]/
   │   │       │   ├─ type/name = "int"
   │   │       │   ├─ parameter/
   │   │       │   │   ├─ type/name = "string"
   │   │       │   │   └─ name = "key"
-  │   │       │   └─ value/object[access]/
-  │   │       │       ├─ name = "key"
-  │   │       │       └─ member/name = "Length"
+  │   │       │   └─ value/access/name = "key"
   │   │       ├─ event[public]/
-  │   │       │   ├─ type[nullable]/type[generic]/
+  │   │       │   ├─ type[nullable]/generic_type/
   │   │       │   │   ├─ name = "Action"
-  │   │       │   │   └─ type/name = "EntityBase"
+  │   │       │   │   └─ name = "EntityBase"
   │   │       │   └─ name = "Changed"
   │   │       ├─ constructor[protected]/
   │   │       │   ├─ name = "EntityBase"
-  │   │       │   └─ body/block = "{ }"
+  │   │       │   └─ body = "{ }"
   │   │       ├─ constructor[protected]/
   │   │       │   ├─ name = "EntityBase"
   │   │       │   ├─ parameter/
   │   │       │   │   ├─ type/name = "int"
   │   │       │   │   └─ name = "id"
-  │   │       │   └─ body/block/assign/
-  │   │       │       ├─ left/expression/name = "Id"
-  │   │       │       ├─ op = "="
-  │   │       │       └─ right/expression/name = "id"
+  │   │       │   └─ body/assign/
+  │   │       │       ├─ expression/name = "Id"
+  │   │       │       └─ expression/name = "id"
   │   │       ├─ destructor/
   │   │       │   ├─ name = "EntityBase"
-  │   │       │   └─ body/block/comment = "/* finalizer */"
+  │   │       │   └─ body/comment = "/* finalizer */"
   │   │       ├─ method[public and abstract]/name = "Describe"
   │   │       └─ method[protected and virtual]/
   │   │           ├─ name = "OnChanged"
-  │   │           └─ body/object[access]/
-  │   │               ├─ name = "Changed"
-  │   │               └─ member[optional]/
-  │   │                   ├─ name = "Invoke"
-  │   │                   └─ call = "(this)"
+  │   │           └─ body/access/name = "Changed"
   │   ├─ class[public and sealed and partial]/
   │   │   ├─ name = "Widget"
   │   │   ├─ extends/type/name = "EntityBase"
-  │   │   ├─ extends/type[generic]/
+  │   │   ├─ extends/generic_type/
   │   │   │   ├─ name = "IRepository"
-  │   │   │   └─ type/name = "Widget"
+  │   │   │   └─ name = "Widget"
   │   │   └─ body/
   │   │       ├─ event[public]/
-  │   │       │   ├─ type[nullable]/type[generic]/
+  │   │       │   ├─ type[nullable]/generic_type/
   │   │       │   │   ├─ name = "EventHandler"
-  │   │       │   │   └─ type/name = "Widget"
+  │   │       │   │   └─ name = "Widget"
   │   │       │   └─ name = "Added"
   │   │       ├─ constructor[public]/
   │   │       │   ├─ name = "Widget"
-  │   │       │   └─ body/block = "{ }"
+  │   │       │   └─ body = "{ }"
   │   │       ├─ constructor[public]/
   │   │       │   ├─ name = "Widget"
   │   │       │   ├─ parameter/
@@ -268,23 +235,21 @@ unit/
   │   │       │   ├─ parameter/
   │   │       │   │   ├─ type/name = "string"
   │   │       │   │   └─ name = "name"
-  │   │       │   └─ body/block/assign/
-  │   │       │       ├─ left/expression/name = "Name"
-  │   │       │       ├─ op = "="
-  │   │       │       └─ right/expression/name = "name"
+  │   │       │   └─ body/assign/
+  │   │       │       ├─ expression/name = "Name"
+  │   │       │       └─ expression/name = "name"
   │   │       ├─ property[public and override]/
   │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
-  │   │       │   ├─ get/object[access and base]/member/name = "Priority"
+  │   │       │   ├─ get/access = "base.Priority"
   │   │       │   └─ set[protected]/assign/
-  │   │       │       ├─ left/expression/object[access and base]/member/name = "Priority"
-  │   │       │       ├─ op = "="
-  │   │       │       └─ right/expression/name = "value"
+  │   │       │       ├─ expression/access = "base.Priority"
+  │   │       │       └─ expression/name = "value"
   │   │       ├─ method[public and override]/
   │   │       │   ├─ name = "Describe"
   │   │       │   └─ body/string/
   │   │       │       ├─ interpolation/name = "Id"
-  │   │       │       └─ interpolation/expression[non_null]/name = "Name"
+  │   │       │       └─ interpolation/expression/name = "Name"
   │   │       ├─ method[public]/
   │   │       │   ├─ name = "Find"
   │   │       │   ├─ parameter/
@@ -293,18 +258,15 @@ unit/
   │   │       │   └─ body/ternary/
   │   │       │       ├─ condition/expression/binary/
   │   │       │       │   ├─ left/expression/name = "id"
-  │   │       │       │   ├─ op[equals] = "=="
   │   │       │       │   └─ right/expression/name = "Id"
   │   │       │       ├─ then/expression/name = "this"
   │   │       │       └─ else/expression/null = "null"
   │   │       ├─ method[public and async]/
   │   │       │   ├─ name = "AllAsync"
-  │   │       │   └─ body/block/
-  │   │       │       ├─ expression[await]/object[access]/
+  │   │       │   └─ body/
+  │   │       │       ├─ expression/access/
   │   │       │       │   ├─ name = "Task"
-  │   │       │       │   └─ call/
-  │   │       │       │       ├─ name = "Delay"
-  │   │       │       │       └─ int = "1"
+  │   │       │       │   └─ int = "1"
   │   │       │       └─ return/expression/index = "[this]"
   │   │       └─ method[public and static]/
   │   │           ├─ name = "Pipe"
@@ -314,10 +276,10 @@ unit/
   │   │           │   ├─ type/name = "T"
   │   │           │   └─ name = "input"
   │   │           ├─ parameter/
-  │   │           │   ├─ type[generic]/
+  │   │           │   ├─ generic_type/
   │   │           │   │   ├─ name = "Transformer"
-  │   │           │   │   ├─ type/name = "T"
-  │   │           │   │   └─ type/name = "TResult"
+  │   │           │   │   ├─ name = "T"
+  │   │           │   │   └─ name = "TResult"
   │   │           │   └─ name = "fn"
   │   │           └─ body/call/
   │   │               ├─ name = "fn"
@@ -330,12 +292,7 @@ unit/
   │   │       │   ├─ type/name = "Widget"
   │   │       │   └─ name = "w"
   │   │       └─ body/binary/
-  │   │           ├─ left/expression/object[access]/
-  │   │           │   ├─ name = "w"
-  │   │           │   └─ member/
-  │   │           │       ├─ name = "Name"
-  │   │           │       └─ call/name = "ToUpperInvariant"
-  │   │           ├─ op[plus] = "+"
+  │   │           ├─ left/expression/access/name = "w"
   │   │           └─ right/expression/string = "\"!\""
   │   └─ class[internal and static]/
   │       ├─ name = "Demo"
@@ -345,42 +302,34 @@ unit/
   │           │   ├─ type[nullable]/type/name = "Widget"
   │           │   └─ name = "maybe"
   │           ├─ parameter/
-  │           │   ├─ type[generic]/
+  │           │   ├─ generic_type/
   │           │   │   ├─ name = "IEnumerable"
-  │           │   │   └─ type/name = "int"
+  │           │   │   └─ name = "int"
   │           │   └─ name = "numbers"
-  │           └─ body/block/
+  │           └─ body/
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "widget"
-  │               │   └─ value/expression/binary/
+  │               │   └─ expression/binary/
   │               │       ├─ left/expression/name = "maybe"
-  │               │       ├─ op[nullish] = "??"
-  │               │       └─ right/expression/new/
+  │               │       └─ right/expression/object_creation/
   │               │           ├─ name = "Widget"
   │               │           ├─ int = "1"
   │               │           └─ string = "\"alpha\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "shouted"
-  │               │   └─ value/expression/binary/
-  │               │       ├─ left/expression/object[access]/
-  │               │       │   ├─ name = "widget"
-  │               │       │   └─ member[optional]/
-  │               │       │       ├─ name = "Shout"
-  │               │       │       └─ call = "()"
-  │               │       ├─ op[nullish] = "??"
+  │               │   └─ expression/binary/
+  │               │       ├─ left/expression/access/name = "widget"
   │               │       └─ right/expression/string = "\"n/a\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "label"
-  │               │   └─ value/expression/ternary/
+  │               │   └─ expression/ternary/
   │               │       ├─ condition/expression/is/
   │               │       │   ├─ name = "widget"
   │               │       │   └─ pattern[recursive]/properties/subpattern/
-  │               │       │       ├─ object[access]/
-  │               │       │       │   ├─ name = "Name"
-  │               │       │       │   └─ member/name = "Length"
+  │               │       │       ├─ access/name = "Name"
   │               │       │       └─ pattern[relational]/int = "0"
   │               │       ├─ then/expression/string = "\"named\""
   │               │       └─ else/expression/string = "\"blank\""
@@ -388,24 +337,19 @@ unit/
   │               ├─ variable/
   │               │   ├─ type/name = "string"
   │               │   ├─ name = "kind"
-  │               │   └─ value/expression/switch/
+  │               │   └─ expression/switch/
   │               │       ├─ name = "widget"
   │               │       ├─ arm/
   │               │       │   ├─ pattern[recursive]/properties/subpattern/
   │               │       │   │   ├─ name = "Priority"
-  │               │       │   │   └─ pattern[constant]/object[access]/
-  │               │       │   │       ├─ name = "Priority"
-  │               │       │   │       └─ member/name = "High"
+  │               │       │   │   └─ pattern[constant]/access/name = "Priority"
   │               │       │   └─ string = "\"hot\""
   │               │       ├─ arm/
   │               │       │   ├─ pattern[declaration]/
   │               │       │   │   ├─ type/name = "Widget"
   │               │       │   │   └─ name = "w"
   │               │       │   ├─ when/binary/
-  │               │       │   │   ├─ left/expression/object[access]/
-  │               │       │   │   │   ├─ name = "w"
-  │               │       │   │   │   └─ member/name = "Id"
-  │               │       │   │   ├─ op[compare and greater] = ">"
+  │               │       │   │   ├─ left/expression/access/name = "w"
   │               │       │   │   └─ right/expression/int = "100"
   │               │       │   └─ string = "\"big\""
   │               │       └─ arm/
@@ -415,7 +359,7 @@ unit/
   │               ├─ variable/
   │               │   ├─ type/name = "object"
   │               │   ├─ name = "token"
-  │               │   └─ value/expression[non_null]/name = "widget"
+  │               │   └─ expression/name = "widget"
   │               ├─ switch/
   │               │   ├─ value/name = "token"
   │               │   └─ body/
@@ -423,17 +367,13 @@ unit/
   │               │       │   ├─ pattern[declaration]/
   │               │       │   │   ├─ type/name = "Widget"
   │               │       │   │   └─ name = "w"
-  │               │       │   ├─ expression/object[access]/
+  │               │       │   ├─ expression/access/
   │               │       │   │   ├─ name = "Console"
-  │               │       │   │   └─ call/
-  │               │       │   │       ├─ name = "WriteLine"
-  │               │       │   │       └─ object[access]/
-  │               │       │   │           ├─ name = "w"
-  │               │       │   │           └─ call/name = "Describe"
+  │               │       │   │   └─ access/name = "w"
   │               │       │   └─ break = "break;"
   │               │       ├─ arm/
   │               │       │   ├─ pattern[constant]/null = "null"
-  │               │       │   └─ throw/expression/new/name = "InvalidOperationException"
+  │               │       │   └─ throw/expression/object_creation/name = "InvalidOperationException"
   │               │       └─ arm/break = "break;"
   │               ├─ if/
   │               │   ├─ condition/expression/is/
@@ -441,58 +381,43 @@ unit/
   │               │   │   └─ pattern[declaration]/
   │               │   │       ├─ type/name = "Widget"
   │               │   │       └─ name = "probe"
-  │               │   └─ body/expression/object[access]/
+  │               │   └─ body/expression/access/
   │               │       ├─ name = "Console"
-  │               │       └─ call/
-  │               │           ├─ name = "WriteLine"
-  │               │           └─ object[access]/
-  │               │               ├─ name = "probe"
-  │               │               └─ member/name = "Id"
+  │               │       └─ access/name = "probe"
   │               ├─ comment[leading] = "// LINQ query syntax + method syntax"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "evens"
-  │               │   └─ value/expression/query/
+  │               │   └─ expression/query/
   │               │       ├─ from[in]/
-  │               │       │   ├─ name = "n"
+  │               │       │   ├─ name/name = "n"
   │               │       │   └─ value/expression/name = "numbers"
   │               │       ├─ where/binary/
   │               │       │   ├─ left/expression/binary/
   │               │       │   │   ├─ left/expression/name = "n"
-  │               │       │   │   ├─ op[modulo] = "%"
   │               │       │   │   └─ right/expression/int = "2"
-  │               │       │   ├─ op[equals] = "=="
   │               │       │   └─ right/expression/int = "0"
   │               │       ├─ order/name = "n"
   │               │       └─ select/binary/
   │               │           ├─ left/expression/name = "n"
-  │               │           ├─ op[multiply] = "*"
   │               │           └─ right/expression/name = "n"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "odds"
-  │               │   └─ value/expression/object[access]/
+  │               │   └─ expression/access/
   │               │       ├─ name = "numbers"
-  │               │       └─ call/
-  │               │           ├─ name = "Where"
-  │               │           ├─ lambda/
-  │               │           │   ├─ parameter/name = "n"
-  │               │           │   └─ value/expression/binary/
-  │               │           │       ├─ left/expression/binary/
-  │               │           │       │   ├─ left/expression/name = "n"
-  │               │           │       │   ├─ op[modulo] = "%"
-  │               │           │       │   └─ right/expression/int = "2"
-  │               │           │       ├─ op[inequality] = "!="
-  │               │           │       └─ right/expression/int = "0"
-  │               │           └─ call/
-  │               │               ├─ name = "Select"
-  │               │               ├─ lambda/
-  │               │               │   ├─ parameter/name = "n"
-  │               │               │   └─ value/expression/binary/
-  │               │               │       ├─ left/expression/name = "n"
-  │               │               │       ├─ op[plus] = "+"
-  │               │               │       └─ right/expression/int = "1"
-  │               │               └─ call/name = "ToList"
+  │               │       ├─ lambda/
+  │               │       │   ├─ parameter/name = "n"
+  │               │       │   └─ binary/
+  │               │       │       ├─ left/expression/binary/
+  │               │       │       │   ├─ left/expression/name = "n"
+  │               │       │       │   └─ right/expression/int = "2"
+  │               │       │       └─ right/expression/int = "0"
+  │               │       └─ lambda/
+  │               │           ├─ parameter/name = "n"
+  │               │           └─ binary/
+  │               │               ├─ left/expression/name = "n"
+  │               │               └─ right/expression/int = "1"
   │               ├─ comment[leading] = "// local function + lambda"
   │               ├─ method/
   │               │   ├─ name = "Square"
@@ -501,53 +426,45 @@ unit/
   │               │   │   └─ name = "x"
   │               │   └─ body/binary/
   │               │       ├─ left/expression/name = "x"
-  │               │       ├─ op[multiply] = "*"
   │               │       └─ right/expression/name = "x"
   │               ├─ variable/
-  │               │   ├─ type[generic]/
+  │               │   ├─ generic_type/
   │               │   │   ├─ name = "Func"
-  │               │   │   ├─ type/name = "int"
-  │               │   │   └─ type/name = "int"
+  │               │   │   ├─ name = "int"
+  │               │   │   └─ name = "int"
   │               │   ├─ name = "cube"
-  │               │   └─ value/expression/lambda/
+  │               │   └─ expression/lambda/
   │               │       ├─ parameter/name = "x"
-  │               │       └─ value/expression/binary/
+  │               │       └─ binary/
   │               │           ├─ left/expression/binary/
   │               │           │   ├─ left/expression/name = "x"
-  │               │           │   ├─ op[multiply] = "*"
   │               │           │   └─ right/expression/name = "x"
-  │               │           ├─ op[multiply] = "*"
   │               │           └─ right/expression/name = "x"
   │               ├─ variable/
-  │               │   ├─ type[generic]/
+  │               │   ├─ generic_type/
   │               │   │   ├─ name = "Func"
-  │               │   │   ├─ type/name = "int"
-  │               │   │   └─ type/name = "int"
+  │               │   │   ├─ name = "int"
+  │               │   │   └─ name = "int"
   │               │   ├─ name = "blockLambda"
-  │               │   └─ value/expression/lambda/
+  │               │   └─ expression/lambda/
   │               │       ├─ parameter/name = "x"
-  │               │       └─ body/block/return/expression/binary/
+  │               │       └─ body/return/expression/binary/
   │               │           ├─ left/expression/name = "x"
-  │               │           ├─ op[plus] = "+"
   │               │           └─ right/expression/int = "1"
   │               ├─ variable/
-  │               │   ├─ type[generic]/
+  │               │   ├─ generic_type/
   │               │   │   ├─ name = "Action"
-  │               │   │   └─ type/name = "string"
+  │               │   │   └─ name = "string"
   │               │   ├─ name = "log"
-  │               │   └─ value/expression/lambda/
+  │               │   └─ expression/lambda/
   │               │       ├─ parameter/name = "msg"
-  │               │       └─ value/expression/object[access]/
+  │               │       └─ access/
   │               │           ├─ name = "Console"
-  │               │           └─ call/
-  │               │               ├─ name = "WriteLine"
-  │               │               └─ name = "msg"
+  │               │           └─ name = "msg"
   │               ├─ expression/call/
   │               │   ├─ name = "log"
   │               │   └─ string/
-  │               │       ├─ interpolation/object[access]/
-  │               │       │   ├─ name = "evens"
-  │               │       │   └─ call/name = "Sum"
+  │               │       ├─ interpolation/access/name = "evens"
   │               │       ├─ interpolation/call/
   │               │       │   ├─ name = "cube"
   │               │       │   └─ int = "3"
@@ -555,100 +472,78 @@ unit/
   │               │           ├─ name = "Square"
   │               │           └─ int = "4"
   │               ├─ comment[leading] = "// loops"
-  │               ├─ for/
+  │               ├─ c_for/
   │               │   ├─ variable/
   │               │   │   ├─ type/name = "var"
   │               │   │   ├─ name = "i"
-  │               │   │   └─ value/expression/int = "0"
-  │               │   ├─ condition/expression/binary/
+  │               │   │   └─ expression/int = "0"
+  │               │   ├─ binary/
   │               │   │   ├─ left/expression/name = "i"
-  │               │   │   ├─ op[compare and less] = "<"
   │               │   │   └─ right/expression/int = "2"
-  │               │   ├─ unary[postfix]/
-  │               │   │   ├─ name = "i"
-  │               │   │   └─ op[increment] = "++"
-  │               │   └─ body/block/comment = "/* for */"
+  │               │   ├─ unary[postfix]/name = "i"
+  │               │   └─ body/comment = "/* for */"
   │               ├─ variable/
   │               │   ├─ type/name = "int"
   │               │   ├─ name = "j"
-  │               │   └─ value/expression/int = "0"
+  │               │   └─ expression/int = "0"
   │               ├─ while/
   │               │   ├─ condition/expression/binary/
-  │               │   │   ├─ left/expression/unary[postfix]/
-  │               │   │   │   ├─ name = "j"
-  │               │   │   │   └─ op[increment] = "++"
-  │               │   │   ├─ op[compare and less] = "<"
+  │               │   │   ├─ left/expression/unary[postfix]/name = "j"
   │               │   │   └─ right/expression/int = "2"
-  │               │   └─ body/block = "{ }"
+  │               │   └─ body = "{ }"
   │               ├─ variable/
   │               │   ├─ type/name = "int"
   │               │   ├─ name = "k"
-  │               │   └─ value/expression/int = "0"
-  │               ├─ do/
-  │               │   ├─ body/block/expression/unary[postfix]/
-  │               │   │   ├─ name = "k"
-  │               │   │   └─ op[increment] = "++"
-  │               │   └─ condition/expression/binary/
+  │               │   └─ expression/int = "0"
+  │               ├─ do_while/
+  │               │   ├─ body/expression/unary[postfix]/name = "k"
+  │               │   └─ binary/
   │               │       ├─ left/expression/name = "k"
-  │               │       ├─ op[compare and less] = "<"
   │               │       └─ right/expression/int = "2"
-  │               ├─ foreach[in]/
+  │               ├─ foreach/
   │               │   ├─ type/name = "var"
   │               │   ├─ left/expression/name = "n"
   │               │   ├─ right/expression/name = "odds"
   │               │   └─ body/expression/call/
   │               │       ├─ name = "log"
-  │               │       └─ object[access]/
-  │               │           ├─ name = "n"
-  │               │           └─ call/name = "ToString"
+  │               │       └─ access/name = "n"
   │               ├─ comment[leading] = "// try/catch/finally with when + using declaration + using statement"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "scope"
-  │               │   └─ value/expression/new/path/
+  │               │   └─ expression/object_creation/path/
   │               │       ├─ name = "System"
   │               │       ├─ name = "IO"
   │               │       └─ name = "MemoryStream"
   │               ├─ try/
-  │               │   ├─ body/block/
+  │               │   ├─ body/
   │               │   │   ├─ using/
   │               │   │   │   ├─ variable/
   │               │   │   │   │   ├─ type/name = "var"
   │               │   │   │   │   ├─ name = "inner"
-  │               │   │   │   │   └─ value/expression/new/path/
+  │               │   │   │   │   └─ expression/object_creation/path/
   │               │   │   │   │       ├─ name = "System"
   │               │   │   │   │       ├─ name = "IO"
   │               │   │   │   │       └─ name = "MemoryStream"
-  │               │   │   │   └─ body/block/expression/object[access]/
+  │               │   │   │   └─ body/expression/access/
   │               │   │   │       ├─ name = "inner"
-  │               │   │   │       └─ call/
-  │               │   │   │           ├─ name = "WriteByte"
-  │               │   │   │           └─ int = "1"
-  │               │   │   └─ throw/expression/new/
+  │               │   │   │       └─ int = "1"
+  │               │   │   └─ throw/expression/object_creation/
   │               │   │       ├─ name = "InvalidOperationException"
   │               │   │       └─ string = "\"boom\""
   │               │   ├─ catch/
   │               │   │   ├─ type/name = "InvalidOperationException"
   │               │   │   ├─ as/expression/name = "ex"
   │               │   │   ├─ filter/expression/binary/
-  │               │   │   │   ├─ left/expression/object[access]/
-  │               │   │   │   │   ├─ name = "ex"
-  │               │   │   │   │   └─ member/
-  │               │   │   │   │       ├─ name = "Message"
-  │               │   │   │   │       └─ member/name = "Length"
-  │               │   │   │   ├─ op[compare and greater] = ">"
+  │               │   │   │   ├─ left/expression/access/name = "ex"
   │               │   │   │   └─ right/expression/int = "0"
-  │               │   │   └─ body/block/expression/call/
+  │               │   │   └─ body/expression/call/
   │               │   │       ├─ name = "log"
-  │               │   │       └─ object[access]/
-  │               │   │           ├─ name = "ex"
-  │               │   │           └─ member/name = "Message"
+  │               │   │       └─ access/name = "ex"
   │               │   ├─ catch/
   │               │   │   ├─ type/name = "Exception"
-  │               │   │   └─ body/block/throw = "throw;"
-  │               │   └─ finally/body/block/expression/object[access]/
-  │               │       ├─ name = "scope"
-  │               │       └─ call/name = "Flush"
+  │               │   │   └─ body/throw = "throw;"
+  │               │   └─ finally/body/expression/access/name = "scope"
   │               ├─ comment[leading] = "// tuples + deconstruction + target-typed new + collection expression"
   │               ├─ variable/
   │               │   ├─ type[tuple]/
@@ -659,61 +554,57 @@ unit/
   │               │   │       ├─ type/name = "string"
   │               │   │       └─ name = "tag"
   │               │   ├─ name = "pair"
-  │               │   └─ value/expression/tuple/
-  │               │       ├─ object[access]/
-  │               │       │   ├─ name = "odds"
-  │               │       │   └─ member/name = "Count"
+  │               │   └─ expression/tuple/
+  │               │       ├─ access/name = "odds"
   │               │       └─ string = "\"odd\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ pattern[tuple]/
   │               │   │   ├─ name = "cnt"
   │               │   │   └─ name = "tg"
-  │               │   └─ value/expression/name = "pair"
+  │               │   └─ expression/name = "pair"
   │               ├─ variable/
-  │               │   ├─ type[generic]/
+  │               │   ├─ generic_type/
   │               │   │   ├─ name = "List"
-  │               │   │   └─ type/name = "int"
+  │               │   │   └─ name = "int"
   │               │   ├─ name = "list"
-  │               │   └─ value/expression/index/
+  │               │   └─ expression/index/
   │               │       ├─ int = "1"
   │               │       ├─ int = "2"
   │               │       ├─ int = "3"
   │               │       └─ range/name = "odds"
   │               ├─ variable/
-  │               │   ├─ type[generic]/
+  │               │   ├─ generic_type/
   │               │   │   ├─ name = "Dictionary"
-  │               │   │   ├─ type/name = "string"
-  │               │   │   └─ type/name = "int"
+  │               │   │   ├─ name = "string"
+  │               │   │   └─ name = "int"
   │               │   ├─ name = "map"
-  │               │   └─ value/expression/new/
+  │               │   └─ expression/object_creation/
   │               │       ├─ assign/
-  │               │       │   ├─ left/expression/index/string = "\"a\""
-  │               │       │   ├─ op = "="
-  │               │       │   └─ right/expression/int = "1"
+  │               │       │   ├─ expression/index/string = "\"a\""
+  │               │       │   └─ expression/int = "1"
   │               │       └─ assign/
-  │               │           ├─ left/expression/index/string = "\"b\""
-  │               │           ├─ op = "="
-  │               │           └─ right/expression/int = "2"
+  │               │           ├─ expression/index/string = "\"b\""
+  │               │           └─ expression/int = "2"
   │               ├─ comment[leading] = "// string literals"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "plain"
-  │               │   └─ value/expression/string = "\"hello\""
+  │               │   └─ expression/string = "\"hello\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "verbatim"
-  │               │   └─ value/expression/string = "@\"C:\\path\\file.txt\""
+  │               │   └─ expression/string = "@\"C:\\path\\file.txt\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "interp"
-  │               │   └─ value/expression/string/
+  │               │   └─ expression/string/
   │               │       ├─ interpolation/name = "cnt"
   │               │       └─ interpolation/name = "tg"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "raw"
-  │               │   └─ value/expression/string = "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\""
+  │               │   └─ expression/string = "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\""
   │               └─ return/expression/binary/
   │                   ├─ left/expression/binary/
   │                   │   ├─ left/expression/binary/
@@ -721,44 +612,22 @@ unit/
   │                   │   │   │   ├─ left/expression/binary/
   │                   │   │   │   │   ├─ left/expression/binary/
   │                   │   │   │   │   │   ├─ left/expression/binary/
-  │                   │   │   │   │   │   │   ├─ left/expression/object[access]/
-  │                   │   │   │   │   │   │   │   ├─ name = "list"
-  │                   │   │   │   │   │   │   │   └─ member/name = "Count"
-  │                   │   │   │   │   │   │   ├─ op[plus] = "+"
-  │                   │   │   │   │   │   │   └─ right/expression/object[access]/
-  │                   │   │   │   │   │   │       ├─ name = "map"
-  │                   │   │   │   │   │   │       └─ member/name = "Count"
-  │                   │   │   │   │   │   ├─ op[plus] = "+"
-  │                   │   │   │   │   │   └─ right/expression/object[access]/
-  │                   │   │   │   │   │       ├─ name = "plain"
-  │                   │   │   │   │   │       └─ member/name = "Length"
-  │                   │   │   │   │   ├─ op[plus] = "+"
-  │                   │   │   │   │   └─ right/expression/object[access]/
-  │                   │   │   │   │       ├─ name = "verbatim"
-  │                   │   │   │   │       └─ member/name = "Length"
-  │                   │   │   │   ├─ op[plus] = "+"
-  │                   │   │   │   └─ right/expression/object[access]/
-  │                   │   │   │       ├─ name = "interp"
-  │                   │   │   │       └─ member/name = "Length"
-  │                   │   │   ├─ op[plus] = "+"
-  │                   │   │   └─ right/expression/object[access]/
-  │                   │   │       ├─ name = "raw"
-  │                   │   │       └─ member/name = "Length"
-  │                   │   ├─ op[plus] = "+"
+  │                   │   │   │   │   │   │   ├─ left/expression/access/name = "list"
+  │                   │   │   │   │   │   │   └─ right/expression/access/name = "map"
+  │                   │   │   │   │   │   └─ right/expression/access/name = "plain"
+  │                   │   │   │   │   └─ right/expression/access/name = "verbatim"
+  │                   │   │   │   └─ right/expression/access/name = "interp"
+  │                   │   │   └─ right/expression/access/name = "raw"
   │                   │   └─ right/expression/ternary/
   │                   │       ├─ condition/expression/binary/
   │                   │       │   ├─ left/expression/name = "label"
-  │                   │       │   ├─ op[equals] = "=="
   │                   │       │   └─ right/expression/name = "kind"
   │                   │       ├─ then/expression/int = "0"
   │                   │       └─ else/expression/int = "1"
-  │                   ├─ op[plus] = "+"
-  │                   └─ right/expression/object[access]/
-  │                       ├─ name = "shouted"
-  │                       └─ member/name = "Length"
-  └─ namespace[file]/
+  │                   └─ right/expression/access/name = "shouted"
+  └─ namespace/
       ├─ name = "Tractor.Fixtures.FileScoped"
-      ├─ import/name = "System"
+      ├─ using/name = "System"
       ├─ class[file and sealed]/
       │   ├─ name = "Hidden"
       │   └─ body/property[public and static]/
@@ -769,9 +638,7 @@ unit/
       │   ├─ name = "Entry"
       │   └─ body/method[public and static]/
       │       ├─ name = "Get"
-      │       └─ body/object[access]/
-      │           ├─ name = "Hidden"
-      │           └─ member/name = "Answer"
+      │       └─ body/access/name = "Hidden"
       ├─ comment = "// Iter 20: new shapes — statements, expressions, patterns, literals."
       ├─ comment = "/// <summary>cast + char + checked + with + patterns + array/stackalloc new</summary>"
       ├─ class[public and static]/
@@ -782,57 +649,52 @@ unit/
       │       │   ├─ parameter/
       │       │   │   ├─ type/name = "object"
       │       │   │   └─ name = "o"
-      │       │   └─ body/block/
+      │       │   └─ body/
       │       │       ├─ comment[leading] = "// cast expression"
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "int"
       │       │       │   ├─ name = "n"
-      │       │       │   └─ value/expression/cast/
-      │       │       │       ├─ type/type/name = "int"
-      │       │       │       └─ value/expression/float = "3.14"
+      │       │       │   └─ expression/cast/
+      │       │       │       ├─ type/name = "int"
+      │       │       │       └─ float = "3.14"
       │       │       ├─ comment[leading] = "// char literal"
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "char"
       │       │       │   ├─ name = "ch"
-      │       │       │   └─ value/expression/string = "'A'"
+      │       │       │   └─ expression/string = "'A'"
       │       │       ├─ comment[leading] = "// checked statement + yield return (via iterator method below)"
-      │       │       ├─ checked/body/block/assign/
-      │       │       │   ├─ left/expression/name = "n"
-      │       │       │   ├─ op = "="
-      │       │       │   └─ right/expression/binary/
+      │       │       ├─ checked/body/assign/
+      │       │       │   ├─ expression/name = "n"
+      │       │       │   └─ expression/binary/
       │       │       │       ├─ left/expression/name = "n"
-      │       │       │       ├─ op[plus] = "+"
       │       │       │       └─ right/expression/int = "1"
       │       │       ├─ comment[leading] = "// fixed + unsafe handled in unsafe context (pointer omitted for clarity)\n        // goto + labeled statement"
       │       │       ├─ goto/name = "skip"
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "int"
       │       │       │   ├─ name = "unreachable"
-      │       │       │   └─ value/expression/int = "0"
+      │       │       │   └─ expression/int = "0"
       │       │       ├─ label/
       │       │       │   ├─ name = "skip"
       │       │       │   └─ assign/
-      │       │       │       ├─ left/expression/name = "_"
-      │       │       │       ├─ op = "="
-      │       │       │       └─ right/expression/name = "n"
+      │       │       │       ├─ expression/name = "_"
+      │       │       │       └─ expression/name = "n"
       │       │       ├─ comment[leading] = "// lock statement"
       │       │       ├─ lock/
       │       │       │   ├─ typeof/type/name = "Entry"
-      │       │       │   └─ body/block/expression/unary[postfix]/
-      │       │       │       ├─ name = "n"
-      │       │       │       └─ op[increment] = "++"
+      │       │       │   └─ body/expression/unary[postfix]/name = "n"
       │       │       ├─ comment[leading] = "// with expression (record update)"
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "m"
-      │       │       │   └─ value/expression/new/
+      │       │       │   └─ expression/object_creation/
       │       │       │       ├─ name = "Money"
       │       │       │       ├─ float = "1.0m"
       │       │       │       └─ string = "\"USD\""
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "m2"
-      │       │       │   └─ value/expression/with/
+      │       │       │   └─ expression/with/
       │       │       │       ├─ name = "m"
       │       │       │       └─ literal/
       │       │       │           ├─ name = "Currency"
@@ -841,7 +703,7 @@ unit/
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "anon"
-      │       │       │   └─ value/expression/new[anonymous]/
+      │       │       │   └─ expression/new[anonymous]/
       │       │       │       ├─ name = "Name"
       │       │       │       ├─ string = "\"foo\""
       │       │       │       ├─ name = "Value"
@@ -850,7 +712,7 @@ unit/
       │       │       ├─ variable/
       │       │       │   ├─ type[array]/type/name = "int"
       │       │       │   ├─ name = "arr"
-      │       │       │   └─ value/expression/new/
+      │       │       │   └─ expression/new/
       │       │       │       ├─ type[array]/type/name = "int"
       │       │       │       ├─ int = "1"
       │       │       │       ├─ int = "2"
@@ -858,7 +720,7 @@ unit/
       │       │       ├─ variable/
       │       │       │   ├─ type[array]/type/name = "int"
       │       │       │   ├─ name = "arr2"
-      │       │       │   └─ value/expression/new/
+      │       │       │   └─ expression/new/
       │       │       │       ├─ int = "4"
       │       │       │       ├─ int = "5"
       │       │       │       └─ int = "6"
@@ -866,35 +728,34 @@ unit/
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "Type"
       │       │       │   ├─ name = "t"
-      │       │       │   └─ value/expression/typeof/type/name = "int"
+      │       │       │   └─ expression/typeof/type/name = "int"
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "int"
       │       │       │   ├─ name = "sz"
-      │       │       │   └─ value/expression/sizeof/type/name = "int"
+      │       │       │   └─ expression/sizeof/type/name = "int"
       │       │       ├─ comment[leading] = "// default expression"
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "int"
       │       │       │   ├─ name = "def"
-      │       │       │   └─ value/expression/default/type/name = "int"
+      │       │       │   └─ expression/default/type/name = "int"
       │       │       ├─ comment[leading] = "// throw expression (in null-coalescing context)"
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "string"
       │       │       │   ├─ name = "s"
-      │       │       │   └─ value/expression/null = "null"
+      │       │       │   └─ expression/null = "null"
       │       │       └─ variable/
       │       │           ├─ type/name = "string"
       │       │           ├─ name = "s2"
-      │       │           └─ value/expression/binary/
+      │       │           └─ expression/binary/
       │       │               ├─ left/expression/name = "s"
-      │       │               ├─ op[nullish] = "??"
-      │       │               └─ right/expression/throw/expression/new/
+      │       │               └─ right/expression/throw/expression/object_creation/
       │       │                   ├─ name = "ArgumentNullException"
       │       │                   └─ call/
       │       │                       ├─ name = "nameof"
       │       │                       └─ name = "s"
       │       ├─ method[public and static]/
       │       │   ├─ name = "Yields"
-      │       │   └─ body/block/
+      │       │   └─ body/
       │       │       ├─ yield/int = "1"
       │       │       └─ yield/int = "2"
       │       ├─ method[public and static]/
@@ -902,7 +763,7 @@ unit/
       │       │   ├─ parameter/
       │       │   │   ├─ type/name = "object"
       │       │   │   └─ name = "o"
-      │       │   └─ body/block/return/expression/switch/
+      │       │   └─ body/return/expression/switch/
       │       │       ├─ name = "o"
       │       │       ├─ arm/
       │       │       │   ├─ pattern[and]/
@@ -932,9 +793,7 @@ unit/
       │       │           ├─ pattern[declaration]/
       │       │           │   ├─ type/name = "var"
       │       │           │   └─ name = "x"
-      │       │           └─ object[access]/
-      │       │               ├─ expression[non_null]/name = "x"
-      │       │               └─ call/name = "ToString"
+      │       │           └─ access/expression/name = "x"
       │       ├─ comment[leading] = "// Attributes, generic constraints, indexer, destructor."
       │       ├─ class[public]/
       │       │   ├─ attribute/
@@ -943,13 +802,17 @@ unit/
       │       │   │   └─ argument/bool = "false"
       │       │   ├─ name = "Container"
       │       │   ├─ generic[class and new]/name = "T"
+      │       │   ├─ where/
+      │       │   │   ├─ name = "T"
+      │       │   │   ├─ constraint = "class"
+      │       │   │   └─ constraint/new = "new()"
       │       │   └─ body/
       │       │       ├─ property[public]/
       │       │       │   ├─ type/name = "T"
       │       │       │   ├─ name = "Value"
       │       │       │   ├─ get = "get;"
       │       │       │   ├─ set = "set;"
-      │       │       │   └─ value/new/name = "T"
+      │       │       │   └─ object_creation/name = "T"
       │       │       ├─ indexer[public]/
       │       │       │   ├─ type/name = "T"
       │       │       │   ├─ parameter/
@@ -958,10 +821,10 @@ unit/
       │       │       │   └─ value/name = "Value"
       │       │       ├─ destructor/
       │       │       │   ├─ name = "Container"
-      │       │       │   └─ body/block/comment = "/* finalizer */"
+      │       │       │   └─ body/comment = "/* finalizer */"
       │       │       └─ constructor[public]/
       │       │           ├─ name = "Container"
-      │       │           └─ body/block = "{ }"
+      │       │           └─ body = "{ }"
       │       ├─ comment[leading] = "// Delegate + event."
       │       ├─ delegate[public]/
       │       │   ├─ type/name = "void"
@@ -978,29 +841,29 @@ unit/
       │       │   │   ├─ name = "global::System"
       │       │   │   └─ name = "Int32"
       │       │   ├─ name = "aliased"
-      │       │   └─ value/expression/int = "0"
+      │       │   └─ expression/int = "0"
       │       ├─ comment[leading] = "// Operator overloads + conversion operator."
       │       ├─ operator[public and static]/
-      │       │   ├─ type[generic]/
+      │       │   ├─ generic_type/
       │       │   │   ├─ name = "Container"
-      │       │   │   └─ type/name = "T"
+      │       │   │   └─ name = "T"
       │       │   ├─ parameter/
-      │       │   │   ├─ type[generic]/
+      │       │   │   ├─ generic_type/
       │       │   │   │   ├─ name = "Container"
-      │       │   │   │   └─ type/name = "T"
+      │       │   │   │   └─ name = "T"
       │       │   │   └─ name = "a"
       │       │   ├─ parameter/
-      │       │   │   ├─ type[generic]/
+      │       │   │   ├─ generic_type/
       │       │   │   │   ├─ name = "Container"
-      │       │   │   │   └─ type/name = "T"
+      │       │   │   │   └─ name = "T"
       │       │   │   └─ name = "b"
       │       │   └─ body/name = "a"
       │       ├─ operator[public and static]/
       │       │   ├─ type/name = "int"
       │       │   ├─ parameter/
-      │       │   │   ├─ type[generic]/
+      │       │   │   ├─ generic_type/
       │       │   │   │   ├─ name = "Container"
-      │       │   │   │   └─ type/name = "T"
+      │       │   │   │   └─ name = "T"
       │       │   │   └─ name = "c"
       │       │   └─ body/int = "0"
       │       ├─ comment[leading] = "// Event with explicit add/remove accessors."
@@ -1010,14 +873,12 @@ unit/
       │       ├─ event[public]/
       │       │   ├─ type/name = "OnChanged"
       │       │   ├─ name = "Explicit"
-      │       │   ├─ get/body/block/assign/
-      │       │   │   ├─ left/expression/name = "_changed"
-      │       │   │   ├─ op[assign and plus] = "+="
-      │       │   │   └─ right/expression/name = "value"
-      │       │   └─ get/body/block/assign/
-      │       │       ├─ left/expression/name = "_changed"
-      │       │       ├─ op[assign and minus] = "-="
-      │       │       └─ right/expression/name = "value"
+      │       │   ├─ get/body/assign/
+      │       │   │   ├─ expression/name = "_changed"
+      │       │   │   └─ expression/name = "value"
+      │       │   └─ get/body/assign/
+      │       │       ├─ expression/name = "_changed"
+      │       │       └─ expression/name = "value"
       │       ├─ comment[leading] = "// Tuple deconstruction with parenthesized variable designation."
       │       ├─ method[public and static]/
       │       │   ├─ name = "Deconstruct"
@@ -1027,15 +888,13 @@ unit/
       │       │   ├─ parameter[out]/
       │       │   │   ├─ type/name = "int"
       │       │   │   └─ name = "y"
-      │       │   └─ body/block/
+      │       │   └─ body/
       │       │       ├─ assign/
-      │       │       │   ├─ left/expression/name = "x"
-      │       │       │   ├─ op = "="
-      │       │       │   └─ right/expression/int = "1"
+      │       │       │   ├─ expression/name = "x"
+      │       │       │   └─ expression/int = "1"
       │       │       └─ assign/
-      │       │           ├─ left/expression/name = "y"
-      │       │           ├─ op = "="
-      │       │           └─ right/expression/int = "2"
+      │       │           ├─ expression/name = "y"
+      │       │           └─ expression/int = "2"
       │       ├─ method[public and static]/
       │       │   ├─ name = "Pair"
       │       │   └─ body/tuple/
@@ -1075,9 +934,7 @@ unit/
       │       │   ├─ parameter/
       │       │   │   ├─ type/name = "string"
       │       │   │   └─ name = "s"
-      │       │   └─ body/object[access]/
-      │       │       ├─ name = "s"
-      │       │       └─ call/name = "Trim"
+      │       │   └─ body/access/name = "s"
       │       ├─ comment[leading] = "// LINQ join / let / group, as / is simple expressions."
       │       ├─ method[public and static]/
       │       │   ├─ name = "LinqExtras"
@@ -1087,19 +944,18 @@ unit/
       │       │   ├─ parameter/
       │       │   │   ├─ type[array]/type/name = "int"
       │       │   │   └─ name = "ys"
-      │       │   └─ body/block/
+      │       │   └─ body/
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "joined"
-      │       │       │   └─ value/expression/query/
+      │       │       │   └─ expression/query/
       │       │       │       ├─ from[in]/
-      │       │       │       │   ├─ name = "x"
+      │       │       │       │   ├─ name/name = "x"
       │       │       │       │   └─ value/expression/name = "xs"
       │       │       │       ├─ let/
       │       │       │       │   ├─ name = "xx"
       │       │       │       │   └─ binary/
       │       │       │       │       ├─ left/expression/name = "x"
-      │       │       │       │       ├─ op[multiply] = "*"
       │       │       │       │       └─ right/expression/name = "x"
       │       │       │       ├─ join[in]/
       │       │       │       │   ├─ name = "y"
@@ -1110,38 +966,28 @@ unit/
       │       │       │       │   ├─ name = "y"
       │       │       │       │   └─ name = "x"
       │       │       │       ├─ name = "grp"
-      │       │       │       └─ select/object[access]/
-      │       │       │           ├─ name = "grp"
-      │       │       │           └─ call/name = "Count"
+      │       │       │       └─ select/access/name = "grp"
       │       │       ├─ if/
       │       │       │   ├─ condition/expression/is/
       │       │       │   │   ├─ name = "xs"
       │       │       │   │   └─ pattern[declaration]/
       │       │       │   │       ├─ type[array]/type/name = "int"
       │       │       │   │       └─ name = "arr"
-      │       │       │   └─ body/block/return/expression/object[access]/
-      │       │       │       ├─ name = "arr"
-      │       │       │       └─ member/name = "Length"
+      │       │       │   └─ body/return/expression/access/name = "arr"
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "object"
       │       │       │   ├─ name = "o"
-      │       │       │   └─ value/expression/name = "xs"
+      │       │       │   └─ expression/name = "xs"
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "asArr"
-      │       │       │   └─ value/expression/is/
+      │       │       │   └─ expression/is/
       │       │       │       ├─ left/name = "o"
       │       │       │       └─ right/type[array]/type/name = "int"
       │       │       └─ return/expression/binary/
-      │       │           ├─ left/expression/object[access]/
-      │       │           │   ├─ name = "joined"
-      │       │           │   └─ call/name = "Count"
-      │       │           ├─ op[plus] = "+"
+      │       │           ├─ left/expression/access/name = "joined"
       │       │           └─ right/expression/binary/
-      │       │               ├─ left/expression/object[access]/
-      │       │               │   ├─ name = "asArr"
-      │       │               │   └─ member[optional]/name = "Length"
-      │       │               ├─ op[nullish] = "??"
+      │       │               ├─ left/expression/access/name = "asArr"
       │       │               └─ right/expression/int = "0"
       │       ├─ comment[leading] = "// List patterns (C# 11). Slice patterns omitted because the\n    // pinned tree-sitter-c-sharp grammar emits ERROR for `..` in\n    // list patterns; the IR pipeline handles them when the grammar\n    // is regenerated."
       │       ├─ method[public and static]/
@@ -1166,30 +1012,25 @@ unit/
       │       ├─ comment[leading] = "// empty + continue + break statements in a loop."
       │       ├─ method[public and static]/
       │       │   ├─ name = "Trivial"
-      │       │   └─ body/block/
-      │       │       ├─ for/
+      │       │   └─ body/
+      │       │       ├─ c_for/
       │       │       │   ├─ variable/
       │       │       │   │   ├─ type/name = "int"
       │       │       │   │   ├─ name = "i"
-      │       │       │   │   └─ value/expression/int = "0"
-      │       │       │   ├─ condition/expression/binary/
+      │       │       │   │   └─ expression/int = "0"
+      │       │       │   ├─ binary/
       │       │       │   │   ├─ left/expression/name = "i"
-      │       │       │   │   ├─ op[compare and less] = "<"
       │       │       │   │   └─ right/expression/int = "3"
-      │       │       │   ├─ unary[postfix]/
-      │       │       │   │   ├─ name = "i"
-      │       │       │   │   └─ op[increment] = "++"
-      │       │       │   └─ body/block/
+      │       │       │   ├─ unary[postfix]/name = "i"
+      │       │       │   └─ body/
       │       │       │       ├─ if/
       │       │       │       │   ├─ condition/expression/binary/
       │       │       │       │   │   ├─ left/expression/name = "i"
-      │       │       │       │   │   ├─ op[equals] = "=="
       │       │       │       │   │   └─ right/expression/int = "1"
       │       │       │       │   └─ body/continue = "continue;"
       │       │       │       └─ if/
       │       │       │           ├─ condition/expression/binary/
       │       │       │           │   ├─ left/expression/name = "i"
-      │       │       │           │   ├─ op[equals] = "=="
       │       │       │           │   └─ right/expression/int = "2"
       │       │       │           └─ body/break = "break;"
       │       │       └─ return/expression/int = "0"
@@ -1213,27 +1054,22 @@ unit/
       │       │   │   └─ name = "b"
       │       │   └─ body/checked/binary/
       │       │       ├─ left/expression/name = "a"
-      │       │       ├─ op[plus] = "+"
       │       │       └─ right/expression/name = "b"
       │       ├─ method[public and static and unsafe]/
       │       │   ├─ name = "Pointer"
       │       │   ├─ parameter/
       │       │   │   ├─ type/type/name = "int"
       │       │   │   └─ name = "p"
-      │       │   └─ body/block/fixed/
+      │       │   └─ body/fixed/
       │       │       ├─ variable/
       │       │       │   ├─ type/type/name = "int"
       │       │       │   ├─ name = "q"
-      │       │       │   └─ value/expression/unary/
-      │       │       │       ├─ op[bitwise and and] = "&"
-      │       │       │       └─ name = "a"
-      │       │       └─ body/block/return/expression/unary/
-      │       │           ├─ op[multiply] = "*"
-      │       │           └─ name = "q"
+      │       │       │   └─ expression/unary/name = "a"
+      │       │       └─ body/return/expression/unary/name = "q"
       │       ├─ field[private and static]/
       │       │   ├─ type/name = "int"
       │       │   ├─ name = "a"
-      │       │   └─ value/expression/int = "1"
+      │       │   └─ expression/int = "1"
       │       ├─ comment[leading] = "// Function pointer type + parameter."
       │       ├─ method[public and static and unsafe]/
       │       │   ├─ name = "FnPtr"
@@ -1245,25 +1081,25 @@ unit/
       │       │   ├─ parameter/
       │       │   │   ├─ type/name = "int"
       │       │   │   └─ name = "x"
-      │       │   └─ body/block/expression/call/
+      │       │   └─ body/expression/call/
       │       │       ├─ name = "fn"
       │       │       └─ name = "x"
       │       ├─ comment[leading] = "// Stackalloc + implicit stackalloc."
       │       ├─ method[public and static and unsafe]/
       │       │   ├─ name = "Alloc"
-      │       │   └─ body/block/
+      │       │   └─ body/
       │       │       ├─ variable/
       │       │       │   ├─ type/type/name = "int"
       │       │       │   ├─ name = "buf"
-      │       │       │   └─ value/expression/new[stackalloc]/type[array]/
+      │       │       │   └─ expression/new[stackalloc]/type[array]/
       │       │       │       ├─ type/name = "int"
       │       │       │       └─ int = "3"
       │       │       ├─ variable/
-      │       │       │   ├─ type[generic]/
+      │       │       │   ├─ generic_type/
       │       │       │   │   ├─ name = "Span"
-      │       │       │   │   └─ type/name = "int"
+      │       │       │   │   └─ name = "int"
       │       │       │   ├─ name = "span"
-      │       │       │   └─ value/expression/new[stackalloc]/
+      │       │       │   └─ expression/new[stackalloc]/
       │       │       │       ├─ type[array]/
       │       │       │       │   ├─ type/name = "int"
       │       │       │       │   └─ int = "3"
@@ -1271,11 +1107,11 @@ unit/
       │       │       │       ├─ int = "2"
       │       │       │       └─ int = "3"
       │       │       └─ variable/
-      │       │           ├─ type[generic]/
+      │       │           ├─ generic_type/
       │       │           │   ├─ name = "Span"
-      │       │           │   └─ type/name = "int"
+      │       │           │   └─ name = "int"
       │       │           ├─ name = "auto"
-      │       │           └─ value/expression/new[stackalloc]/
+      │       │           └─ expression/new[stackalloc]/
       │       │               ├─ int = "1"
       │       │               ├─ int = "2"
       │       │               └─ int = "3"
@@ -1286,9 +1122,8 @@ unit/
       │       │       ├─ parameter/
       │       │       │   ├─ type/name = "int"
       │       │       │   └─ name = "x"
-      │       │       └─ body/block/return/expression/binary/
+      │       │       └─ body/return/expression/binary/
       │       │           ├─ left/expression/name = "x"
-      │       │           ├─ op[plus] = "+"
       │       │           └─ right/expression/int = "1"
       │       ├─ comment[leading] = "// Simple is-expression (type test, no pattern binding)."
       │       ├─ method[public and static]/
@@ -1297,8 +1132,8 @@ unit/
       │       │   │   ├─ type/name = "object"
       │       │   │   └─ name = "o"
       │       │   └─ body/is/
-      │       │       ├─ left/expression/name = "o"
-      │       │       └─ right/expression/type/name = "int"
+      │       │       ├─ name = "o"
+      │       │       └─ name = "int"
       │       ├─ comment[leading] = "// Element access (indexer/array)."
       │       ├─ method[public and static]/
       │       │   ├─ name = "ElementAt"
@@ -1308,9 +1143,9 @@ unit/
       │       │   ├─ parameter/
       │       │   │   ├─ type/name = "int"
       │       │   │   └─ name = "i"
-      │       │   └─ body/object[access]/
+      │       │   └─ body/access/
       │       │       ├─ name = "xs"
-      │       │       └─ index/name = "i"
+      │       │       └─ name = "i"
       │       ├─ comment[leading] = "// String escape sequences."
       │       ├─ method[public and static]/
       │       │   ├─ name = "Esc"
@@ -1318,55 +1153,52 @@ unit/
       │       ├─ comment[leading] = "// Unsafe block + ref expression."
       │       ├─ method[public and static and unsafe]/
       │       │   ├─ name = "RefExample"
-      │       │   └─ body/block/
+      │       │   └─ body/
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "int"
       │       │       │   ├─ name = "x"
-      │       │       │   └─ value/expression/int = "0"
+      │       │       │   └─ expression/int = "0"
       │       │       ├─ variable/
       │       │       │   ├─ type[ref]/type/name = "int"
       │       │       │   ├─ name = "r"
-      │       │       │   └─ value/expression[ref]/name = "x"
+      │       │       │   └─ expression[ref]/name = "x"
       │       │       └─ assign/
-      │       │           ├─ left/expression/name = "r"
-      │       │           ├─ op = "="
-      │       │           └─ right/expression/int = "5"
+      │       │           ├─ expression/name = "r"
+      │       │           └─ expression/int = "5"
       │       ├─ comment[leading] = "// Scoped type (C# 11) and ref type in parameters."
       │       ├─ method[public and static]/
       │       │   ├─ name = "Scoped"
       │       │   ├─ parameter/
       │       │   │   ├─ type[scoped]/type/path/
       │       │   │   │   ├─ name = "System"
-      │       │   │   │   └─ type[generic]/
+      │       │   │   │   └─ generic_type/
       │       │   │   │       ├─ name = "Span"
-      │       │   │   │       └─ type/name = "int"
+      │       │   │   │       └─ name = "int"
       │       │   │   └─ name = "data"
       │       │   ├─ parameter[ref]/
       │       │   │   ├─ type/name = "int"
       │       │   │   └─ name = "target"
-      │       │   └─ body/block/assign/
-      │       │       ├─ left/expression/name = "target"
-      │       │       ├─ op = "="
-      │       │       └─ right/expression/object[access]/
+      │       │   └─ body/assign/
+      │       │       ├─ expression/name = "target"
+      │       │       └─ expression/access/
       │       │           ├─ name = "data"
-      │       │           └─ index/int = "0"
+      │       │           └─ int = "0"
       │       ├─ comment[leading] = "// Var pattern + parenthesized pattern + parenthesized variable\n    // designation (`(int x, int y) = pair`)."
       │       ├─ method[public and static]/
       │       │   ├─ name = "VarPat"
       │       │   ├─ parameter/
       │       │   │   ├─ type/name = "object"
       │       │   │   └─ name = "o"
-      │       │   └─ body/block/
+      │       │   └─ body/
       │       │       ├─ assign/
-      │       │       │   ├─ left/expression/tuple/
+      │       │       │   ├─ expression/tuple/
       │       │       │   │   ├─ declaration/
       │       │       │   │   │   ├─ type/name = "int"
       │       │       │   │   │   └─ name = "x"
       │       │       │   │   └─ declaration/
       │       │       │   │       ├─ type/name = "int"
       │       │       │   │       └─ name = "y"
-      │       │       │   ├─ op = "="
-      │       │       │   └─ right/expression/tuple/
+      │       │       │   └─ expression/tuple/
       │       │       │       ├─ int = "1"
       │       │       │       └─ int = "2"
       │       │       └─ return/expression/switch/
@@ -1376,8 +1208,8 @@ unit/
       │       │           │   │   ├─ type/name = "var"
       │       │           │   │   └─ name = "v"
       │       │           │   ├─ when/is/
-      │       │           │   │   ├─ left/expression/name = "v"
-      │       │           │   │   └─ right/expression/type/name = "string"
+      │       │           │   │   ├─ name = "v"
+      │       │           │   │   └─ name = "string"
       │       │           │   └─ string = "\"string\""
       │       │           ├─ arm/
       │       │           │   ├─ pattern[constant]/int = "1"
@@ -1397,13 +1229,13 @@ unit/
       │       │   ├─ parameter/
       │       │   │   ├─ type[array]/type/name = "int"
       │       │   │   └─ name = "b"
-      │       │   └─ body/block/
+      │       │   └─ body/
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "q"
-      │       │       │   └─ value/expression/query/
+      │       │       │   └─ expression/query/
       │       │       │       ├─ from[in]/
-      │       │       │       │   ├─ name = "x"
+      │       │       │       │   ├─ name/name = "x"
       │       │       │       │   └─ value/expression/name = "a"
       │       │       │       ├─ join[in]/
       │       │       │       │   ├─ name = "y"
@@ -1411,12 +1243,8 @@ unit/
       │       │       │       │   ├─ name = "x"
       │       │       │       │   ├─ name = "y"
       │       │       │       │   └─ name = "matched"
-      │       │       │       └─ select/object[access]/
-      │       │       │           ├─ name = "matched"
-      │       │       │           └─ call/name = "Count"
-      │       │       └─ return/expression/object[access]/
-      │       │           ├─ name = "q"
-      │       │           └─ call/name = "Count"
+      │       │       │       └─ select/access/name = "matched"
+      │       │       └─ return/expression/access/name = "q"
       │       ├─ comment[leading] = "// Explicit interface implementation."
       │       └─ method[public]/
       │           ├─ name = "IFormat"
@@ -1447,10 +1275,7 @@ unit/
       │           └─ literal/
       │               ├─ name = "X"
       │               └─ binary/
-      │                   ├─ left/expression/object[access]/
-      │                   │   ├─ name = "p"
-      │                   │   └─ member/name = "X"
-      │                   ├─ op[plus] = "+"
+      │                   ├─ left/expression/access/name = "p"
       │                   └─ right/expression/name = "dx"
       ├─ comment = "// Global / assembly-level attribute (file scope)."
       ├─ attribute/
