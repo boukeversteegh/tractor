@@ -131,7 +131,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["self", "super"]),
                             segments: vec![segment],
                             range,
                             span,
@@ -179,7 +179,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["self", "super"]),
                             segments: vec![segment],
                             range,
                             span,
@@ -457,7 +457,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "union_pattern"             => simple_statement_marked(node, "pattern", &["union"], source),
         "splat_pattern"             => simple_statement_marked(node, "pattern", &["splat"], source),
         "keyword_pattern"           => simple_statement(node, "pattern",   source),
-        "union_type"                => simple_statement(node, "type",      source),
+        "union_type"                => simple_statement_marked(node, "type", &["union"], source),
         "named_expression"          => simple_statement(node, "assign",    source),
         "future_import_statement"   => simple_statement(node, "import",    source),
         "interpolation"             => simple_statement(node, "interpolation", source),
@@ -1397,6 +1397,7 @@ fn lower_python_raise(node: &RawNode, source: &str) -> SyntaxTree {
 fn lower_python_yield(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
+    let is_from = node.children().any(|c| !c.is_named() && c.kind() == "from");
     let inner: Vec<SyntaxTree> = node.named_children()
         .map(|c| lower_node(c, source))
         .collect();
@@ -1421,7 +1422,7 @@ fn lower_python_yield(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::SimpleStatement {
         element_name: "yield",
         modifiers: Modifiers::default(),
-        extra_markers: &[],
+        extra_markers: if is_from { &["from"] } else { &[] },
         children,
         range,
         span,
@@ -1617,6 +1618,7 @@ fn lower_function(node: &RawNode, source: &str, is_async: bool, decorators: Vec<
         generics,
         parameters,
         returns,
+        throws: Vec::new(),
         body,
         range,
         span,
@@ -1859,7 +1861,7 @@ fn collect_type_param_items(node: &RawNode, source: &str, out: &mut Vec<SyntaxTr
     for c in node.named_children() {
         let cspan = span_of(c);
         let crange = range_of(c);
-        match c.kind() {
+        let tp: SyntaxTree = match c.kind() {
             // Per-item wrapper kind: `type` containing the
             // identifier (and optional constraint).
             "type" => {
@@ -1874,42 +1876,50 @@ fn collect_type_param_items(node: &RawNode, source: &str, out: &mut Vec<SyntaxTr
                         span: cspan,
                     },
                 };
-                out.push(SyntaxTree::TypeParameter {
+                SyntaxTree::TypeParameter {
                     name: Box::new(name),
                     constraint: None,
                     range: crange,
                     span: cspan,
-                });
+                }
             }
-            "identifier" => {
-                out.push(SyntaxTree::TypeParameter {
-                    name: Box::new(name_of(c, source)),
-                    constraint: None,
-                    range: crange,
-                    span: cspan,
-                });
-            }
-            "constrained_type" | "splat_type" => {
-                out.push(SyntaxTree::TypeParameter {
-                    name: Box::new(lower_node(c, source)),
-                    constraint: None,
-                    range: crange,
-                    span: cspan,
-                });
-            }
+            "identifier" => SyntaxTree::TypeParameter {
+                name: Box::new(name_of(c, source)),
+                constraint: None,
+                range: crange,
+                span: cspan,
+            },
+            "constrained_type" | "splat_type" => SyntaxTree::TypeParameter {
+                name: Box::new(lower_node(c, source)),
+                constraint: None,
+                range: crange,
+                span: cspan,
+            },
             "type_parameter" => {
                 // Nested wrapper (PEP 695 grammar quirk). Recurse to
-                // collect items inside.
+                // collect items inside (each recursive call wraps in
+                // <generic> itself, so don't double-wrap here).
                 collect_type_param_items(c, source, out);
+                continue;
             }
-            other => {
-                out.push(SyntaxTree::Unknown {
-                    kind: format!("type_param_item({other})"),
-                    range: crange,
-                    span: cspan,
-                });
-            }
-        }
+            other => SyntaxTree::Unknown {
+                kind: format!("type_param_item({other})"),
+                range: crange,
+                span: cspan,
+            },
+        };
+        // Wrap each TypeParameter in a `<generic>` SimpleStatement so
+        // the rendered shape is `<generic>/<type>/<name>` (S16-Z16),
+        // matching the pre-IR Python contract for PEP 695 type
+        // parameter declarations.
+        out.push(SyntaxTree::SimpleStatement {
+            element_name: "generic",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![tp],
+            range: crange,
+            span: cspan,
+        });
     }
 }
 
@@ -2031,13 +2041,42 @@ fn lower_assign_side(node: &RawNode, source: &str) -> Vec<SyntaxTree> {
 fn lower_type_slot(node: &RawNode, source: &str) -> SyntaxTree {
     // The `type` field can be a `type` CST kind (with one named child)
     // or a bare expression. Unwrap if it's the wrapping `type` kind.
-    if node.kind() == "type" {
-        let inner = node.named_children().next();
-        if let Some(inner) = inner {
-            return lower_node(inner, source);
+    let inner_node = if node.kind() == "type" {
+        node.named_children().next().unwrap_or(node)
+    } else {
+        node
+    };
+    // PEP 604 union type `T | U`: tree-sitter Python parses this as a
+    // `binary_operator` with `|`. In type position, lower it as
+    // `<type[union]>/{lowered-children}` (Principle #11 — name the
+    // construct concretely; the marker on `<type>` distinguishes the
+    // union form from a regular type slot).
+    if inner_node.kind() == "binary_operator" {
+        if let Some(op) = inner_node.children().find(|c| !c.is_named()) {
+            if op.utf8_text(source) == "|" {
+                let span = span_of(inner_node);
+                let range = range_of(inner_node);
+                let left = inner_node.child_by_field_name("left");
+                let right = inner_node.child_by_field_name("right");
+                let mut children: Vec<SyntaxTree> = Vec::new();
+                if let Some(l) = left {
+                    children.push(lower_type_slot(l, source));
+                }
+                if let Some(r) = right {
+                    children.push(lower_type_slot(r, source));
+                }
+                return SyntaxTree::SimpleStatement {
+                    element_name: "type",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &["union"],
+                    children,
+                    range,
+                    span,
+                };
+            }
         }
     }
-    lower_node(node, source)
+    lower_node(inner_node, source)
 }
 
 /// Locate the `=` token inside a plain `assignment` CST node. tree-sitter

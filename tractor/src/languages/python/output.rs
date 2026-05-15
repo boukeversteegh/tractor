@@ -26,6 +26,12 @@ pub enum TractorNode {
     Continue, Match, Arm, Pattern, Then, Condition, Guard,
     // Imports / names
     Import, From, Assert, Delete, Global, Nonlocal,
+    // Access-receiver keyword markers — emitted as empty marker
+    // elements when an Access chain's receiver is `self` or `super`.
+    // See `AccessReceiver` typing on `SyntaxTree::Access`.
+    #[strum(serialize = "self")]
+    Self_,
+    Super,
     // Python 2 leftovers (kept as own elements; rare in modern code)
     Exec, Print,
     // Expressions. Both `Index` and `Subscript` stay declared:
@@ -82,6 +88,7 @@ impl TractorNode {
             | Self::Constrained | Self::Complex | Self::Group | Self::Future
             | Self::Wildcard | Self::Concatenated | Self::Escape
             | Self::Relative
+            | Self::Self_ | Self::Super
             | Self::Access                                                        => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
             | Self::Async | Self::Literal | Self::Comprehension

@@ -275,13 +275,9 @@ unit/
   │   │       ├─ property[public and override]/
   │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
-  │   │       │   ├─ get/object[access and base]/
-  │   │       │   │   ├─ name = "base"
-  │   │       │   │   └─ member/name = "Priority"
+  │   │       │   ├─ get/object[access and base]/member/name = "Priority"
   │   │       │   └─ set[protected]/assign/
-  │   │       │       ├─ left/expression/object[access and base]/
-  │   │       │       │   ├─ name = "base"
-  │   │       │       │   └─ member/name = "Priority"
+  │   │       │       ├─ left/expression/object[access and base]/member/name = "Priority"
   │   │       │       ├─ op = "="
   │   │       │       └─ right/expression/name = "value"
   │   │       ├─ method[public and override]/

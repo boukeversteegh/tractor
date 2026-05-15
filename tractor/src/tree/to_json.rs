@@ -34,7 +34,7 @@
 
 use serde_json::{Map, Value};
 
-use crate::tree::types::{AccessSegment, SyntaxTree, Modifiers, ParamKind};
+use crate::tree::types::{AccessReceiver, AccessSegment, SyntaxTree, Modifiers, ParamKind};
 use crate::transform::helpers::pluralize_list_name;
 
 const KEY_TYPE: &str = "$type";
@@ -390,7 +390,7 @@ impl<'a> Renderer<'a> {
                 self.add_singleton_or_text(shape, inner);
             }
             SyntaxTree::Function {
-                modifiers, decorators, name, generics, parameters, returns, body, ..
+                modifiers, decorators, name, generics, parameters, returns, throws, body, ..
             } => {
                 for d in decorators {
                     shape.list_with("attribute", self.render(d, true));
@@ -405,6 +405,9 @@ impl<'a> Renderer<'a> {
                 }
                 if let Some(r) = returns {
                     shape.singleton("returns", self.render(r, true));
+                }
+                for t in throws {
+                    shape.list_with("throws", self.render(t, true));
                 }
                 if let Some(b) = body {
                     shape.singleton("body", self.render(b, true));
@@ -710,13 +713,21 @@ impl<'a> Renderer<'a> {
     /// `<object>` shape that `xml_to_json.rs` projects via list= /
     /// singleton rules. Each segment becomes a key on the previous
     /// segment's JSON object.
-    fn add_access_chain(&self, shape: &mut Shape, receiver: &SyntaxTree, segments: &[AccessSegment]) {
+    fn add_access_chain(&self, shape: &mut Shape, receiver: &AccessReceiver, segments: &[AccessSegment]) {
         shape.flag("access");
         // Rendered right-nested in XML; the tree walks segments in
         // source order. For JSON we emit the receiver at the
         // outermost level, then each segment as a child key on the
         // accumulated object.
-        let receiver_val = self.render(receiver, true);
+        if let Some(kw) = receiver.keyword_element() {
+            shape.flag(kw);
+            return self.add_segments(shape, segments);
+        }
+        let inner = match receiver {
+            AccessReceiver::Instance(t) => t.as_ref(),
+            _ => unreachable!("keyword_element returned None"),
+        };
+        let receiver_val = self.render(inner, true);
         // Drop the wrapper object's $type when scalar
         match receiver_val {
             Value::String(s) => shape.text(s),
@@ -727,6 +738,10 @@ impl<'a> Renderer<'a> {
             }
             other => shape.put("receiver", other),
         }
+        self.add_segments(shape, segments);
+    }
+
+    fn add_segments(&self, shape: &mut Shape, segments: &[AccessSegment]) {
         for seg in segments {
             match seg {
                 AccessSegment::Member { property_range, optional, .. } => {

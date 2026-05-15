@@ -101,9 +101,25 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
     match node.kind() {
         // ----- Atoms ---------------------------------------------------
         "identifier" | "constant" | "global_variable" | "instance_variable"
-        | "class_variable" | "self" | "method_identifier"
+        | "class_variable" | "method_identifier"
         | "encoding" | "file" | "line" | "setter" | "subshell"
-        | "super" | "uninterpreted" => name_of(node, source),
+        | "uninterpreted" => name_of(node, source),
+
+        // Implicit-receiver keywords get their own element name so
+        // queries like `//self` and `//super` find every site without
+        // colliding with regular identifier references (Principle #5
+        // — unified concept per language; the chain-inversion doc's
+        // implicit-receiver pattern in design.md).
+        "self" => SyntaxTree::Atom {
+            element_name: "self",
+            text: text_of(node, source),
+            range, span,
+        },
+        "super" => SyntaxTree::Atom {
+            element_name: "super",
+            text: text_of(node, source),
+            range, span,
+        },
 
         "integer" => int_of(node, source),
         "float" | "complex" | "rational" => float_of(node, source),
@@ -226,8 +242,8 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "then" => simple_statement(node, "then", source),
 
         // ----- Expressions ---------------------------------------------
-        "assignment" => simple_statement(node, "assign", source),
-        "operator_assignment" => simple_statement(node, "assign", source),
+        "assignment" => lower_ruby_assignment(node, source),
+        "operator_assignment" => lower_ruby_operator_assignment(node, source),
         "binary" => {
             let left = node.child_by_field_name("left").map(|n| lower_node(n, source));
             let right = node.child_by_field_name("right").map(|n| lower_node(n, source));
@@ -340,7 +356,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["self", "super"]),
                             segments: vec![segment],
                             range, span,
                         },
@@ -386,7 +402,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 range, span,
             }
         }
-        "range" => simple_statement(node, "range", source),
+        "range" => lower_ruby_range(node, source),
         "array" => simple_statement(node, "array", source),
         "hash" => simple_statement(node, "hash", source),
         "pair" => simple_statement(node, "pair", source),
@@ -430,12 +446,23 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         // ----- Structural wrappers (flatten) ---------------------------
         "body_statement" | "block_body" | "parenthesized_statements"
         | "string_content" | "escape_sequence" | "bare_string" | "bare_symbol"
-        | "heredoc_beginning" | "heredoc_body" | "heredoc_content" | "heredoc_end"
+        | "heredoc_body" | "heredoc_content" | "heredoc_end"
         | "in" | "left_assignment_list" => SyntaxTree::Inline {
             children: lower_children(node, source),
             list_name: None,
             range, span,
         },
+
+        // `<<-TEXT` / `<<~TEXT` heredoc opener — the marker that
+        // appears in the source where a string literal would go. The
+        // body of the heredoc is parsed as a sibling node in
+        // tree-sitter-ruby's CST. We lower the opener as a `<string>`
+        // leaf so the assignment's right-hand side preserves the
+        // source marker text (Goal #7 — Source Reversibility — and
+        // the stable-expression-host decision, which says every
+        // value-position operand wraps in an `<expression>` host
+        // wrapping a concrete leaf).
+        "heredoc_beginning" => string_of(node, source),
         "empty_statement" => SyntaxTree::Inline {
             children: Vec::new(),
             list_name: None,
@@ -755,6 +782,126 @@ fn simple_statement_marked(
 
 fn lower_children(node: &RawNode, source: &str) -> Vec<SyntaxTree> {
     node.named_children().map(|c| lower_node(c, source)).collect()
+}
+
+/// Ruby `x = expr` — plain assignment. The `=` token is anonymous in
+/// tree-sitter-ruby's CST; we locate it by scanning the source between
+/// the `left` and `right` fields. Maps to `SyntaxTree::Assign` so the
+/// shared `render_tree_assign` projection emits the canonical
+/// `<assign>/<left>/<expression>…<op>=</op>…<right>/<expression>…`
+/// shape (Principle #19 — role-mixed children wrap in role-named
+/// slots; stable-expression-host decision — each value position is
+/// wrapped in `<expression>`).
+fn lower_ruby_assignment(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let left = node.child_by_field_name("left");
+    let right = node.child_by_field_name("right");
+    let (op_text, op_range) = ruby_locate_assign_eq(node, source, left, right);
+    SyntaxTree::Assign {
+        targets: left.map(|n| vec![lower_node(n, source)]).unwrap_or_default(),
+        type_annotation: None,
+        op_text,
+        op_range,
+        op_markers: Vec::new(),
+        values: right.map(|n| vec![lower_node(n, source)]).unwrap_or_default(),
+        range,
+        span,
+    }
+}
+
+/// Ruby `x += expr` and friends. The operator IS a named field here.
+fn lower_ruby_operator_assignment(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let left = node.child_by_field_name("left");
+    let right = node.child_by_field_name("right");
+    let op_node = node.child_by_field_name("operator");
+    let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
+    let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
+    SyntaxTree::Assign {
+        targets: left.map(|n| vec![lower_node(n, source)]).unwrap_or_default(),
+        type_annotation: None,
+        op_text,
+        op_range,
+        op_markers: Vec::new(),
+        values: right.map(|n| vec![lower_node(n, source)]).unwrap_or_default(),
+        range,
+        span,
+    }
+}
+
+/// Lower a Ruby `range` (1..10 / 1...10) with explicit kind marker
+/// + `<from>`/`<to>` slot wrappers. The two anchors play *different*
+/// roles (range start vs range end), so role-named slots are required
+/// (Principle #19). The kind marker — `<inclusive/>` for `..`,
+/// `<exclusive/>` for `...` — exhausts the mutually-exclusive variant
+/// set (Principle #9).
+fn lower_ruby_range(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    // Operator token is anonymous (`..` or `...`); inclusivity is
+    // distinguished by the operator length.
+    let kind: &'static [&'static str] = match node
+        .children()
+        .find(|c| !c.is_named() && matches!(c.utf8_text(source), ".." | "..."))
+        .map(|c| c.utf8_text(source))
+    {
+        Some("...") => &["exclusive"],
+        Some("..") | _ => &["inclusive"],
+    };
+    let begin = node.child_by_field_name("begin");
+    let end = node.child_by_field_name("end");
+    let mut children: Vec<SyntaxTree> = Vec::new();
+    if let Some(b) = begin {
+        let inner = lower_node(b, source);
+        children.push(SyntaxTree::SimpleStatement {
+            element_name: "from",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![inner],
+            range: range_of(b),
+            span: span_of(b),
+        });
+    }
+    if let Some(e) = end {
+        let inner = lower_node(e, source);
+        children.push(SyntaxTree::SimpleStatement {
+            element_name: "to",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![inner],
+            range: range_of(e),
+            span: span_of(e),
+        });
+    }
+    SyntaxTree::SimpleStatement {
+        element_name: "range",
+        modifiers: Modifiers::default(),
+        extra_markers: kind,
+        children,
+        range,
+        span,
+    }
+}
+
+/// Locate the `=` token inside a plain Ruby assignment by scanning the
+/// source between the `left` and `right` fields.
+fn ruby_locate_assign_eq(
+    node: &RawNode,
+    source: &str,
+    left: Option<&RawNode>,
+    right: Option<&RawNode>,
+) -> (String, ByteRange) {
+    let after_left = left.map(|l| l.end_byte()).unwrap_or(node.start_byte());
+    let until = right.map(|r| r.start_byte()).unwrap_or(node.end_byte());
+    if after_left <= until {
+        if let Some(rel) = source[after_left..until].find('=') {
+            let abs = after_left + rel;
+            return ("=".to_string(), ByteRange::new(abs as u32, (abs + 1) as u32));
+        }
+    }
+    ("".to_string(), ByteRange::empty_at(after_left as u32))
 }
 
 

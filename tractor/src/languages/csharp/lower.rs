@@ -174,7 +174,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     SyntaxTree::Access { receiver, segments, range, span }
                 }
                 other => SyntaxTree::Access {
-                    receiver: Box::new(other),
+                    receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "base"]),
                     segments: new_segments,
                     range,
                     span,
@@ -651,6 +651,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 generics: None,
                 parameters: lower_csharp_parameter_list(params_node, source),
                 returns: None,
+                throws: Vec::new(),
                 body,
                 range, span,
             }
@@ -709,6 +710,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 generics,
                 parameters: lower_csharp_parameter_list(params_node, source),
                 returns: None,
+                throws: Vec::new(),
                 body: body_node.map(|b| Box::new(lower_block_like(b, source))),
                 range, span,
             }
@@ -1634,7 +1636,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "base"]),
                             segments: vec![segment],
                             range,
                             span,
@@ -1689,7 +1691,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "base"]),
                             segments: vec![segment],
                             range,
                             span,

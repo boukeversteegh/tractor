@@ -1,18 +1,18 @@
 program/
   ├─ comment = "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax."
-  ├─ import/
+  ├─ import[default and group]/
   │   ├─ name = "defaultExport"
   │   ├─ spec/name = "namedA"
   │   ├─ spec/
   │   │   ├─ name = "namedB"
   │   │   └─ name = "aliasedB"
-  │   └─ path = "./barrel"
-  ├─ import[sideeffect]/
+  │   └─ string = "\"./barrel\""
+  ├─ import[namespace]/
   │   ├─ namespace/name = "ns"
-  │   └─ path = "./namespace"
-  ├─ import[sideeffect]/
+  │   └─ string = "\"./namespace\""
+  ├─ import[group]/
   │   ├─ spec/name = "OnlyAtCompileTime"
-  │   └─ path = "./types"
+  │   └─ string = "\"./types\""
   ├─ export/
   │   ├─ spec/name = "namedA"
   │   └─ string = "\"./barrel\""
@@ -20,16 +20,18 @@ program/
   │   ├─ name = "Re"
   │   ├─ generic/name = "T"
   │   └─ type[conditional]/
-  │       ├─ name = "T"
-  │       ├─ type[generic]/
+  │       ├─ left/type/name = "T"
+  │       ├─ right/type[generic]/
   │       │   ├─ name = "Array"
   │       │   └─ type/type[infer]/name = "U"
-  │       ├─ name = "U"
-  │       └─ name = "never"
+  │       ├─ then/type/name = "U"
+  │       └─ else/type/name = "never"
   ├─ comment[leading] = "/** A shape with an optional label and readonly id. */"
   ├─ export/interface/
   │   ├─ name = "Shape"
-  │   ├─ generic/name = "T"
+  │   ├─ generic/
+  │   │   ├─ name = "T"
+  │   │   └─ type[default]/type/name = "number"
   │   └─ body/
   │       ├─ property[readonly]/
   │       │   ├─ name = "id"
@@ -58,8 +60,8 @@ program/
   ├─ export/alias/
   │   ├─ name = "Pair"
   │   └─ type[tuple]/
-  │       ├─ name = "string"
-  │       └─ name = "number"
+  │       ├─ type/name = "string"
+  │       └─ type/name = "number"
   ├─ export/alias/
   │   ├─ name = "Status"
   │   └─ type[union]/
@@ -76,7 +78,7 @@ program/
   │       ├─ parameter[required]/
   │       │   ├─ name = "input"
   │       │   └─ type/name = "T"
-  │       └─ name = "T"
+  │       └─ returns/type/name = "T"
   ├─ export/alias/
   │   ├─ name = "Partialized"
   │   ├─ generic/name = "T"
@@ -182,7 +184,10 @@ program/
   │   ├─ name = "Widget"
   │   ├─ generic/
   │   │   ├─ name = "T"
-  │   │   └─ extends/type/name = "Shape"
+  │   │   ├─ extends/type/name = "Shape"
+  │   │   └─ type[default]/type[generic]/
+  │   │       ├─ name = "Shape"
+  │   │       └─ type/name = "number"
   │   ├─ extends/type/name = "Base"
   │   ├─ extends/type/type/name = "T"
   │   └─ body/
@@ -232,8 +237,8 @@ program/
   │       │   ├─ returns/type[generic]/
   │       │   │   ├─ name = "Generator"
   │       │   │   └─ type/type[tuple]/
-  │       │   │       ├─ name = "number"
-  │       │   │       └─ name = "T"
+  │       │   │       ├─ type/name = "number"
+  │       │   │       └─ type/name = "T"
   │       │   └─ body/block/for/
   │       │       ├─ variable[let]/
   │       │       │   ├─ name = "i"
@@ -617,10 +622,10 @@ program/
   │   ├─ name = "Identity"
   │   ├─ generic/name = "T"
   │   └─ type[conditional]/
-  │       ├─ type[typeof]/name = "globalThis"
-  │       ├─ name = "T"
-  │       ├─ name = "T"
-  │       └─ name = "never"
+  │       ├─ left/type[typeof]/name = "globalThis"
+  │       ├─ right/type/name = "T"
+  │       ├─ then/type/name = "T"
+  │       └─ else/type/name = "never"
   ├─ alias/
   │   ├─ name = "Reflective"
   │   └─ type[object]/method[public]/
@@ -630,16 +635,16 @@ program/
   ├─ alias/
   │   ├─ name = "RestArgs"
   │   └─ type[tuple]/
-  │       ├─ name = "number"
+  │       ├─ type/name = "number"
   │       └─ type[rest]/type[array]/name = "string"
   ├─ comment[leading] = "// `T?` only appears inside tuple element annotations."
   ├─ alias/
   │   ├─ name = "OptionalSlot"
   │   └─ type[tuple]/
-  │       ├─ parameter[required]/
+  │       ├─ type/parameter[required]/
   │       │   ├─ name = "head"
   │       │   └─ type/name = "number"
-  │       └─ parameter[optional]/
+  │       └─ type/parameter[optional]/
   │           ├─ name = "tail"
   │           └─ type/name = "string"
   ├─ comment[leading] = "// Old-style cast (`<T>expr`) — type assertion."
@@ -689,9 +694,9 @@ program/
   │   ├─ name = "fixed"
   │   └─ value/expression/call/name = "arrayOf"
   ├─ comment[leading] = "// Old-style `import x = require(y)` form."
-  ├─ import/
+  ├─ import[sideeffect]/
   │   ├─ name = "legacy"
-  │   └─ path = "./legacy"
+  │   └─ string = "\"./legacy\""
   ├─ comment[leading] = "// `import.meta` / `new.target` meta-properties."
   ├─ variable[const]/
   │   ├─ name = "url"

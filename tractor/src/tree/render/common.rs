@@ -9,7 +9,7 @@
 //! agree on how a [`QuoteStyle`] decorates a stored text payload.
 
 
-use crate::tree::types::{AccessSegment, QuoteStyle, SyntaxTree};
+use crate::tree::types::{AccessReceiver, AccessSegment, QuoteStyle, SyntaxTree};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Indent {
@@ -411,7 +411,13 @@ pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax
             out.push(')');
         }
         SyntaxTree::Access { receiver, segments, .. } => {
-            write_ir(receiver, out, indent, sx);
+            match receiver {
+                AccessReceiver::Base { .. } => out.push_str("base"),
+                AccessReceiver::This { .. } => out.push_str("this"),
+                AccessReceiver::Super { .. } => out.push_str("super"),
+                AccessReceiver::Self_ { .. } => out.push_str("self"),
+                AccessReceiver::Instance(t) => write_ir(t, out, indent, sx),
+            }
             for seg in segments { write_segment(seg, out, indent, sx); }
         }
         SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {

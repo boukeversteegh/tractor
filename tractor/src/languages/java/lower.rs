@@ -294,6 +294,18 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     span: span_of(t),
                 })
             });
+            // `throws E1, E2` — each exception-type target becomes one
+            // `<throws>/<type>/<name>` sibling on the method (Principle
+            // #18 — name the relationship after the operator).
+            let throws: Vec<SyntaxTree> = node
+                .named_children()
+                .filter(|c| c.kind() == "throws")
+                .flat_map(|tc| {
+                    tc.named_children()
+                        .map(|t| build_throws_target(t, source))
+                        .collect::<Vec<_>>()
+                })
+                .collect();
             // Body is None for abstract / interface methods — the
             // Function render skips emitting `<body>` when None
             // (matches imperative shape `<method[abstract]>` only).
@@ -318,6 +330,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 generics,
                 parameters,
                 returns,
+                throws,
                 body,
                 range,
                 span,
@@ -829,7 +842,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "super"]),
                             segments: vec![segment],
                             range,
                             span,
@@ -883,7 +896,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "super"]),
                             segments: vec![call_segment],
                             range,
                             span,
@@ -926,7 +939,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "super"]),
                             segments: vec![segment],
                             range,
                             span,
@@ -1310,6 +1323,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 generics: None,
                 parameters: Vec::new(),
                 returns: None,
+                throws: Vec::new(),
                 body,
                 range,
                 span,
@@ -1555,6 +1569,33 @@ fn lower_java_catch_clause(node: &RawNode, source: &str) -> SyntaxTree {
                 span,
             })
         }),
+        range,
+        span,
+    }
+}
+
+/// Wrap a Java exception-type target in `<throws>/<type>/{lowered
+/// target}`. The outer `<throws>` is the operator-named relationship
+/// (Principle #18); the inner `<type>` is the namespace marker
+/// (Principle #14 — every type-reference slot carries a `<type>`
+/// child).
+fn build_throws_target(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let inner = lower_node(node, source);
+    // Wrap the lowered target in a `<type>` slot (FieldWrap renders as
+    // `<type>{inner}</type>`), then wrap that in `<throws>`.
+    let type_slot = SyntaxTree::FieldWrap {
+        wrapper: "type",
+        inner: Box::new(inner),
+        range,
+        span,
+    };
+    SyntaxTree::SimpleStatement {
+        element_name: "throws",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children: vec![type_slot],
         range,
         span,
     }

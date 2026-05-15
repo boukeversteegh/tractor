@@ -87,7 +87,7 @@ module/
   ├─ comment[leading] = "# PEP 695 generic function/class/type-alias declarations."
   ├─ function/
   │   ├─ name = "identity"
-  │   ├─ type/name = "T"
+  │   ├─ generic/type/name = "T"
   │   ├─ parameter/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "T"
@@ -95,7 +95,7 @@ module/
   │   └─ body/return/expression/name = "v"
   ├─ class/
   │   ├─ name = "Box"
-  │   ├─ type/name = "T"
+  │   ├─ generic/type/name = "T"
   │   └─ body[pass] = "pass"
   ├─ alias/
   │   ├─ left/type/type[generic]/
@@ -117,7 +117,7 @@ module/
   │   │   └─ value/expression/none = "None"
   │   ├─ parameter/
   │   │   ├─ name = "z"
-  │   │   ├─ type/type/
+  │   │   ├─ type/type[union]/
   │   │   │   ├─ type[generic]/
   │   │   │   │   ├─ name = "list"
   │   │   │   │   └─ type/name = "int"
@@ -199,7 +199,7 @@ module/
   │       │   │   ├─ name = "range"
   │       │   │   └─ name = "n"
   │       │   └─ body/yield/expression/name = "i"
-  │       └─ yield/expression/call/
+  │       └─ yield[from]/expression/call/
   │           ├─ name = "range"
   │           ├─ name = "n"
   │           └─ binary/
@@ -290,9 +290,7 @@ module/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "str"
   │       │   └─ body/assign/
-  │       │       ├─ left/expression/object[access]/
-  │       │       │   ├─ name = "self"
-  │       │       │   └─ member/name = "name"
+  │       │       ├─ left/expression/object[access and self]/member/name = "name"
   │       │       ├─ op = "="
   │       │       └─ right/expression/name = "name"
   │       └─ function[public]/
@@ -306,9 +304,7 @@ module/
   │               │   └─ name = "Derived"
   │               ├─ op[logical and and] = "and"
   │               └─ right/expression/compare/
-  │                   ├─ object[access]/
-  │                   │   ├─ name = "self"
-  │                   │   └─ member/name = "name"
+  │                   ├─ object[access and self]/member/name = "name"
   │                   ├─ op[equals] = "=="
   │                   └─ object[access]/
   │                       ├─ name = "other"

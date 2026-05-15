@@ -34,7 +34,7 @@
 
 use xot::{Node as XotNode, Xot};
 
-use super::types::{AccessSegment, ByteRange, SyntaxTree, ParamKind, Span};
+use super::types::{AccessReceiver, AccessSegment, ByteRange, SyntaxTree, ParamKind, Span};
 
 /// Render an [`SyntaxTree`] tree as a child of `parent` in the given Xot
 /// document. Returns the root node of the rendered subtree.
@@ -873,7 +873,7 @@ fn render_tree_function(
     tree: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let SyntaxTree::Function { element_name, modifiers, decorators, name, generics, parameters, returns, body, range, span } = tree
+    let SyntaxTree::Function { element_name, modifiers, decorators, name, generics, parameters, returns, throws, body, range, span } = tree
         else { unreachable!() };
     let node = element(xot, element_name, *span);
     xot.append(parent, node)?;
@@ -893,6 +893,7 @@ fn render_tree_function(
     }
     for p in parameters { order.push(p); }
     if let Some(r) = returns { order.push(r.as_ref()); }
+    for t in throws { order.push(t); }
     if let Some(b) = body { order.push(b.as_ref()); }
     order.sort_by_key(|c| c.range().start);
     render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
@@ -1383,18 +1384,19 @@ fn render_tree_access(
     let access = element(xot, "access", Span::point(span.line, span.column));
     xot.append(object, access)?;
     let receiver_range = receiver.range();
-    let recv_text = receiver_range.slice(source);
-    if matches!(receiver.as_ref(), SyntaxTree::Name { .. }) {
-        if recv_text == "base" {
-            let m = element(xot, "base", Span::point(span.line, span.column));
-            xot.append(object, m)?;
-        } else if recv_text == "this" {
-            let m = element(xot, "this", Span::point(span.line, span.column));
-            xot.append(object, m)?;
-        }
-    }
+    let receiver_span = receiver.span();
     emit_gap(xot, object, source, range.start, receiver_range.start)?;
-    render_to_xot(xot, object, receiver, source)?;
+    if let Some(kw) = receiver.keyword_element() {
+        // Empty marker element (MarkerOnly shape) + sibling text node
+        // so XPath text recovery on <object> still yields the keyword
+        // bytes from source.
+        let m = element(xot, kw, receiver_span);
+        xot.append(object, m)?;
+        let t = xot.new_text(receiver_range.slice(source));
+        xot.append(object, t)?;
+    } else if let AccessReceiver::Instance(t) = receiver {
+        render_to_xot(xot, object, t, source)?;
+    }
     let mut cursor = receiver_range.end;
     render_segments_chain(xot, object, segments, &mut cursor, source)?;
     emit_gap(xot, object, source, cursor, range.end)?;

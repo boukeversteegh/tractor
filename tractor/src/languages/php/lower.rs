@@ -520,7 +520,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "self"]),
                             segments: vec![segment],
                             range, span,
                         },
@@ -551,7 +551,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "self"]),
                             segments: vec![segment],
                             range, span,
                         },
@@ -593,7 +593,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "self"]),
                             segments: vec![segment],
                             range, span,
                         },

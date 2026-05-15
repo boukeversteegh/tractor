@@ -212,9 +212,7 @@ file/
   │       │   ├─ name = "async_clone"
   │       │   ├─ parameter[self]/name = "self"
   │       │   ├─ returns/type/name = "Self"
-  │       │   └─ body/object[access]/
-  │       │       ├─ name = "self"
-  │       │       └─ call/name = "clone"
+  │       │   └─ body/object[access and self]/call/name = "clone"
   │       ├─ function[pub]/
   │       │   ├─ name = "const_fn"
   │       │   ├─ returns/type/name = "u32"

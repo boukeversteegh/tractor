@@ -4,20 +4,18 @@ file/
   ├─ comment = "// any design-principle transform change produces a visible snapshot diff."
   ├─ comment[leading] = "// Intentionally syntactically valid but not built."
   ├─ package/name = "blueprint"
-  ├─ import/spec/string = "\"fmt\""
-  ├─ import/
-  │   ├─ spec/string = "\"context\""
-  │   ├─ spec/string = "\"errors\""
-  │   ├─ spec/string = "\"io\""
-  │   ├─ spec/
-  │   │   ├─ name = "myio"
-  │   │   └─ string = "\"io\""
-  │   ├─ spec/
-  │   │   ├─ name = "."
-  │   │   └─ string = "\"strings\""
-  │   └─ spec/
-  │       ├─ name = "_"
-  │       └─ string = "\"net/http/pprof\""
+  ├─ import/path/name = "fmt"
+  ├─ import/path/name = "context"
+  ├─ import/path/name = "errors"
+  ├─ import/path/name = "io"
+  ├─ import[alias]/
+  │   ├─ path/name = "io"
+  │   └─ aliased/name = "myio"
+  ├─ import[dot]/path/name = "strings"
+  ├─ import[blank]/path/
+  │   ├─ name = "net"
+  │   ├─ name = "http"
+  │   └─ name = "pprof"
   ├─ const[exported]/
   │   ├─ name = "Pi"
   │   └─ value/expression/float = "3.14159"
@@ -45,8 +43,9 @@ file/
   │   └─ value/expression/int = "30"
   ├─ interface[exported]/
   │   ├─ name = "Number"
-  │   ├─ type[approximation]/name = "int"
-  │   └─ type[approximation]/name = "float64"
+  │   └─ extends/type/
+  │       ├─ type[approximation]/name = "int"
+  │       └─ type[approximation]/name = "float64"
   ├─ interface[exported]/
   │   ├─ name = "Stringer"
   │   └─ method/
@@ -54,10 +53,10 @@ file/
   │       └─ returns/type/name = "string"
   ├─ interface[exported]/
   │   ├─ name = "ReadStringer"
-  │   ├─ type/
+  │   ├─ extends/type/type/
   │   │   ├─ name = "io"
   │   │   └─ name = "Reader"
-  │   ├─ name = "Stringer"
+  │   ├─ extends/type/name = "Stringer"
   │   └─ method/
   │       ├─ name = "Close"
   │       └─ returns/type/name = "error"

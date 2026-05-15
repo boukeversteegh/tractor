@@ -298,6 +298,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 generics,
                 parameters,
                 returns,
+                throws: Vec::new(),
                 body,
                 range,
                 span,
@@ -736,7 +737,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "jsx_namespace_name" => simple_statement(node, "name", source),
 
         // Imports / exports.
-        "import_statement" => simple_statement(node, "import", source),
+        "import_statement" => lower_ts_import_statement(node, source),
         "export_statement" => simple_statement(node, "export", source),
         // Import-clause / export-clause / namespace-import / named-imports
         // are wrapper grammar nodes — flatten their children into the
@@ -926,7 +927,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "super"]),
                             segments: vec![segment],
                             range,
                             span,
@@ -1010,7 +1011,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "super"]),
                             segments: vec![segment],
                             range,
                             span,
@@ -1066,11 +1067,15 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 
         "type_parameter" => {
             // TS: `T extends Foo = Default` — name + constraint + default.
+            // The default branch (`= Default`) appears as a `default_type`
+            // sibling in the CST.
             let mut name_node: Option<&RawNode> = None;
             let mut constraint_node: Option<&RawNode> = None;
+            let mut default_node: Option<&RawNode> = None;
             for c in node.named_children() {
                 match c.kind() {
                     "constraint" => constraint_node = Some(c),
+                    "default_type" => default_node = Some(c),
                     _ if name_node.is_none() => name_node = Some(c),
                     _ => {}
                 }
@@ -1112,6 +1117,51 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     span: span_of(cn),
                 });
             }
+            // `<T = Default>` default-type — emit as `<type[default]>`
+            // containing the lowered default type. Principle #14 — every
+            // type-reference slot carries a `<type>` child; here the
+            // outer `<type[default]>` names the default-type role on
+            // the type parameter, and the inner lowered type carries
+            // the actual type expression (which renders its own
+            // `<type>` wrapper when it's a name leaf).
+            if let Some(dn) = default_node {
+                let inner = dn.named_children().next();
+                let inner_ir = match inner {
+                    Some(t) => lower_node(t, source),
+                    None => SyntaxTree::Unknown {
+                        kind: "default_type(empty)".to_string(),
+                        range: range_of(dn),
+                        span: span_of(dn),
+                    },
+                };
+                let already_typed = matches!(
+                    inner_ir,
+                    SyntaxTree::GenericType { .. }
+                        | SyntaxTree::SimpleStatement { element_name: "type", .. }
+                );
+                let typed = if already_typed {
+                    inner_ir
+                } else {
+                    let r = inner_ir.range();
+                    let s = inner_ir.span();
+                    SyntaxTree::SimpleStatement {
+                        element_name: "type",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner_ir],
+                        range: r,
+                        span: s,
+                    }
+                };
+                children.push(SyntaxTree::SimpleStatement {
+                    element_name: "type",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &["default"],
+                    children: vec![typed],
+                    range: range_of(dn),
+                    span: span_of(dn),
+                });
+            }
             SyntaxTree::SimpleStatement {
                 element_name: "generic",
                 modifiers: Modifiers::default(),
@@ -1123,17 +1173,17 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         }
 
         "array_type" => simple_statement_marked(node, "type", &["array"], source),
-        "tuple_type" => simple_statement_marked(node, "type", &["tuple"], source),
+        "tuple_type" => lower_ts_tuple_type(node, source),
         "union_type" => simple_statement_marked(node, "type", &["union"], source),
         "intersection_type" => simple_statement_marked(node, "type", &["intersection"], source),
         "literal_type" => simple_statement_marked(node, "type", &["literal"], source),
-        "function_type" => simple_statement_marked(node, "type", &["function"], source),
+        "function_type" => lower_ts_function_type(node, source),
         "readonly_type" => simple_statement_marked(node, "type", &["readonly"], source),
         "constructor_type" => simple_statement_marked(node, "type", &["constructor"], source),
         "type_query" => simple_statement_marked(node, "type", &["typeof"], source),
         "index_type_query" => simple_statement_marked(node, "type", &["keyof"], source),
         "lookup_type" => simple_statement_marked(node, "type", &["lookup"], source),
-        "conditional_type" => simple_statement_marked(node, "type", &["conditional"], source),
+        "conditional_type" => lower_ts_conditional_type(node, source),
         "mapped_type_clause" => simple_statement_marked(node, "type", &["mapped"], source),
         "template_literal_type" => simple_statement_marked(node, "type", &["template"], source),
         // `x is number` — a type-predicate wrapper. Inlines its
@@ -1929,6 +1979,202 @@ fn lower_typescript_throw(node: &RawNode, source: &str) -> SyntaxTree {
         children,
         range,
         span,
+    }
+}
+
+/// Lower a TS `tuple_type` (`[A, B, C]`) so each element is wrapped
+/// in its own `<type>` element. Principle #14 — every type-reference
+/// slot carries a `<type>` child; tuple elements are type-references
+/// regardless of whether they're leaf names or compound expressions.
+fn lower_ts_tuple_type(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let children: Vec<SyntaxTree> = node
+        .named_children()
+        .map(|c| ts_wrap_in_type(lower_node(c, source)))
+        .collect();
+    SyntaxTree::SimpleStatement {
+        element_name: "type",
+        modifiers: Modifiers::default(),
+        extra_markers: &["tuple"],
+        children,
+        range,
+        span,
+    }
+}
+
+/// Lower a TS `function_type` (`(x: T) => U`) so the return-type slot
+/// carries a `<returns>/<type>` wrapper, matching the `<returns>` slot
+/// on regular function declarations. Without the wrapper the return
+/// type is an anonymous trailing child indistinguishable from a
+/// parameter or another structural child (Principle #19 — role-mixed
+/// children wrap in role-named slots).
+fn lower_ts_function_type(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let return_node = node.child_by_field_name("return_type");
+    let mut children: Vec<SyntaxTree> = Vec::new();
+    for c in node.named_children() {
+        if let Some(rt) = return_node {
+            if c.id() == rt.id() {
+                let inner = lower_node(c, source);
+                let typed = ts_wrap_in_type(inner);
+                children.push(SyntaxTree::SimpleStatement {
+                    element_name: "returns",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![typed],
+                    range: range_of(c),
+                    span: span_of(c),
+                });
+                continue;
+            }
+        }
+        children.push(lower_node(c, source));
+    }
+    SyntaxTree::SimpleStatement {
+        element_name: "type",
+        modifiers: Modifiers::default(),
+        extra_markers: &["function"],
+        children,
+        range,
+        span,
+    }
+}
+
+/// Wrap a lowered TypeScript type-expression in a `<type>` element if
+/// it isn't already type-shaped. Keeps the Principle #14 invariant
+/// that every type-reference slot carries a `<type>` child.
+fn ts_wrap_in_type(inner: SyntaxTree) -> SyntaxTree {
+    match &inner {
+        SyntaxTree::GenericType { .. }
+        | SyntaxTree::SimpleStatement { element_name: "type", .. } => inner,
+        _ => {
+            let r = inner.range();
+            let s = inner.span();
+            SyntaxTree::SimpleStatement {
+                element_name: "type",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![inner],
+                range: r,
+                span: s,
+            }
+        }
+    }
+}
+
+/// Lower a TypeScript `conditional_type` (`T extends X ? Y : Z`) into
+/// `<type[conditional]>` with four role-named slot children:
+///
+///   - `<left>` — the type being tested (`T`)
+///   - `<right>` — the type being matched against (`X`)
+///   - `<then>` — the result when the test holds (`Y`)
+///   - `<else>` — the result when the test fails (`Z`)
+///
+/// Each slot wraps a `<type>` element (Principle #14). Without these
+/// role-named slots the four children are bare same-shape siblings
+/// (Principle #19 violation: positional disambiguation only) and
+/// queries like `//type[conditional]/then` no longer locate the
+/// true-branch.
+fn lower_ts_conditional_type(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let left_node = node.child_by_field_name("left");
+    let right_node = node.child_by_field_name("right");
+    let consequence_node = node.child_by_field_name("consequence");
+    let alternative_node = node.child_by_field_name("alternative");
+
+    let mut children: Vec<SyntaxTree> = Vec::new();
+    for (slot, src_node) in [
+        ("left", left_node),
+        ("right", right_node),
+        ("then", consequence_node),
+        ("else", alternative_node),
+    ] {
+        if let Some(n) = src_node {
+            let inner = lower_node(n, source);
+            let type_slot = ts_wrap_in_type(inner);
+            children.push(SyntaxTree::SimpleStatement {
+                element_name: slot,
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![type_slot],
+                range: range_of(n),
+                span: span_of(n),
+            });
+        }
+    }
+
+    SyntaxTree::SimpleStatement {
+        element_name: "type",
+        modifiers: Modifiers::default(),
+        extra_markers: &["conditional"],
+        children,
+        range,
+        span,
+    }
+}
+
+/// Lower a TypeScript `import_statement` with an explicit kind marker
+/// on `<import>` (Principle #9 — Exhaustive Markers for Mutually
+/// Exclusive Variations). The marker names a closed-set classification
+/// of the import shape so consumer queries can scope precisely:
+///
+///   - `import "x"`                 → `<import[sideeffect]>`
+///   - `import { a, b } from "x"`   → `<import[group]>`
+///   - `import * as ns from "x"`    → `<import[namespace]>`
+///   - `import x from "x"`          → `<import[default]>`
+///
+/// Mixed forms (`import x, { a, b } from "x"`) carry multiple markers
+/// in source order. The inner shape (specifiers, namespace, path)
+/// flows through as in the bare `simple_statement` path.
+fn lower_ts_import_statement(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let children: Vec<SyntaxTree> = node
+        .named_children()
+        .map(|c| lower_node(c, source))
+        .collect();
+    let kind = classify_ts_import(node);
+    SyntaxTree::SimpleStatement {
+        element_name: "import",
+        modifiers: Modifiers::default(),
+        extra_markers: kind,
+        children,
+        range,
+        span,
+    }
+}
+
+fn classify_ts_import(node: &RawNode) -> &'static [&'static str] {
+    let import_clause = node
+        .named_children()
+        .find(|c| c.kind() == "import_clause");
+    let Some(clause) = import_clause else {
+        // No clause → bare `import "x"` side-effect-only import.
+        return &["sideeffect"];
+    };
+    let mut has_default = false;
+    let mut has_namespace = false;
+    let mut has_group = false;
+    for c in clause.named_children() {
+        match c.kind() {
+            "identifier" => has_default = true,
+            "namespace_import" => has_namespace = true,
+            "named_imports" => has_group = true,
+            _ => {}
+        }
+    }
+    match (has_default, has_namespace, has_group) {
+        (false, false, false) => &["sideeffect"],
+        (true, false, false) => &["default"],
+        (false, true, false) => &["namespace"],
+        (false, false, true) => &["group"],
+        (true, false, true) => &["default", "group"],
+        (true, true, false) => &["default", "namespace"],
+        // Mixed/other combinations: keep both flags.
+        _ => &["default", "group", "namespace"],
     }
 }
 

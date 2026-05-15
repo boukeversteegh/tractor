@@ -45,7 +45,7 @@
 #![cfg(feature = "native")]
 
 use super::data::DataTree;
-use super::types::{QuoteStyle, SyntaxTree, Modifiers};
+use super::types::{AccessReceiver, QuoteStyle, SyntaxTree, Modifiers};
 
 /// Project an `SyntaxTree` tree into a [`DataTree`] tree.
 ///
@@ -182,6 +182,7 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
             generics: _,
             parameters,
             returns,
+            throws: _,
             body,
             range,
             span,
@@ -970,7 +971,7 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
             pairs.push(make_flag("access", *range, *span));
             pairs.push(make_pair(
                 "receiver",
-                project(receiver, source),
+                project_access_receiver(receiver, source),
                 receiver.range(),
                 receiver.span(),
             ));
@@ -1053,6 +1054,27 @@ fn make_flag(name: &str, range: super::types::ByteRange, span: super::types::Spa
 /// inside the enclosing `Access` Mapping. Mirrors the legacy
 /// `to_json::Renderer::add_access_chain` shape, modulo the `$type`
 /// key (each segment knows its kind via the slot name).
+/// Project an [`AccessReceiver`] to a [`DataTree`]. Keyword receivers
+/// emit a flag mapping (`{base: true}` / `{this: true}` / ...) so the
+/// JSON shape carries the keyword identity as a structured marker;
+/// expression receivers project their inner tree directly.
+fn project_access_receiver(receiver: &AccessReceiver, source: &str) -> DataTree {
+    match receiver {
+        AccessReceiver::Base { range, span }
+        | AccessReceiver::This { range, span }
+        | AccessReceiver::Super { range, span }
+        | AccessReceiver::Self_ { range, span } => {
+            let kw = receiver.keyword_element().expect("keyword variant");
+            DataTree::Mapping {
+                pairs: vec![make_flag(kw, *range, *span)],
+                range: *range,
+                span: *span,
+            }
+        }
+        AccessReceiver::Instance(t) => project(t, source),
+    }
+}
+
 fn project_access_segment(
     seg: &super::types::AccessSegment,
     source: &str,

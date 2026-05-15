@@ -323,7 +323,7 @@ pub enum SyntaxTree {
     /// verbatim — including the `.` / `[` / `]` punctuation that lives
     /// in the segments.
     Access {
-        receiver: Box<SyntaxTree>,
+        receiver: AccessReceiver,
         segments: Vec<AccessSegment>,
         range: ByteRange,
         span: Span,
@@ -669,6 +669,12 @@ pub enum SyntaxTree {
         generics: Option<Box<SyntaxTree>>,      // SyntaxTree::Generic
         parameters: Vec<SyntaxTree>,            // each SyntaxTree::Parameter / SyntaxTree::PositionalSeparator / SyntaxTree::KeywordSeparator
         returns: Option<Box<SyntaxTree>>,       // SyntaxTree::Returns
+        /// `throws E1, E2` clause on Java method declarations. Each
+        /// entry is the lowering of one exception-type target and
+        /// renders as `<throws>/<type>/<name>` (Principle #18 — name
+        /// the relationship after the operator, one sibling per
+        /// target). Empty for languages without checked exceptions.
+        throws: Vec<SyntaxTree>,
         body: Option<Box<SyntaxTree>>,          // SyntaxTree::Body — None for abstract / interface methods
         range: ByteRange,
         span: Span,
@@ -1456,6 +1462,87 @@ impl AccessSegment {
     }
 }
 
+/// Receiver of an [`SyntaxTree::Access`] chain. Distinguishes the four
+/// reserved-keyword receivers (`base`, `this`, `super`, `self`) from
+/// arbitrary expression receivers so the renderer dispatches by type
+/// rather than by inspecting source text.
+///
+/// Lowering for every language constructs receivers via
+/// [`AccessReceiver::from_tree`], which classifies a `SyntaxTree::Name`
+/// whose text matches one of the four keywords into the corresponding
+/// typed variant. Everything else falls through to
+/// [`AccessReceiver::Instance`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AccessReceiver {
+    /// `base` keyword — C# super-class reference.
+    Base { range: ByteRange, span: Span },
+    /// `this` keyword — Java / C# / TS / Rust instance reference.
+    This { range: ByteRange, span: Span },
+    /// `super` keyword — Python / Java / Ruby / TS / Rust parent reference.
+    Super { range: ByteRange, span: Span },
+    /// `self` keyword — Python / Rust instance reference.
+    Self_ { range: ByteRange, span: Span },
+    /// Arbitrary expression receiver — any non-keyword tree.
+    Instance(Box<SyntaxTree>),
+}
+
+impl AccessReceiver {
+    /// Classify a tree into a receiver. A `SyntaxTree::Name` whose text
+    /// matches one of the language's reserved access keywords becomes
+    /// the corresponding typed variant; everything else wraps in
+    /// `Instance`. The `keywords` list scopes classification per
+    /// language so e.g. a Java identifier named `base` doesn't render
+    /// as the C#-style `<base/>` marker.
+    pub fn from_tree(tree: SyntaxTree, keywords: &[&'static str]) -> Self {
+        if let SyntaxTree::Name { text, range, span } = &tree {
+            if keywords.contains(&text.as_str()) {
+                let range = *range;
+                let span = *span;
+                return match text.as_str() {
+                    "base" => AccessReceiver::Base { range, span },
+                    "this" => AccessReceiver::This { range, span },
+                    "super" => AccessReceiver::Super { range, span },
+                    "self" => AccessReceiver::Self_ { range, span },
+                    _ => unreachable!("keyword in list but not a recognized receiver keyword"),
+                };
+            }
+        }
+        AccessReceiver::Instance(Box::new(tree))
+    }
+
+    pub fn range(&self) -> ByteRange {
+        match self {
+            AccessReceiver::Base { range, .. }
+            | AccessReceiver::This { range, .. }
+            | AccessReceiver::Super { range, .. }
+            | AccessReceiver::Self_ { range, .. } => *range,
+            AccessReceiver::Instance(t) => t.range(),
+        }
+    }
+
+    pub fn span(&self) -> Span {
+        match self {
+            AccessReceiver::Base { span, .. }
+            | AccessReceiver::This { span, .. }
+            | AccessReceiver::Super { span, .. }
+            | AccessReceiver::Self_ { span, .. } => *span,
+            AccessReceiver::Instance(t) => t.span(),
+        }
+    }
+
+    /// XML element name for keyword receivers; `None` for `Instance`.
+    /// Lets the renderer marshal the receiver without per-variant code.
+    pub fn keyword_element(&self) -> Option<&'static str> {
+        match self {
+            AccessReceiver::Base { .. } => Some("base"),
+            AccessReceiver::This { .. } => Some("this"),
+            AccessReceiver::Super { .. } => Some("super"),
+            AccessReceiver::Self_ { .. } => Some("self"),
+            AccessReceiver::Instance(_) => None,
+        }
+    }
+}
+
 /// Typed wrapper for expression-position slots (`SyntaxTree::Variable.value`,
 /// `SyntaxTree::If.condition`, `SyntaxTree::Binary.left/right`, `SyntaxTree::Return.value`, …).
 /// The type system enforces Principle #15: anything in these slots
@@ -1744,7 +1831,11 @@ impl SyntaxTree {
             SyntaxTree::Module { children, .. } => v.extend(children.iter()),
             SyntaxTree::Expression { inner, .. } => v.push(inner),
             SyntaxTree::Access { receiver, segments, .. } => {
-                v.push(receiver);
+                if let AccessReceiver::Instance(t) = receiver {
+                    v.push(t);
+                }
+                // keyword receivers (Base/This/Super/Self_) are leaves
+                // with no SyntaxTree children
                 for s in segments {
                     match s {
                         AccessSegment::Member { .. } => {} // property is not an SyntaxTree
@@ -1836,12 +1927,13 @@ impl SyntaxTree {
             }
             SyntaxTree::ListSplat { inner, .. } => v.push(inner),
             SyntaxTree::DictSplat { inner, .. } => v.push(inner),
-            SyntaxTree::Function { decorators, name, generics, parameters, returns, body, .. } => {
+            SyntaxTree::Function { decorators, name, generics, parameters, returns, throws, body, .. } => {
                 v.extend(decorators.iter());
                 v.push(name);
                 if let Some(g) = generics { v.push(g); }
                 v.extend(parameters.iter());
                 if let Some(r) = returns { v.push(r); }
+                v.extend(throws.iter());
                 if let Some(b) = body { v.push(b); }
             }
             SyntaxTree::Class { decorators, name, generics, bases, where_clauses, body, .. } => {
@@ -2083,7 +2175,9 @@ impl TreeNode for SyntaxTree {
             SyntaxTree::Module { children, .. } => v.extend(children.iter_mut()),
             SyntaxTree::Expression { inner, .. } => v.push(inner.as_mut()),
             SyntaxTree::Access { receiver, segments, .. } => {
-                v.push(receiver.as_mut());
+                if let AccessReceiver::Instance(t) = receiver {
+                    v.push(t.as_mut());
+                }
                 for s in segments.iter_mut() {
                     match s {
                         AccessSegment::Member { .. } => {}

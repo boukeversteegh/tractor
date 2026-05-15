@@ -6,12 +6,12 @@ program/
   │   ├─ name = "App"
   │   └─ name = "Blueprint"
   ├─ use/
-  │   ├─ path/name = "App"
+  │   ├─ name = "App"
   │   └─ name = "Base"
-  ├─ use[alias]/
-  │   ├─ path/name = "App"
+  ├─ use/
+  │   ├─ name = "App"
   │   ├─ name = "Logger"
-  │   └─ aliased/name = "Log"
+  │   └─ name = "Log"
   ├─ use[group]/
   │   ├─ path/name = "App"
   │   ├─ use/name = "First"
@@ -24,10 +24,10 @@ program/
   │   │       ├─ name = "Attribute"
   │   │       └─ name = "TARGET_CLASS"
   │   ├─ name = "Demo"
-  │   ├─ extends/type/name = "Base"
+  │   ├─ extends/name = "Base"
   │   ├─ implements/
-  │   │   ├─ type/name = "Speaker"
-  │   │   └─ type/name = "Countable"
+  │   │   ├─ name = "Speaker"
+  │   │   └─ name = "Countable"
   │   ├─ use/name = "Loggable"
   │   ├─ const[public]/constant/
   │   │   ├─ name = "MAX"
@@ -80,7 +80,7 @@ program/
   │   │   │   ├─ type = "string"
   │   │   │   └─ variable/name = "name"
   │   │   ├─ type/name = "static"
-  │   │   └─ body/return/expression/new/
+  │   │   └─ body/return/new/
   │   │       ├─ name = "static"
   │   │       └─ argument/variable/name = "name"
   │   ├─ method[public]/
@@ -110,7 +110,7 @@ program/
   │   │           │   │   └─ member/name = "count"
   │   │           │   ├─ op[compare and greater] = ">"
   │   │           │   └─ right/expression/int = "10"
-  │   │           ├─ then/body/return/expression/string/interpolation/variable/name = "target"
+  │   │           ├─ then/body/return/string/interpolation/variable/name = "target"
   │   │           ├─ else_if/
   │   │           │   ├─ condition/expression/binary/
   │   │           │   │   ├─ left/expression/object[access]/
@@ -118,15 +118,15 @@ program/
   │   │           │   │   │   └─ member/name = "count"
   │   │           │   │   ├─ op[compare and greater] = ">"
   │   │           │   │   └─ right/expression/int = "0"
-  │   │           │   └─ body/return/expression/string/interpolation/variable/name = "target"
-  │   │           └─ else/body/return/expression/string/interpolation/variable/name = "target"
+  │   │           │   └─ body/return/string/interpolation/variable/name = "target"
+  │   │           └─ else/body/return/string/interpolation/variable/name = "target"
   │   ├─ method[public]/
   │   │   ├─ name = "describe"
   │   │   ├─ parameter/
   │   │   │   ├─ type = "int"
   │   │   │   └─ variable/name = "n"
   │   │   ├─ type = "string"
-  │   │   └─ body/return/expression/ternary/
+  │   │   └─ body/return/ternary/
   │   │       ├─ binary/
   │   │       │   ├─ left/expression/variable/name = "n"
   │   │       │   ├─ op[compare and greater] = ">"
@@ -145,7 +145,7 @@ program/
   │   │   │   ├─ type = "mixed"
   │   │   │   └─ variable/name = "value"
   │   │   ├─ type = "string"
-  │   │   └─ body/return/expression/match/
+  │   │   └─ body/return/match/
   │   │       ├─ condition/expression/bool = "true"
   │   │       ├─ arm/
   │   │       │   ├─ call/
@@ -209,14 +209,14 @@ program/
   │   │       │               ├─ types/type/name = "Throwable"
   │   │       │               ├─ variable/name = "e"
   │   │       │               └─ body/continue = "continue;"
-  │   │       └─ return/expression/variable/name = "results"
+  │   │       └─ return/variable/name = "results"
   │   └─ method[private]/
   │       ├─ name = "transform"
   │       ├─ parameter/
   │       │   ├─ type = "mixed"
   │       │   └─ variable/name = "item"
   │       ├─ type = "mixed"
-  │       └─ body/return/expression/variable/name = "item"
+  │       └─ body/return/variable/name = "item"
   ├─ interface/
   │   ├─ name = "Speaker"
   │   └─ method[public]/
@@ -254,7 +254,7 @@ program/
   │   └─ method[public]/
   │       ├─ name = "label"
   │       ├─ type = "string"
-  │       └─ body/return/expression/match/
+  │       └─ body/return/match/
   │           ├─ condition/expression/variable/name = "this"
   │           ├─ arm/
   │           │   ├─ member[static]/
@@ -280,7 +280,7 @@ program/
   │   │   ├─ type = "mixed"
   │   │   └─ variable/name = "args"
   │   ├─ type = "mixed"
-  │   └─ body/return/expression/call/
+  │   └─ body/return/call/
   │       ├─ variable/name = "fn"
   │       └─ argument/spread/variable/name = "args"
   ├─ expression/assign/
@@ -314,7 +314,7 @@ program/
   │       │   └─ variable/name = "x"
   │       ├─ variable/name = "pipeline"
   │       ├─ type = "int"
-  │       └─ body/return/expression/binary/
+  │       └─ body/return/binary/
   │           ├─ left/expression/call/
   │           │   ├─ variable/name = "pipeline"
   │           │   └─ argument/variable/name = "x"
@@ -328,10 +328,11 @@ program/
   │       ├─ parameter[public and readonly and promoted]/
   │       │   ├─ type = "string"
   │       │   └─ variable/name = "name"
-  │       └─ parameter[protected and promoted]/
-  │           ├─ type = "int"
-  │           ├─ variable/name = "count"
-  │           └─ int = "0"
+  │       ├─ parameter[protected and promoted]/
+  │       │   ├─ type = "int"
+  │       │   ├─ variable/name = "count"
+  │       │   └─ int = "0"
+  │       └─ body = "{}"
   ├─ interface/
   │   ├─ name = "Stringable"
   │   └─ method[public]/
@@ -370,11 +371,11 @@ program/
   │       │   ├─ left/expression/variable/name = "anon"
   │       │   ├─ op = "="
   │       │   └─ right/expression/new/class[anonymous]/
-  │       │       ├─ implements/type/name = "Stringable"
+  │       │       ├─ implements/name = "Stringable"
   │       │       └─ method[public]/
   │       │           ├─ name = "__toString"
   │       │           ├─ type = "string"
-  │       │           └─ body/return/expression/string = "\"anon\""
+  │       │           └─ body/return/string = "\"anon\""
   │       ├─ comment[leading] = "// First-class callable + augmented assignment."
   │       ├─ expression/assign/
   │       │   ├─ left/expression/variable/name = "maker"
@@ -505,7 +506,7 @@ program/
   │       ├─ goto/name = "end"
   │       ├─ label/name = "end"
   │       ├─ comment[leading] = "// Match-arm; intersection / DNF / bottom types appear in\n    // declarative positions (parameters / returns), not in\n    // `instanceof` expressions, so the type-shape exercises live in\n    // sibling functions below."
-  │       └─ return/expression/match/
+  │       └─ return/match/
   │           ├─ condition/expression/bool = "true"
   │           ├─ arm/
   │           │   ├─ binary/
@@ -529,7 +530,7 @@ program/
   │   │   │   └─ type/name = "Countable2"
   │   │   └─ variable/name = "thing"
   │   ├─ type = "int"
-  │   └─ body/return/expression/object[access]/
+  │   └─ body/return/object[access]/
   │       ├─ variable/name = "thing"
   │       └─ call/name = "size"
   ├─ comment[leading] = "// DNF type in parameter position."
@@ -543,7 +544,7 @@ program/
   │   │   │   └─ type = "null"
   │   │   └─ variable/name = "thing"
   │   ├─ type = "bool"
-  │   └─ body/return/expression/binary/
+  │   └─ body/return/binary/
   │       ├─ left/expression/variable/name = "thing"
   │       ├─ op[inequality and strict] = "!=="
   │       └─ right/expression/null = "null"

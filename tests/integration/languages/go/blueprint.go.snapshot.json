@@ -1,67 +1,75 @@
 {
-  "$type": "file",
   "comments": [
     "// Package blueprint is a kitchen-sink Go fixture for tractor snapshot tests.",
     "// Rendered by `tractor query <file> -p tree --single` with NO depth limit so",
     "// any design-principle transform change produces a visible snapshot diff.",
-    {
-      "leading": true,
-      "text": "// Intentionally syntactically valid but not built."
-    },
+    "// Intentionally syntactically valid but not built.",
     "// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere",
     "// in the blueprint: fixed-length array types, implicit-length array",
     "// literals, slice expressions, parenthesized type conversions, generic",
     "// instantiation in value position, variadic argument expansion, and",
-    {
-      "leading": true,
-      "text": "// the `fallthrough` switch keyword."
-    }
+    "// the `fallthrough` switch keyword."
   ],
   "package": {
     "name": "blueprint"
   },
+  "import": {
+    "node": {
+      "name": "fmt"
+    }
+  },
   "imports": [
     {
-      "spec": {
-        "string": "\"fmt\""
+      "node": {
+        "name": "context"
       }
     },
     {
-      "specs": [
+      "node": {
+        "name": "errors"
+      }
+    },
+    {
+      "node": {
+        "name": "io"
+      }
+    },
+    {
+      "alias": true,
+      "nodes": [
         {
-          "string": "\"context\""
+          "name": "io"
         },
-        {
-          "string": "\"errors\""
-        },
-        {
-          "string": "\"io\""
-        },
-        {
-          "name": "myio",
-          "string": "\"io\""
-        },
-        {
-          "name": ".",
-          "string": "\"strings\""
-        },
-        {
-          "name": "_",
-          "string": "\"net/http/pprof\""
-        }
+        "myio"
       ]
+    },
+    {
+      "dot": true,
+      "node": {
+        "name": "strings"
+      }
+    },
+    {
+      "blank": true,
+      "node": {
+        "names": [
+          "net",
+          "http",
+          "pprof"
+        ]
+      }
     }
   ],
-  "consts": [
-    {
-      "exported": true,
-      "name": "Pi",
-      "value": {
-        "expression": {
-          "float": "3.14159"
-        }
+  "const": {
+    "exported": true,
+    "name": "Pi",
+    "value": {
+      "expression": {
+        "node": 3.14159
       }
-    },
+    }
+  },
+  "consts": [
     {
       "exported": true,
       "name": "StatusIdle",
@@ -94,13 +102,13 @@
       "name": "ErrNotFound",
       "value": {
         "expression": {
-          "object": {
+          "node": {
             "access": true,
+            "receiver": "errors",
             "call": {
-              "argument": "\"not found\"",
-              "name": "New"
-            },
-            "text": "errors"
+              "name": "New",
+              "node": "\"not found\""
+            }
           }
         }
       }
@@ -121,12 +129,12 @@
       "values": [
         {
           "expression": {
-            "string": "\"alice\""
+            "node": "\"alice\""
           }
         },
         {
           "expression": {
-            "int": "30"
+            "node": 30
           }
         }
       ]
@@ -136,23 +144,28 @@
     {
       "exported": true,
       "name": "Number",
-      "types": [
-        {
-          "approximation": true,
-          "name": "int"
-        },
-        {
-          "approximation": true,
-          "name": "float64"
+      "extends": {
+        "type": {
+          "types": [
+            {
+              "approximation": true,
+              "name": "int"
+            },
+            {
+              "approximation": true,
+              "name": "float64"
+            }
+          ]
         }
-      ]
+      }
     },
     {
       "exported": true,
       "name": "Stringer",
       "method": {
         "name": "String",
-        "returns": {
+        "parameters": [],
+        "node": {
           "type": {
             "name": "string"
           }
@@ -161,19 +174,28 @@
     },
     {
       "exported": true,
-      "type": {
-        "names": [
-          "io",
-          "Reader"
-        ]
-      },
-      "names": [
-        "ReadStringer",
-        "Stringer"
+      "name": "ReadStringer",
+      "extendses": [
+        {
+          "type": {
+            "type": {
+              "names": [
+                "io",
+                "Reader"
+              ]
+            }
+          }
+        },
+        {
+          "type": {
+            "name": "Stringer"
+          }
+        }
       ],
       "method": {
         "name": "Close",
-        "returns": {
+        "parameters": [],
+        "node": {
           "type": {
             "name": "error"
           }
@@ -317,51 +339,56 @@
   "methods": [
     {
       "exported": true,
-      "name": "Push",
-      "parameters": [
-        {
-          "name": "c",
-          "pointer": {
-            "type": {
-              "generic": true,
-              "name": "Container",
-              "arguments": [
-                {
-                  "name": "T"
-                }
-              ]
+      "parameterses": [
+        [
+          {
+            "name": "c",
+            "pointer": {
+              "type": {
+                "generic": true,
+                "name": "Container",
+                "arguments": [
+                  {
+                    "name": "T"
+                  }
+                ]
+              }
             }
           }
-        },
-        {
-          "names": [
-            "v",
-            "T"
-          ]
-        }
+        ],
+        [
+          {
+            "names": [
+              "v",
+              "T"
+            ]
+          }
+        ]
       ],
+      "name": "Push",
       "body": {
-        "assign": {
+        "node": {
           "assign": true,
           "left": {
-            "object": {
+            "node": {
               "access": true,
+              "receiver": "c",
               "member": {
                 "name": "items"
-              },
-              "text": "c"
+              }
             }
           },
           "right": {
-            "call": {
-              "name": "v",
-              "object": {
+            "node": {
+              "callee": "append",
+              "node": {
                 "access": true,
+                "receiver": "c",
                 "member": {
                   "name": "items"
-                },
-                "text": "c"
-              }
+                }
+              },
+              "name": "v"
             }
           }
         }
@@ -369,13 +396,16 @@
     },
     {
       "exported": true,
-      "parameters": [
-        {
-          "names": [
-            "p",
-            "Point"
-          ]
-        }
+      "parameterses": [
+        [
+          {
+            "names": [
+              "p",
+              "Point"
+            ]
+          }
+        ],
+        []
       ],
       "names": [
         "String",
@@ -383,62 +413,66 @@
       ],
       "body": {
         "return": {
-          "object": {
+          "node": {
             "access": true,
+            "receiver": "fmt",
             "call": {
-              "arguments": [
+              "name": "Sprintf",
+              "nodes": [
                 "\"(%d,%d)\"",
                 {
                   "access": true,
+                  "receiver": "p",
                   "member": {
                     "name": "X"
-                  },
-                  "text": "p"
+                  }
                 },
                 {
                   "access": true,
+                  "receiver": "p",
                   "member": {
                     "name": "Y"
-                  },
-                  "text": "p"
+                  }
                 }
-              ],
-              "name": "Sprintf"
-            },
-            "text": "fmt"
+              ]
+            }
           }
         }
       }
     },
     {
       "exported": true,
-      "name": "Shift",
-      "parameters": [
-        {
-          "name": "p",
-          "pointer": {
-            "name": "Point"
+      "parameterses": [
+        [
+          {
+            "name": "p",
+            "pointer": {
+              "name": "Point"
+            }
           }
-        },
-        {
-          "names": [
-            "dx",
-            "dy",
-            "int"
-          ]
-        }
+        ],
+        [
+          {
+            "names": [
+              "dx",
+              "dy",
+              "int"
+            ]
+          }
+        ]
       ],
+      "name": "Shift",
       "body": {
-        "assigns": [
+        "nodes": [
           {
             "plus": true,
             "left": {
-              "object": {
+              "node": {
                 "access": true,
+                "receiver": "p",
                 "member": {
                   "name": "X"
-                },
-                "text": "p"
+                }
               }
             },
             "right": {
@@ -448,12 +482,12 @@
           {
             "plus": true,
             "left": {
-              "object": {
+              "node": {
                 "access": true,
+                "receiver": "p",
                 "member": {
                   "name": "Y"
-                },
-                "text": "p"
+                }
               }
             },
             "right": {
@@ -465,13 +499,16 @@
     },
     {
       "exported": true,
-      "parameters": [
-        {
-          "name": "e",
-          "pointer": {
-            "name": "MyErr"
+      "parameterses": [
+        [
+          {
+            "name": "e",
+            "pointer": {
+              "name": "MyErr"
+            }
           }
-        }
+        ],
+        []
       ],
       "names": [
         "Error",
@@ -479,12 +516,12 @@
       ],
       "body": {
         "return": {
-          "object": {
+          "node": {
             "access": true,
+            "receiver": "e",
             "member": {
               "name": "msg"
-            },
-            "text": "e"
+            }
           }
         }
       }
@@ -493,6 +530,10 @@
   "functions": [
     {
       "unexported": true,
+      "names": [
+        "wrap",
+        "error"
+      ],
       "parameters": [
         {
           "names": [
@@ -501,22 +542,18 @@
           ]
         }
       ],
-      "names": [
-        "wrap",
-        "error"
-      ],
       "body": {
         "return": {
-          "object": {
+          "node": {
             "access": true,
+            "receiver": "fmt",
             "call": {
-              "arguments": [
-                "\"wrap: %w\"",
+              "names": [
+                "Errorf",
                 "err"
               ],
-              "name": "Errorf"
-            },
-            "text": "fmt"
+              "node": "\"wrap: %w\""
+            }
           }
         }
       }
@@ -527,27 +564,33 @@
         "doThing",
         "error"
       ],
+      "parameters": [],
       "body": {
         "return": {
-          "nil": true
+          "node": {}
         }
       }
     },
     {
       "unexported": true,
       "name": "risky",
-      "parameters": [
-        {
-          "name": "int"
-        },
-        {
-          "name": "error"
-        }
+      "parameterses": [
+        [],
+        [
+          {
+            "name": "int"
+          },
+          {
+            "name": "error"
+          }
+        ]
       ],
       "body": {
         "return": {
-          "int": "0",
-          "name": "ErrNotFound"
+          "nodes": [
+            0,
+            "ErrNotFound"
+          ]
         }
       }
     },
@@ -596,15 +639,18 @@
           },
           "right": {
             "expression": {
-              "call": {
-                "name": "make",
+              "node": {
+                "callee": "make",
                 "slice": {
                   "name": "U"
                 },
-                "int": "0",
-                "call": {
-                  "name": "xs"
-                }
+                "nodes": [
+                  0,
+                  {
+                    "callee": "len",
+                    "name": "xs"
+                  }
+                ]
               }
             }
           }
@@ -628,15 +674,17 @@
             }
           },
           "body": {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "out"
               },
               "right": {
-                "call": {
+                "node": {
+                  "callee": "append",
                   "name": "out",
-                  "call": {
+                  "node": {
+                    "callee": "f",
                     "name": "x"
                   }
                 }
@@ -645,7 +693,7 @@
           }
         },
         "return": {
-          "name": "out"
+          "node": "out"
         }
       }
     },
@@ -660,19 +708,23 @@
           ]
         }
       ],
-      "parameters": [
-        {
-          "name": "xs",
-          "slice": {
-            "name": "T"
+      "parameterses": [
+        [
+          {
+            "name": "xs",
+            "slice": {
+              "name": "T"
+            }
           }
-        },
-        {
-          "names": [
-            "total",
-            "T"
-          ]
-        }
+        ],
+        [
+          {
+            "names": [
+              "total",
+              "T"
+            ]
+          }
+        ]
       ],
       "body": {
         "for": {
@@ -694,7 +746,7 @@
             }
           },
           "body": {
-            "assign": {
+            "node": {
               "plus": true,
               "left": {
                 "name": "total"
@@ -719,19 +771,23 @@
           ]
         }
       ],
-      "parameters": [
-        {
-          "name": "xs",
-          "slice": {
-            "name": "T"
+      "parameterses": [
+        [
+          {
+            "name": "xs",
+            "slice": {
+              "name": "T"
+            }
           }
-        },
-        {
-          "name": "out",
-          "slice": {
-            "name": "T"
+        ],
+        [
+          {
+            "name": "out",
+            "slice": {
+              "name": "T"
+            }
           }
-        }
+        ]
       ],
       "body": {
         "variable": {
@@ -784,39 +840,39 @@
                 },
                 "right": {
                   "expression": {
-                    "object": {
+                    "node": {
                       "access": true,
+                      "receiver": "seen",
                       "index": {
-                        "text": "x"
-                      },
-                      "text": "seen"
+                        "name": "x"
+                      }
                     }
                   }
                 }
               },
               "condition": {
                 "expression": {
-                  "unary": {
+                  "node": {
                     "op": {
                       "text": "!",
                       "not": true
                     },
-                    "name": "ok"
+                    "operand": "ok"
                   }
                 }
               },
               "then": {
                 "body": {
-                  "assigns": [
+                  "nodes": [
                     {
                       "assign": true,
                       "left": {
-                        "object": {
+                        "node": {
                           "access": true,
+                          "receiver": "seen",
                           "index": {
-                            "text": "x"
-                          },
-                          "text": "seen"
+                            "name": "x"
+                          }
                         }
                       },
                       "right": {
@@ -831,7 +887,8 @@
                         "name": "out"
                       },
                       "right": {
-                        "call": {
+                        "node": {
+                          "callee": "append",
                           "names": [
                             "out",
                             "x"
@@ -851,45 +908,50 @@
     {
       "unexported": true,
       "name": "variadic",
-      "parameters": [
-        {
-          "names": [
-            "prefix",
-            "string"
-          ]
-        },
-        {
-          "variadic": true,
-          "names": [
-            "vals",
-            "int"
-          ]
-        },
-        {
-          "names": [
-            "sum",
-            "int"
-          ]
-        },
-        {
-          "names": [
-            "err",
-            "error"
-          ]
-        }
+      "parameterses": [
+        [
+          {
+            "names": [
+              "prefix",
+              "string"
+            ]
+          },
+          {
+            "variadic": true,
+            "names": [
+              "vals",
+              "int"
+            ]
+          }
+        ],
+        [
+          {
+            "names": [
+              "sum",
+              "int"
+            ]
+          },
+          {
+            "names": [
+              "err",
+              "error"
+            ]
+          }
+        ]
       ],
       "body": {
         "defer": {
-          "call": {
-            "closure": {
-              "assign": {
+          "node": {
+            "callee": {
+              "parameters": [],
+              "node": {
                 "assign": true,
                 "left": {
                   "name": "_"
                 },
                 "right": {
-                  "call": {
-                    "name": "recover"
+                  "node": {
+                    "callee": "recover"
                   }
                 }
               }
@@ -924,41 +986,41 @@
                   },
                   "right": {
                     "expression": {
-                      "binary": {
+                      "node": {
                         "left": "n",
                         "op": {
                           "text": "+",
                           "plus": true
                         },
-                        "right": "1"
+                        "right": 1
                       }
                     }
                   }
                 },
                 "return": {
-                  "binary": {
+                  "node": {
                     "left": "x",
                     "op": {
                       "text": "*",
                       "multiply": true
                     },
-                    "right": "2"
+                    "right": 2
                   }
                 }
               }
             }
           }
         },
-        "assigns": [
+        "nodes": [
           {
             "assign": true,
             "left": {
               "name": "_"
             },
             "right": {
-              "call": {
-                "name": "multiStmt",
-                "int": "3"
+              "node": {
+                "callee": "multiStmt",
+                "node": 3
               }
             }
           },
@@ -968,7 +1030,8 @@
               "name": "_"
             },
             "right": {
-              "call": {
+              "node": {
+                "callee": "ToUpper",
                 "name": "prefix"
               }
             }
@@ -993,7 +1056,7 @@
             }
           },
           "body": {
-            "assign": {
+            "node": {
               "plus": true,
               "left": {
                 "name": "sum"
@@ -1010,27 +1073,28 @@
     {
       "unexported": true,
       "name": "arraysAndCasts",
+      "parameters": [],
       "body": {
         "var": {
           "unexported": true,
           "name": "fixed",
           "array": {
-            "int": "5",
+            "node": 5,
             "name": "int"
           },
           "value": {
             "expression": {
               "literal": {
                 "array": {
-                  "int": "5",
+                  "node": 5,
                   "name": "int"
                 },
-                "ints": [
-                  "1",
-                  "2",
-                  "3",
-                  "4",
-                  "5"
+                "nodes": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5
                 ]
               }
             }
@@ -1051,10 +1115,10 @@
                     "implicit": true,
                     "name": "int"
                   },
-                  "ints": [
-                    "10",
-                    "20",
-                    "30"
+                  "nodes": [
+                    10,
+                    20,
+                    30
                   ]
                 }
               }
@@ -1069,18 +1133,20 @@
             },
             "right": {
               "expression": {
-                "object": {
+                "node": {
                   "access": true,
+                  "receiver": "fixed",
                   "index": {
-                    "to": {
-                      "int": "3"
-                    },
-                    "slice": true,
-                    "from": {
-                      "int": "1"
+                    "node": {
+                      "slice": true,
+                      "from": {
+                        "node": 1
+                      },
+                      "to": {
+                        "node": 3
+                      }
                     }
-                  },
-                  "text": "fixed"
+                  }
                 }
               }
             }
@@ -1125,46 +1191,7 @@
             }
           }
         ],
-        "switch": {
-          "value": {
-            "expression": {
-              "object": {
-                "access": true,
-                "index": {
-                  "text": "0"
-                },
-                "text": "implicit"
-              }
-            }
-          },
-          "cases": [
-            {
-              "value": {
-                "expression": {
-                  "int": "10"
-                }
-              },
-              "fallthrough": true
-            },
-            {
-              "value": {
-                "expression": {
-                  "int": "20"
-                }
-              },
-              "assign": {
-                "assign": true,
-                "left": {
-                  "name": "_"
-                },
-                "right": {
-                  "name": "sub"
-                }
-              }
-            }
-          ]
-        },
-        "assigns": [
+        "nodes": [
           {
             "assign": true,
             "left": {
@@ -1174,9 +1201,9 @@
               ]
             },
             "right": {
-              "call": {
-                "name": "variadic",
-                "string": "\"nums\"",
+              "node": {
+                "callee": "variadic",
+                "node": "\"nums\"",
                 "spread": {
                   "index": {
                     "slice": true,
@@ -1205,11 +1232,54 @@
               ]
             }
           }
-        ]
+        ],
+        "switch": {
+          "value": {
+            "expression": {
+              "node": {
+                "access": true,
+                "receiver": "implicit",
+                "index": {
+                  "node": 0
+                }
+              }
+            }
+          },
+          "cases": [
+            {
+              "value": {
+                "expression": {
+                  "node": 10
+                }
+              },
+              "fallthrough": true
+            },
+            {
+              "value": {
+                "expression": {
+                  "node": 20
+                }
+              },
+              "node": {
+                "assign": true,
+                "left": {
+                  "name": "_"
+                },
+                "right": {
+                  "name": "sub"
+                }
+              }
+            }
+          ]
+        }
       }
     },
     {
       "unexported": true,
+      "names": [
+        "classify",
+        "string"
+      ],
       "parameters": [
         {
           "names": [
@@ -1217,10 +1287,6 @@
             "any"
           ]
         }
-      ],
-      "names": [
-        "classify",
-        "string"
       ],
       "body": {
         "switch": {
@@ -1237,7 +1303,7 @@
                 "name": "nil"
               },
               "return": {
-                "string": "\"nil\""
+                "node": "\"nil\""
               }
             },
             {
@@ -1253,7 +1319,7 @@
                 }
               ],
               "return": {
-                "string": "\"int-ish\""
+                "node": "\"int-ish\""
               }
             },
             {
@@ -1261,7 +1327,7 @@
                 "name": "string"
               },
               "return": {
-                "binary": {
+                "node": {
                   "left": "\"string:\"",
                   "op": {
                     "text": "+",
@@ -1276,28 +1342,28 @@
                 "name": "Stringer"
               },
               "return": {
-                "object": {
+                "node": {
                   "access": true,
+                  "receiver": "v",
                   "call": {
                     "name": "String"
-                  },
-                  "text": "v"
+                  }
                 }
               }
             }
           ],
           "default": {
             "return": {
-              "object": {
+              "node": {
                 "access": true,
+                "receiver": "fmt",
                 "call": {
-                  "arguments": [
-                    "\"%T\"",
+                  "names": [
+                    "Sprintf",
                     "v"
                   ],
-                  "name": "Sprintf"
-                },
-                "text": "fmt"
+                  "node": "\"%T\""
+                }
               }
             }
           }
@@ -1306,6 +1372,10 @@
     },
     {
       "unexported": true,
+      "names": [
+        "controlFlow",
+        "error"
+      ],
       "parameters": [
         {
           "name": "ctx",
@@ -1329,171 +1399,131 @@
           }
         }
       ],
-      "names": [
-        "controlFlow",
-        "error"
-      ],
       "body": {
-        "fors": [
+        "variables": [
           {
-            "variable": {
-              "short": true,
-              "left": {
-                "expression": {
-                  "name": "i"
-                }
-              },
-              "right": {
-                "expression": {
-                  "int": "0"
-                }
-              }
-            },
-            "condition": {
+            "short": true,
+            "left": {
               "expression": {
-                "binary": {
-                  "left": "i",
-                  "op": {
-                    "text": "<",
-                    "less": true
-                  },
-                  "right": "10"
-                }
-              }
-            },
-            "unary": {
-              "postfix": true,
-              "op": {
-                "text": "++",
-                "increment": true
-              },
-              "name": "i"
-            },
-            "body": {
-              "if": {
-                "condition": {
-                  "expression": {
-                    "binary": {
-                      "left": "i",
-                      "op": {
-                        "text": "==",
-                        "equal": true
-                      },
-                      "right": "5"
-                    }
-                  }
-                },
-                "then": {
-                  "body": {
-                    "continue": true
-                  }
-                }
-              }
-            }
-          },
-          {
-            "range": {
-              "left": {
-                "expression": {
-                  "name": "i"
-                }
-              },
-              "right": {
-                "expression": {
-                  "int": "5"
-                }
-              }
-            },
-            "body": {
-              "assign": {
-                "assign": true,
-                "left": {
-                  "name": "_"
-                },
-                "right": {
-                  "name": "i"
-                }
-              }
-            }
-          },
-          {
-            "range": {
-              "left": {
-                "expressions": [
-                  {
-                    "name": "k"
-                  },
-                  {
-                    "name": "v"
-                  }
+                "names": [
+                  "raw",
+                  "ch"
                 ]
-              },
-              "right": {
-                "expression": {
-                  "literal": {
-                    "map": {
-                      "names": [
-                        "string",
-                        "int"
-                      ]
-                    },
+              }
+            },
+            "right": {
+              "expression": {
+                "string": {
+                  "raw": true
+                },
+                "char": true
+              }
+            }
+          },
+          {
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "n"
+              }
+            },
+            "right": {
+              "expression": {
+                "node": 0
+              }
+            }
+          },
+          {
+            "short": true,
+            "left": {
+              "expression": {
+                "names": [
+                  "pt",
+                  "pts"
+                ]
+              }
+            },
+            "right": {
+              "expression": {
+                "node": {
+                  "op": {
+                    "text": "&",
+                    "address": true
+                  },
+                  "operand": {
+                    "name": "Point",
                     "pairs": [
                       {
-                        "string": "\"a\"",
+                        "name": "X",
                         "value": {
-                          "int": "1"
+                          "node": 1
                         }
                       },
                       {
-                        "string": "\"b\"",
+                        "name": "Y",
                         "value": {
-                          "int": "2"
+                          "node": 2
                         }
                       }
                     ]
                   }
-                }
-              }
-            },
-            "body": {
-              "assign": {
-                "assign": true,
-                "left": {
-                  "names": [
-                    "_",
-                    "_"
-                  ]
                 },
-                "right": {
-                  "names": [
-                    "k",
-                    "v"
+                "literal": {
+                  "slice": {
+                    "name": "Point"
+                  },
+                  "pair": {
+                    "name": "X",
+                    "value": {
+                      "node": 0
+                    }
+                  },
+                  "pairs": [
+                    {
+                      "name": "X",
+                      "value": {
+                        "node": 1
+                      }
+                    },
+                    {
+                      "name": "Y",
+                      "value": {
+                        "node": 1
+                      }
+                    }
                   ]
                 }
               }
             }
           },
           {
-            "condition": {
+            "short": true,
+            "left": {
               "expression": {
-                "binary": {
-                  "left": "n",
-                  "op": {
-                    "text": "<",
-                    "less": true
-                  },
-                  "right": "3"
-                }
+                "name": "m"
               }
             },
-            "body": {
-              "unary": {
-                "postfix": true,
-                "op": {
-                  "text": "++",
-                  "increment": true
-                },
-                "name": "n"
+            "right": {
+              "expression": {
+                "literal": {
+                  "map": {
+                    "names": [
+                      "string",
+                      "Point"
+                    ]
+                  },
+                  "pair": {
+                    "node": "\"a\"",
+                    "value": {
+                      "pair": {
+                        "name": "X",
+                        "value": {
+                          "node": 1
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
           }
@@ -1512,19 +1542,19 @@
               },
               "right": {
                 "expression": {
-                  "object": {
+                  "node": {
                     "access": true,
+                    "receiver": "io",
                     "call": {
                       "name": "Pipe"
-                    },
-                    "text": "io"
+                    }
                   }
                 }
               }
             },
             "condition": {
               "expression": {
-                "binary": {
+                "node": {
                   "left": "err",
                   "op": {
                     "text": "!=",
@@ -1537,7 +1567,8 @@
             "then": {
               "body": {
                 "return": {
-                  "call": {
+                  "node": {
+                    "callee": "wrap",
                     "name": "err"
                   }
                 }
@@ -1545,7 +1576,7 @@
             },
             "else": {
               "body": {
-                "assign": {
+                "node": {
                   "assign": true,
                   "left": {
                     "name": "_"
@@ -1586,7 +1617,7 @@
             },
             "then": {
               "body": {
-                "assign": {
+                "node": {
                   "assign": true,
                   "left": {
                     "name": "_"
@@ -1608,31 +1639,31 @@
               },
               "right": {
                 "expression": {
-                  "call": {
-                    "name": "doThing"
+                  "node": {
+                    "callee": "doThing"
                   }
                 }
               }
             },
             "condition": {
               "expression": {
-                "logical": {
+                "node": {
                   "left": {
                     "access": true,
+                    "receiver": "errors",
                     "call": {
-                      "arguments": [
-                        "err",
-                        {
-                          "op": {
-                            "text": "&",
-                            "address": true
-                          },
-                          "name": "target"
-                        }
+                      "names": [
+                        "As",
+                        "err"
                       ],
-                      "name": "As"
-                    },
-                    "text": "errors"
+                      "node": {
+                        "op": {
+                          "text": "&",
+                          "address": true
+                        },
+                        "operand": "target"
+                      }
+                    }
                   },
                   "op": {
                     "text": "||",
@@ -1640,14 +1671,14 @@
                   },
                   "right": {
                     "access": true,
+                    "receiver": "errors",
                     "call": {
-                      "arguments": [
+                      "names": [
+                        "Is",
                         "err",
                         "ErrNotFound"
-                      ],
-                      "name": "Is"
-                    },
-                    "text": "errors"
+                      ]
+                    }
                   }
                 }
               }
@@ -1655,151 +1686,188 @@
             "then": {
               "body": {
                 "return": {
-                  "name": "err"
+                  "node": "err"
                 }
               }
             }
           }
         ],
-        "variables": [
+        "fors": [
           {
-            "short": true,
-            "left": {
-              "expression": {
-                "names": [
-                  "raw",
-                  "ch"
-                ]
+            "variable": {
+              "short": true,
+              "left": {
+                "expression": {
+                  "name": "i"
+                }
+              },
+              "right": {
+                "expression": {
+                  "node": 0
+                }
               }
             },
-            "right": {
+            "condition": {
               "expression": {
-                "string": {
-                  "raw": true
-                },
-                "char": true
-              }
-            }
-          },
-          {
-            "short": true,
-            "left": {
-              "expression": {
-                "name": "n"
-              }
-            },
-            "right": {
-              "expression": {
-                "int": "0"
-              }
-            }
-          },
-          {
-            "short": true,
-            "left": {
-              "expression": {
-                "names": [
-                  "pt",
-                  "pts"
-                ]
-              }
-            },
-            "right": {
-              "expression": {
-                "unary": {
+                "node": {
+                  "left": "i",
                   "op": {
-                    "text": "&",
-                    "address": true
+                    "text": "<",
+                    "less": true
                   },
+                  "right": 10
+                }
+              }
+            },
+            "node": {
+              "postfix": true,
+              "op": {
+                "text": "++",
+                "increment": true
+              },
+              "operand": "i"
+            },
+            "body": {
+              "if": {
+                "condition": {
+                  "expression": {
+                    "node": {
+                      "left": "i",
+                      "op": {
+                        "text": "==",
+                        "equal": true
+                      },
+                      "right": 5
+                    }
+                  }
+                },
+                "then": {
+                  "body": {
+                    "continue": true
+                  }
+                }
+              }
+            }
+          },
+          {
+            "range": {
+              "left": {
+                "expression": {
+                  "name": "i"
+                }
+              },
+              "right": {
+                "expression": {
+                  "node": 5
+                }
+              }
+            },
+            "body": {
+              "node": {
+                "assign": true,
+                "left": {
+                  "name": "_"
+                },
+                "right": {
+                  "name": "i"
+                }
+              }
+            }
+          },
+          {
+            "range": {
+              "left": {
+                "expressions": [
+                  {
+                    "name": "k"
+                  },
+                  {
+                    "name": "v"
+                  }
+                ]
+              },
+              "right": {
+                "expression": {
                   "literal": {
-                    "name": "Point",
+                    "map": {
+                      "names": [
+                        "string",
+                        "int"
+                      ]
+                    },
                     "pairs": [
                       {
-                        "name": "X",
+                        "node": "\"a\"",
                         "value": {
-                          "int": "1"
+                          "node": 1
                         }
                       },
                       {
-                        "name": "Y",
+                        "node": "\"b\"",
                         "value": {
-                          "int": "2"
+                          "node": 2
                         }
                       }
                     ]
                   }
+                }
+              }
+            },
+            "body": {
+              "node": {
+                "assign": true,
+                "left": {
+                  "names": [
+                    "_",
+                    "_"
+                  ]
                 },
-                "literal": {
-                  "slice": {
-                    "name": "Point"
-                  },
-                  "pairs": [
-                    {
-                      "name": "X",
-                      "value": {
-                        "int": "0"
-                      }
-                    },
-                    {
-                      "name": "X",
-                      "value": {
-                        "int": "1"
-                      }
-                    },
-                    {
-                      "name": "Y",
-                      "value": {
-                        "int": "1"
-                      }
-                    }
+                "right": {
+                  "names": [
+                    "k",
+                    "v"
                   ]
                 }
               }
             }
           },
           {
-            "short": true,
-            "left": {
+            "condition": {
               "expression": {
-                "name": "m"
+                "node": {
+                  "left": "n",
+                  "op": {
+                    "text": "<",
+                    "less": true
+                  },
+                  "right": 3
+                }
               }
             },
-            "right": {
-              "expression": {
-                "literal": {
-                  "map": {
-                    "names": [
-                      "string",
-                      "Point"
-                    ]
-                  },
-                  "pair": {
-                    "string": "\"a\"",
-                    "value": {
-                      "pair": {
-                        "name": "X",
-                        "value": {
-                          "int": "1"
-                        }
-                      }
-                    }
-                  }
-                }
+            "body": {
+              "node": {
+                "postfix": true,
+                "op": {
+                  "text": "++",
+                  "increment": true
+                },
+                "operand": "n"
               }
             }
           }
         ],
         "go": {
-          "call": {
-            "closure": {
+          "node": {
+            "callee": {
+              "parameters": [],
               "expression": {
-                "object": {
+                "node": {
                   "access": true,
+                  "receiver": "fmt",
                   "call": {
-                    "argument": "\"bg\"",
-                    "name": "Println"
-                  },
-                  "text": "fmt"
+                    "name": "Println",
+                    "node": "\"bg\""
+                  }
                 }
               }
             }
@@ -1818,23 +1886,23 @@
                           "v",
                           "ok"
                         ],
-                        "unary": {
+                        "node": {
                           "op": {
                             "text": "<-",
                             "receive": true
                           },
-                          "name": "in"
+                          "operand": "in"
                         }
                       },
                       "if": {
                         "condition": {
                           "expression": {
-                            "unary": {
+                            "node": {
                               "op": {
                                 "text": "!",
                                 "not": true
                               },
-                              "name": "ok"
+                              "operand": "ok"
                             }
                           }
                         },
@@ -1856,7 +1924,7 @@
                     {
                       "send": {
                         "name": "out",
-                        "int": "42"
+                        "node": 42
                       },
                       "continue": {
                         "name": "Outer"
@@ -1864,17 +1932,17 @@
                     },
                     {
                       "receive": {
-                        "unary": {
+                        "node": {
                           "op": {
                             "text": "<-",
                             "receive": true
                           },
-                          "object": {
+                          "operand": {
                             "access": true,
+                            "receiver": "ctx",
                             "call": {
                               "name": "Done"
-                            },
-                            "text": "ctx"
+                            }
                           }
                         }
                       },
@@ -1898,12 +1966,12 @@
               },
               "right": {
                 "expression": {
-                  "call": {
-                    "name": "make",
+                  "node": {
+                    "callee": "make",
                     "chan": {
                       "name": "int"
                     },
-                    "int": "4"
+                    "node": 4
                   }
                 }
               }
@@ -1912,10 +1980,11 @@
         ],
         "send": {
           "name": "buffered",
-          "int": "1"
+          "node": 1
         },
         "expression": {
-          "call": {
+          "node": {
+            "callee": "close",
             "name": "buffered"
           }
         },
@@ -1931,8 +2000,8 @@
             },
             "value": {
               "expression": {
-                "call": {
-                  "name": "new",
+                "node": {
+                  "callee": "new",
                   "type": {
                     "names": [
                       "myio",
@@ -1951,7 +2020,7 @@
             }
           }
         ],
-        "assign": {
+        "node": {
           "assign": true,
           "left": {
             "names": [
@@ -1971,14 +2040,14 @@
               "pts",
               "m"
             ],
-            "call": {
-              "name": "UserID",
-              "int": "42"
+            "node": {
+              "callee": "UserID",
+              "node": 42
             }
           }
         },
         "return": {
-          "nil": true
+          "node": {}
         }
       }
     }

@@ -1,30 +1,17 @@
 {
-  "$type": "program",
   "tag": {
     "open": true
   },
   "comments": [
     "// Blueprint fixture — exercises every major PHP construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented.",
-    {
-      "leading": true,
-      "text": "/**\n * Demo class with various PHP features.\n */"
-    },
+    "/**\n * Demo class with various PHP features.\n */",
     "// Iter 17 shapes: nullsafe, anonymous class, intersection / DNF / bottom\n// type, function-static / global vars, dynamic var name, property\n// promotion, cast type, list-destructure, clone / unset / unique-label,\n// shell command, error suppression, augmented assignment, sequence /\n// reference assignment, first-class callable, heredoc / nowdoc.",
-    {
-      "leading": true,
-      "text": "// Intersection type in parameter position."
-    },
-    {
-      "leading": true,
-      "text": "// DNF type in parameter position."
-    },
-    {
-      "leading": true,
-      "text": "// Bottom type (`never`) in return position."
-    }
+    "// Intersection type in parameter position.",
+    "// DNF type in parameter position.",
+    "// Bottom type (`never`) in return position."
   ],
   "declare": {
-    "int": "1"
+    "node": 1
   },
   "namespace": {
     "names": [
@@ -42,9 +29,9 @@
     {
       "names": [
         "App",
-        "Logger",
-        "Log"
-      ]
+        "Logger"
+      ],
+      "name": "Log"
     },
     {
       "group": true,
@@ -61,250 +48,6 @@
       ]
     }
   ],
-  "expressions": [
-    {
-      "assign": {
-        "assign": true,
-        "left": {
-          "name": "pipeline"
-        },
-        "right": {
-          "parameters": [
-            {
-              "type": true,
-              "variable": {
-                "name": "x"
-              }
-            }
-          ],
-          "type": true,
-          "body": {
-            "binary": {
-              "left": {
-                "name": "x"
-              },
-              "op": {
-                "text": "*",
-                "multiply": true
-              },
-              "right": "2"
-            }
-          }
-        }
-      }
-    },
-    {
-      "assign": {
-        "assign": true,
-        "left": {
-          "name": "doubled"
-        },
-        "right": {
-          "name": "array_map",
-          "arguments": [
-            {
-              "variable": {
-                "name": "pipeline"
-              }
-            },
-            {
-              "array": {
-                "ints": [
-                  "1",
-                  "2",
-                  "3"
-                ]
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "assign": {
-        "assign": true,
-        "left": {
-          "name": "closure"
-        },
-        "right": {
-          "anonymous": true,
-          "parameters": [
-            {
-              "type": true,
-              "variable": {
-                "name": "x"
-              }
-            }
-          ],
-          "variable": {
-            "name": "pipeline"
-          },
-          "type": true,
-          "body": {
-            "return": {
-              "binary": {
-                "left": {
-                  "variable": {
-                    "name": "pipeline"
-                  },
-                  "argument": {
-                    "variable": {
-                      "name": "x"
-                    }
-                  }
-                },
-                "op": {
-                  "text": "+",
-                  "plus": true
-                },
-                "right": "1"
-              }
-            }
-          }
-        }
-      }
-    }
-  ],
-  "interfaces": [
-    {
-      "name": "Speaker",
-      "method": {
-        "public": true,
-        "name": "greet",
-        "parameters": [
-          {
-            "type": {
-              "optional": true,
-              "type": true
-            },
-            "variable": {
-              "name": "who"
-            }
-          }
-        ],
-        "type": true
-      }
-    },
-    {
-      "name": "Countable",
-      "method": {
-        "public": true,
-        "name": "count",
-        "type": true
-      }
-    },
-    {
-      "name": "Stringable",
-      "method": {
-        "public": true,
-        "name": "__toString",
-        "type": true
-      }
-    },
-    {
-      "name": "Countable2",
-      "method": {
-        "public": true,
-        "name": "size",
-        "type": true
-      }
-    }
-  ],
-  "trait": {
-    "name": "Loggable",
-    "method": {
-      "protected": true,
-      "name": "log",
-      "parameters": [
-        {
-          "type": true,
-          "variable": {
-            "name": "msg"
-          }
-        }
-      ],
-      "type": true,
-      "body": {
-        "echo": {
-          "string": {
-            "interpolation": {
-              "variable": {
-                "name": "msg"
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "enum": {
-    "name": "Status",
-    "type": true,
-    "constants": [
-      {
-        "name": "Active",
-        "string": {}
-      },
-      {
-        "name": "Inactive",
-        "string": {}
-      },
-      {
-        "name": "Pending",
-        "string": {}
-      }
-    ],
-    "method": {
-      "public": true,
-      "name": "label",
-      "type": true,
-      "body": {
-        "return": {
-          "match": {
-            "condition": {
-              "expression": {
-                "variable": {
-                  "name": "this"
-                }
-              }
-            },
-            "arms": [
-              {
-                "member": {
-                  "static": true,
-                  "names": [
-                    "Status",
-                    "Active"
-                  ]
-                },
-                "string": {}
-              },
-              {
-                "member": {
-                  "static": true,
-                  "names": [
-                    "Status",
-                    "Inactive"
-                  ]
-                },
-                "string": {}
-              },
-              {
-                "member": {
-                  "static": true,
-                  "names": [
-                    "Status",
-                    "Pending"
-                  ]
-                },
-                "string": {}
-              }
-            ]
-          }
-        }
-      }
-    }
-  },
   "classes": [
     {
       "abstract": true,
@@ -340,7 +83,7 @@
           "public": true,
           "constant": {
             "name": "MAX",
-            "int": "100"
+            "node": 100
           }
         },
         {
@@ -370,14 +113,14 @@
             "type": true
           },
           "name": "$label",
-          "null": "null"
+          "node": null
         },
         {
           "public": true,
           "static": true,
           "type": true,
           "name": "$registry",
-          "int": "0"
+          "node": 0
         }
       ],
       "methods": [
@@ -396,17 +139,19 @@
               "variable": {
                 "name": "count"
               },
-              "int": "0"
+              "node": 0
             }
           ],
           "body": {
             "expressions": [
               {
-                "assign": {
+                "node": {
                   "assign": true,
                   "left": {
                     "access": true,
-                    "name": "this",
+                    "receiver": {
+                      "name": "this"
+                    },
                     "member": {
                       "name": "name"
                     }
@@ -417,11 +162,13 @@
                 }
               },
               {
-                "assign": {
+                "node": {
                   "assign": true,
                   "left": {
                     "access": true,
-                    "name": "this",
+                    "receiver": {
+                      "name": "this"
+                    },
                     "member": {
                       "name": "count"
                     }
@@ -438,6 +185,7 @@
           "public": true,
           "abstract": true,
           "name": "render",
+          "parameters": [],
           "type": true
         },
         {
@@ -483,7 +231,7 @@
               "variable": {
                 "name": "who"
               },
-              "null": "null"
+              "node": null
             },
             {
               "variadic": true,
@@ -496,7 +244,7 @@
           "type": true,
           "body": {
             "expression": {
-              "assign": {
+              "node": {
                 "assign": true,
                 "left": {
                   "name": "target"
@@ -511,7 +259,9 @@
                   },
                   "right": {
                     "access": true,
-                    "name": "this",
+                    "receiver": {
+                      "name": "this"
+                    },
                     "member": {
                       "name": "name"
                     }
@@ -522,10 +272,12 @@
             "if": {
               "condition": {
                 "expression": {
-                  "binary": {
+                  "node": {
                     "left": {
                       "access": true,
-                      "name": "this",
+                      "receiver": {
+                        "name": "this"
+                      },
                       "member": {
                         "name": "count"
                       }
@@ -534,7 +286,7 @@
                       "text": ">",
                       "greater": true
                     },
-                    "right": "10"
+                    "right": 10
                   }
                 }
               },
@@ -554,10 +306,12 @@
               "else_if": {
                 "condition": {
                   "expression": {
-                    "binary": {
+                    "node": {
                       "left": {
                         "access": true,
-                        "name": "this",
+                        "receiver": {
+                          "name": "this"
+                        },
                         "member": {
                           "name": "count"
                         }
@@ -566,7 +320,7 @@
                         "text": ">",
                         "greater": true
                       },
-                      "right": "0"
+                      "right": 0
                     }
                   }
                 },
@@ -613,7 +367,7 @@
           "body": {
             "return": {
               "ternary": {
-                "binary": {
+                "node": {
                   "left": {
                     "name": "n"
                   },
@@ -621,11 +375,11 @@
                     "text": ">",
                     "greater": true
                   },
-                  "right": "0"
+                  "right": 0
                 },
                 "string": {},
                 "ternary": {
-                  "binary": {
+                  "node": {
                     "left": {
                       "name": "n"
                     },
@@ -633,7 +387,7 @@
                       "text": "<",
                       "less": true
                     },
-                    "right": "0"
+                    "right": 0
                   },
                   "strings": [
                     {},
@@ -666,8 +420,8 @@
                 },
                 "arms": [
                   {
-                    "call": {
-                      "name": "is_int",
+                    "node": {
+                      "callee": "is_int",
                       "argument": {
                         "variable": {
                           "name": "value"
@@ -677,9 +431,9 @@
                     "string": {}
                   },
                   {
-                    "logical": {
+                    "node": {
                       "left": {
-                        "name": "is_string",
+                        "callee": "is_string",
                         "argument": {
                           "variable": {
                             "name": "value"
@@ -692,7 +446,7 @@
                       },
                       "right": {
                         "left": {
-                          "name": "strlen",
+                          "callee": "strlen",
                           "argument": {
                             "variable": {
                               "name": "value"
@@ -703,14 +457,14 @@
                           "text": ">",
                           "greater": true
                         },
-                        "right": "0"
+                        "right": 0
                       }
                     },
                     "string": {}
                   },
                   {
-                    "call": {
-                      "name": "is_array",
+                    "node": {
+                      "callee": "is_array",
                       "argument": {
                         "variable": {
                           "name": "value"
@@ -742,7 +496,7 @@
           "type": true,
           "body": {
             "expression": {
-              "assign": {
+              "node": {
                 "assign": true,
                 "left": {
                   "name": "results"
@@ -776,7 +530,7 @@
                 "if": {
                   "condition": {
                     "expression": {
-                      "binary": {
+                      "node": {
                         "left": {
                           "name": "item"
                         },
@@ -784,7 +538,7 @@
                           "text": "===",
                           "identical": true
                         },
-                        "right": "null"
+                        "right": null
                       }
                     }
                   },
@@ -797,25 +551,31 @@
                 "try": {
                   "body": {
                     "expression": {
-                      "assign": {
+                      "node": {
                         "assign": true,
                         "left": {
                           "access": true,
-                          "name": "results",
+                          "receiver": {
+                            "name": "results"
+                          },
                           "index": {
-                            "name": "key"
+                            "variable": {
+                              "name": "key"
+                            }
                           }
                         },
                         "right": {
                           "access": true,
-                          "name": "this",
+                          "receiver": {
+                            "name": "this"
+                          },
                           "call": {
+                            "name": "transform",
                             "argument": {
                               "variable": {
                                 "name": "item"
                               }
-                            },
-                            "name": "transform"
+                            }
                           }
                         }
                       }
@@ -888,13 +648,157 @@
             "variable": {
               "name": "count"
             },
-            "int": "0"
+            "node": 0
           }
         ],
         "body": true
       }
     }
   ],
+  "interfaces": [
+    {
+      "name": "Speaker",
+      "method": {
+        "public": true,
+        "name": "greet",
+        "parameters": [
+          {
+            "type": {
+              "optional": true,
+              "type": true
+            },
+            "variable": {
+              "name": "who"
+            }
+          }
+        ],
+        "type": true
+      }
+    },
+    {
+      "name": "Countable",
+      "method": {
+        "public": true,
+        "name": "count",
+        "parameters": [],
+        "type": true
+      }
+    },
+    {
+      "name": "Stringable",
+      "method": {
+        "public": true,
+        "name": "__toString",
+        "parameters": [],
+        "type": true
+      }
+    },
+    {
+      "name": "Countable2",
+      "method": {
+        "public": true,
+        "name": "size",
+        "parameters": [],
+        "type": true
+      }
+    }
+  ],
+  "trait": {
+    "name": "Loggable",
+    "method": {
+      "protected": true,
+      "name": "log",
+      "parameters": [
+        {
+          "type": true,
+          "variable": {
+            "name": "msg"
+          }
+        }
+      ],
+      "type": true,
+      "body": {
+        "echo": {
+          "string": {
+            "interpolation": {
+              "variable": {
+                "name": "msg"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "enum": {
+    "name": "Status",
+    "type": true,
+    "constants": [
+      {
+        "name": "Active",
+        "string": {}
+      },
+      {
+        "name": "Inactive",
+        "string": {}
+      },
+      {
+        "name": "Pending",
+        "string": {}
+      }
+    ],
+    "method": {
+      "public": true,
+      "name": "label",
+      "parameters": [],
+      "type": true,
+      "body": {
+        "return": {
+          "match": {
+            "condition": {
+              "expression": {
+                "variable": {
+                  "name": "this"
+                }
+              }
+            },
+            "arms": [
+              {
+                "member": {
+                  "static": true,
+                  "names": [
+                    "Status",
+                    "Active"
+                  ]
+                },
+                "string": {}
+              },
+              {
+                "member": {
+                  "static": true,
+                  "names": [
+                    "Status",
+                    "Inactive"
+                  ]
+                },
+                "string": {}
+              },
+              {
+                "member": {
+                  "static": true,
+                  "names": [
+                    "Status",
+                    "Pending"
+                  ]
+                },
+                "string": {}
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
   "functions": [
     {
       "name": "factory",
@@ -916,8 +820,8 @@
       "type": true,
       "body": {
         "return": {
-          "call": {
-            "variable": {
+          "node": {
+            "callee": {
               "name": "fn"
             },
             "argument": {
@@ -955,58 +859,22 @@
       "type": true,
       "body": {
         "comments": [
-          {
-            "leading": true,
-            "text": "// Nullsafe member access + call."
-          },
-          {
-            "leading": true,
-            "text": "// Anonymous class."
-          },
-          {
-            "leading": true,
-            "text": "// First-class callable + augmented assignment."
-          },
-          {
-            "leading": true,
-            "text": "// Reference assignment + by-ref foreach."
-          },
-          {
-            "leading": true,
-            "text": "// List destructure."
-          },
-          {
-            "leading": true,
-            "text": "// Function-local static + global."
-          },
-          {
-            "leading": true,
-            "text": "// Dynamic variable name + cast type."
-          },
-          {
-            "leading": true,
-            "text": "// Clone, error suppression, shell."
-          },
-          {
-            "leading": true,
-            "text": "// Heredoc / nowdoc."
-          },
-          {
-            "leading": true,
-            "text": "// Sequence in a for header."
-          },
-          {
-            "leading": true,
-            "text": "// Goto + named label."
-          },
-          {
-            "leading": true,
-            "text": "// Match-arm; intersection / DNF / bottom types appear in\n    // declarative positions (parameters / returns), not in\n    // `instanceof` expressions, so the type-shape exercises live in\n    // sibling functions below."
-          }
+          "// Nullsafe member access + call.",
+          "// Anonymous class.",
+          "// First-class callable + augmented assignment.",
+          "// Reference assignment + by-ref foreach.",
+          "// List destructure.",
+          "// Function-local static + global.",
+          "// Dynamic variable name + cast type.",
+          "// Clone, error suppression, shell.",
+          "// Heredoc / nowdoc.",
+          "// Sequence in a for header.",
+          "// Goto + named label.",
+          "// Match-arm; intersection / DNF / bottom types appear in\n    // declarative positions (parameters / returns), not in\n    // `instanceof` expressions, so the type-shape exercises live in\n    // sibling functions below."
         ],
         "expressions": [
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "name"
@@ -1021,14 +889,16 @@
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "size"
               },
               "right": {
                 "access": true,
-                "name": "thing",
+                "receiver": {
+                  "name": "thing"
+                },
                 "call": {
                   "name": "describe"
                 }
@@ -1036,7 +906,7 @@
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "anon"
@@ -1050,6 +920,7 @@
                   "method": {
                     "public": true,
                     "name": "__toString",
+                    "parameters": [],
                     "type": true,
                     "body": {
                       "return": {
@@ -1062,13 +933,13 @@
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "maker"
               },
               "right": {
-                "name": "strtoupper",
+                "callee": "strtoupper",
                 "argument": {
                   "variadic": true
                 }
@@ -1076,64 +947,66 @@
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "count"
               },
-              "right": "0"
+              "right": 0
             }
           },
           {
-            "assign": {
+            "node": {
               "plus": true,
               "left": {
                 "name": "count"
               },
-              "right": "5"
+              "right": 5
             }
           },
           {
-            "assign": {
+            "node": {
               "multiply": true,
               "left": {
                 "name": "count"
               },
-              "right": "2"
+              "right": 2
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "items"
               },
               "right": {
-                "ints": [
-                  "1",
-                  "2",
-                  "3"
+                "nodes": [
+                  1,
+                  2,
+                  3
                 ]
               }
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "alias"
               },
               "right": {
                 "access": true,
-                "name": "items",
+                "receiver": {
+                  "name": "items"
+                },
                 "index": {
-                  "text": "0"
+                  "node": 0
                 }
               }
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "variables": [
@@ -1151,7 +1024,7 @@
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "variables": [
@@ -1164,18 +1037,18 @@
                 ]
               },
               "right": {
-                "ints": [
-                  "10",
-                  "20",
-                  "30",
-                  "40",
-                  "50"
+                "nodes": [
+                  10,
+                  20,
+                  30,
+                  40,
+                  50
                 ]
               }
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "varname"
@@ -1184,7 +1057,7 @@
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "dynamic": true,
@@ -1192,11 +1065,11 @@
                   "name": "varname"
                 }
               },
-              "right": "42"
+              "right": 42
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "cast"
@@ -1210,7 +1083,7 @@
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "copy"
@@ -1223,7 +1096,7 @@
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "maybe"
@@ -1233,8 +1106,8 @@
                   "text": "@",
                   "suppress": true
                 },
-                "call": {
-                  "name": "file_get_contents",
+                "operand": {
+                  "callee": "file_get_contents",
                   "argument": {
                     "string": {}
                   }
@@ -1243,7 +1116,7 @@
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "output"
@@ -1252,7 +1125,7 @@
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "here"
@@ -1263,7 +1136,7 @@
             }
           },
           {
-            "assign": {
+            "node": {
               "assign": true,
               "left": {
                 "name": "now"
@@ -1287,12 +1160,12 @@
           },
           "body": {
             "expression": {
-              "assign": {
+              "node": {
                 "multiply": true,
                 "left": {
                   "name": "x"
                 },
-                "right": "10"
+                "right": 10
               }
             }
           }
@@ -1308,7 +1181,7 @@
             "variable": {
               "name": "cached"
             },
-            "null": "null"
+            "node": null
           },
           {
             "global": true,
@@ -1318,25 +1191,47 @@
           }
         ],
         "for": {
-          "assigns": [
-            {
-              "assign": true,
-              "left": {
-                "name": "i"
+          "nodeses": [
+            [
+              {
+                "assign": true,
+                "left": {
+                  "name": "i"
+                },
+                "right": 0
               },
-              "right": "0"
-            },
-            {
-              "assign": true,
-              "left": {
-                "name": "j"
+              {
+                "assign": true,
+                "left": {
+                  "name": "j"
+                },
+                "right": 10
+              }
+            ],
+            [
+              {
+                "op": {
+                  "text": "++",
+                  "increment": true
+                },
+                "operand": {
+                  "name": "i"
+                }
               },
-              "right": "10"
-            }
+              {
+                "op": {
+                  "text": "--",
+                  "decrement": true
+                },
+                "operand": {
+                  "name": "j"
+                }
+              }
+            ]
           ],
           "condition": {
             "expression": {
-              "binary": {
+              "node": {
                 "left": {
                   "name": "i"
                 },
@@ -1350,30 +1245,8 @@
               }
             }
           },
-          "unaries": [
-            {
-              "op": {
-                "text": "++",
-                "increment": true
-              },
-              "variable": {
-                "name": "i"
-              }
-            },
-            {
-              "op": {
-                "text": "--",
-                "decrement": true
-              },
-              "variable": {
-                "name": "j"
-              }
-            }
-          ],
           "body": {
-            "comments": [
-              "/* ... */"
-            ]
+            "comment": "/* ... */"
           }
         },
         "goto": {
@@ -1391,34 +1264,38 @@
             },
             "arms": [
               {
-                "binary": {
-                  "left": {
-                    "name": "value"
+                "nodes": [
+                  {
+                    "left": {
+                      "name": "value"
+                    },
+                    "op": {
+                      "text": "instanceof",
+                      "instanceof": true
+                    },
+                    "right": "Stringable"
                   },
-                  "op": {
-                    "text": "instanceof",
-                    "instanceof": true
-                  },
-                  "right": "Stringable"
-                },
-                "int": "1"
+                  1
+                ]
               },
               {
-                "binary": {
-                  "left": {
-                    "name": "value"
+                "nodes": [
+                  {
+                    "left": {
+                      "name": "value"
+                    },
+                    "op": {
+                      "text": "instanceof",
+                      "instanceof": true
+                    },
+                    "right": "Countable2"
                   },
-                  "op": {
-                    "text": "instanceof",
-                    "instanceof": true
-                  },
-                  "right": "Countable2"
-                },
-                "int": "2"
+                  2
+                ]
               },
               {
                 "default": true,
-                "int": "0"
+                "node": 0
               }
             ]
           }
@@ -1448,9 +1325,11 @@
       "type": true,
       "body": {
         "return": {
-          "object": {
+          "node": {
             "access": true,
-            "name": "thing",
+            "receiver": {
+              "name": "thing"
+            },
             "call": {
               "name": "size"
             }
@@ -1464,17 +1343,20 @@
         {
           "type": {
             "disjunctive": true,
-            "type": {
-              "intersection": true,
-              "types": [
-                {
-                  "name": "Stringable"
-                },
-                {
-                  "name": "Countable2"
-                }
-              ]
-            }
+            "types": [
+              {
+                "intersection": true,
+                "types": [
+                  {
+                    "name": "Stringable"
+                  },
+                  {
+                    "name": "Countable2"
+                  }
+                ]
+              },
+              true
+            ]
           },
           "variable": {
             "name": "thing"
@@ -1484,7 +1366,7 @@
       "type": true,
       "body": {
         "return": {
-          "binary": {
+          "node": {
             "left": {
               "name": "thing"
             },
@@ -1492,13 +1374,14 @@
               "text": "!==",
               "not_identical": true
             },
-            "right": "null"
+            "right": null
           }
         }
       }
     },
     {
       "name": "never_returns",
+      "parameters": [],
       "type": {
         "bottom": true
       },
@@ -1520,8 +1403,112 @@
       }
     }
   ],
+  "expressions": [
+    {
+      "node": {
+        "assign": true,
+        "left": {
+          "name": "pipeline"
+        },
+        "right": {
+          "parameters": [
+            {
+              "type": true,
+              "variable": {
+                "name": "x"
+              }
+            }
+          ],
+          "type": true,
+          "body": {
+            "node": {
+              "left": {
+                "name": "x"
+              },
+              "op": {
+                "text": "*",
+                "multiply": true
+              },
+              "right": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "node": {
+        "assign": true,
+        "left": {
+          "name": "doubled"
+        },
+        "right": {
+          "callee": "array_map",
+          "arguments": [
+            {
+              "variable": {
+                "name": "pipeline"
+              }
+            },
+            {
+              "array": {
+                "nodes": [
+                  1,
+                  2,
+                  3
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "node": {
+        "assign": true,
+        "left": {
+          "name": "closure"
+        },
+        "right": {
+          "anonymous": true,
+          "parameters": [
+            {
+              "type": true,
+              "variable": {
+                "name": "x"
+              }
+            }
+          ],
+          "variable": {
+            "name": "pipeline"
+          },
+          "type": true,
+          "body": {
+            "return": {
+              "node": {
+                "left": {
+                  "callee": {
+                    "name": "pipeline"
+                  },
+                  "argument": {
+                    "variable": {
+                      "name": "x"
+                    }
+                  }
+                },
+                "op": {
+                  "text": "+",
+                  "plus": true
+                },
+                "right": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "echo": {
-    "binary": {
+    "node": {
       "left": {
         "left": {},
         "op": {
@@ -1529,11 +1516,11 @@
           "concat": true
         },
         "right": {
-          "variable": {
+          "callee": {
             "name": "closure"
           },
           "argument": {
-            "int": "5"
+            "node": 5
           }
         }
       },

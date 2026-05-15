@@ -100,6 +100,7 @@ program/
   │       │   ├─ parameter/
   │       │   │   ├─ type/name = "T"
   │       │   │   └─ name = "input"
+  │       │   ├─ throws/type/name = "IllegalArgumentException"
   │       │   └─ body/if/
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/name = "input"
@@ -208,9 +209,10 @@ program/
   │       │   └─ body/method[public]/
   │       │       ├─ returns/type/name = "U"
   │       │       ├─ name = "process"
-  │       │       └─ parameter/
-  │       │           ├─ type/name = "U"
-  │       │           └─ name = "input"
+  │       │       ├─ parameter/
+  │       │       │   ├─ type/name = "U"
+  │       │       │   └─ name = "input"
+  │       │       └─ throws/type/name = "IllegalArgumentException"
   │       ├─ enum[public]/
   │       │   ├─ name = "Color"
   │       │   └─ body/
@@ -386,6 +388,7 @@ program/
           ├─ method[package]/
           │   ├─ returns/type[void]/name = "void"
           │   ├─ name = "resources"
+          │   ├─ throws/type/name = "Exception"
           │   └─ body/
           │       ├─ try/
           │       │   ├─ body/if/

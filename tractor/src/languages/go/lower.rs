@@ -124,8 +124,21 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 
         // ----- Top-level structure -------------------------------------
         "package_clause" => simple_statement(node, "package", source),
-        "import_declaration" => simple_statement(node, "import", source),
-        "import_spec" => simple_statement(node, "spec", source),
+        // Each Go `import_spec` becomes its own `<import>` element so
+        // that `import (a; b; c)` block-form imports surface as N
+        // sibling `<import>` declarations (matches the line-form `import "a"`
+        // shape). The `import_declaration` keyword + grouping
+        // parentheses flow through as gap text.
+        "import_declaration" => SyntaxTree::Inline {
+            children: node
+                .named_children()
+                .filter(|c| matches!(c.kind(), "import_spec" | "import_spec_list"))
+                .map(|c| lower_node(c, source))
+                .collect(),
+            list_name: None,
+            range, span,
+        },
+        "import_spec" => lower_go_import_spec(node, source),
         "import_spec_list" => SyntaxTree::Inline {
             children: lower_children(node, source),
             list_name: None,
@@ -545,7 +558,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &[]),
                             segments: vec![segment],
                             range, span,
                         },
@@ -620,7 +633,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &[]),
                             segments: vec![segment],
                             range,
                             span,
@@ -736,7 +749,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             SyntaxTree::Access { receiver, segments, range, span }
                         }
                         other => SyntaxTree::Access {
-                            receiver: Box::new(other),
+                            receiver: crate::tree::types::AccessReceiver::from_tree(other, &[]),
                             segments: vec![segment],
                             range, span,
                         },
@@ -858,6 +871,92 @@ fn lower_children(node: &RawNode, source: &str) -> Vec<SyntaxTree> {
         .collect()
 }
 
+/// Build `<path>/<name>+` from a Go interpreted-string-literal import
+/// path. The slash-delimited segments of `"net/http/pprof"` become
+/// individual `<name>` segments under a single `<path>` parent, so the
+/// cross-language `//import//name='net'` query is uniform across Go,
+/// Java, Python, C# (Principle #5 — unified concepts within and
+/// across languages where the cost-benefit favours unification).
+///
+/// The surrounding double quotes flow through as gap text on the
+/// enclosing `<import>` (anchored renderer property), not as content
+/// of `<path>`.
+fn build_go_import_path(node: &RawNode, source: &str) -> SyntaxTree {
+    let outer_span = span_of(node);
+    let outer_range = range_of(node);
+    let raw = node.utf8_text(source);
+    // The string literal includes surrounding quotes; the segments
+    // live in `raw[1..raw.len()-1]` mapped to the source offsets
+    // `outer_range.start+1 .. outer_range.end-1`.
+    let trimmed = raw.trim_start_matches('"').trim_end_matches('"');
+    let inner_start = outer_range.start.saturating_add(1);
+    let inner_end = outer_range.end.saturating_sub(1);
+    let inner_range = ByteRange::new(inner_start, inner_end);
+    let mut segments: Vec<SyntaxTree> = Vec::new();
+    let mut offset = inner_start;
+    for seg in trimmed.split('/') {
+        let seg_len = seg.len() as u32;
+        let seg_start = offset;
+        let seg_end = offset.saturating_add(seg_len);
+        segments.push(SyntaxTree::Name {
+            text: seg.to_string(),
+            range: ByteRange::new(seg_start, seg_end),
+            span: outer_span,
+        });
+        offset = seg_end.saturating_add(1); // skip '/'
+    }
+    SyntaxTree::Path { segments, range: inner_range, span: outer_span }
+}
+
+/// Lower one `import_spec` into a canonical `<import>` element.
+///
+/// Pre-IR Go pinned four import-kind variants as mutually-exclusive
+/// markers on `<import>` (Principle #9 — Exhaustive Markers):
+///   - `import "fmt"`            → `<import>/<path>/<name>fmt`
+///   - `import f "fmt"`          → `<import[alias]>/<path>/<name>fmt/<aliased>/<name>f`
+///   - `import . "strings"`      → `<import[dot]>/<path>/<name>strings`
+///   - `import _ "x"`            → `<import[blank]>/<path>/<name>x`
+fn lower_go_import_spec(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let path_node = node.child_by_field_name("path");
+    let name_node = node.child_by_field_name("name");
+
+    let kind: &'static [&'static str] = match name_node {
+        Some(n) => match n.utf8_text(source) {
+            "." => &["dot"],
+            "_" => &["blank"],
+            _ => &["alias"],
+        },
+        None => &[],
+    };
+
+    let mut children: Vec<SyntaxTree> = Vec::new();
+    if let Some(p) = path_node {
+        children.push(build_go_import_path(p, source));
+    }
+    if kind == ["alias"] {
+        if let Some(n) = name_node {
+            let nspan = span_of(n);
+            let nrange = range_of(n);
+            children.push(SyntaxTree::Aliased {
+                inner: Box::new(name_of(n, source)),
+                range: nrange,
+                span: nspan,
+            });
+        }
+    }
+
+    SyntaxTree::SimpleStatement {
+        element_name: "import",
+        modifiers: Modifiers::default(),
+        extra_markers: kind,
+        children,
+        range,
+        span,
+    }
+}
+
 
 /// Go convention: name starting with uppercase → exported; lowercase → unexported.
 fn is_exported(name: &str) -> bool {
@@ -895,10 +994,13 @@ fn go_type_spec(
             if let Some(n) = name_node {
                 inner_children.push(name_of(n, source));
             }
-            // Lower the struct/interface contents — for struct_type
-            // that's the field_declaration_list child.
+            let is_interface = t.kind() == "interface_type";
             for c in t.named_children() {
-                inner_children.push(lower_node(c, source));
+                if is_interface && is_go_embedded_interface(c) {
+                    inner_children.push(wrap_go_interface_embed(c, source));
+                } else {
+                    inner_children.push(lower_node(c, source));
+                }
             }
             return SyntaxTree::SimpleStatement {
                 element_name: element,
@@ -926,6 +1028,48 @@ fn go_type_spec(
         children,
         range: range_of(node),
         span: span_of(node),
+    }
+}
+
+/// Whether `node` is an embedded-interface target inside an
+/// `interface_type` body (`interface { io.Reader; ... }`). Excludes
+/// `method_spec` children (the method signatures); everything else
+/// inside an interface body is a type-relationship target.
+fn is_go_embedded_interface(node: &RawNode) -> bool {
+    matches!(
+        node.kind(),
+        "qualified_type" | "type_identifier" | "generic_type" | "type_elem"
+    )
+}
+
+/// Wrap an embedded-interface target in `<extends>/<type>/{lowered}`
+/// (Principle #18 — name the relationship after the operator;
+/// Principle #14 — every type-reference slot carries a `<type>` child).
+fn wrap_go_interface_embed(node: &RawNode, source: &str) -> SyntaxTree {
+    let span = span_of(node);
+    let range = range_of(node);
+    let inner = lower_node(node, source);
+    // Wrap leaf-like inner trees in `<type>` so the canonical
+    // `<extends>/<type>` shape always has the namespace marker.
+    let type_slot = match &inner {
+        SyntaxTree::SimpleStatement { element_name: "type", .. }
+        | SyntaxTree::GenericType { .. } => inner,
+        _ => SyntaxTree::SimpleStatement {
+            element_name: "type",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![inner],
+            range,
+            span,
+        },
+    };
+    SyntaxTree::SimpleStatement {
+        element_name: "extends",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children: vec![type_slot],
+        range,
+        span,
     }
 }
 

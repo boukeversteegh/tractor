@@ -1,57 +1,54 @@
 {
-  "$type": "program",
   "comments": [
     "# Kitchen-sink Ruby blueprint for tractor snapshot tests.\n# Rendered by `tractor query <file> -p tree --single` with NO depth limit\n# so any design-principle transform change produces a visible snapshot diff.\n# The file is intentionally syntactically valid but not executed.",
-    {
-      "leading": true,
-      "text": "# Pattern-matching exercise — covers array/hash/find/alternative/as\n# patterns, guards (`if`/`unless` clauses inside `case/in`), and\n# Ruby 3.0 forwarding syntax. Iter 15 wraps each pattern variant\n# under `<pattern[X]>` so `//pattern[array]` etc. narrow."
-    },
-    {
-      "leading": true,
-      "text": "# Safe-navigation operator `&.` — `<call[optional]>` shape parallels\n# C# `?.` so cross-language `//call[optional]` finds either form."
-    }
+    "# Pattern-matching exercise — covers array/hash/find/alternative/as\n# patterns, guards (`if`/`unless` clauses inside `case/in`), and\n# Ruby 3.0 forwarding syntax. Iter 15 wraps each pattern variant\n# under `<pattern[X]>` so `//pattern[array]` etc. narrow.",
+    "# Safe-navigation operator `&.` — `<call[optional]>` shape parallels\n# C# `?.` so cross-language `//call[optional]` finds either form."
   ],
-  "assigns": [
+  "nodes": [
     {
-      "name": "MAX_RETRIES",
-      "int": "3"
+      "left": "MAX_RETRIES",
+      "right": 3
     },
     {
-      "name": "GREETINGS",
-      "array": {
+      "left": "GREETINGS",
+      "right": {
         "string": true
       }
     },
     {
-      "name": "SYMBOLS",
-      "array": {
+      "left": "SYMBOLS",
+      "right": {
         "symbol": true
       }
     },
     {
       "left": {
-        "destructured": true,
-        "names": [
-          "a",
-          "b"
-        ]
+        "left": {
+          "destructured": true,
+          "names": [
+            "a",
+            "b"
+          ]
+        }
       },
-      "array": {
-        "ints": [
-          "10",
-          "20"
+      "right": {
+        "nodes": [
+          10,
+          20
         ]
       }
     },
     {
-      "name": "maybe",
-      "object": {
+      "left": "maybe",
+      "right": {
         "access": true,
+        "receiver": "obj",
         "call": {
-          "argument": "arg",
-          "name": "method"
-        },
-        "text": "obj"
+          "names": [
+            "method",
+            "arg"
+          ]
+        }
       }
     }
   ],
@@ -136,22 +133,20 @@
                     }
                   ],
                   "body": {
-                    "assigns": [
+                    "nodes": [
                       {
-                        "names": [
-                          "@name",
-                          "name"
-                        ]
+                        "left": "@name",
+                        "right": "name"
                       },
                       {
-                        "name": "@id",
-                        "logical": {
+                        "left": "@id",
+                        "right": {
                           "left": "id",
                           "op": {
                             "text": "||",
                             "or": true
                           },
-                          "right": "0"
+                          "right": 0
                         }
                       }
                     ]
@@ -165,14 +160,16 @@
                     }
                   ],
                   "body": {
-                    "logical": {
+                    "node": {
                       "left": {
                         "access": true,
+                        "receiver": "other",
                         "call": {
-                          "argument": "Base",
-                          "name": "is_a?"
-                        },
-                        "text": "other"
+                          "names": [
+                            "is_a?",
+                            "Base"
+                          ]
+                        }
                       },
                       "op": {
                         "text": "&&",
@@ -181,10 +178,10 @@
                       "right": {
                         "left": {
                           "access": true,
+                          "receiver": "other",
                           "call": {
                             "name": "name"
-                          },
-                          "text": "other"
+                          }
                         },
                         "op": {
                           "text": "==",
@@ -222,81 +219,76 @@
                   "arguments": [
                     {
                       "access": true,
+                      "receiver": "Module",
                       "call": {
                         "name": "new"
-                      },
-                      "text": "Module"
+                      }
                     }
                   ]
                 }
               ],
-              "assigns": [
+              "nodes": [
                 {
-                  "name": "SINGLE",
-                  "string": "'single-quoted \\n'"
+                  "left": "SINGLE",
+                  "right": "'single-quoted \\n'"
                 },
                 {
-                  "name": "DOUBLE",
-                  "string": {
+                  "left": "DOUBLE",
+                  "right": {
                     "interpolation": {
                       "name": "MAX_RETRIES"
                     }
                   }
                 },
                 {
-                  "name": "HEREDOC"
+                  "left": "HEREDOC",
+                  "right": "<<-TEXT"
                 },
                 {
-                  "name": "SQUIGGLY"
+                  "left": "SQUIGGLY",
+                  "right": "<<~TEXT"
                 },
                 {
-                  "name": "PATTERN",
-                  "regex": {}
+                  "left": "PATTERN",
+                  "right": {}
                 },
                 {
-                  "name": "RANGE_INCL",
-                  "range": {
-                    "ints": [
-                      "1",
-                      "10"
-                    ]
+                  "left": "RANGE_INCL",
+                  "right": {
+                    "range": {
+                      "inclusive": true,
+                      "from": {
+                        "node": 1
+                      },
+                      "to": {
+                        "node": 10
+                      }
+                    }
                   }
                 },
                 {
-                  "name": "RANGE_EXCL",
-                  "range": {
-                    "ints": [
-                      "1",
-                      "10"
-                    ]
+                  "left": "RANGE_EXCL",
+                  "right": {
+                    "range": {
+                      "exclusive": true,
+                      "from": {
+                        "node": 1
+                      },
+                      "to": {
+                        "node": 10
+                      }
+                    }
                   }
                 }
               ],
               "interpolation": {
                 "name": "MAX_RETRIES"
               },
-              "class": {
-                "singleton": true,
-                "name": "self",
-                "body": {
-                  "method": {
-                    "name": "registry",
-                    "body": {
-                      "assign": {
-                        "name": "@registry",
-                        "hash": true
-                      }
-                    }
-                  }
-                }
-              },
               "methods": [
                 {
                   "singleton": true,
-                  "names": [
-                    "self",
-                    "build"
-                  ],
+                  "self": "self",
+                  "name": "build",
                   "parameters": [
                     {
                       "name": "name"
@@ -318,14 +310,14 @@
                       "default": true,
                       "name": "formal",
                       "value": {
-                        "false": "false"
+                        "node": false
                       }
                     },
                     {
                       "keyword": true,
                       "name": "greeting",
                       "value": {
-                        "string": "'hi'"
+                        "node": "'hi'"
                       }
                     },
                     {
@@ -338,10 +330,10 @@
                     }
                   ],
                   "body": {
-                    "assigns": [
+                    "nodes": [
                       {
-                        "name": "msg",
-                        "ternary": {
+                        "left": "msg",
+                        "right": {
                           "condition": {
                             "expression": {
                               "name": "formal"
@@ -373,8 +365,8 @@
                         }
                       },
                       {
-                        "name": "msg",
-                        "ternary": {
+                        "left": "msg",
+                        "right": {
                           "condition": {
                             "expression": {
                               "call": {
@@ -402,12 +394,12 @@
                     "ternary": {
                       "condition": {
                         "expression": {
-                          "object": {
+                          "node": {
                             "access": true,
+                            "receiver": "opts",
                             "call": {
                               "name": "empty?"
-                            },
-                            "text": "opts"
+                            }
                           }
                         }
                       },
@@ -424,12 +416,12 @@
                                 "name": "msg"
                               },
                               {
-                                "object": {
+                                "node": {
                                   "access": true,
+                                  "receiver": "opts",
                                   "call": {
                                     "name": "inspect"
-                                  },
-                                  "text": "opts"
+                                  }
                                 }
                               }
                             ]
@@ -442,14 +434,14 @@
                 {
                   "name": "shout!",
                   "body": {
-                    "assign": {
-                      "name": "@name",
-                      "object": {
+                    "node": {
+                      "left": "@name",
+                      "right": {
                         "access": true,
+                        "receiver": "@name",
                         "call": {
                           "name": "upcase"
-                        },
-                        "text": "@name"
+                        }
                       }
                     }
                   }
@@ -467,9 +459,10 @@
                     }
                   ],
                   "body": {
-                    "binary": {
+                    "node": {
                       "left": {
                         "access": true,
+                        "receiver": "items",
                         "calls": [
                           {
                             "name": "each_with_index"
@@ -477,8 +470,7 @@
                           {
                             "name": "map"
                           }
-                        ],
-                        "text": "items"
+                        ]
                       },
                       "op": {
                         "text": "+",
@@ -486,10 +478,10 @@
                       },
                       "right": {
                         "access": true,
+                        "receiver": "meta",
                         "call": {
                           "name": "keys"
-                        },
-                        "text": "meta"
+                        }
                       }
                     }
                   }
@@ -497,7 +489,7 @@
                 {
                   "name": "secret",
                   "body": {
-                    "string": "'shh'"
+                    "node": "'shh'"
                   }
                 },
                 {
@@ -509,10 +501,10 @@
                 {
                   "name": "describe",
                   "body": {
-                    "assigns": [
+                    "nodes": [
                       {
-                        "name": "data",
-                        "hash": {
+                        "left": "data",
+                        "right": {
                           "pairs": [
                             {
                               "symbol": true,
@@ -523,51 +515,53 @@
                               "name": "@name"
                             },
                             {
-                              "string": "'legacy'",
-                              "true": "true"
+                              "nodes": [
+                                "'legacy'",
+                                true
+                              ]
                             }
                           ]
                         }
                       },
                       {
-                        "name": "rocket",
-                        "hash": {
+                        "left": "rocket",
+                        "right": {
                           "pairs": [
                             {
                               "symbol": true,
-                              "int": "1"
+                              "node": 1
                             },
                             {
                               "symbol": {
                                 "delimited": true
                               },
-                              "int": "2"
+                              "node": 2
                             }
                           ]
                         }
                       },
                       {
-                        "name": "list",
-                        "array": {
-                          "ints": [
-                            "1",
-                            "2",
-                            "3"
+                        "left": "list",
+                        "right": {
+                          "nodes": [
+                            1,
+                            2,
+                            3
                           ],
                           "spread": {
                             "list": true,
                             "array": {
-                              "ints": [
-                                "4",
-                                "5"
+                              "nodes": [
+                                4,
+                                5
                               ]
                             }
                           }
                         }
                       },
                       {
-                        "name": "merged",
-                        "hash": {
+                        "left": "merged",
+                        "right": {
                           "spread": {
                             "dict": true,
                             "name": "data"
@@ -590,6 +584,21 @@
                   }
                 }
               ],
+              "class": {
+                "singleton": true,
+                "self": "self",
+                "body": {
+                  "method": {
+                    "name": "registry",
+                    "body": {
+                      "node": {
+                        "left": "@registry",
+                        "right": {}
+                      }
+                    }
+                  }
+                }
+              },
               "names": [
                 "private",
                 "protected",
@@ -629,10 +638,13 @@
             {
               "pattern": {
                 "range": {
-                  "ints": [
-                    "1",
-                    "9"
-                  ]
+                  "inclusive": true,
+                  "from": {
+                    "node": 1
+                  },
+                  "to": {
+                    "node": 9
+                  }
                 }
               },
               "then": {
@@ -650,10 +662,10 @@
             {
               "pattern": {
                 "array": {
-                  "ints": [
-                    "1",
-                    "2",
-                    "3"
+                  "nodes": [
+                    1,
+                    2,
+                    3
                   ]
                 }
               },
@@ -684,25 +696,25 @@
         }
       ],
       "body": {
-        "object": {
-          "access": true,
-          "call": {
-            "name": "each"
-          },
-          "text": "items"
-        },
-        "assigns": [
+        "nodes": [
           {
-            "name": "total",
-            "int": "0"
+            "left": "total",
+            "right": 0
           },
           {
-            "name": "i",
-            "int": "0"
+            "access": true,
+            "receiver": "items",
+            "call": {
+              "name": "each"
+            }
           },
           {
-            "name": "result",
-            "begin": {
+            "left": "i",
+            "right": 0
+          },
+          {
+            "left": "result",
+            "right": {
               "unless": {
                 "call": {
                   "name": "raise",
@@ -710,20 +722,20 @@
                     "'boom'"
                   ]
                 },
-                "object": {
+                "node": {
                   "access": true,
+                  "receiver": "items",
                   "call": {
                     "name": "any?"
-                  },
-                  "text": "items"
+                  }
                 }
               },
-              "object": {
+              "node": {
                 "access": true,
+                "receiver": "items",
                 "call": {
                   "name": "first"
-                },
-                "text": "items"
+                }
               },
               "rescue": {
                 "exceptions": {
@@ -735,50 +747,54 @@
                 "then": {
                   "if": {
                     "retry": true,
-                    "false": "false"
+                    "node": false
                   },
-                  "object": {
+                  "node": {
                     "access": true,
+                    "receiver": "e",
                     "call": {
                       "name": "message"
-                    },
-                    "text": "e"
+                    }
                   }
                 }
               },
               "else": {
-                "string": "'ok'"
+                "node": "'ok'"
               },
               "ensure": {
                 "if": {
-                  "object": {
-                    "access": true,
-                    "call": {
-                      "name": "clear"
+                  "nodes": [
+                    {
+                      "access": true,
+                      "receiver": "items",
+                      "call": {
+                        "name": "clear"
+                      }
                     },
-                    "text": "items"
-                  },
-                  "logical": {
-                    "left": {
-                      "op": {
-                        "text": "defined?",
-                        "defined": true
+                    {
+                      "left": {
+                        "op": {
+                          "text": "defined?",
+                          "defined": true
+                        },
+                        "operand": {
+                          "name": "items"
+                        }
                       },
-                      "name": "items"
-                    },
-                    "op": {
-                      "text": "&&",
-                      "and": true
-                    },
-                    "right": "false"
-                  }
+                      "op": {
+                        "text": "&&",
+                        "and": true
+                      },
+                      "right": false
+                    }
+                  ]
                 }
               }
             }
           },
           {
-            "name": "adder",
-            "lambda": {
+            "left": "adder",
+            "right": {
               "parameters": [
                 {
                   "name": "a"
@@ -788,7 +804,7 @@
                 }
               ],
               "block": {
-                "binary": {
+                "node": {
                   "left": "a",
                   "op": {
                     "text": "+",
@@ -800,8 +816,8 @@
             }
           },
           {
-            "name": "doubler",
-            "call": {
+            "left": "doubler",
+            "right": {
               "name": "proc",
               "block": {
                 "parameters": [
@@ -809,20 +825,20 @@
                     "name": "n"
                   }
                 ],
-                "binary": {
+                "node": {
                   "left": "n",
                   "op": {
                     "text": "*",
                     "multiply": true
                   },
-                  "right": "2"
+                  "right": 2
                 }
               }
             }
           },
           {
-            "name": "multi_stmt",
-            "call": {
+            "left": "multi_stmt",
+            "right": {
               "name": "proc",
               "block": {
                 "parameters": [
@@ -836,20 +852,20 @@
                     "n"
                   ]
                 },
-                "binary": {
+                "node": {
                   "left": "n",
                   "op": {
                     "text": "+",
                     "plus": true
                   },
-                  "right": "1"
+                  "right": 1
                 }
               }
             }
           },
           {
-            "name": "multi_lambda",
-            "lambda": {
+            "left": "multi_lambda",
+            "right": {
               "parameters": [
                 {
                   "name": "n"
@@ -862,28 +878,28 @@
                     "n"
                   ]
                 },
-                "binary": {
+                "node": {
                   "left": "n",
                   "op": {
                     "text": "+",
                     "plus": true
                   },
-                  "right": "1"
+                  "right": 1
                 }
               }
             }
           },
           {
-            "name": "ternary",
-            "ternary": {
+            "left": "ternary",
+            "right": {
               "condition": {
                 "expression": {
-                  "object": {
+                  "node": {
                     "access": true,
+                    "receiver": "total",
                     "call": {
                       "name": "zero?"
-                    },
-                    "text": "total"
+                    }
                   }
                 }
               },
@@ -900,48 +916,72 @@
             }
           },
           {
-            "name": "total",
-            "int": "0"
+            "left": "total",
+            "right": 0
           },
           {
-            "name": "total",
-            "binary": {
+            "left": "total",
+            "right": {
               "left": "total",
               "op": {
                 "text": "+",
                 "plus": true
               },
-              "right": "1"
+              "right": 1
             }
           },
           {
-            "names": [
-              "a",
-              "b"
-            ],
-            "spread": {
-              "name": "rest"
+            "left": {
+              "names": [
+                "a",
+                "b"
+              ],
+              "spread": {
+                "name": "rest"
+              }
             },
-            "array": {
-              "ints": [
-                "1",
-                "2",
-                "3",
-                "4"
+            "right": {
+              "nodes": [
+                1,
+                2,
+                3,
+                4
               ]
             }
           },
           {
-            "name": "flag",
-            "logical": {
+            "left": {
+              "left": "flag",
+              "right": true
+            },
+            "op": {
+              "text": "and",
+              "and": true
+            },
+            "right": false
+          },
+          {
+            "left": {
+              "left": "flag",
+              "right": true
+            },
+            "op": {
+              "text": "or",
+              "or": true
+            },
+            "right": false
+          },
+          {
+            "left": "flag",
+            "right": {
               "left": {
                 "left": {
-                  "unary": {
+                  "node": {
                     "op": {
                       "text": "not",
                       "not": true
                     },
-                    "name": "flag"
+                    "operand": "flag"
                   }
                 },
                 "op": {
@@ -959,7 +999,7 @@
                   "text": "!",
                   "not": true
                 },
-                "name": "flag"
+                "operand": "flag"
               }
             }
           }
@@ -967,40 +1007,40 @@
         "while": {
           "condition": {
             "expression": {
-              "binary": {
+              "node": {
                 "left": "i",
                 "op": {
                   "text": "<",
                   "less": true
                 },
-                "right": "3"
+                "right": 3
               }
             }
           },
           "body": {
-            "assign": {
-              "name": "i",
-              "int": "1"
+            "node": {
+              "left": "i",
+              "right": 1
             }
           }
         },
         "until": {
           "condition": {
             "expression": {
-              "binary": {
+              "node": {
                 "left": "i",
                 "op": {
                   "text": ">=",
                   "greater_or_equal": true
                 },
-                "right": "6"
+                "right": 6
               }
             }
           },
           "body": {
-            "assign": {
-              "name": "i",
-              "int": "1"
+            "node": {
+              "left": "i",
+              "right": 1
             }
           }
         },
@@ -1009,19 +1049,20 @@
           "value": {
             "expression": {
               "range": {
-                "ints": [
-                  "1",
-                  "3"
-                ]
+                "inclusive": true,
+                "from": {
+                  "node": 1
+                },
+                "to": {
+                  "node": 3
+                }
               }
             }
           },
           "body": {
-            "assign": {
-              "names": [
-                "total",
-                "j"
-              ]
+            "node": {
+              "left": "total",
+              "right": "j"
             }
           }
         },
@@ -1031,52 +1072,7 @@
             "break": true
           }
         },
-        "logicals": [
-          {
-            "left": {
-              "name": "flag",
-              "true": "true"
-            },
-            "op": {
-              "text": "and",
-              "and": true
-            },
-            "right": "false"
-          },
-          {
-            "left": {
-              "name": "flag",
-              "true": "true"
-            },
-            "op": {
-              "text": "or",
-              "or": true
-            },
-            "right": "false"
-          }
-        ],
         "array": {
-          "objects": [
-            {
-              "access": true,
-              "call": {
-                "arguments": [
-                  "1",
-                  "2"
-                ],
-                "name": "call"
-              },
-              "text": "adder"
-            },
-            {
-              "access": true,
-              "call": {
-                "argument": "3",
-                "name": "call"
-              },
-              "text": "doubler"
-            }
-          ],
           "names": [
             "result",
             "ternary",
@@ -1084,6 +1080,27 @@
             "b",
             "rest",
             "flag"
+          ],
+          "nodes": [
+            {
+              "access": true,
+              "receiver": "adder",
+              "call": {
+                "name": "call",
+                "nodes": [
+                  1,
+                  2
+                ]
+              }
+            },
+            {
+              "access": true,
+              "receiver": "doubler",
+              "call": {
+                "name": "call",
+                "node": 3
+              }
+            }
           ]
         }
       }
@@ -1099,18 +1116,10 @@
         }
       ],
       "body": {
-        "call": {
-          "name": "forward",
-          "arguments": [
-            {
-              "forward": true
-            }
-          ]
-        },
-        "assigns": [
+        "nodes": [
           {
-            "name": "result",
-            "match": {
+            "left": "result",
+            "right": {
               "name": "values",
               "ins": [
                 {
@@ -1131,17 +1140,19 @@
                     }
                   },
                   "if": {
-                    "object": {
+                    "node": {
                       "access": true,
+                      "receiver": "head",
                       "call": {
-                        "argument": "Integer",
-                        "name": "is_a?"
-                      },
-                      "text": "head"
+                        "names": [
+                          "is_a?",
+                          "Integer"
+                        ]
+                      }
                     }
                   },
                   "then": {
-                    "binary": {
+                    "node": {
                       "left": "head",
                       "op": {
                         "text": "+",
@@ -1149,10 +1160,10 @@
                       },
                       "right": {
                         "access": true,
+                        "receiver": "tail",
                         "call": {
                           "name": "size"
-                        },
-                        "text": "tail"
+                        }
                       }
                     }
                   }
@@ -1160,16 +1171,16 @@
                 {
                   "pattern": {
                     "array": true,
-                    "parameter": {
-                      "splat": true
-                    },
                     "names": [
                       "first",
                       "last"
-                    ]
+                    ],
+                    "parameter": {
+                      "splat": true
+                    }
                   },
                   "unless": {
-                    "binary": {
+                    "node": {
                       "left": "first",
                       "op": {
                         "text": "==",
@@ -1204,10 +1215,10 @@
                 {
                   "pattern": {
                     "alternative": true,
-                    "ints": [
-                      "1",
-                      "2",
-                      "3"
+                    "nodes": [
+                      1,
+                      2,
+                      3
                     ]
                   },
                   "then": {
@@ -1230,10 +1241,10 @@
             }
           },
           {
-            "name": "joined",
-            "string": {
+            "left": "joined",
+            "right": {
               "concatenated": true,
-              "strings": [
+              "nodes": [
                 "\"first \"",
                 "\"second \"",
                 "\"third\""
@@ -1241,16 +1252,24 @@
             }
           },
           {
-            "name": "arr",
-            "array": {
-              "ints": [
-                "10",
-                "20",
-                "30"
+            "left": "arr",
+            "right": {
+              "nodes": [
+                10,
+                20,
+                30
               ]
             }
           }
         ],
+        "call": {
+          "name": "forward",
+          "arguments": [
+            {
+              "forward": true
+            }
+          ]
+        },
         "member": {
           "static": true,
           "member": {
@@ -1261,7 +1280,7 @@
         },
         "index": {
           "name": "arr",
-          "int": "0"
+          "node": 0
         },
         "rescue": {
           "name": "result",
@@ -1285,27 +1304,27 @@
         }
       ],
       "body": {
-        "object": {
+        "node": {
           "access": true,
+          "receiver": "block",
           "call": {
-            "arguments": [
+            "names": [
+              "call",
               "x",
               "y"
-            ],
-            "name": "call"
-          },
-          "text": "block"
+            ]
+          }
         }
       }
     }
   ],
   "unless": {
-    "object": {
+    "node": {
       "access": true,
+      "receiver": "MAX_RETRIES",
       "call": {
         "name": "zero?"
-      },
-      "text": "MAX_RETRIES"
+      }
     },
     "then": {
       "call": {
