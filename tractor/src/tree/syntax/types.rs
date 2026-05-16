@@ -458,6 +458,27 @@ pub enum SyntaxTree {
         span: Span,
     },
 
+    /// Typed slot wrapper — value-position role-named container.
+    /// `<left>` / `<right>` / `<condition>` / `<then>` / `<else>` /
+    /// `<as>` / `<filter>` host elements produced by lowering's
+    /// `wrap_slot` family. Each carries an `<expression>`-wrapped
+    /// child (or an `Inline` group when the slot fans out across
+    /// multiple values).
+    ///
+    /// Replaces the parity-track `SimpleStatement { element_name:
+    /// "left" | "right" | ... }` form with a typed closed enum (no
+    /// runtime string discriminator). Adding a new slot name is a
+    /// `SlotKind` enum extension + a `wrap_slot` rename — no opt-in
+    /// per language.
+    ///
+    /// @element_name = element_name_for_slot
+    Slot {
+        kind: SlotKind,
+        children: Vec<SyntaxTree>,
+        range: ByteRange,
+        span: Span,
+    },
+
     // ----- Access chains -------------------------------------------------
 
     /// `<object>` host for receiver-bearing access chains
@@ -1747,6 +1768,70 @@ pub enum AccessorKind {
     Init,
 }
 
+/// `SyntaxTree::Slot` kind discriminator — typed closed enum naming
+/// the value-position role wrapped by `wrap_slot` / `wrap_typed_slot`.
+/// Replaces the parity-track `SimpleStatement { element_name: "left"
+/// | "right" | "condition" | ... }` form. Adding a new slot kind is
+/// a deliberate enum extension; no runtime string discrimination.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SlotKind {
+    /// `<left>` — left operand of a binary / assign / compare /
+    /// for-target / for-target-list shape.
+    Left,
+    /// `<right>` — right operand of binary / assign / compare /
+    /// for-iterable / for-iterable-list shape.
+    Right,
+    /// `<condition>` — `if` / `while` / `for-when` / `assert`
+    /// / `ternary` condition slot.
+    Condition,
+    /// `<then>` — `ternary` true-branch / TS conditional-type
+    /// true-branch.
+    Then,
+    /// `<else>` — `ternary` false-branch / TS conditional-type
+    /// false-branch. The else-clause of `if`/`for-else`/`while-else`
+    /// uses the separate `wrap_clause("else")` shape — those go
+    /// through Pass 4's clause container variants.
+    Else,
+    /// `<as>` — `with item as x` / `case ... as x` rename slot.
+    As,
+    /// `<filter>` — list-comprehension / generator-expression
+    /// `if cond` filter clause.
+    Filter,
+}
+
+impl SlotKind {
+    /// Element name for this slot. Called from the generated
+    /// metadata via the `@element_name = element_name_for_slot`
+    /// annotation on `SyntaxTree::Slot`.
+    pub const fn as_element_name(self) -> &'static str {
+        match self {
+            SlotKind::Left => "left",
+            SlotKind::Right => "right",
+            SlotKind::Condition => "condition",
+            SlotKind::Then => "then",
+            SlotKind::Else => "else",
+            SlotKind::As => "as",
+            SlotKind::Filter => "filter",
+        }
+    }
+
+    /// Parse a slot name from a string. Returns `None` for unknown
+    /// names; used by `wrap_slot` to validate its argument at the
+    /// transition boundary.
+    pub fn from_name(name: &str) -> Option<Self> {
+        Some(match name {
+            "left" => SlotKind::Left,
+            "right" => SlotKind::Right,
+            "condition" => SlotKind::Condition,
+            "then" => SlotKind::Then,
+            "else" => SlotKind::Else,
+            "as" => SlotKind::As,
+            "filter" => SlotKind::Filter,
+            _ => return None,
+        })
+    }
+}
+
 impl AccessorKind {
     /// Snake_case element name for this accessor kind. Called from
     /// the generated metadata via the per-variant
@@ -1767,6 +1852,17 @@ impl AccessorKind {
 // named function instead of falling back to snake_case(variant). All
 // override functions live here so the knowledge stays local —
 // no convention-based detection in the codegen.
+
+/// Override for [`SyntaxTree::Slot`]: routes through the typed
+/// [`SlotKind`] discriminator. The variant carries the kind so this
+/// is a one-line const lookup — no leak, no map.
+pub fn element_name_for_slot(t: &SyntaxTree) -> &'static str {
+    if let SyntaxTree::Slot { kind, .. } = t {
+        kind.as_element_name()
+    } else {
+        "slot"
+    }
+}
 
 /// Override for [`SyntaxTree::Accessor`]: routes through the typed
 /// [`AccessorKind`] discriminator.
@@ -2135,6 +2231,20 @@ impl SyntaxTree {
     /// in `<expression>` first, then the whole `Inline` becomes the
     /// slot's children (one slot wrapping a flat list).
     pub fn wrap_slot(self, slot_name: &'static str) -> SyntaxTree {
+        let kind = SlotKind::from_name(slot_name).unwrap_or_else(|| {
+            panic!(
+                "wrap_slot called with unknown slot name {:?}; expected one of \
+                 left/right/condition/then/else/as/filter",
+                slot_name,
+            )
+        });
+        self.wrap_typed_slot(kind)
+    }
+
+    /// Typed equivalent of [`Self::wrap_slot`]: takes a [`SlotKind`]
+    /// directly so call sites can opt out of the string-name → enum
+    /// validation roundtrip. Preferred for new code.
+    pub fn wrap_typed_slot(self, kind: SlotKind) -> SyntaxTree {
         let wrapped = self.wrap_expression_inline_aware();
         let range = wrapped.range();
         let span = wrapped.span();
@@ -2146,14 +2256,7 @@ impl SyntaxTree {
         } else {
             vec![wrapped]
         };
-        SyntaxTree::SimpleStatement {
-            element_name: slot_name,
-            modifiers: Modifiers::default(),
-            extra_markers: Vec::new(),
-            children,
-            range,
-            span,
-        }
+        SyntaxTree::Slot { kind, children, range, span }
     }
 
     /// Inverse of [`wrap_slot`]: if `self` is a slot wrapper
@@ -2164,13 +2267,21 @@ impl SyntaxTree {
     /// on the bare operand (ergonomic flat shape) — they call this
     /// to skip past the structural slot wrapper added by lowering.
     pub fn unwrap_slot(&self) -> &SyntaxTree {
-        if let SyntaxTree::SimpleStatement { children, .. } = self {
-            if children.len() == 1 {
-                if let SyntaxTree::Expression { inner, marker: None, .. } = &children[0] {
-                    return inner.as_ref();
-                }
-                return &children[0];
+        let children = match self {
+            // Pass 1: typed slot wrapper.
+            SyntaxTree::Slot { children, .. } => children,
+            // Pre-Pass-1: raw construction sites still emit
+            // `SimpleStatement { element_name: "left" | ... }`. Recognise
+            // them for back-compat so the unwrap helper covers both
+            // forms during the migration window.
+            SyntaxTree::SimpleStatement { children, .. } => children,
+            _ => return self,
+        };
+        if children.len() == 1 {
+            if let SyntaxTree::Expression { inner, marker: None, .. } = &children[0] {
+                return inner.as_ref();
             }
+            return &children[0];
         }
         self
     }

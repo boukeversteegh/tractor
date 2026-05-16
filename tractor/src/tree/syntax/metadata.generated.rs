@@ -13,7 +13,7 @@
 use super::types::{
     Access, AccessReceiver, AccessorKind, AccessSegment, ByteRange,
     Expression, Flag, LambdaBody, Marker, Modifiers, ParamKind, QuoteStyle,
-    Span, SyntaxTree,
+    SlotKind, Span, SyntaxTree,
 };
 
 #[allow(unused_imports)]
@@ -26,7 +26,8 @@ use super::types::{
     element_name_for_accessor, element_name_for_atom,
     element_name_for_field_wrap, element_name_for_generic_type,
     element_name_for_object_access, element_name_for_raw,
-    element_name_for_simple_statement, element_name_for_type_parameter,
+    element_name_for_simple_statement, element_name_for_slot,
+    element_name_for_type_parameter,
 };
 
 /// The XML element name for this tree node, or `None` if the
@@ -39,6 +40,7 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
     match tree {
         SyntaxTree::Module { .. } => Some("module"),
         SyntaxTree::Expression { .. } => Some("expression"),
+        SyntaxTree::Slot { .. } => Some(element_name_for_slot(tree)),
         SyntaxTree::ObjectAccess { .. } => Some(element_name_for_object_access(tree)),
         SyntaxTree::Binary { .. } => Some("binary"),
         SyntaxTree::Logical { .. } => Some("logical"),
@@ -145,6 +147,7 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
             }
 
         }
+        SyntaxTree::Slot { .. } => {}
         SyntaxTree::ObjectAccess { .. } => {}
         SyntaxTree::Binary { .. } => {}
         SyntaxTree::Logical { .. } => {}
@@ -394,6 +397,7 @@ pub fn range_of(tree: &SyntaxTree) -> ByteRange {
     match tree {
         SyntaxTree::Module { range, .. } => *range,
         SyntaxTree::Expression { range, .. } => *range,
+        SyntaxTree::Slot { range, .. } => *range,
         SyntaxTree::ObjectAccess { range, .. } => *range,
         SyntaxTree::Binary { range, .. } => *range,
         SyntaxTree::Logical { range, .. } => *range,
@@ -485,6 +489,7 @@ pub fn span_of(tree: &SyntaxTree) -> Span {
     match tree {
         SyntaxTree::Module { span, .. } => *span,
         SyntaxTree::Expression { span, .. } => *span,
+        SyntaxTree::Slot { span, .. } => *span,
         SyntaxTree::ObjectAccess { span, .. } => *span,
         SyntaxTree::Binary { span, .. } => *span,
         SyntaxTree::Logical { span, .. } => *span,
@@ -600,6 +605,9 @@ pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
         }
         SyntaxTree::Expression { inner, .. } => {
             v.push(inner);
+        }
+        SyntaxTree::Slot { children, .. } => {
+            v.extend(children.iter());
         }
         SyntaxTree::ObjectAccess { receiver, segments, .. } => {
             if let AccessReceiver::Instance(__t) = receiver { v.push(__t); }
@@ -934,6 +942,7 @@ pub fn span_mut_of(tree: &mut SyntaxTree) -> &mut Span {
     match tree {
         SyntaxTree::Module { span, .. } => span,
         SyntaxTree::Expression { span, .. } => span,
+        SyntaxTree::Slot { span, .. } => span,
         SyntaxTree::ObjectAccess { span, .. } => span,
         SyntaxTree::Binary { span, .. } => span,
         SyntaxTree::Logical { span, .. } => span,
@@ -1028,6 +1037,9 @@ pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
         }
         SyntaxTree::Expression { inner, .. } => {
             v.push(inner.as_mut());
+        }
+        SyntaxTree::Slot { children, .. } => {
+            v.extend(children.iter_mut());
         }
         SyntaxTree::ObjectAccess { receiver, segments, .. } => {
             if let AccessReceiver::Instance(__t) = receiver { v.push(__t.as_mut()); }
@@ -1579,6 +1591,44 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             SyntaxTree::Expression {
                 inner,
                 marker,
+                range,
+                span,
+            }
+        }
+        "slot" => {
+            let mut __kids = children;
+            let kind = {
+                // The slot's kind is conveyed by the parent's JSON
+                // key ($type after strip), passed in via `tag`.
+                match tag {
+                    "left" => crate::tree::syntax::types::SlotKind::Left,
+                    "right" => crate::tree::syntax::types::SlotKind::Right,
+                    "condition" => crate::tree::syntax::types::SlotKind::Condition,
+                    "then" => crate::tree::syntax::types::SlotKind::Then,
+                    "else" => crate::tree::syntax::types::SlotKind::Else,
+                    "as" => crate::tree::syntax::types::SlotKind::As,
+                    "filter" => crate::tree::syntax::types::SlotKind::Filter,
+                    _ => crate::tree::syntax::types::SlotKind::Left,
+                }
+            };
+            let children = {
+                let singular = strip_plural("children");
+                if let Some(v) = map.get("children").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Slot {
+                kind,
+                children,
                 range,
                 span,
             }

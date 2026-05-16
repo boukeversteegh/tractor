@@ -149,7 +149,7 @@ const SYNTAX_HEADER: &str = "\
 use super::types::{
     Access, AccessReceiver, AccessorKind, AccessSegment, ByteRange,
     Expression, Flag, LambdaBody, Marker, Modifiers, ParamKind, QuoteStyle,
-    Span, SyntaxTree,
+    SlotKind, Span, SyntaxTree,
 };
 
 #[allow(unused_imports)]
@@ -162,7 +162,8 @@ use super::types::{
     element_name_for_accessor, element_name_for_atom,
     element_name_for_field_wrap, element_name_for_generic_type,
     element_name_for_object_access, element_name_for_raw,
-    element_name_for_simple_statement, element_name_for_type_parameter,
+    element_name_for_simple_statement, element_name_for_slot,
+    element_name_for_type_parameter,
 };
 
 ";
@@ -1352,6 +1353,23 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
                     \"init\" => AccessorKind::Init,
                     _ => AccessorKind::Get,
                 }).unwrap_or(AccessorKind::Get)
+            }".into(),
+            false,
+        ),
+        "SlotKind" => (
+            "{
+                // The slot's kind is conveyed by the parent's JSON
+                // key ($type after strip), passed in via `tag`.
+                match tag {
+                    \"left\" => crate::tree::syntax::types::SlotKind::Left,
+                    \"right\" => crate::tree::syntax::types::SlotKind::Right,
+                    \"condition\" => crate::tree::syntax::types::SlotKind::Condition,
+                    \"then\" => crate::tree::syntax::types::SlotKind::Then,
+                    \"else\" => crate::tree::syntax::types::SlotKind::Else,
+                    \"as\" => crate::tree::syntax::types::SlotKind::As,
+                    \"filter\" => crate::tree::syntax::types::SlotKind::Filter,
+                    _ => crate::tree::syntax::types::SlotKind::Left,
+                }
             }".into(),
             false,
         ),
