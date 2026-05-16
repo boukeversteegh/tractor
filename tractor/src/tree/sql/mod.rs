@@ -17,6 +17,12 @@ pub mod to_json;
 #[cfg(feature = "native")]
 pub mod render_source;
 
+// Auto-generated reflection metadata, parallel to
+// `tree/syntax/metadata.generated.rs` and `tree/data/metadata.generated.rs`.
+#[cfg(feature = "native")]
+#[path = "metadata.generated.rs"]
+pub mod metadata_generated;
+
 pub use types::{ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlTree};
 // QuoteStyle is the shared cross-tree enum (since the Tier 1 SqlTree
 // unification). Re-exported here so `tree::sql::QuoteStyle` keeps

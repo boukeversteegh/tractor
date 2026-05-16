@@ -77,11 +77,21 @@ const DATA_TREE_SPEC: TreeSpec = TreeSpec {
     generate_mut: true,
 };
 
+const SQL_TREE_SPEC: TreeSpec = TreeSpec {
+    tree_name: "SqlTree",
+    input_path: "src/tree/sql/types.rs",
+    output_path: "src/tree/sql/metadata.generated.rs",
+    header: SQL_HEADER,
+    generate_from_json: false,
+    generate_mut: true,
+};
+
 /// Run the codegen. Called from `build.rs::main`.
 pub fn generate() {
     println!("cargo:rerun-if-changed=build_codegen.rs");
     generate_for_tree(&SYNTAX_TREE_SPEC);
     generate_for_tree(&DATA_TREE_SPEC);
+    generate_for_tree(&SQL_TREE_SPEC);
 }
 
 fn generate_for_tree(spec: &TreeSpec) {
@@ -172,6 +182,25 @@ const DATA_HEADER: &str = "\
 
 #[allow(unused_imports)]
 use super::types::DataTree;
+#[allow(unused_imports)]
+use crate::tree::types::{ByteRange, Marker, Span};
+
+";
+
+const SQL_HEADER: &str = "\
+// DO NOT EDIT — emitted by `tractor/build.rs` on every build.
+// Source: SqlTree enum in tractor/src/tree/sql/types.rs.
+//
+// Variant-blind reflection metadata for the T-SQL tree. Mirrors the
+// `tree/syntax/metadata.generated.rs` shape — same codegen functions
+// in `tractor/build_codegen.rs`, same accessor signatures (modulo
+// `from_json` which is `SyntaxTree`-only).
+
+#![cfg(feature = \"native\")]
+#![allow(clippy::too_many_lines)]
+
+#[allow(unused_imports)]
+use super::types::SqlTree;
 #[allow(unused_imports)]
 use crate::tree::types::{ByteRange, Marker, Span};
 
