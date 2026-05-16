@@ -41,6 +41,191 @@ pub fn render_json(tree: &DataTree, opts: &JsonRenderOptions) -> String {
     render_json_with_spans(tree, opts).0
 }
 
+// =============================================================================
+// JSON-value source emitter.
+// =============================================================================
+//
+// Same conceptual job as `render_json` (DataTree → JSON), but returns a
+// `serde_json::Value` instead of source text. Useful for in-memory
+// consumers (XPath result projection, mutation paths) that don't want
+// to re-parse the rendered text. Format-agnostic at input: a DataTree
+// lowered from any format (YAML / TOML / INI / Markdown / JSON itself)
+// passes through this renderer unchanged, producing the same clean
+// JSON Value shape — which is the whole point of having `DataTree` as
+// the format-agnostic intermediate.
+
+use serde_json::{Map, Value};
+
+/// Render a [`DataTree`] tree to a `serde_json::Value` — the
+/// content-shape JSON representation. The structural tree variants
+/// map onto JSON's universe:
+///
+///   | DataTree           | JSON                                    |
+///   |--------------------|-----------------------------------------|
+///   | Document           | the single payload child (1-doc YAML)   |
+///   |                    | or an array of payloads (multi-doc)     |
+///   | Mapping            | object                                  |
+///   | Sequence           | array                                   |
+///   | Pair               | (key, value) entry of enclosing object  |
+///   | Section (TOML/INI) | nested object keyed by section name     |
+///   | String             | string                                  |
+///   | Number             | number (parsed from `text`)             |
+///   | Bool               | boolean                                 |
+///   | Null               | null                                    |
+///   | Comment            | (skipped — not part of the data shape)  |
+///   | Unknown            | object `{ "$unknown": <kind> }`         |
+///
+/// Counterpart to the variant-blind
+/// [`crate::tree::data::to_json::data_to_json`] tree view (`$type`-
+/// discriminated). This is the "treat the tree as JSON content"
+/// projection; that one is the "show me the tree structure" view.
+pub fn render_json_value(tree: &DataTree) -> Value {
+    match tree {
+        DataTree::Document { children, .. } => {
+            let docs: Vec<&DataTree> = children
+                .iter()
+                .filter(|c| !matches!(c, DataTree::Comment { .. }))
+                .collect();
+            if docs.len() == 1 {
+                render_json_value(docs[0])
+            } else if docs.is_empty() {
+                Value::Null
+            } else {
+                Value::Array(docs.iter().map(|c| render_json_value(c)).collect())
+            }
+        }
+        DataTree::Mapping { pairs, .. } => {
+            let mut obj = Map::new();
+            collect_pairs(&mut obj, pairs);
+            Value::Object(obj)
+        }
+        DataTree::Sequence { items, .. } => {
+            let arr: Vec<Value> = items
+                .iter()
+                .filter(|c| !matches!(c, DataTree::Comment { .. }))
+                .map(render_json_value)
+                .collect();
+            Value::Array(arr)
+        }
+        DataTree::Pair { .. } => {
+            let mut obj = Map::new();
+            collect_pairs(&mut obj, std::slice::from_ref(tree));
+            Value::Object(obj)
+        }
+        DataTree::Section { name, children, .. } => {
+            let key = scalar_str(name).unwrap_or_else(|| "section".to_string());
+            let mut inner = Map::new();
+            collect_pairs(&mut inner, children);
+            let mut outer = Map::new();
+            outer.insert(key, Value::Object(inner));
+            Value::Object(outer)
+        }
+        DataTree::String { value, .. } => Value::String(value.clone()),
+        DataTree::Number { text, .. } => parse_number_value(text),
+        DataTree::Bool { value, .. } => Value::Bool(*value),
+        DataTree::Null { .. } => Value::Null,
+        DataTree::Comment { .. } => Value::Null,
+        DataTree::Directive { .. } => Value::Null,
+        DataTree::Element { name, children, .. } => {
+            let mut inner = Map::new();
+            collect_pairs(&mut inner, children);
+            if inner.is_empty() {
+                let text: String = children
+                    .iter()
+                    .filter_map(|c| match c {
+                        DataTree::String { value, .. } => Some(value.clone()),
+                        DataTree::Number { text, .. } => Some(text.clone()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join("");
+                let mut o = Map::new();
+                if text.is_empty() {
+                    o.insert((*name).to_string(), Value::Null);
+                } else {
+                    o.insert((*name).to_string(), Value::String(text));
+                }
+                Value::Object(o)
+            } else {
+                let mut outer = Map::new();
+                outer.insert((*name).to_string(), Value::Object(inner));
+                Value::Object(outer)
+            }
+        }
+        DataTree::Unknown { kind, .. } => {
+            let mut o = Map::new();
+            o.insert("$unknown".to_string(), Value::String(kind.clone()));
+            Value::Object(o)
+        }
+    }
+}
+
+fn collect_pairs(obj: &mut Map<String, Value>, children: &[DataTree]) {
+    for c in children {
+        match c {
+            DataTree::Pair { key, value, .. } => {
+                let k = match scalar_str(key) {
+                    Some(s) => s,
+                    None => continue,
+                };
+                insert_or_append(obj, k, render_json_value(value));
+            }
+            DataTree::Section { name, children: sec_children, .. } => {
+                let k = match scalar_str(name) {
+                    Some(s) => s,
+                    None => continue,
+                };
+                let mut inner = Map::new();
+                collect_pairs(&mut inner, sec_children);
+                insert_or_append(obj, k, Value::Object(inner));
+            }
+            DataTree::Comment { .. } => {}
+            other => {
+                let idx = obj.len();
+                obj.insert(format!("_{idx}"), render_json_value(other));
+            }
+        }
+    }
+}
+
+fn insert_or_append(obj: &mut Map<String, Value>, key: String, value: Value) {
+    match obj.remove(&key) {
+        None => {
+            obj.insert(key, value);
+        }
+        Some(Value::Array(mut arr)) => {
+            arr.push(value);
+            obj.insert(key, Value::Array(arr));
+        }
+        Some(existing) => {
+            obj.insert(key, Value::Array(vec![existing, value]));
+        }
+    }
+}
+
+fn scalar_str(tree: &DataTree) -> Option<String> {
+    match tree {
+        DataTree::String { value, .. } => Some(value.clone()),
+        DataTree::Number { text, .. } => Some(text.clone()),
+        DataTree::Bool { value, .. } => Some(value.to_string()),
+        DataTree::Null { .. } => Some("null".to_string()),
+        _ => None,
+    }
+}
+
+fn parse_number_value(text: &str) -> Value {
+    let trimmed = text.trim();
+    if let Ok(i) = trimmed.parse::<i64>() {
+        return Value::Number(i.into());
+    }
+    if let Ok(f) = trimmed.parse::<f64>() {
+        if let Some(n) = serde_json::Number::from_f64(f) {
+            return Value::Number(n);
+        }
+    }
+    Value::String(text.to_string())
+}
+
 fn render_value(
     tree: &DataTree,
     opts: &JsonRenderOptions,

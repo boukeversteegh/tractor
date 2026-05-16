@@ -1,17 +1,23 @@
 //! `DataTree → serde_json::Value` direct-path tests.
 //!
-//! These tests confirm the format-agnostic tree can be converted
-//! to JSON without going through Xot. The same `DataTree` tree
-//! also goes through `data_to_xot` for queries, so the two paths
-//! must agree on the *data* (xot adds source-attribute noise
-//! `<x line="..."/>` that JSON projection drops anyway).
+//! Targets [`crate::languages::json::render_source::render_json_value`]
+//! — the content-shape JSON renderer for `DataTree` (used to be the
+//! body of `tree::data_to_json`, renamed to clarify roles). The
+//! tree-shape `data_to_json` now produces a variant-blind
+//! `$type`-discriminated projection via the generic walker — see
+//! `tests/from_json_roundtrip.rs` for that.
+//!
+//! These tests confirm a `DataTree` lowered from any data format
+//! round-trips to a clean JSON Value matching the source's data
+//! shape (Mapping → object, Sequence → array, scalars → leaves).
 
 #![cfg(feature = "native")]
 
 use serde_json::json;
 use tree_sitter::Parser;
 
-use tractor::tree::{data_to_json, lower_json_data_root};
+use tractor::languages::json::render_source::render_json_value as data_to_json;
+use tractor::tree::lower_json_data_root;
 
 fn parse_json(src: &str) -> tractor::tree::DataTree {
     let mut p = Parser::new();
