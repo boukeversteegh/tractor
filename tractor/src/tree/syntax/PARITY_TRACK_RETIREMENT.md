@@ -38,12 +38,17 @@ is multi-pass.
 
 ## Retirement plan (future work)
 
-**Pass 1: dedicated slot variants.**
-Introduce a closed enum `SlotName` and a typed `Slot` variant
-(or one variant per slot name) so `wrap_slot("left", …)` produces
-`SyntaxTree::Slot { name: SlotName::Left, … }` rather than
-`SimpleStatement { element_name: "left", … }`. ~6 SlotName values
-covers the bulk of slot usage.
+**Pass 1: dedicated slot variants.** ✅ **Landed 2026-05-16** (commit
+`e8d52779`). `SlotKind` closed enum (`Left`/`Right`/`Condition`/
+`Then`/`Else`/`As`/`Filter`) plus typed `SyntaxTree::Slot` variant.
+`wrap_slot(&str)` validates the name and routes to the typed
+`wrap_typed_slot(SlotKind)`. All 49 existing `wrap_slot` call sites
+transitioned automatically; `unwrap_slot` recognises both the typed
+and legacy forms during the migration window. 26 raw
+`SimpleStatement { element_name: "left" | ... }` construction sites
+in lowering still emit the legacy form — they render identically
+to the typed shape so the snapshots are unaffected, but they're
+the remaining sweep for Pass 1B.
 
 **Pass 2: typed keyword statements.**
 Introduce `Assert`, `Raise`, `Delete`, `Global`, `Nonlocal`,
