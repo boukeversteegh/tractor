@@ -113,8 +113,12 @@ pub mod locator;
 pub mod render;
 #[cfg(feature = "native")]
 pub mod coverage;
+#[cfg(feature = "native")]
+pub mod walker;
 
 pub use types::{Access, AccessSegment, ByteRange, Expression, NodeId, SyntaxTree, Modifiers, ParamKind, Span, TreeNode, to_source};
+#[cfg(feature = "native")]
+pub use walker::WalkerTree;
 pub use assign_ids::{assign_ids_data, assign_ids_sql, assign_ids_syntax};
 #[cfg(feature = "native")]
 pub use locator::{find_by_id, parse_id_attr};
