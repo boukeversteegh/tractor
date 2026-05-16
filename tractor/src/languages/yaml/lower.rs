@@ -152,7 +152,13 @@ fn lower_node(node: &RawNode, source: &str) -> DataTree {
         "comment" => {
             let raw = text_of(node, source);
             let text = strip_comment_prefix(&raw);
-            DataTree::Comment { text, leading: true, trailing: false, range, span }
+            DataTree::Comment {
+                text,
+                leading: crate::tree::types::Flag::implicit_at(span.line, span.column),
+                trailing: crate::tree::types::Flag::Off,
+                range,
+                span,
+            }
         }
 
         // YAML directives. `%YAML 1.2`, `%TAG !! …` —
@@ -181,7 +187,12 @@ fn lower_node(node: &RawNode, source: &str) -> DataTree {
                     });
                 }
             }
-            DataTree::Directive { flavor: "yaml", children, range, span }
+            DataTree::Directive {
+                extra_markers: vec![crate::tree::types::Marker::anchored("yaml", range, span)],
+                children,
+                range,
+                span,
+            }
         }
         "tag_directive" => {
             // Children: `tag_handle` + `tag_prefix`. Wrap each in
@@ -211,11 +222,16 @@ fn lower_node(node: &RawNode, source: &str) -> DataTree {
                     span: span_of(c),
                 });
             }
-            DataTree::Directive { flavor: "tag", children, range, span }
+            DataTree::Directive {
+                extra_markers: vec![crate::tree::types::Marker::anchored("tag", range, span)],
+                children,
+                range,
+                span,
+            }
         }
         "reserved_directive" => {
             DataTree::Directive {
-                flavor: "reserved",
+                extra_markers: vec![crate::tree::types::Marker::anchored("reserved", range, span)],
                 children: lower_named_children(node, source),
                 range,
                 span,

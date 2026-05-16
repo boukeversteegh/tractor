@@ -14,8 +14,9 @@
 
 use crate::raw::RawNode;
 
+use crate::tree::types::{ByteRange, Marker};
 use crate::tree::lower_helpers::{range_of, span_of};
-use crate::tree::sql::{ComparisonOp, CreateKind, DropKind, JoinKind, QuoteStyle, SortDirection, SqlTree};
+use crate::tree::sql::{CreateKind, DropKind, QuoteStyle, SqlTree};
 
 /// Detect `QuoteStyle` from raw source text and return the parsed
 /// (unquoted) identifier value alongside it. Bracket / double-quote /
@@ -82,7 +83,7 @@ fn lower_node(node: &RawNode, source: &str) -> SqlTree {
     match kind {
         // ----- Top-level wrapping ------------------------------------
         "statement" => lower_statement(node, source),
-        "go_statement" => SqlTree::Go { range, span },
+        "go_statement" => SqlTree::Go { text: range.slice(source).to_string(), range, span },
         "execute_statement" => lower_exec(node, source),
         "set_statement" => lower_set(node, source),
         "transaction" => lower_transaction(node, source),
@@ -95,14 +96,14 @@ fn lower_node(node: &RawNode, source: &str) -> SqlTree {
         "identifier" => {
             let text = range.slice(source);
             if text.starts_with('@') {
-                SqlTree::Variable { range, span }
+                SqlTree::Variable { text: text.to_string(), range, span }
             } else {
                 ident_at(node, source)
             }
         }
-        "literal" => SqlTree::Literal { range, span },
-        "string" | "national_string" => SqlTree::Literal { range, span },
-        "comment" | "line_comment" | "block_comment" => SqlTree::Comment { range, span },
+        "literal" => SqlTree::Literal { text: range.slice(source).to_string(), range, span },
+        "string" | "national_string" => SqlTree::Literal { text: range.slice(source).to_string(), range, span },
+        "comment" | "line_comment" | "block_comment" => SqlTree::Comment { text: range.slice(source).to_string(), range, span },
 
         // ----- DML statements ----------------------------------------
         "select" => lower_select(node, source),
@@ -698,7 +699,7 @@ fn lower_column_reference(node: &RawNode, source: &str) -> SqlTree {
     let span = span_of(node);
     let text = range.slice(source);
     if text.starts_with('@') {
-        return SqlTree::Variable { range, span };
+        return SqlTree::Variable { text: text.to_string(), range, span };
     }
     let named: Vec<&RawNode> = node.named_children().collect();
     if named.len() == 1 && named[0].kind() == "identifier" {
@@ -810,46 +811,26 @@ fn lower_binary_or_compare(node: &RawNode, source: &str) -> SqlTree {
     let span = span_of(node);
     let named: Vec<&RawNode> = node.named_children().collect();
 
-    // Find the operator child by scanning all (named + unnamed)
-    // children for the first non-keyword anonymous token.
-    let op_text = {
-        let mut found: Option<&str> = None;
-        for c in node.children() {
-            let kind = c.kind();
-            if !c.is_named() {
-                let t = range_of(c).slice(source).trim();
-                if !t.is_empty() {
-                    found = Some(match t {
-                        "=" => "=",
-                        "<" => "<",
-                        ">" => ">",
-                        "<=" => "<=",
-                        ">=" => ">=",
-                        "<>" => "<>",
-                        "!=" => "!=",
-                        "+" => "+",
-                        "-" => "-",
-                        "*" => "*",
-                        "/" => "/",
-                        _ => "?",
-                    });
-                    break;
-                }
-            } else if kind.starts_with("keyword_") {
-                let t = range_of(c).slice(source).to_uppercase();
-                let mapped = match t.as_str() {
-                    "AND" => Some("AND"),
-                    "OR" => Some("OR"),
-                    "LIKE" => Some("LIKE"),
-                    "IN" => Some("IN"),
-                    "IS" => Some("IS"),
-                    _ => None,
-                };
-                if let Some(m) = mapped { found = Some(m); break; }
+    // Find the operator child; capture both the text and its source
+    // range so the typed Op slot carries position info (mirrors the
+    // SyntaxTree::Binary `op_range` field).
+    let mut op_text = String::new();
+    let mut op_range = ByteRange::synthetic_empty();
+    for c in node.children() {
+        let kind = c.kind();
+        if !c.is_named() {
+            let t = range_of(c).slice(source).trim();
+            if !t.is_empty() {
+                op_text = t.to_string();
+                op_range = range_of(c);
+                break;
             }
+        } else if kind.starts_with("keyword_") {
+            op_text = range_of(c).slice(source).to_string();
+            op_range = range_of(c);
+            break;
         }
-        found.unwrap_or("?")
-    };
+    }
 
     let operands: Vec<&&RawNode> = named.iter().filter(|c| {
         !c.kind().starts_with("keyword_") && !c.kind().starts_with("op_")
@@ -871,22 +852,30 @@ fn lower_binary_or_compare(node: &RawNode, source: &str) -> SqlTree {
             span,
         });
 
-    if let Some(cmp_op) = comparison_op_from_text(op_text) {
-        return SqlTree::Compare {
+    match classify_op(&op_text) {
+        Some((marker, OpKind::Comparison)) => SqlTree::Compare {
             left: Box::new(left),
-            op: cmp_op,
+            op_text,
+            op_marker: marker,
+            op_range,
             right: Box::new(right),
             range,
             span,
-        };
-    }
-    // Otherwise fall through to Binary — once BinaryOp parsing is
-    // implemented. For now, treat as Unknown.
-    let _ = (left, right);
-    SqlTree::Unknown {
-        kind: format!("binary_op_unhandled:{}", op_text),
-        range,
-        span,
+        },
+        Some((marker, OpKind::Binary)) => SqlTree::Binary {
+            left: Box::new(left),
+            op_text,
+            op_marker: marker,
+            op_range,
+            right: Box::new(right),
+            range,
+            span,
+        },
+        None => SqlTree::Unknown {
+            kind: format!("binary_op_unhandled:{}", op_text),
+            range,
+            span,
+        },
     }
 }
 
@@ -1291,21 +1280,27 @@ fn lower_order_by(node: &RawNode, source: &str) -> SqlTree {
     SqlTree::OrderBy { targets, range, span }
 }
 
-/// `order_target` CST → `SqlTree::OrderTarget { expression, direction }`.
+/// `order_target` CST → `SqlTree::OrderTarget { expression,
+/// extra_markers }`. The direction keyword (`ASC` / `DESC`) lowers
+/// to an anchored `Marker` so the variant-blind walker emits
+/// `<target><asc/>…</target>` mechanically.
 fn lower_order_target(node: &RawNode, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut expression: Option<SqlTree> = None;
-    let mut direction: Option<SortDirection> = None;
+    let mut extra_markers: Vec<Marker> = Vec::new();
     for c in node.named_children() {
         let kind = c.kind();
         if kind == "direction" {
             let text = range_of(c).slice(source).to_uppercase();
-            direction = match text.as_str() {
-                "ASC" => Some(SortDirection::Asc),
-                "DESC" => Some(SortDirection::Desc),
+            let marker_name = match text.as_str() {
+                "ASC" => Some("asc"),
+                "DESC" => Some("desc"),
                 _ => None,
             };
+            if let Some(name) = marker_name {
+                extra_markers.push(Marker::anchored(name, range_of(c), span_of(c)));
+            }
             continue;
         }
         if kind.starts_with("keyword_") || kind.starts_with("op_") {
@@ -1322,7 +1317,7 @@ fn lower_order_target(node: &RawNode, source: &str) -> SqlTree {
     }));
     SqlTree::OrderTarget {
         expression,
-        direction,
+        extra_markers,
         range,
         span,
     }
@@ -1340,27 +1335,24 @@ fn lower_partition_by(node: &RawNode, source: &str) -> SqlTree {
     SqlTree::PartitionBy { keys, range, span }
 }
 
-/// `join` CST → `SqlTree::Join { kind, relation, on }` with typed
-/// JoinKind detected from the keyword children.
+/// `join` CST → `SqlTree::Join { relation, on, extra_markers }`.
+/// The direction keywords (`LEFT`/`RIGHT`/`FULL`/`OUTER`/`CROSS`)
+/// each lower to an anchored `Marker`; INNER (the default) emits no
+/// marker. Matches the SyntaxTree typed-marker pattern.
 fn lower_join(node: &RawNode, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
-    let mut kind = JoinKind::Inner;
-    let mut left = false;
-    let mut right = false;
-    let mut full = false;
-    let mut outer = false;
-    let mut cross = false;
+    let mut extra_markers: Vec<Marker> = Vec::new();
     let mut relation: Option<SqlTree> = None;
     let mut on: Option<Box<SqlTree>> = None;
 
     for c in node.named_children() {
         match c.kind() {
-            "keyword_left" => left = true,
-            "keyword_right" => right = true,
-            "keyword_full" => full = true,
-            "keyword_outer" => outer = true,
-            "keyword_cross" => cross = true,
+            "keyword_left" => extra_markers.push(Marker::anchored("left", range_of(c), span_of(c))),
+            "keyword_right" => extra_markers.push(Marker::anchored("right", range_of(c), span_of(c))),
+            "keyword_full" => extra_markers.push(Marker::anchored("full", range_of(c), span_of(c))),
+            "keyword_outer" => extra_markers.push(Marker::anchored("outer", range_of(c), span_of(c))),
+            "keyword_cross" => extra_markers.push(Marker::anchored("cross", range_of(c), span_of(c))),
             "keyword_inner" | "keyword_join" | "keyword_on" => {}
             k if k.starts_with("keyword_") || k.starts_with("op_") => {}
             "relation" => relation = Some(lower_relation(c, source)),
@@ -1373,25 +1365,15 @@ fn lower_join(node: &RawNode, source: &str) -> SqlTree {
             }
         }
     }
-    kind = match (left, right, full, outer, cross) {
-        (_, _, _, _, true) => JoinKind::Cross,
-        (true, _, _, true, _) => JoinKind::LeftOuter,
-        (_, true, _, true, _) => JoinKind::RightOuter,
-        (_, _, true, true, _) => JoinKind::FullOuter,
-        (true, _, _, _, _) => JoinKind::Left,
-        (_, true, _, _, _) => JoinKind::Right,
-        (_, _, true, _, _) => JoinKind::Full,
-        _ => kind,
-    };
     let relation = Box::new(relation.unwrap_or(SqlTree::Unknown {
         kind: "missing_join_relation".into(),
         range,
         span,
     }));
     SqlTree::Join {
-        kind,
         relation,
         on,
+        extra_markers,
         range,
         span,
     }
@@ -1545,6 +1527,7 @@ fn lower_set(node: &RawNode, source: &str) -> SqlTree {
                 let text = range_of(*only).slice(source);
                 if text.starts_with('@') {
                     return SqlTree::Variable {
+                        text: text.to_string(),
                         range: range_of(*only),
                         span: span_of(*only),
                     };
@@ -1664,7 +1647,7 @@ fn lower_function_argument(node: &RawNode, source: &str) -> SqlTree {
     let name = named.first().map(|c| {
         let text = range_of(*c).slice(source);
         if text.starts_with('@') {
-            SqlTree::Variable { range: range_of(*c), span: span_of(*c) }
+            SqlTree::Variable { text: text.to_string(), range: range_of(*c), span: span_of(*c) }
         } else {
             ident_at(*c, source)
         }
@@ -1890,19 +1873,36 @@ fn lower_merge_when(node: &RawNode, source: &str) -> SqlTree {
     }
 }
 
-fn comparison_op_from_text(text: &str) -> Option<ComparisonOp> {
-    Some(match text {
-        "=" => ComparisonOp::Equal,
-        "<>" | "!=" => ComparisonOp::NotEqual,
-        "<" => ComparisonOp::Less,
-        "<=" => ComparisonOp::LessEqual,
-        ">" => ComparisonOp::Greater,
-        ">=" => ComparisonOp::GreaterEqual,
-        "LIKE" => ComparisonOp::Like,
-        "IN" => ComparisonOp::In,
-        "IS" => ComparisonOp::Is,
-        "AND" => ComparisonOp::And,
-        "OR" => ComparisonOp::Or,
+/// Op classification: which marker name to attach, and whether the
+/// op is a comparison (→ `<compare>`) or an arithmetic / logical /
+/// bitwise op (→ `<binary>`). Marker names are the canonical
+/// snake_case identifiers used elsewhere in the codebase (`equal`,
+/// `less_equal`, `plus`, `bitwise_xor`).
+enum OpKind { Comparison, Binary }
+
+fn classify_op(text: &str) -> Option<(&'static str, OpKind)> {
+    let upper = text.to_uppercase();
+    Some(match upper.as_str() {
+        "=" => ("equal", OpKind::Comparison),
+        "<>" | "!=" => ("not_equal", OpKind::Comparison),
+        "<" => ("less", OpKind::Comparison),
+        "<=" => ("less_equal", OpKind::Comparison),
+        ">" => ("greater", OpKind::Comparison),
+        ">=" => ("greater_equal", OpKind::Comparison),
+        "LIKE" => ("like", OpKind::Comparison),
+        "IN" => ("in", OpKind::Comparison),
+        "IS" => ("is", OpKind::Comparison),
+        "AND" => ("and", OpKind::Comparison),
+        "OR" => ("or", OpKind::Comparison),
+        "+" => ("plus", OpKind::Binary),
+        "-" => ("minus", OpKind::Binary),
+        "*" => ("multiply", OpKind::Binary),
+        "/" => ("divide", OpKind::Binary),
+        "%" => ("modulo", OpKind::Binary),
+        "||" => ("concat", OpKind::Binary),
+        "&" => ("bitwise_and", OpKind::Binary),
+        "|" => ("bitwise_or", OpKind::Binary),
+        "^" => ("bitwise_xor", OpKind::Binary),
         _ => return None,
     })
 }
@@ -2096,8 +2096,8 @@ mod tests {
         let SqlTree::From { relations, .. } = from.as_ref() else { panic!(); };
         // Find a Join in relations.
         let join = relations.iter().find(|r| matches!(r, SqlTree::Join { .. }));
-        let SqlTree::Join { kind, on, .. } = join.expect("join") else { panic!(); };
-        assert_eq!(*kind, crate::tree::sql::JoinKind::Left);
+        let SqlTree::Join { extra_markers, on, .. } = join.expect("join") else { panic!(); };
+        assert!(extra_markers.iter().any(|m| m.name == "left"));
         assert!(on.is_some());
     }
 
@@ -2112,10 +2112,10 @@ mod tests {
         let order_by = order_by.as_ref().expect("order_by");
         let SqlTree::OrderBy { targets, .. } = order_by.as_ref() else { panic!(); };
         assert_eq!(targets.len(), 1);
-        let SqlTree::OrderTarget { direction, .. } = &targets[0] else { panic!(); };
+        let SqlTree::OrderTarget { extra_markers, .. } = &targets[0] else { panic!(); };
         // DESC may not be detected if grammar doesn't expose `direction`
         // — at least assert the OrderTarget shape.
-        let _ = direction;
+        let _ = extra_markers;
     }
 
     #[test]
@@ -2162,9 +2162,10 @@ mod tests {
         let SqlTree::Select { where_, .. } = inner.as_ref() else { panic!(); };
         let where_ = where_.as_ref().expect("where present");
         let SqlTree::Where { condition, .. } = where_.as_ref() else { panic!(); };
-        let SqlTree::Compare { op, .. } = condition.as_ref() else {
+        let SqlTree::Compare { op_marker, op_text, .. } = condition.as_ref() else {
             panic!("expected Compare, got {condition:?}");
         };
-        assert_eq!(*op, ComparisonOp::Equal);
+        assert_eq!(*op_marker, "equal");
+        assert_eq!(op_text, "=");
     }
 }

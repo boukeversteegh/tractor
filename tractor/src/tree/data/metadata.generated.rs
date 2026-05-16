@@ -13,7 +13,7 @@
 #[allow(unused_imports)]
 use super::types::{DataTree, element_name_for_data_element};
 #[allow(unused_imports)]
-use crate::tree::types::{ByteRange, Marker, Span};
+use crate::tree::types::{ByteRange, Flag, Marker, Span};
 
 /// The XML element name for this tree node, or `None` if the
 /// node renders no wrapper (`Inline`, `Skip`).
@@ -59,8 +59,19 @@ pub fn flags_of(tree: &DataTree) -> Vec<Marker> {
         DataTree::Number { .. } => {}
         DataTree::Bool { .. } => {}
         DataTree::Null { .. } => {}
-        DataTree::Comment { .. } => {}
-        DataTree::Directive { .. } => {}
+        DataTree::Comment { leading, trailing, span, .. } => {
+            if let Flag::On { range: frange, span: fspan } = leading {
+                out.push(Marker { name: "leading", range: *frange, span: *fspan });
+            }
+            if let Flag::On { range: frange, span: fspan } = trailing {
+                out.push(Marker { name: "trailing", range: *frange, span: *fspan });
+            }
+
+        }
+        DataTree::Directive { extra_markers, .. } => {
+            for m in extra_markers { out.push(*m); }
+
+        }
         DataTree::Element { markers, span, .. } => {
             for m in markers {
                 out.push(Marker {

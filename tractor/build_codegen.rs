@@ -184,7 +184,7 @@ const DATA_HEADER: &str = "\
 #[allow(unused_imports)]
 use super::types::{DataTree, element_name_for_data_element};
 #[allow(unused_imports)]
-use crate::tree::types::{ByteRange, Marker, Span};
+use crate::tree::types::{ByteRange, Flag, Marker, Span};
 
 ";
 

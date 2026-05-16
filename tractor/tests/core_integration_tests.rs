@@ -232,7 +232,15 @@ fn test_json_default_is_data_tree() {
 
 #[test]
 fn test_json_structure_mode_vocabulary() {
-    // Verify JSON structure mode uses normalized syntax vocabulary
+    // Verify JSON structure mode uses normalized syntax vocabulary.
+    //
+    // Shape contract: variant-blind walker renders Pair as a flat
+    // `<property><string>key</string><value-type>value</value-type></property>` —
+    // no explicit `<key>` / `<value>` wrappers. The key is the first
+    // child (always a String for JSON); the value is the second.
+    // Mirrors SyntaxTree::Pair's existing shape. Future work may add
+    // typed `<key>` / `<value>` slot variants if query ergonomics
+    // demand it.
     let source = r#"{"name": "John", "age": 30, "active": true, "x": null}"#;
     let mut result = parse_test_inline(source, "json", Some(tractor::TreeMode::Structure))
         .expect("Should parse JSON");
@@ -253,17 +261,17 @@ fn test_json_structure_mode_vocabulary() {
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 4, "Should have 4 properties");
 
-    // key/value structure
+    // First child of each property is the key (a string).
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//property/key/string", result.source_lines.clone(), &result.file_path,
+        "//property/string[1]", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 4, "Each property should have key/string");
+    assert_eq!(matches.len(), 4, "Each property should have a key string");
 
-    // typed values
+    // typed values — query "property whose first string child is 'age'".
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//property[key/string='age']/value/number", result.source_lines.clone(), &result.file_path,
+        "//property[contains(*[1]/text(), 'age')]/number", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "age should have number value");
     assert_eq!(matches[0].value, "30");
@@ -639,7 +647,7 @@ fn test_yaml_structure_mode_vocabulary() {
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//property[key/string='count']/value/number", result.source_lines.clone(), &result.file_path,
+        "//property[contains(*[1]/text(), 'count')]/number", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "count should be a number");
 
@@ -714,17 +722,18 @@ fn test_json_empty_structures() {
 
     let engine = XPathEngine::new();
 
-    // Empty object in structure mode
+    // Empty object in structure mode (flat Pair shape: first child is
+    // the key string, subsequent child is the value).
     let matches = engine.query_documents(
         &mut result_structure.documents, result_structure.doc_handle,
-        "//property[key/string='obj']/value/object", result_structure.source_lines.clone(), &result_structure.file_path,
+        "//property[contains(*[1]/text(), 'obj')]/object", result_structure.source_lines.clone(), &result_structure.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find empty object");
 
     // Empty array in structure mode
     let matches = engine.query_documents(
         &mut result_structure.documents, result_structure.doc_handle,
-        "//property[key/string='arr']/value/array", result_structure.source_lines.clone(), &result_structure.file_path,
+        "//property[contains(*[1]/text(), 'arr')]/array", result_structure.source_lines.clone(), &result_structure.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find empty array");
 

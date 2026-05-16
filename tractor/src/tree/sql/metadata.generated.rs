@@ -110,9 +110,15 @@ pub fn flags_of(tree: &SqlTree) -> Vec<Marker> {
         SqlTree::GroupBy { .. } => {}
         SqlTree::Having { .. } => {}
         SqlTree::OrderBy { .. } => {}
-        SqlTree::OrderTarget { .. } => {}
+        SqlTree::OrderTarget { extra_markers, .. } => {
+            for m in extra_markers { out.push(*m); }
+
+        }
         SqlTree::PartitionBy { .. } => {}
-        SqlTree::Join { .. } => {}
+        SqlTree::Join { extra_markers, .. } => {
+            for m in extra_markers { out.push(*m); }
+
+        }
         SqlTree::Relation { .. } => {}
         SqlTree::Column { .. } => {}
         SqlTree::Star { .. } => {}
@@ -290,9 +296,13 @@ pub fn span_of(tree: &SqlTree) -> Span {
 /// leaf literals without consulting the source string (S13-Z1).
 pub fn scalar_text_of(tree: &SqlTree) -> Option<&str> {
     match tree {
+        SqlTree::Go { text, .. } => Some(text.as_str()),
         SqlTree::Identifier { value, .. } => Some(value.as_str()),
         SqlTree::Schema { value, .. } => Some(value.as_str()),
         SqlTree::Alias { value, .. } => Some(value.as_str()),
+        SqlTree::Variable { text, .. } => Some(text.as_str()),
+        SqlTree::Literal { text, .. } => Some(text.as_str()),
+        SqlTree::Comment { text, .. } => Some(text.as_str()),
         _ => None,
     }
 }

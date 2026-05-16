@@ -30,7 +30,9 @@
 #![cfg(feature = "native")]
 
 use crate::tree::render::common::{identity_escape, write_quoted_scalar};
-use crate::tree::sql::{QuoteStyle, SqlTree};
+use crate::tree::sql::SqlTree;
+#[cfg(test)]
+use crate::tree::sql::QuoteStyle;
 
 /// Render a [`SqlTree`] tree as canonical SQL source text.
 ///
@@ -61,23 +63,9 @@ fn write(tree: &SqlTree, out: &mut String) {
         // tree doesn't separate `@` from name, so we slice from the
         // stored range as the name. When the tree gains a typed
         // `name` field, this becomes `format!("@{name}")`.
-        SqlTree::Variable { range, .. } => {
-            // Variable carries no text field today — placeholder until
-            // SqlTree gains a typed name slot. Render as the raw
-            // `@<id>` form using the byte position so debug output is
-            // recognizable even without anchored source.
-            out.push_str(&format!("@var{}", range.start));
-        }
-        SqlTree::Literal { range, .. } => {
-            // Same shape: no text field yet. Will become
-            // `out.push_str(text)` after the lowering writes scalar
-            // text on Literal (mirrors S13-Z1 for SyntaxTree).
-            out.push_str(&format!("/*lit{}*/", range.start));
-        }
-        SqlTree::Comment { range, .. } => {
-            // Comment will likewise carry text after the Tier 2 emit.
-            out.push_str(&format!("/*c{}*/", range.start));
-        }
+        SqlTree::Variable { text, .. } => out.push_str(text),
+        SqlTree::Literal { text, .. } => out.push_str(text),
+        SqlTree::Comment { text, .. } => out.push_str(text),
 
         // ----- Composite shapes (placeholders for now) ----------------
         // The principle is satisfied for atoms in this slice; composite

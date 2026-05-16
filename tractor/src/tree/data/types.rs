@@ -40,7 +40,7 @@
 //!    [`DataTree::Unknown`] (visible `<unknown kind="…"/>`).
 
 
-use crate::tree::types::{ByteRange, QuoteStyle, Span, TreeNode};
+use crate::tree::types::{ByteRange, Flag, Marker, QuoteStyle, Span, TreeNode};
 
 /// Format-agnostic data-language tree.
 #[derive(Debug, Clone)]
@@ -138,23 +138,28 @@ pub enum DataTree {
     /// Comment (YAML / TOML / INI / JSON5). Text excludes the
     /// leading delimiter (`#` / `//`) — recover it via the range
     /// when the original delimiter matters. `leading` / `trailing`
-    /// are inferred during lowering: a comment immediately after a
-    /// value on the same line is `trailing: true`.
+    /// are typed [`Flag`]s (matching the SyntaxTree pattern): the
+    /// mechanical codegen rule emits each set flag as an empty
+    /// `<leading/>` / `<trailing/>` marker child. A comment
+    /// immediately after a value on the same line gets `trailing`
+    /// set; one immediately preceding a structural sibling on the
+    /// next line gets `leading` set.
     Comment {
         text: String,
-        leading: bool,
-        trailing: bool,
+        leading: Flag,
+        trailing: Flag,
         range: ByteRange,
         span: Span,
     },
 
     /// YAML / TOML processing directive (e.g. `%YAML 1.2`,
-    /// `%TAG !! tag:…`). `flavor` becomes a marker child of the
-    /// rendered `<directive>` element so XPath queries can
-    /// distinguish: `<directive[yaml]><version>1.2</version></directive>`,
-    /// `<directive[tag]><handle>!!</handle><prefix>…</prefix></directive>`.
+    /// `%TAG !! tag:…`). The flavor (`yaml` / `tag` / `reserved`)
+    /// is carried as a typed [`Marker`] in `extra_markers` — the
+    /// mechanical Vec<Marker> codegen rule emits it as a
+    /// `<directive><yaml/>...</directive>` child. Same shape pattern
+    /// as SyntaxTree::Unary's `extra_markers` (`<prefix/>` on `++x`).
     Directive {
-        flavor: &'static str, // "yaml", "tag", "reserved"
+        extra_markers: Vec<Marker>,
         children: Vec<DataTree>,
         range: ByteRange,
         span: Span,

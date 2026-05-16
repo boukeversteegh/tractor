@@ -42,7 +42,7 @@
 //!    arm of [`crate::tree::render::render_sql`] in `source/sql.rs`,
 //!    fitting the existing per-language source-rendering convention.
 
-use crate::tree::types::{ByteRange, QuoteStyle, Span, TreeNode};
+use crate::tree::types::{ByteRange, Marker, QuoteStyle, Span, TreeNode};
 
 /// Typed SQL tree.
 #[derive(Debug, Clone)]
@@ -66,8 +66,13 @@ pub enum SqlTree {
         span: Span,
     },
 
-    /// `<go>` — T-SQL batch separator.
-    Go { range: ByteRange, span: Span },
+    /// `<go>` — T-SQL batch separator. `text` is the verbatim keyword
+    /// (`GO` / `go` — case preserved from source). Mirrors the
+    /// `text: String` shape on `SyntaxTree` scalar leaves so the
+    /// mechanical walker can emit leaf content without consulting
+    /// source. Synthetic constructions (round-trip, mutation) set
+    /// `text` to `"GO"`.
+    Go { text: String, range: ByteRange, span: Span },
 
     /// `<exec>` — `EXEC sp_helpdb`.
     Exec {
@@ -174,9 +179,14 @@ pub enum SqlTree {
     OrderBy { targets: Vec<SqlTree>, range: ByteRange, span: Span },
 
     /// `<target>` — one item in ORDER BY: `expr [ASC|DESC]`.
+    /// Direction is carried as `extra_markers` (either `<asc/>` or
+    /// `<desc/>` — none when omitted, defaulting to ASC). Matches the
+    /// SyntaxTree pattern: typed `Marker` wrapper rather than an enum
+    /// field, so the mechanical walker emits markers without any
+    /// per-variant codegen rule.
     OrderTarget {
         expression: Box<SqlTree>,
-        direction: Option<SortDirection>,
+        extra_markers: Vec<Marker>,
         range: ByteRange,
         span: Span,
     },
@@ -185,10 +195,15 @@ pub enum SqlTree {
     PartitionBy { keys: Vec<SqlTree>, range: ByteRange, span: Span },
 
     /// `<join>` — one JOIN clause: `[LEFT|RIGHT|FULL|INNER|CROSS] JOIN relation ON cond`.
+    /// Direction / outer-ness / cross is carried as `extra_markers`
+    /// — `<left/>`, `<right/>`, `<full/>`, `<outer/>`, `<cross/>` —
+    /// matching the SyntaxTree pattern of typed Marker rather than
+    /// an enum field. The mechanical Vec<Marker> codegen rule emits
+    /// each marker; no JoinKind enum needed.
     Join {
-        kind: JoinKind,
         relation: Box<SqlTree>,
         on: Option<Box<SqlTree>>,        // None for CROSS JOIN
+        extra_markers: Vec<Marker>,
         range: ByteRange,
         span: Span,
     },
@@ -229,27 +244,43 @@ pub enum SqlTree {
 
     // ----- Expressions ---------------------------------------------------
 
-    /// `<compare>` — binary comparison: `a = b`, `a > b`, `a IN (...)`, etc.
+    /// `<compare>` — binary comparison: `a = b`, `a > b`, `a IN (...)`,
+    /// etc. Shape mirrors [`SyntaxTree::Binary`] exactly so the
+    /// mechanical walker treats it the same way. `op_text` is the
+    /// verbatim source operator (`=`, `<>`, `LIKE`), `op_marker` is the
+    /// canonical marker name (`equal`, `not_equal`, `like`), and
+    /// `op_range` covers the operator token(s). Op-as-marker emission
+    /// is shared with SyntaxTree::Binary and lands together with
+    /// parity-track Pass 3 (typed `Op` slot variant).
     Compare {
         left: Box<SqlTree>,
-        op: ComparisonOp,
+        op_text: String,
+        op_marker: &'static str,
+        op_range: ByteRange,
         right: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
-    /// `<binary>` — arithmetic or logical: `a + b`, `a AND b`.
+    /// `<binary>` — arithmetic or logical: `a + b`, `a AND b`. Same
+    /// shape as [`SyntaxTree::Binary`] — see `Compare` for the op*
+    /// field semantics.
     Binary {
         left: Box<SqlTree>,
-        op: BinaryOp,
+        op_text: String,
+        op_marker: &'static str,
+        op_range: ByteRange,
         right: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
-    /// `<unary>` — `NOT expr`, `-expr`.
+    /// `<unary>` — `NOT expr`, `-expr`. Same op* shape as `Binary`
+    /// / [`SyntaxTree::Unary`].
     Unary {
-        op: UnaryOp,
+        op_text: String,
+        op_marker: &'static str,
+        op_range: ByteRange,
         operand: Box<SqlTree>,
         range: ByteRange,
         span: Span,
@@ -462,15 +493,18 @@ pub enum SqlTree {
     /// `<temp>` — temp-table qualifier `#name` / `##name`.
     Temp { name: Box<SqlTree>, range: ByteRange, span: Span },
 
-    /// `<var>` — `@variable` reference.
-    Variable { range: ByteRange, span: Span },
+    /// `<var>` — `@variable` reference. `text` is the verbatim source
+    /// (`@name`, `@@name`, etc.). Mirrors `SyntaxTree::Name` shape so
+    /// `scalar_text_of` reads from the tree, not from source.
+    Variable { text: String, range: ByteRange, span: Span },
 
-    /// `<literal>` — string / numeric / hex literal. Text is verbatim
-    /// from the source range.
-    Literal { range: ByteRange, span: Span },
+    /// `<literal>` — string / numeric / hex literal. `text` is verbatim
+    /// from the source range (quotes included for string literals).
+    Literal { text: String, range: ByteRange, span: Span },
 
-    /// `<comment>` — `-- line` or `/* block */`.
-    Comment { range: ByteRange, span: Span },
+    /// `<comment>` — `-- line` or `/* block */`. `text` is the verbatim
+    /// source including the delimiter.
+    Comment { text: String, range: ByteRange, span: Span },
 
     // ----- Escape hatches ------------------------------------------------
 
@@ -483,12 +517,9 @@ pub enum SqlTree {
     },
 }
 
-/// Sort direction for `ORDER BY` and within `OVER`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SortDirection {
-    Asc,
-    Desc,
-}
+// Sort direction (ASC / DESC) carried via `OrderTarget.extra_markers`
+// rather than an enum field — same shape as the SyntaxTree pattern.
+// Marker names: "asc" / "desc". None ⇒ default (typically ASC).
 
 // `QuoteStyle` is the shared [`crate::tree::types::QuoteStyle`]; SqlTree
 // used to carry its own local copy with `{None, Brackets, DoubleQuote,
@@ -497,59 +528,22 @@ pub enum SortDirection {
 // need. Migration: SqlTree atoms now reference the shared type via the
 // re-export in `tree::sql::mod`.
 
-/// Comparison operator for `<compare>`. `Op` is the canonical
-/// classification; the source text is recoverable via the operand
-/// ranges flanking the op.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ComparisonOp {
-    Equal,         // =
-    NotEqual,      // <> / !=
-    Less,          // <
-    LessEqual,     // <=
-    Greater,       // >
-    GreaterEqual,  // >=
-    Like,
-    In,
-    Is,            // IS NULL / IS NOT NULL
-    IsNot,
-    And,           // logical AND
-    Or,            // logical OR
-}
+// Op classification is carried as the `op_marker: &'static str`
+// field on `Binary` / `Compare` / `Unary` — matching SyntaxTree
+// exactly. Canonical marker names: `equal`, `not_equal`, `less`,
+// `less_equal`, `greater`, `greater_equal`, `like`, `in`, `is`,
+// `is_not`, `and`, `or` (comparisons); `plus`, `minus`, `multiply`,
+// `divide`, `modulo`, `concat`, `bitwise_and`, `bitwise_or`,
+// `bitwise_xor` (binary arith); `not`, `negate`, `positive` (unary).
+// The strings are interned (`&'static str`) because the set is closed
+// — codegen-time enforcement happens through the lowering's match
+// arms over CST kinds.
 
-/// Arithmetic / bitwise / logical binary operator.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BinaryOp {
-    Plus,
-    Minus,
-    Multiply,
-    Divide,
-    Modulo,
-    Concat,        // `||` (some dialects)
-    BitwiseAnd,
-    BitwiseOr,
-    BitwiseXor,
-}
-
-/// Unary operator: `NOT expr`, `-expr`, `+expr`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum UnaryOp {
-    Not,
-    Negate,
-    Positive,
-}
-
-/// JOIN direction marker.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum JoinKind {
-    Inner,         // default — no marker
-    Left,
-    Right,
-    Full,
-    LeftOuter,
-    RightOuter,
-    FullOuter,
-    Cross,
-}
+// JOIN direction carried via `Join.extra_markers`. Marker names:
+// "left", "right", "full", "outer", "cross". No marker ⇒ INNER
+// (the default). LEFT OUTER = ["left", "outer"]; RIGHT OUTER =
+// ["right", "outer"]; FULL OUTER = ["full", "outer"]. Same shape
+// pattern as SyntaxTree's `<for[async]>` / `<unary[prefix]>`.
 
 /// CREATE statement variant.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

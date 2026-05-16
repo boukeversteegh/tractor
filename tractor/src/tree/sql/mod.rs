@@ -23,7 +23,7 @@ pub mod render_source;
 #[path = "metadata.generated.rs"]
 pub mod metadata_generated;
 
-pub use types::{ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlTree};
+pub use types::{CreateKind, DropKind, SqlTree};
 // QuoteStyle is the shared cross-tree enum (since the Tier 1 SqlTree
 // unification). Re-exported here so `tree::sql::QuoteStyle` keeps
 // working for existing callers.

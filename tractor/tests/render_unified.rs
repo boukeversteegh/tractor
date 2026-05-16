@@ -478,11 +478,13 @@ fn xpath_match_id_resolves_to_typed_sql_node() {
     )
     .expect("parse tsql");
 
+    // SqlTree::Identifier renders as `<identifier>` (mechanical
+    // variant-blind shape — no inner `<name>` wrapper).
     let matches = parsed
-        .query("//relation//name")
+        .query("//relation//identifier")
         .expect("xpath query succeeds");
 
-    assert!(!matches.is_empty(), "fixture must contain a relation name");
+    assert!(!matches.is_empty(), "fixture must contain a relation identifier");
 
     let m = &matches[0];
     let xml = m.tree.as_ref().expect("match carries tree");

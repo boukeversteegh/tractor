@@ -212,8 +212,8 @@ fn lower_node(node: &RawNode, source: &str) -> DataTree {
                 .unwrap_or(raw);
             DataTree::Comment {
                 text,
-                leading: true,
-                trailing: false,
+                leading: crate::tree::types::Flag::implicit_at(span.line, span.column),
+                trailing: crate::tree::types::Flag::Off,
                 range,
                 span,
             }

@@ -116,8 +116,8 @@ fn lower_node(node: &RawNode, source: &str) -> DataTree {
                 // Comment classification (leading vs trailing) is
                 // refined in a post-pass once we know the surrounding
                 // structural neighbours. For now, default to leading.
-                leading: true,
-                trailing: false,
+                leading: crate::tree::types::Flag::implicit_at(span.line, span.column),
+                trailing: crate::tree::types::Flag::Off,
                 range,
                 span,
             }
