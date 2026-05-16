@@ -181,7 +181,7 @@ const DATA_HEADER: &str = "\
 #![allow(clippy::too_many_lines)]
 
 #[allow(unused_imports)]
-use super::types::DataTree;
+use super::types::{DataTree, element_name_for_data_element};
 #[allow(unused_imports)]
 use crate::tree::types::{ByteRange, Marker, Span};
 

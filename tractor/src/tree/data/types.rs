@@ -170,6 +170,8 @@ pub enum DataTree {
     /// Element names are static (declared by the lower fn for the
     /// language) — *not* user-keyed; the keyed renderer's
     /// sanitization rules don't apply.
+    ///
+    /// @element_name = element_name_for_data_element
     Element {
         name: &'static str,
         markers: Vec<&'static str>,
@@ -254,6 +256,18 @@ impl DataTree {
             | DataTree::Comment { text, .. } => Some(text.as_str()),
             _ => None,
         }
+    }
+}
+
+/// Override for [`DataTree::Element`]: open-set `name` string used
+/// by Markdown / YAML directive shapes (`<heading>`, `<list>`,
+/// `<codeblock>`, ...). The variant carries the name as a
+/// `&'static str` field, so this just forwards it — no leak.
+pub fn element_name_for_data_element(t: &DataTree) -> &'static str {
+    if let DataTree::Element { name, .. } = t {
+        *name
+    } else {
+        "element"
     }
 }
 

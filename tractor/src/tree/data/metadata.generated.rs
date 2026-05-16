@@ -11,7 +11,7 @@
 #![allow(clippy::too_many_lines)]
 
 #[allow(unused_imports)]
-use super::types::DataTree;
+use super::types::{DataTree, element_name_for_data_element};
 #[allow(unused_imports)]
 use crate::tree::types::{ByteRange, Marker, Span};
 
@@ -34,7 +34,7 @@ pub fn element_name_of(tree: &DataTree) -> Option<&str> {
         DataTree::Null { .. } => Some("null"),
         DataTree::Comment { .. } => Some("comment"),
         DataTree::Directive { .. } => Some("directive"),
-        DataTree::Element { .. } => Some("element"),
+        DataTree::Element { .. } => Some(element_name_for_data_element(tree)),
         DataTree::Unknown { .. } => Some("unknown"),
     }
 }

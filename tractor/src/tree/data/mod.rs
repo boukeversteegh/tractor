@@ -32,4 +32,8 @@ pub mod render_common;
 #[path = "metadata.generated.rs"]
 pub mod metadata_generated;
 
+// Per-format element-name overlay (mirror of `tree/syntax/element_naming.rs`).
+#[cfg(feature = "native")]
+pub mod element_naming;
+
 pub use types::{DataTree, ScalarKind};

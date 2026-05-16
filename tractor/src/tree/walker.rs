@@ -120,6 +120,9 @@ impl WalkerTree for crate::tree::DataTree {
     fn scalar_text_of(&self) -> Option<&str> {
         crate::tree::data::metadata_generated::scalar_text_of(self)
     }
+    fn display_name_for<'a>(name: &'a str, context: Option<&str>) -> &'a str {
+        crate::tree::data::element_naming::element_name_for_format(name, context)
+    }
 }
 
 impl WalkerTree for crate::tree::sql::SqlTree {
