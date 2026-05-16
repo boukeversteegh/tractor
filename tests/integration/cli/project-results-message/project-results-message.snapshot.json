@@ -7,55 +7,80 @@
       "public": true,
       "name": "Calculator",
       "body": {
-        "$children": [
+        "method": [
           {
-            "$type": "method",
+            "body": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "name": "b"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "a"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "public": true,
+            "name": "Add",
+            "parameter": [
+              {
+                "name": "a",
+                "type": {
+                  "name": "int"
+                }
+              },
+              {
+                "name": "b",
+                "type": {
+                  "name": "int"
+                }
+              }
+            ]
+          },
+          {
+            "body": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "name": "b"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "a"
+                      }
+                    }
+                  }
+                }
+              }
+            },
             "public": true,
             "name": "Subtract",
-            "parameter": {
-              "name": "a",
-              "type": {
-                "name": "int"
-              }
-            },
-            "body": {
-              "return": {
-                "expression": {
-                  "binary": {
-                    "right": {
-                      "expression": {
-                        "name": "b"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "a"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "$children": [
+            "parameter": [
               {
-                "$type": "parameter",
+                "name": "a",
                 "type": {
                   "name": "int"
-                },
-                "name": "b"
+                }
+              },
+              {
+                "name": "b",
+                "type": {
+                  "name": "int"
+                }
               }
             ]
           },
           {
-            "$type": "method",
-            "public": true,
-            "name": "Multiply",
-            "parameter": {
-              "name": "a",
-              "type": {
-                "name": "int"
-              }
-            },
             "body": {
               "return": {
                 "expression": {
@@ -74,54 +99,24 @@
                 }
               }
             },
-            "$children": [
+            "public": true,
+            "name": "Multiply",
+            "parameter": [
               {
-                "$type": "parameter",
+                "name": "a",
                 "type": {
                   "name": "int"
-                },
-                "name": "b"
+                }
+              },
+              {
+                "name": "b",
+                "type": {
+                  "name": "int"
+                }
               }
             ]
           }
-        ],
-        "method": {
-          "$children": [
-            {
-              "$type": "parameter",
-              "type": {
-                "name": "int"
-              },
-              "name": "b"
-            }
-          ],
-          "public": true,
-          "name": "Add",
-          "parameter": {
-            "name": "a",
-            "type": {
-              "name": "int"
-            }
-          },
-          "body": {
-            "return": {
-              "expression": {
-                "binary": {
-                  "right": {
-                    "expression": {
-                      "name": "b"
-                    }
-                  },
-                  "left": {
-                    "expression": {
-                      "name": "a"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+        ]
       }
     },
     "message": "hit"
@@ -134,17 +129,36 @@
       "public": true,
       "name": "Greeter",
       "body": {
-        "$children": [
+        "method": [
           {
-            "$type": "method",
+            "body": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "name": "name"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "string": "\"Hello, \""
+                      }
+                    }
+                  }
+                }
+              }
+            },
             "public": true,
-            "name": "Goodbye",
+            "name": "Hello",
             "parameter": {
               "name": "name",
               "type": {
                 "name": "string"
               }
-            },
+            }
+          },
+          {
             "body": {
               "return": {
                 "expression": {
@@ -162,43 +176,22 @@
                   }
                 }
               }
-            }
-          },
-          {
-            "$type": "method",
+            },
             "public": true,
-            "name": "Reset",
-            "body": "{ }"
-          }
-        ],
-        "method": {
-          "body": {
-            "return": {
-              "expression": {
-                "binary": {
-                  "right": {
-                    "expression": {
-                      "name": "name"
-                    }
-                  },
-                  "left": {
-                    "expression": {
-                      "string": "\"Hello, \""
-                    }
-                  }
-                }
+            "name": "Goodbye",
+            "parameter": {
+              "name": "name",
+              "type": {
+                "name": "string"
               }
             }
           },
-          "public": true,
-          "name": "Hello",
-          "parameter": {
-            "name": "name",
-            "type": {
-              "name": "string"
-            }
+          {
+            "body": "{ }",
+            "public": true,
+            "name": "Reset"
           }
-        }
+        ]
       }
     },
     "message": "hit"

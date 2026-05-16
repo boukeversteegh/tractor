@@ -1,40 +1,7 @@
 {
   "$type": "program",
-  "interface": {
-    "body": {
-      "$children": [
-        {
-          "$type": "method",
-          "string": "\"default\"",
-          "$children": [
-            "String",
-            "value"
-          ]
-        },
-        {
-          "$type": "method",
-          "int": "30",
-          "$children": [
-            "int",
-            "timeout"
-          ]
-        }
-      ]
-    },
-    "name": "Config"
-  },
-  "package": {
-    "path": {
-      "$children": [
-        "com",
-        "example",
-        "blueprint"
-      ]
-    }
-  },
-  "$children": [
+  "class": [
     {
-      "$type": "class",
       "public": true,
       "final": true,
       "annotation": {
@@ -45,16 +12,25 @@
         "class": {
           "public": true,
           "body": {
+            "constant": [
+              {
+                "name": "RED"
+              },
+              {
+                "name": "GREEN"
+              },
+              {
+                "name": "BLUE"
+              }
+            ],
             "method": {
               "public": true,
               "body": {
                 "return": {
                   "expression": {
                     "switch": {
-                      "this": "this",
-                      "$children": [
+                      "arm": [
                         {
-                          "$type": "arm",
                           "case": {
                             "name": "RED"
                           },
@@ -63,7 +39,6 @@
                           }
                         },
                         {
-                          "$type": "arm",
                           "case": {
                             "name": "GREEN"
                           },
@@ -72,7 +47,6 @@
                           }
                         },
                         {
-                          "$type": "arm",
                           "case": {
                             "name": "BLUE"
                           },
@@ -80,7 +54,8 @@
                             "int": "0x0000FF"
                           }
                         }
-                      ]
+                      ],
+                      "this": "this"
                     }
                   }
                 }
@@ -91,24 +66,111 @@
                   "name": "int"
                 }
               }
-            },
-            "$children": [
-              {
-                "$type": "constant",
-                "name": "RED"
-              },
-              {
-                "$type": "constant",
-                "name": "GREEN"
-              },
-              {
-                "$type": "constant",
-                "name": "BLUE"
-              }
-            ]
+            }
           },
           "name": "Color"
         },
+        "comment": [
+          "// Line comment before a field",
+          {
+            "leading": true
+          },
+          {
+            "trailing": true
+          }
+        ],
+        "constructor": [
+          {
+            "public": true,
+            "body": {
+              "call": {
+                "this": true,
+                "null": "null"
+              }
+            },
+            "name": "Demo"
+          },
+          {
+            "public": true,
+            "body": {
+              "call": {
+                "super": true
+              },
+              "expression": {
+                "assign": {
+                  "expression": [
+                    {
+                      "access": {
+                        "this": "this"
+                      }
+                    },
+                    {
+                      "name": "name"
+                    }
+                  ]
+                }
+              }
+            },
+            "name": "Demo",
+            "parameter": {
+              "name": "name",
+              "type": {
+                "name": "String"
+              }
+            }
+          }
+        ],
+        "field": [
+          {
+            "public": true,
+            "static": true,
+            "final": true,
+            "expression": {
+              "int": "100"
+            },
+            "name": "MAX",
+            "type": {
+              "name": "int"
+            }
+          },
+          {
+            "private": true,
+            "name": "name",
+            "type": {
+              "name": "String"
+            }
+          },
+          {
+            "protected": true,
+            "generic_type": {
+              "generic_type": {
+                "name": [
+                  "Map",
+                  "String",
+                  "T"
+                ]
+              },
+              "name": "List"
+            },
+            "name": "items"
+          },
+          {
+            "package": true,
+            "name": "pkg",
+            "type": {
+              "name": "int"
+            }
+          },
+          {
+            "package": true,
+            "volatile": true,
+            "transient": true,
+            "name": "ready",
+            "type": {
+              "name": "boolean"
+            }
+          }
+        ],
         "interface": {
           "private": true,
           "body": {
@@ -138,172 +200,8 @@
           },
           "name": "Handler"
         },
-        "record": {
-          "public": true,
-          "body": {
-            "constructor": {
-              "public": true,
-              "body": {
-                "if": {
-                  "body": {
-                    "object_creation": {
-                      "name": "IllegalArgumentException"
-                    }
-                  },
-                  "condition": {
-                    "expression": {
-                      "binary": {
-                        "left": {
-                          "expression": {
-                            "binary": {
-                              "left": {
-                                "expression": {
-                                  "name": "x"
-                                }
-                              },
-                              "right": {
-                                "expression": {
-                                  "int": "0"
-                                }
-                              }
-                            }
-                          }
-                        },
-                        "right": {
-                          "expression": {
-                            "binary": {
-                              "left": {
-                                "expression": {
-                                  "name": "y"
-                                }
-                              },
-                              "right": {
-                                "expression": {
-                                  "int": "0"
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "name": "Point"
-            }
-          },
-          "name": "Point"
-        },
-        "$children": [
-          "// Line comment before a field",
+        "method": [
           {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "comment",
-            "trailing": true
-          },
-          {
-            "$type": "constructor",
-            "public": true,
-            "body": {
-              "call": {
-                "this": true,
-                "null": "null"
-              }
-            },
-            "name": "Demo"
-          },
-          {
-            "$type": "constructor",
-            "public": true,
-            "body": {
-              "call": {
-                "super": true
-              },
-              "expression": {
-                "assign": {
-                  "$children": [
-                    {
-                      "$type": "expression",
-                      "access": {
-                        "this": "this"
-                      }
-                    },
-                    {
-                      "$type": "expression",
-                      "name": "name"
-                    }
-                  ]
-                }
-              }
-            },
-            "name": "Demo",
-            "parameter": {
-              "name": "name",
-              "type": {
-                "name": "String"
-              }
-            }
-          },
-          {
-            "$type": "field",
-            "public": true,
-            "static": true,
-            "final": true,
-            "expression": {
-              "int": "100"
-            },
-            "name": "MAX",
-            "type": {
-              "name": "int"
-            }
-          },
-          {
-            "$type": "field",
-            "private": true,
-            "name": "name",
-            "type": {
-              "name": "String"
-            }
-          },
-          {
-            "$type": "field",
-            "protected": true,
-            "generic_type": {
-              "generic_type": {
-                "$children": [
-                  "Map",
-                  "String",
-                  "T"
-                ]
-              },
-              "name": "List"
-            },
-            "name": "items"
-          },
-          {
-            "$type": "field",
-            "package": true,
-            "name": "pkg",
-            "type": {
-              "name": "int"
-            }
-          },
-          {
-            "$type": "field",
-            "package": true,
-            "volatile": true,
-            "transient": true,
-            "name": "ready",
-            "type": {
-              "name": "boolean"
-            }
-          },
-          {
-            "$type": "method",
             "public": true,
             "static": true,
             "body": {
@@ -322,7 +220,7 @@
             "name": "factory",
             "parameter": {
               "generic_type": {
-                "$children": [
+                "name": [
                   "Function",
                   "String",
                   "R"
@@ -337,7 +235,6 @@
             }
           },
           {
-            "$type": "method",
             "public": true,
             "synchronized": true,
             "annotation": {
@@ -417,7 +314,6 @@
             }
           },
           {
-            "$type": "method",
             "public": true,
             "body": {
               "return": {
@@ -494,20 +390,17 @@
             }
           },
           {
-            "$type": "method",
             "public": true,
             "body": {
               "foreach": {
                 "body": {
                   "expression": {
                     "assign": {
-                      "$children": [
+                      "expression": [
                         {
-                          "$type": "expression",
                           "name": "total"
                         },
                         {
-                          "$type": "expression",
                           "name": "x"
                         }
                       ]
@@ -529,17 +422,35 @@
                   "name": "total"
                 }
               },
+              "variable": [
+                {
+                  "expression": {
+                    "int": "0"
+                  },
+                  "name": "total",
+                  "type": {
+                    "name": "int"
+                  }
+                },
+                {
+                  "expression": {
+                    "int": "0"
+                  },
+                  "name": "i",
+                  "type": {
+                    "name": "int"
+                  }
+                }
+              ],
               "while": {
                 "body": {
                   "expression": {
                     "assign": {
-                      "$children": [
+                      "expression": [
                         {
-                          "$type": "expression",
                           "name": "i"
                         },
                         {
-                          "$type": "expression",
                           "binary": {
                             "left": {
                               "expression": {
@@ -573,29 +484,7 @@
                     }
                   }
                 }
-              },
-              "$children": [
-                {
-                  "$type": "variable",
-                  "expression": {
-                    "int": "0"
-                  },
-                  "name": "total",
-                  "type": {
-                    "name": "int"
-                  }
-                },
-                {
-                  "$type": "variable",
-                  "expression": {
-                    "int": "0"
-                  },
-                  "name": "i",
-                  "type": {
-                    "name": "int"
-                  }
-                }
-              ]
+              }
             },
             "name": "sum",
             "parameter": {
@@ -612,16 +501,13 @@
             }
           },
           {
-            "$type": "method",
             "public": true,
             "body": {
               "return": {
                 "expression": {
                   "switch": {
-                    "name": "o",
-                    "$children": [
+                    "arm": [
                       {
-                        "$type": "arm",
                         "case": {
                           "pattern": {
                             "name": "i",
@@ -646,7 +532,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "case": {
                           "guard": {
                             "unary": {
@@ -678,13 +563,13 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "case": "default",
                         "expression": {
                           "string": "\"other\""
                         }
                       }
-                    ]
+                    ],
+                    "name": "o"
                   }
                 }
               }
@@ -702,7 +587,64 @@
               }
             }
           }
-        ]
+        ],
+        "record": {
+          "public": true,
+          "body": {
+            "constructor": {
+              "public": true,
+              "body": {
+                "if": {
+                  "body": {
+                    "object_creation": {
+                      "name": "IllegalArgumentException"
+                    }
+                  },
+                  "condition": {
+                    "expression": {
+                      "binary": {
+                        "left": {
+                          "expression": {
+                            "binary": {
+                              "left": {
+                                "expression": {
+                                  "name": "x"
+                                }
+                              },
+                              "right": {
+                                "expression": {
+                                  "int": "0"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "right": {
+                          "expression": {
+                            "binary": {
+                              "left": {
+                                "expression": {
+                                  "name": "y"
+                                }
+                              },
+                              "right": {
+                                "expression": {
+                                  "int": "0"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "name": "Point"
+            }
+          },
+          "name": "Point"
+        }
       },
       "extends": {
         "type": {
@@ -712,7 +654,7 @@
       "generic": {
         "extends": {
           "generic_type": {
-            "$children": [
+            "name": [
               "Comparable",
               "T"
             ]
@@ -722,7 +664,7 @@
       },
       "implements": {
         "generic_type": {
-          "$children": [
+          "name": [
             "Handler",
             "T"
           ]
@@ -731,7 +673,6 @@
       "name": "Demo"
     },
     {
-      "$type": "class",
       "package": true,
       "body": {
         "method": {
@@ -762,26 +703,37 @@
       "name": "Base"
     },
     {
-      "$type": "class",
       "package": true,
       "body": {
         "block": {
           "static": true,
           "expression": {
             "assign": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "SEED"
                 },
                 {
-                  "$type": "expression",
                   "int": "42"
                 }
               ]
             }
           }
         },
+        "comment": [
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          }
+        ],
         "field": {
           "package": true,
           "static": true,
@@ -791,34 +743,16 @@
             "name": "int"
           }
         },
-        "$children": [
+        "method": [
           {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "method",
             "package": true,
             "body": {
-              "$children": [
+              "variable": [
                 {
-                  "$type": "variable",
                   "expression": {
                     "array": {
                       "literal": true,
-                      "$children": [
+                      "int": [
                         "1",
                         "2",
                         "3"
@@ -833,7 +767,6 @@
                   }
                 },
                 {
-                  "$type": "variable",
                   "expression": {
                     "string": "'A'"
                   },
@@ -843,7 +776,6 @@
                   }
                 },
                 {
-                  "$type": "variable",
                   "expression": {
                     "type": {
                       "name": "String"
@@ -856,17 +788,16 @@
                   "name": "cls"
                 },
                 {
-                  "$type": "variable",
                   "expression": {
                     "member": {
-                      "$children": [
+                      "name": [
                         "String",
                         "valueOf"
                       ]
                     }
                   },
                   "generic_type": {
-                    "$children": [
+                    "name": [
                       "java.util.function.Function",
                       "Object",
                       "String"
@@ -885,7 +816,6 @@
             }
           },
           {
-            "$type": "method",
             "package": true,
             "body": {
               "assert": {
@@ -940,9 +870,8 @@
                     }
                   },
                   "body": {
-                    "$children": [
+                    "if": [
                       {
-                        "$type": "if",
                         "body": {
                           "name": "outer"
                         },
@@ -964,7 +893,6 @@
                         }
                       },
                       {
-                        "$type": "if",
                         "body": {
                           "name": "outer"
                         },
@@ -1003,9 +931,8 @@
                 },
                 "name": "outer"
               },
-              "$children": [
+              "variable": [
                 {
-                  "$type": "variable",
                   "expression": {
                     "cast": {
                       "int": "0L",
@@ -1020,10 +947,9 @@
                   }
                 },
                 {
-                  "$type": "variable",
                   "expression": {
                     "is": {
-                      "$children": [
+                      "name": [
                         "o",
                         "String"
                       ]
@@ -1035,7 +961,6 @@
                   }
                 },
                 {
-                  "$type": "variable",
                   "expression": {
                     "int": "0"
                   },
@@ -1061,7 +986,6 @@
             }
           },
           {
-            "$type": "method",
             "package": true,
             "body": {
               "lock": {
@@ -1112,7 +1036,7 @@
                     }
                   },
                   "type": {
-                    "$children": [
+                    "name": [
                       "java.io.IOException",
                       "RuntimeException"
                     ]
@@ -1134,7 +1058,6 @@
             }
           },
           {
-            "$type": "method",
             "package": true,
             "body": {
               "return": {
@@ -1145,10 +1068,8 @@
               "variable": {
                 "expression": {
                   "switch": {
-                    "name": "o",
-                    "$children": [
+                    "arm": [
                       {
-                        "$type": "arm",
                         "case": {
                           "pattern": {
                             "name": "i",
@@ -1162,7 +1083,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "body": {
                           "yield": {
                             "int": "0"
@@ -1170,7 +1090,8 @@
                         },
                         "case": "default"
                       }
-                    ]
+                    ],
+                    "name": "o"
                   }
                 },
                 "name": "v",
@@ -1195,25 +1116,25 @@
         ]
       },
       "name": "Extras"
-    },
+    }
+  ],
+  "comment": [
     "// Blueprint fixture — exercises every major Java construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented; every\n// cycle of improvements should regenerate the snapshot.",
     {
-      "$type": "comment",
       "leading": true
     },
     "// Iter 19: new shapes — control flow, expressions, literals, patterns.",
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
-    },
+    }
+  ],
+  "import": [
     {
-      "$type": "import",
       "path": {
-        "$children": [
+        "name": [
           "java",
           "util",
           "List"
@@ -1221,9 +1142,8 @@
       }
     },
     {
-      "$type": "import",
       "path": {
-        "$children": [
+        "name": [
           "java",
           "util",
           "Map"
@@ -1231,9 +1151,8 @@
       }
     },
     {
-      "$type": "import",
       "path": {
-        "$children": [
+        "name": [
           "java",
           "util",
           "function",
@@ -1242,10 +1161,9 @@
       }
     },
     {
-      "$type": "import",
       "static": true,
       "path": {
-        "$children": [
+        "name": [
           "java",
           "util",
           "Collections",
@@ -1253,5 +1171,35 @@
         ]
       }
     }
-  ]
+  ],
+  "interface": {
+    "body": {
+      "method": [
+        {
+          "name": [
+            "String",
+            "value"
+          ],
+          "string": "\"default\""
+        },
+        {
+          "int": "30",
+          "name": [
+            "int",
+            "timeout"
+          ]
+        }
+      ]
+    },
+    "name": "Config"
+  },
+  "package": {
+    "path": {
+      "name": [
+        "com",
+        "example",
+        "blueprint"
+      ]
+    }
+  }
 }

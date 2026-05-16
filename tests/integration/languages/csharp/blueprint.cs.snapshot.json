@@ -1,363 +1,59 @@
 {
   "$type": "unit",
   "comment": "// Kitchen-sink C# blueprint fixture. Exercises every major construct so\n// design-principle changes to the C# transform surface as visible snapshot diffs.",
-  "$children": [
+  "namespace": [
     {
-      "$type": "namespace",
-      "delegate": {
-        "public": true,
-        "name": "Transformer",
-        "parameter": {
-          "name": "value",
-          "type": {
-            "name": "T"
-          }
-        },
-        "type": {
-          "name": "TResult"
-        },
-        "$children": [
-          {
-            "$type": "generic",
-            "in": true,
-            "name": "T"
-          },
-          {
-            "$type": "generic",
-            "out": true,
-            "name": "TResult"
-          }
-        ]
-      },
-      "interface": {
-        "public": true,
-        "body": {
-          "event": {
-            "private": true,
-            "name": "Added",
-            "type": {
-              "nullable": true,
-              "generic_type": {
-                "$children": [
-                  "EventHandler",
-                  "T"
-                ]
-              }
-            }
-          },
-          "$children": [
-            {
-              "$type": "method",
-              "public": true,
-              "name": "Find",
-              "parameter": {
-                "name": "id",
-                "type": {
-                  "name": "int"
-                }
-              }
-            },
-            {
-              "$type": "method",
-              "public": true,
-              "name": "AllAsync"
-            }
-          ]
-        },
-        "generic": {
-          "class": {},
-          "name": "T",
-          "new": {}
-        },
-        "name": "IRepository",
-        "where": {
-          "name": "T",
-          "$children": [
-            "class",
-            {
-              "$type": "constraint",
-              "new": "new()"
-            }
-          ]
-        }
-      },
-      "name": "Tractor.Fixtures.Traditional",
-      "struct": {
-        "public": true,
-        "readonly": true,
-        "body": {
-          "$children": [
-            {
-              "$type": "method",
-              "public": true,
-              "override": true,
-              "body": {
-                "logical": {
-                  "left": {
-                    "expression": {
-                      "is": {
-                        "name": "o",
-                        "pattern": {
-                          "declaration": true,
-                          "name": "p",
-                          "type": {
-                            "name": "Point"
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "right": {
-                    "expression": {
-                      "binary": {
-                        "left": {
-                          "expression": {
-                            "name": "p"
-                          }
-                        },
-                        "right": {
-                          "expression": {
-                            "name": "this"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "name": "Equals",
-              "parameter": {
-                "name": "o",
-                "type": {
-                  "nullable": true,
-                  "type": {
-                    "name": "object"
-                  }
-                }
-              }
-            },
-            {
-              "$type": "method",
-              "public": true,
-              "override": true,
-              "body": {
-                "access": {
-                  "$children": [
-                    "HashCode",
-                    "X",
-                    "Y"
-                  ]
-                }
-              },
-              "name": "GetHashCode"
-            },
-            {
-              "$type": "operator",
-              "public": true,
-              "static": true,
-              "body": {
-                "object_creation": {
-                  "$children": [
-                    {
-                      "$type": "binary",
-                      "left": {
-                        "expression": {
-                          "access": {
-                            "name": "a"
-                          }
-                        }
-                      },
-                      "right": {
-                        "expression": {
-                          "access": {
-                            "name": "b"
-                          }
-                        }
-                      }
-                    },
-                    {
-                      "$type": "binary",
-                      "left": {
-                        "expression": {
-                          "access": {
-                            "name": "a"
-                          }
-                        }
-                      },
-                      "right": {
-                        "expression": {
-                          "access": {
-                            "name": "b"
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              },
-              "type": {
-                "name": "Point"
-              },
-              "$children": [
-                {
-                  "$type": "parameter",
-                  "name": "a",
-                  "type": {
-                    "name": "Point"
-                  }
-                },
-                {
-                  "$type": "parameter",
-                  "name": "b",
-                  "type": {
-                    "name": "Point"
-                  }
-                }
-              ]
-            },
-            {
-              "$type": "operator",
-              "public": true,
-              "static": true,
-              "body": {
-                "logical": {
-                  "left": {
-                    "expression": {
-                      "binary": {
-                        "left": {
-                          "expression": {
-                            "access": {
-                              "name": "a"
-                            }
-                          }
-                        },
-                        "right": {
-                          "expression": {
-                            "access": {
-                              "name": "b"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "right": {
-                    "expression": {
-                      "binary": {
-                        "left": {
-                          "expression": {
-                            "access": {
-                              "name": "a"
-                            }
-                          }
-                        },
-                        "right": {
-                          "expression": {
-                            "access": {
-                              "name": "b"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "type": {
-                "name": "bool"
-              },
-              "$children": [
-                {
-                  "$type": "parameter",
-                  "name": "a",
-                  "type": {
-                    "name": "Point"
-                  }
-                },
-                {
-                  "$type": "parameter",
-                  "name": "b",
-                  "type": {
-                    "name": "Point"
-                  }
-                }
-              ]
-            },
-            {
-              "$type": "operator",
-              "public": true,
-              "static": true,
-              "body": {
-                "unary": {
-                  "binary": {
-                    "left": {
-                      "expression": {
-                        "name": "a"
-                      }
-                    },
-                    "right": {
-                      "expression": {
-                        "name": "b"
-                      }
-                    }
-                  }
-                }
-              },
-              "type": {
-                "name": "bool"
-              },
-              "$children": [
-                {
-                  "$type": "parameter",
-                  "name": "a",
-                  "type": {
-                    "name": "Point"
-                  }
-                },
-                {
-                  "$type": "parameter",
-                  "name": "b",
-                  "type": {
-                    "name": "Point"
-                  }
-                }
-              ]
-            },
-            {
-              "$type": "property",
-              "public": true,
-              "get": "get;",
-              "type": {
-                "name": "double"
-              },
-              "$children": [
-                "X",
-                "x"
-              ]
-            },
-            {
-              "$type": "property",
-              "public": true,
-              "get": "get;",
-              "type": {
-                "name": "double"
-              },
-              "$children": [
-                "Y",
-                "y"
-              ]
-            }
-          ]
-        },
-        "name": "Point"
-      },
-      "$children": [
+      "class": [
         {
-          "$type": "class",
           "public": true,
           "abstract": true,
           "partial": true,
+          "attribute": [
+            {
+              "name": "Serializable"
+            },
+            {
+              "argument": [
+                {
+                  "string": "\"use V2\""
+                },
+                {
+                  "bool": "false"
+                }
+              ],
+              "name": "Obsolete"
+            }
+          ],
           "body": {
+            "constructor": [
+              {
+                "protected": true,
+                "body": "{ }",
+                "name": "EntityBase"
+              },
+              {
+                "protected": true,
+                "body": {
+                  "assign": {
+                    "expression": [
+                      {
+                        "name": "Id"
+                      },
+                      {
+                        "name": "id"
+                      }
+                    ]
+                  }
+                },
+                "name": "EntityBase",
+                "parameter": {
+                  "name": "id",
+                  "type": {
+                    "name": "int"
+                  }
+                }
+              }
+            ],
             "destructor": {
               "body": {
                 "comment": "/* finalizer */"
@@ -370,13 +66,52 @@
               "type": {
                 "nullable": true,
                 "generic_type": {
-                  "$children": [
+                  "name": [
                     "Action",
                     "EntityBase"
                   ]
                 }
               }
             },
+            "field": [
+              {
+                "public": true,
+                "const": true,
+                "expression": {
+                  "int": "128"
+                },
+                "name": "MaxNameLength",
+                "type": {
+                  "name": "int"
+                }
+              },
+              {
+                "protected": true,
+                "internal": true,
+                "static": true,
+                "readonly": true,
+                "expression": {
+                  "object_creation": {
+                    "int": [
+                      "1970",
+                      "1",
+                      "1"
+                    ]
+                  }
+                },
+                "name": "Epoch",
+                "type": {
+                  "name": "DateTime"
+                }
+              },
+              {
+                "private": true,
+                "name": "_version",
+                "type": {
+                  "name": "int"
+                }
+              }
+            ],
             "indexer": {
               "public": true,
               "parameter": {
@@ -394,86 +129,13 @@
                 }
               }
             },
-            "$children": [
+            "method": [
               {
-                "$type": "constructor",
-                "protected": true,
-                "body": "{ }",
-                "name": "EntityBase"
-              },
-              {
-                "$type": "constructor",
-                "protected": true,
-                "body": {
-                  "assign": {
-                    "$children": [
-                      {
-                        "$type": "expression",
-                        "name": "Id"
-                      },
-                      {
-                        "$type": "expression",
-                        "name": "id"
-                      }
-                    ]
-                  }
-                },
-                "name": "EntityBase",
-                "parameter": {
-                  "name": "id",
-                  "type": {
-                    "name": "int"
-                  }
-                }
-              },
-              {
-                "$type": "field",
-                "public": true,
-                "const": true,
-                "expression": {
-                  "int": "128"
-                },
-                "name": "MaxNameLength",
-                "type": {
-                  "name": "int"
-                }
-              },
-              {
-                "$type": "field",
-                "protected": true,
-                "internal": true,
-                "static": true,
-                "readonly": true,
-                "expression": {
-                  "object_creation": {
-                    "$children": [
-                      "1970",
-                      "1",
-                      "1"
-                    ]
-                  }
-                },
-                "name": "Epoch",
-                "type": {
-                  "name": "DateTime"
-                }
-              },
-              {
-                "$type": "field",
-                "private": true,
-                "name": "_version",
-                "type": {
-                  "name": "int"
-                }
-              },
-              {
-                "$type": "method",
                 "public": true,
                 "abstract": true,
                 "name": "Describe"
               },
               {
-                "$type": "method",
                 "protected": true,
                 "virtual": true,
                 "body": {
@@ -482,9 +144,10 @@
                   }
                 },
                 "name": "OnChanged"
-              },
+              }
+            ],
+            "property": [
               {
-                "$type": "property",
                 "public": true,
                 "get": "get;",
                 "init": "init;",
@@ -494,7 +157,6 @@
                 }
               },
               {
-                "$type": "property",
                 "public": true,
                 "get": "get;",
                 "name": "Name",
@@ -505,7 +167,6 @@
                 }
               },
               {
-                "$type": "property",
                 "public": true,
                 "virtual": true,
                 "access": {
@@ -522,128 +183,74 @@
               }
             ]
           },
-          "name": "EntityBase",
-          "$children": [
-            {
-              "$type": "attribute",
-              "name": "Serializable"
-            },
-            {
-              "$type": "attribute",
-              "name": "Obsolete",
-              "$children": [
-                {
-                  "$type": "argument",
-                  "string": "\"use V2\""
-                },
-                {
-                  "$type": "argument",
-                  "bool": "false"
-                }
-              ]
-            }
-          ]
+          "name": "EntityBase"
         },
         {
-          "$type": "class",
           "public": true,
           "sealed": true,
           "partial": true,
           "body": {
-            "event": {
-              "public": true,
-              "name": "Added",
-              "type": {
-                "nullable": true,
-                "generic_type": {
-                  "$children": [
-                    "EventHandler",
-                    "Widget"
-                  ]
-                }
-              }
-            },
-            "property": {
-              "public": true,
-              "override": true,
-              "get": {
-                "access": "base.Priority"
-              },
-              "name": "Priority",
-              "set": {
-                "protected": true,
-                "assign": {
-                  "$children": [
-                    {
-                      "$type": "expression",
-                      "access": "base.Priority"
-                    },
-                    {
-                      "$type": "expression",
-                      "name": "value"
-                    }
-                  ]
-                }
-              },
-              "type": {
-                "name": "Priority"
-              }
-            },
-            "$children": [
+            "constructor": [
               {
-                "$type": "constructor",
                 "public": true,
                 "body": "{ }",
                 "name": "Widget"
               },
               {
-                "$type": "constructor",
                 "public": true,
                 "body": {
                   "assign": {
-                    "$children": [
+                    "expression": [
                       {
-                        "$type": "expression",
                         "name": "Name"
                       },
                       {
-                        "$type": "expression",
                         "name": "name"
                       }
                     ]
                   }
                 },
                 "name": "Widget",
-                "$children": [
+                "parameter": [
                   {
-                    "$type": "parameter",
                     "name": "id",
                     "type": {
                       "name": "int"
                     }
                   },
                   {
-                    "$type": "parameter",
                     "name": "name",
                     "type": {
                       "name": "string"
                     }
                   }
                 ]
-              },
+              }
+            ],
+            "event": {
+              "public": true,
+              "name": "Added",
+              "type": {
+                "nullable": true,
+                "generic_type": {
+                  "name": [
+                    "EventHandler",
+                    "Widget"
+                  ]
+                }
+              }
+            },
+            "method": [
               {
-                "$type": "method",
                 "public": true,
                 "override": true,
                 "body": {
                   "string": {
-                    "$children": [
+                    "interpolation": [
                       {
-                        "$type": "interpolation",
                         "name": "Id"
                       },
                       {
-                        "$type": "interpolation",
                         "expression": {
                           "name": "Name"
                         }
@@ -654,7 +261,6 @@
                 "name": "Describe"
               },
               {
-                "$type": "method",
                 "public": true,
                 "body": {
                   "ternary": {
@@ -695,7 +301,6 @@
                 }
               },
               {
-                "$type": "method",
                 "public": true,
                 "async": true,
                 "body": {
@@ -714,38 +319,35 @@
                 "name": "AllAsync"
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
                   "call": {
-                    "$children": [
+                    "name": [
                       "fn",
                       "input"
                     ]
                   }
                 },
-                "name": "Pipe",
-                "$children": [
+                "generic": [
                   {
-                    "$type": "generic",
                     "name": "T"
                   },
                   {
-                    "$type": "generic",
                     "name": "TResult"
-                  },
+                  }
+                ],
+                "name": "Pipe",
+                "parameter": [
                   {
-                    "$type": "parameter",
                     "name": "input",
                     "type": {
                       "name": "T"
                     }
                   },
                   {
-                    "$type": "parameter",
                     "generic_type": {
-                      "$children": [
+                      "name": [
                         "Transformer",
                         "T",
                         "TResult"
@@ -755,29 +357,50 @@
                   }
                 ]
               }
-            ]
+            ],
+            "property": {
+              "public": true,
+              "override": true,
+              "get": {
+                "access": "base.Priority"
+              },
+              "name": "Priority",
+              "set": {
+                "protected": true,
+                "assign": {
+                  "expression": [
+                    {
+                      "access": "base.Priority"
+                    },
+                    {
+                      "name": "value"
+                    }
+                  ]
+                }
+              },
+              "type": {
+                "name": "Priority"
+              }
+            }
           },
-          "name": "Widget",
-          "$children": [
+          "extends": [
             {
-              "$type": "extends",
               "type": {
                 "name": "EntityBase"
               }
             },
             {
-              "$type": "extends",
               "generic_type": {
-                "$children": [
+                "name": [
                   "IRepository",
                   "Widget"
                 ]
               }
             }
-          ]
+          ],
+          "name": "Widget"
         },
         {
-          "$type": "class",
           "public": true,
           "static": true,
           "body": {
@@ -813,7 +436,6 @@
           "name": "WidgetExtensions"
         },
         {
-          "$type": "class",
           "internal": true,
           "static": true,
           "body": {
@@ -852,6 +474,32 @@
                     }
                   }
                 },
+                "comment": [
+                  {
+                    "leading": true
+                  },
+                  {
+                    "leading": true
+                  },
+                  {
+                    "leading": true
+                  },
+                  {
+                    "leading": true
+                  },
+                  {
+                    "leading": true
+                  },
+                  {
+                    "leading": true
+                  },
+                  {
+                    "leading": true
+                  },
+                  {
+                    "leading": true
+                  }
+                ],
                 "do_while": {
                   "binary": {
                     "left": {
@@ -878,22 +526,19 @@
                   "call": {
                     "name": "log",
                     "string": {
-                      "$children": [
+                      "interpolation": [
                         {
-                          "$type": "interpolation",
                           "access": {
                             "name": "evens"
                           }
                         },
                         {
-                          "$type": "interpolation",
                           "call": {
                             "int": "3",
                             "name": "cube"
                           }
                         },
                         {
-                          "$type": "interpolation",
                           "call": {
                             "int": "4",
                             "name": "Square"
@@ -1102,9 +747,8 @@
                 },
                 "switch": {
                   "body": {
-                    "$children": [
+                    "arm": [
                       {
-                        "$type": "arm",
                         "break": "break;",
                         "expression": {
                           "access": {
@@ -1123,7 +767,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "constant": true,
                           "null": "null"
@@ -1137,7 +780,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "break": "break;"
                       }
                     ]
@@ -1169,7 +811,7 @@
                         "expression": {
                           "object_creation": {
                             "path": {
-                              "$children": [
+                              "name": [
                                 "System",
                                 "IO",
                                 "MemoryStream"
@@ -1184,18 +826,8 @@
                       }
                     }
                   },
-                  "finally": {
-                    "body": {
-                      "expression": {
-                        "access": {
-                          "name": "scope"
-                        }
-                      }
-                    }
-                  },
-                  "$children": [
+                  "catch": [
                     {
-                      "$type": "catch",
                       "as": {
                         "expression": {
                           "name": "ex"
@@ -1234,7 +866,6 @@
                       }
                     },
                     {
-                      "$type": "catch",
                       "body": {
                         "throw": "throw;"
                       },
@@ -1242,65 +873,19 @@
                         "name": "Exception"
                       }
                     }
-                  ]
-                },
-                "while": {
-                  "body": "{ }",
-                  "condition": {
-                    "expression": {
-                      "binary": {
-                        "left": {
-                          "expression": {
-                            "unary": {
-                              "postfix": true,
-                              "name": "j"
-                            }
-                          }
-                        },
-                        "right": {
-                          "expression": {
-                            "int": "2"
-                          }
+                  ],
+                  "finally": {
+                    "body": {
+                      "expression": {
+                        "access": {
+                          "name": "scope"
                         }
                       }
                     }
                   }
                 },
-                "$children": [
+                "variable": [
                   {
-                    "$type": "comment",
-                    "leading": true
-                  },
-                  {
-                    "$type": "comment",
-                    "leading": true
-                  },
-                  {
-                    "$type": "comment",
-                    "leading": true
-                  },
-                  {
-                    "$type": "comment",
-                    "leading": true
-                  },
-                  {
-                    "$type": "comment",
-                    "leading": true
-                  },
-                  {
-                    "$type": "comment",
-                    "leading": true
-                  },
-                  {
-                    "$type": "comment",
-                    "leading": true
-                  },
-                  {
-                    "$type": "comment",
-                    "leading": true
-                  },
-                  {
-                    "$type": "variable",
                     "expression": {
                       "binary": {
                         "left": {
@@ -1325,7 +910,6 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "binary": {
                         "left": {
@@ -1348,7 +932,6 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "ternary": {
                         "condition": {
@@ -1390,13 +973,10 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "switch": {
-                        "name": "widget",
-                        "$children": [
+                        "arm": [
                           {
-                            "$type": "arm",
                             "pattern": {
                               "recursive": true,
                               "properties": {
@@ -1414,7 +994,6 @@
                             "string": "\"hot\""
                           },
                           {
-                            "$type": "arm",
                             "pattern": {
                               "declaration": true,
                               "name": "w",
@@ -1441,11 +1020,11 @@
                             }
                           },
                           {
-                            "$type": "arm",
                             "discard": "_",
                             "string": "\"plain\""
                           }
-                        ]
+                        ],
+                        "name": "widget"
                       }
                     },
                     "name": "kind",
@@ -1454,7 +1033,6 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "name": "widget"
                     },
@@ -1464,7 +1042,6 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "query": {
                         "from": {
@@ -1528,13 +1105,10 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "access": {
-                        "name": "numbers",
-                        "$children": [
+                        "lambda": [
                           {
-                            "$type": "lambda",
                             "binary": {
                               "left": {
                                 "expression": {
@@ -1563,7 +1137,6 @@
                             }
                           },
                           {
-                            "$type": "lambda",
                             "binary": {
                               "left": {
                                 "expression": {
@@ -1580,7 +1153,8 @@
                               "name": "n"
                             }
                           }
-                        ]
+                        ],
+                        "name": "numbers"
                       }
                     },
                     "name": "odds",
@@ -1589,7 +1163,6 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "lambda": {
                         "binary": {
@@ -1621,7 +1194,7 @@
                       }
                     },
                     "generic_type": {
-                      "$children": [
+                      "name": [
                         "Func",
                         "int",
                         "int"
@@ -1630,7 +1203,6 @@
                     "name": "cube"
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "lambda": {
                         "body": {
@@ -1657,7 +1229,7 @@
                       }
                     },
                     "generic_type": {
-                      "$children": [
+                      "name": [
                         "Func",
                         "int",
                         "int"
@@ -1666,11 +1238,10 @@
                     "name": "blockLambda"
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "lambda": {
                         "access": {
-                          "$children": [
+                          "name": [
                             "Console",
                             "msg"
                           ]
@@ -1681,7 +1252,7 @@
                       }
                     },
                     "generic_type": {
-                      "$children": [
+                      "name": [
                         "Action",
                         "string"
                       ]
@@ -1689,7 +1260,6 @@
                     "name": "log"
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "int": "0"
                     },
@@ -1699,7 +1269,6 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "int": "0"
                     },
@@ -1709,11 +1278,10 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "object_creation": {
                         "path": {
-                          "$children": [
+                          "name": [
                             "System",
                             "IO",
                             "MemoryStream"
@@ -1727,7 +1295,6 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "tuple": {
                         "access": {
@@ -1739,16 +1306,14 @@
                     "name": "pair",
                     "type": {
                       "tuple": true,
-                      "$children": [
+                      "element": [
                         {
-                          "$type": "element",
                           "name": "count",
                           "type": {
                             "name": "int"
                           }
                         },
                         {
-                          "$type": "element",
                           "name": "tag",
                           "type": {
                             "name": "string"
@@ -1758,13 +1323,12 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "name": "pair"
                     },
                     "pattern": {
                       "tuple": true,
-                      "$children": [
+                      "name": [
                         "cnt",
                         "tg"
                       ]
@@ -1774,21 +1338,20 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "index": {
-                        "range": {
-                          "name": "odds"
-                        },
-                        "$children": [
+                        "int": [
                           "1",
                           "2",
                           "3"
-                        ]
+                        ],
+                        "range": {
+                          "name": "odds"
+                        }
                       }
                     },
                     "generic_type": {
-                      "$children": [
+                      "name": [
                         "List",
                         "int"
                       ]
@@ -1796,36 +1359,29 @@
                     "name": "list"
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "object_creation": {
-                        "$children": [
+                        "assign": [
                           {
-                            "$type": "assign",
-                            "$children": [
+                            "expression": [
                               {
-                                "$type": "expression",
                                 "index": {
                                   "string": "\"a\""
                                 }
                               },
                               {
-                                "$type": "expression",
                                 "int": "1"
                               }
                             ]
                           },
                           {
-                            "$type": "assign",
-                            "$children": [
+                            "expression": [
                               {
-                                "$type": "expression",
                                 "index": {
                                   "string": "\"b\""
                                 }
                               },
                               {
-                                "$type": "expression",
                                 "int": "2"
                               }
                             ]
@@ -1834,7 +1390,7 @@
                       }
                     },
                     "generic_type": {
-                      "$children": [
+                      "name": [
                         "Dictionary",
                         "string",
                         "int"
@@ -1843,7 +1399,6 @@
                     "name": "map"
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "string": "\"hello\""
                     },
@@ -1853,7 +1408,6 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "string": "@\"C:\\path\\file.txt\""
                     },
@@ -1863,16 +1417,13 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "string": {
-                        "$children": [
+                        "interpolation": [
                           {
-                            "$type": "interpolation",
                             "name": "cnt"
                           },
                           {
-                            "$type": "interpolation",
                             "name": "tg"
                           }
                         ]
@@ -1884,7 +1435,6 @@
                     }
                   },
                   {
-                    "$type": "variable",
                     "expression": {
                       "string": "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\""
                     },
@@ -1893,12 +1443,33 @@
                       "name": "var"
                     }
                   }
-                ]
+                ],
+                "while": {
+                  "body": "{ }",
+                  "condition": {
+                    "expression": {
+                      "binary": {
+                        "left": {
+                          "expression": {
+                            "unary": {
+                              "postfix": true,
+                              "name": "j"
+                            }
+                          }
+                        },
+                        "right": {
+                          "expression": {
+                            "int": "2"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               },
               "name": "RunAsync",
-              "$children": [
+              "parameter": [
                 {
-                  "$type": "parameter",
                   "name": "maybe",
                   "type": {
                     "nullable": true,
@@ -1908,9 +1479,8 @@
                   }
                 },
                 {
-                  "$type": "parameter",
                   "generic_type": {
-                    "$children": [
+                    "name": [
                       "IEnumerable",
                       "int"
                     ]
@@ -1921,66 +1491,132 @@
             }
           },
           "name": "Demo"
+        }
+      ],
+      "delegate": {
+        "public": true,
+        "generic": [
+          {
+            "in": true,
+            "name": "T"
+          },
+          {
+            "out": true,
+            "name": "TResult"
+          }
+        ],
+        "name": "Transformer",
+        "parameter": {
+          "name": "value",
+          "type": {
+            "name": "T"
+          }
         },
+        "type": {
+          "name": "TResult"
+        }
+      },
+      "enum": [
         {
-          "$type": "enum",
           "public": true,
-          "name": "Priority",
-          "$children": [
+          "constant": [
             {
-              "$type": "constant",
               "name": "Low"
             },
             {
-              "$type": "constant",
               "name": "Medium"
             },
             {
-              "$type": "constant",
               "name": "High"
             }
-          ]
+          ],
+          "name": "Priority"
         },
         {
-          "$type": "enum",
           "public": true,
-          "name": "Trait",
-          "$children": [
+          "constant": [
             {
-              "$type": "constant",
               "int": "0",
               "name": "None"
             },
             {
-              "$type": "constant",
               "int": "1",
               "name": "Fast"
             },
             {
-              "$type": "constant",
               "int": "2",
               "name": "Safe"
             },
             {
-              "$type": "constant",
               "int": "4",
               "name": "Cheap"
             }
+          ],
+          "name": "Trait"
+        }
+      ],
+      "interface": {
+        "public": true,
+        "body": {
+          "event": {
+            "private": true,
+            "name": "Added",
+            "type": {
+              "nullable": true,
+              "generic_type": {
+                "name": [
+                  "EventHandler",
+                  "T"
+                ]
+              }
+            }
+          },
+          "method": [
+            {
+              "public": true,
+              "name": "Find",
+              "parameter": {
+                "name": "id",
+                "type": {
+                  "name": "int"
+                }
+              }
+            },
+            {
+              "public": true,
+              "name": "AllAsync"
+            }
           ]
         },
+        "generic": {
+          "class": {},
+          "name": "T",
+          "new": {}
+        },
+        "name": "IRepository",
+        "where": {
+          "constraint": [
+            "class",
+            {
+              "new": "new()"
+            }
+          ],
+          "name": "T"
+        }
+      },
+      "name": "Tractor.Fixtures.Traditional",
+      "record": [
         {
-          "$type": "record",
           "public": true,
           "body": {},
           "name": "Money"
         },
         {
-          "$type": "record",
           "public": true,
           "body": {},
           "extends": {
             "type": {
-              "$children": [
+              "name": [
                 "Money",
                 "Amount",
                 "Currency"
@@ -1989,44 +1625,281 @@
           },
           "name": "TaxedMoney"
         }
-      ]
+      ],
+      "struct": {
+        "public": true,
+        "readonly": true,
+        "body": {
+          "method": [
+            {
+              "public": true,
+              "override": true,
+              "body": {
+                "logical": {
+                  "left": {
+                    "expression": {
+                      "is": {
+                        "name": "o",
+                        "pattern": {
+                          "declaration": true,
+                          "name": "p",
+                          "type": {
+                            "name": "Point"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "right": {
+                    "expression": {
+                      "binary": {
+                        "left": {
+                          "expression": {
+                            "name": "p"
+                          }
+                        },
+                        "right": {
+                          "expression": {
+                            "name": "this"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "name": "Equals",
+              "parameter": {
+                "name": "o",
+                "type": {
+                  "nullable": true,
+                  "type": {
+                    "name": "object"
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "override": true,
+              "body": {
+                "access": {
+                  "name": [
+                    "HashCode",
+                    "X",
+                    "Y"
+                  ]
+                }
+              },
+              "name": "GetHashCode"
+            }
+          ],
+          "operator": [
+            {
+              "public": true,
+              "static": true,
+              "body": {
+                "object_creation": {
+                  "binary": [
+                    {
+                      "left": {
+                        "expression": {
+                          "access": {
+                            "name": "a"
+                          }
+                        }
+                      },
+                      "right": {
+                        "expression": {
+                          "access": {
+                            "name": "b"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "left": {
+                        "expression": {
+                          "access": {
+                            "name": "a"
+                          }
+                        }
+                      },
+                      "right": {
+                        "expression": {
+                          "access": {
+                            "name": "b"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "parameter": [
+                {
+                  "name": "a",
+                  "type": {
+                    "name": "Point"
+                  }
+                },
+                {
+                  "name": "b",
+                  "type": {
+                    "name": "Point"
+                  }
+                }
+              ],
+              "type": {
+                "name": "Point"
+              }
+            },
+            {
+              "public": true,
+              "static": true,
+              "body": {
+                "logical": {
+                  "left": {
+                    "expression": {
+                      "binary": {
+                        "left": {
+                          "expression": {
+                            "access": {
+                              "name": "a"
+                            }
+                          }
+                        },
+                        "right": {
+                          "expression": {
+                            "access": {
+                              "name": "b"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "right": {
+                    "expression": {
+                      "binary": {
+                        "left": {
+                          "expression": {
+                            "access": {
+                              "name": "a"
+                            }
+                          }
+                        },
+                        "right": {
+                          "expression": {
+                            "access": {
+                              "name": "b"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "parameter": [
+                {
+                  "name": "a",
+                  "type": {
+                    "name": "Point"
+                  }
+                },
+                {
+                  "name": "b",
+                  "type": {
+                    "name": "Point"
+                  }
+                }
+              ],
+              "type": {
+                "name": "bool"
+              }
+            },
+            {
+              "public": true,
+              "static": true,
+              "body": {
+                "unary": {
+                  "binary": {
+                    "left": {
+                      "expression": {
+                        "name": "a"
+                      }
+                    },
+                    "right": {
+                      "expression": {
+                        "name": "b"
+                      }
+                    }
+                  }
+                }
+              },
+              "parameter": [
+                {
+                  "name": "a",
+                  "type": {
+                    "name": "Point"
+                  }
+                },
+                {
+                  "name": "b",
+                  "type": {
+                    "name": "Point"
+                  }
+                }
+              ],
+              "type": {
+                "name": "bool"
+              }
+            }
+          ],
+          "property": [
+            {
+              "public": true,
+              "get": "get;",
+              "name": [
+                "X",
+                "x"
+              ],
+              "type": {
+                "name": "double"
+              }
+            },
+            {
+              "public": true,
+              "get": "get;",
+              "name": [
+                "Y",
+                "y"
+              ],
+              "type": {
+                "name": "double"
+              }
+            }
+          ]
+        },
+        "name": "Point"
+      }
     },
     {
-      "$type": "namespace",
       "attribute": {
         "argument": {
           "string": "\"blueprint\""
         },
         "path": {
-          "$children": [
+          "name": [
             "System",
             "Reflection",
             "AssemblyDescription"
           ]
         }
       },
-      "int": "0168",
-      "interface": {
-        "internal": true,
-        "body": {
-          "method": {
-            "public": true,
-            "name": "IFormat"
-          }
-        },
-        "name": "IFormatProvider2"
-      },
-      "record": {
-        "public": true,
-        "body": {},
-        "name": "Point"
-      },
-      "using": {
-        "name": "System"
-      },
-      "$children": [
+      "class": [
         {
-          "$type": "class",
           "file": true,
           "sealed": true,
           "body": {
@@ -2045,7 +1918,6 @@
           "name": "Hidden"
         },
         {
-          "$type": "class",
           "public": true,
           "static": true,
           "body": {
@@ -2063,24 +1935,21 @@
           "name": "Entry"
         },
         {
-          "$type": "class",
           "public": true,
           "static": true,
           "body": {
             "class": {
               "public": true,
               "attribute": {
-                "name": "Obsolete",
-                "$children": [
+                "argument": [
                   {
-                    "$type": "argument",
                     "string": "\"legacy\""
                   },
                   {
-                    "$type": "argument",
                     "bool": "false"
                   }
-                ]
+                ],
+                "name": "Obsolete"
               },
               "body": {
                 "constructor": {
@@ -2129,16 +1998,90 @@
               },
               "name": "Container",
               "where": {
-                "name": "T",
-                "$children": [
+                "constraint": [
                   "class",
                   {
-                    "$type": "constraint",
                     "new": "new()"
                   }
-                ]
+                ],
+                "name": "T"
               }
             },
+            "comment": [
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              },
+              "// Unsafe statement (block form, distinct from unsafe modifier) —\n    // omitted here pending shape decision: tree-sitter exposes a\n    // `block` child of `unsafe_statement`, and naively wrapping the\n    // outer in `<block>` produces nested `<block><block>` which the\n    // `no-repeated-parent-child-name` shape contract rejects. The\n    // `unsafe` modifier on methods (above) is sufficient for now.",
+              {
+                "leading": true
+              },
+              {
+                "leading": true
+              }
+            ],
             "delegate": {
               "public": true,
               "name": "OnChanged",
@@ -2152,106 +2095,8 @@
                 "name": "void"
               }
             },
-            "$children": [
+            "event": [
               {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              "// Unsafe statement (block form, distinct from unsafe modifier) —\n    // omitted here pending shape decision: tree-sitter exposes a\n    // `block` child of `unsafe_statement`, and naively wrapping the\n    // outer in `<block>` produces nested `<block><block>` which the\n    // `no-repeated-parent-child-name` shape contract rejects. The\n    // `unsafe` modifier on methods (above) is sufficient for now.",
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "comment",
-                "leading": true
-              },
-              {
-                "$type": "event",
                 "public": true,
                 "name": "Changed",
                 "type": {
@@ -2259,7 +2104,6 @@
                 }
               },
               {
-                "$type": "event",
                 "private": true,
                 "name": "_changed",
                 "type": {
@@ -2267,24 +2111,16 @@
                 }
               },
               {
-                "$type": "event",
                 "public": true,
-                "name": "Explicit",
-                "type": {
-                  "name": "OnChanged"
-                },
-                "$children": [
+                "get": [
                   {
-                    "$type": "get",
                     "body": {
                       "assign": {
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "_changed"
                           },
                           {
-                            "$type": "expression",
                             "name": "value"
                           }
                         ]
@@ -2292,26 +2128,28 @@
                     }
                   },
                   {
-                    "$type": "get",
                     "body": {
                       "assign": {
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "_changed"
                           },
                           {
-                            "$type": "expression",
                             "name": "value"
                           }
                         ]
                       }
                     }
                   }
-                ]
-              },
+                ],
+                "name": "Explicit",
+                "type": {
+                  "name": "OnChanged"
+                }
+              }
+            ],
+            "field": [
               {
-                "$type": "field",
                 "private": true,
                 "expression": {
                   "int": "0"
@@ -2319,7 +2157,7 @@
                 "name": "aliased",
                 "type": {
                   "path": {
-                    "$children": [
+                    "name": [
                       "global::System",
                       "Int32"
                     ]
@@ -2327,7 +2165,6 @@
                 }
               },
               {
-                "$type": "field",
                 "private": true,
                 "static": true,
                 "expression": {
@@ -2337,22 +2174,21 @@
                 "type": {
                   "name": "int"
                 }
-              },
+              }
+            ],
+            "method": [
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
                   "checked": {
                     "body": {
                       "assign": {
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "n"
                           },
                           {
-                            "$type": "expression",
                             "binary": {
                               "left": {
                                 "expression": {
@@ -2370,18 +2206,51 @@
                       }
                     }
                   },
+                  "comment": [
+                    {
+                      "leading": true
+                    },
+                    {
+                      "leading": true
+                    },
+                    {
+                      "leading": true
+                    },
+                    {
+                      "leading": true
+                    },
+                    {
+                      "leading": true
+                    },
+                    {
+                      "leading": true
+                    },
+                    {
+                      "leading": true
+                    },
+                    {
+                      "leading": true
+                    },
+                    {
+                      "leading": true
+                    },
+                    {
+                      "leading": true
+                    },
+                    {
+                      "leading": true
+                    }
+                  ],
                   "goto": {
                     "name": "skip"
                   },
                   "label": {
                     "assign": {
-                      "$children": [
+                      "expression": [
                         {
-                          "$type": "expression",
                           "name": "_"
                         },
                         {
-                          "$type": "expression",
                           "name": "n"
                         }
                       ]
@@ -2403,53 +2272,8 @@
                       }
                     }
                   },
-                  "$children": [
+                  "variable": [
                     {
-                      "$type": "comment",
-                      "leading": true
-                    },
-                    {
-                      "$type": "comment",
-                      "leading": true
-                    },
-                    {
-                      "$type": "comment",
-                      "leading": true
-                    },
-                    {
-                      "$type": "comment",
-                      "leading": true
-                    },
-                    {
-                      "$type": "comment",
-                      "leading": true
-                    },
-                    {
-                      "$type": "comment",
-                      "leading": true
-                    },
-                    {
-                      "$type": "comment",
-                      "leading": true
-                    },
-                    {
-                      "$type": "comment",
-                      "leading": true
-                    },
-                    {
-                      "$type": "comment",
-                      "leading": true
-                    },
-                    {
-                      "$type": "comment",
-                      "leading": true
-                    },
-                    {
-                      "$type": "comment",
-                      "leading": true
-                    },
-                    {
-                      "$type": "variable",
                       "expression": {
                         "cast": {
                           "float": "3.14",
@@ -2464,7 +2288,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "string": "'A'"
                       },
@@ -2474,7 +2297,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "int": "0"
                       },
@@ -2484,7 +2306,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "object_creation": {
                           "float": "1.0m",
@@ -2498,7 +2319,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "with": {
                           "literal": {
@@ -2514,16 +2334,15 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "new": {
                           "anonymous": true,
                           "int": "42",
-                          "string": "\"foo\"",
-                          "$children": [
+                          "name": [
                             "Name",
                             "Value"
-                          ]
+                          ],
+                          "string": "\"foo\""
                         }
                       },
                       "name": "anon",
@@ -2532,20 +2351,19 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "new": {
+                          "int": [
+                            "1",
+                            "2",
+                            "3"
+                          ],
                           "type": {
                             "array": true,
                             "type": {
                               "name": "int"
                             }
-                          },
-                          "$children": [
-                            "1",
-                            "2",
-                            "3"
-                          ]
+                          }
                         }
                       },
                       "name": "arr",
@@ -2557,10 +2375,9 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "new": {
-                          "$children": [
+                          "int": [
                             "4",
                             "5",
                             "6"
@@ -2576,7 +2393,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "typeof": {
                           "type": {
@@ -2590,7 +2406,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "sizeof": {
                           "type": {
@@ -2604,7 +2419,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "default": {
                           "type": {
@@ -2618,7 +2432,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "null": "null"
                       },
@@ -2628,7 +2441,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "binary": {
                           "left": {
@@ -2642,7 +2454,7 @@
                                 "expression": {
                                   "object_creation": {
                                     "call": {
-                                      "$children": [
+                                      "name": [
                                         "nameof",
                                         "s"
                                       ]
@@ -2671,17 +2483,14 @@
                 }
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
-                  "$children": [
+                  "yield": [
                     {
-                      "$type": "yield",
                       "int": "1"
                     },
                     {
-                      "$type": "yield",
                       "int": "2"
                     }
                   ]
@@ -2689,17 +2498,14 @@
                 "name": "Yields"
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
                   "return": {
                     "expression": {
                       "switch": {
-                        "name": "o",
-                        "$children": [
+                        "arm": [
                           {
-                            "$type": "arm",
                             "pattern": {
                               "and": true,
                               "left": {
@@ -2721,7 +2527,6 @@
                             "string": "\"positive int\""
                           },
                           {
-                            "$type": "arm",
                             "pattern": {
                               "and": true,
                               "left": {
@@ -2743,7 +2548,6 @@
                             "string": "\"non-positive int\""
                           },
                           {
-                            "$type": "arm",
                             "pattern": {
                               "or": true,
                               "left": {
@@ -2765,7 +2569,6 @@
                             "string": "\"string or null\""
                           },
                           {
-                            "$type": "arm",
                             "pattern": {
                               "negated": true,
                               "pattern": {
@@ -2777,7 +2580,6 @@
                             "string": "\"not string\""
                           },
                           {
-                            "$type": "arm",
                             "access": {
                               "expression": {
                                 "name": "x"
@@ -2791,7 +2593,8 @@
                               }
                             }
                           }
-                        ]
+                        ],
+                        "name": "o"
                       }
                     }
                   }
@@ -2805,33 +2608,26 @@
                 }
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
-                  "$children": [
+                  "assign": [
                     {
-                      "$type": "assign",
-                      "$children": [
+                      "expression": [
                         {
-                          "$type": "expression",
                           "name": "x"
                         },
                         {
-                          "$type": "expression",
                           "int": "1"
                         }
                       ]
                     },
                     {
-                      "$type": "assign",
-                      "$children": [
+                      "expression": [
                         {
-                          "$type": "expression",
                           "name": "y"
                         },
                         {
-                          "$type": "expression",
                           "int": "2"
                         }
                       ]
@@ -2839,9 +2635,8 @@
                   ]
                 },
                 "name": "Deconstruct",
-                "$children": [
+                "parameter": [
                   {
-                    "$type": "parameter",
                     "out": true,
                     "name": "x",
                     "type": {
@@ -2849,7 +2644,6 @@
                     }
                   },
                   {
-                    "$type": "parameter",
                     "out": true,
                     "name": "y",
                     "type": {
@@ -2859,12 +2653,11 @@
                 ]
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
                   "tuple": {
-                    "$children": [
+                    "int": [
                       "1",
                       "2"
                     ]
@@ -2873,19 +2666,16 @@
                 "name": "Pair"
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
                   "switch": {
-                    "name": "o",
-                    "$children": [
+                    "arm": [
                       {
-                        "$type": "arm",
                         "pattern": {
                           "constant": true,
                           "tuple": {
-                            "$children": [
+                            "int": [
                               "0",
                               "0"
                             ]
@@ -2894,12 +2684,10 @@
                         "string": "\"origin\""
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "recursive": true,
-                          "$children": [
+                          "subpattern": [
                             {
-                              "$type": "subpattern",
                               "pattern": {
                                 "declaration": true,
                                 "name": "x",
@@ -2909,7 +2697,6 @@
                               }
                             },
                             {
-                              "$type": "subpattern",
                               "pattern": {
                                 "constant": true,
                                 "int": "0"
@@ -2920,11 +2707,11 @@
                         "string": "\"x-axis\""
                       },
                       {
-                        "$type": "arm",
                         "discard": "_",
                         "string": "\"other\""
                       }
-                    ]
+                    ],
+                    "name": "o"
                   }
                 },
                 "name": "Origin",
@@ -2936,11 +2723,10 @@
                 }
               },
               {
-                "$type": "method",
                 "public": true,
                 "attribute": {
                   "path": {
-                    "$children": [
+                    "name": [
                       "System",
                       "Diagnostics",
                       "CodeAnalysis",
@@ -2962,7 +2748,6 @@
                 }
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
@@ -3025,9 +2810,8 @@
                       }
                     }
                   },
-                  "$children": [
+                  "variable": [
                     {
-                      "$type": "variable",
                       "expression": {
                         "query": {
                           "from": {
@@ -3042,14 +2826,14 @@
                             }
                           },
                           "group": {
-                            "$children": [
+                            "name": [
                               "y",
                               "x"
                             ]
                           },
                           "join": {
                             "in": true,
-                            "$children": [
+                            "name": [
                               "y",
                               "ys",
                               "x",
@@ -3085,7 +2869,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "name": "xs"
                       },
@@ -3095,7 +2878,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "is": {
                           "left": {
@@ -3119,9 +2901,8 @@
                   ]
                 },
                 "name": "LinqExtras",
-                "$children": [
+                "parameter": [
                   {
-                    "$type": "parameter",
                     "name": "xs",
                     "type": {
                       "array": true,
@@ -3131,7 +2912,6 @@
                     }
                   },
                   {
-                    "$type": "parameter",
                     "name": "ys",
                     "type": {
                       "array": true,
@@ -3143,37 +2923,30 @@
                 ]
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
                   "switch": {
-                    "name": "xs",
-                    "$children": [
+                    "arm": [
                       {
-                        "$type": "arm",
                         "pattern": {
                           "list": true
                         },
                         "string": "\"empty\""
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "list": true,
-                          "$children": [
+                          "pattern": [
                             {
-                              "$type": "pattern",
                               "constant": true,
                               "int": "1"
                             },
                             {
-                              "$type": "pattern",
                               "constant": true,
                               "int": "2"
                             },
                             {
-                              "$type": "pattern",
                               "constant": true,
                               "int": "3"
                             }
@@ -3182,11 +2955,11 @@
                         "string": "\"exactly three\""
                       },
                       {
-                        "$type": "arm",
                         "discard": "_",
                         "string": "\"other\""
                       }
-                    ]
+                    ],
+                    "name": "xs"
                   }
                 },
                 "name": "Listy",
@@ -3201,7 +2974,6 @@
                 }
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
@@ -3219,9 +2991,8 @@
                       }
                     },
                     "body": {
-                      "$children": [
+                      "if": [
                         {
-                          "$type": "if",
                           "body": {
                             "continue": "continue;"
                           },
@@ -3243,7 +3014,6 @@
                           }
                         },
                         {
-                          "$type": "if",
                           "body": {
                             "break": "break;"
                           },
@@ -3289,7 +3059,6 @@
                 "name": "Trivial"
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
@@ -3309,7 +3078,6 @@
                 }
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
@@ -3329,16 +3097,14 @@
                   }
                 },
                 "name": "Checks",
-                "$children": [
+                "parameter": [
                   {
-                    "$type": "parameter",
                     "name": "a",
                     "type": {
                       "name": "int"
                     }
                   },
                   {
-                    "$type": "parameter",
                     "name": "b",
                     "type": {
                       "name": "int"
@@ -3347,7 +3113,6 @@
                 ]
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "unsafe": true,
@@ -3388,14 +3153,13 @@
                 }
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "unsafe": true,
                 "body": {
                   "expression": {
                     "call": {
-                      "$children": [
+                      "name": [
                         "fn",
                         "x"
                       ]
@@ -3403,9 +3167,8 @@
                   }
                 },
                 "name": "FnPtr",
-                "$children": [
+                "parameter": [
                   {
-                    "$type": "parameter",
                     "name": "fn",
                     "type": {
                       "parameter": {
@@ -3419,7 +3182,6 @@
                     }
                   },
                   {
-                    "$type": "parameter",
                     "name": "x",
                     "type": {
                       "name": "int"
@@ -3428,14 +3190,12 @@
                 ]
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "unsafe": true,
                 "body": {
-                  "$children": [
+                  "variable": [
                     {
-                      "$type": "variable",
                       "expression": {
                         "new": {
                           "stackalloc": true,
@@ -3456,26 +3216,25 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "new": {
                           "stackalloc": true,
+                          "int": [
+                            "1",
+                            "2",
+                            "3"
+                          ],
                           "type": {
                             "array": true,
                             "int": "3",
                             "type": {
                               "name": "int"
                             }
-                          },
-                          "$children": [
-                            "1",
-                            "2",
-                            "3"
-                          ]
+                          }
                         }
                       },
                       "generic_type": {
-                        "$children": [
+                        "name": [
                           "Span",
                           "int"
                         ]
@@ -3483,11 +3242,10 @@
                       "name": "span"
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "new": {
                           "stackalloc": true,
-                          "$children": [
+                          "int": [
                             "1",
                             "2",
                             "3"
@@ -3495,7 +3253,7 @@
                         }
                       },
                       "generic_type": {
-                        "$children": [
+                        "name": [
                           "Span",
                           "int"
                         ]
@@ -3507,7 +3265,6 @@
                 "name": "Alloc"
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
@@ -3541,12 +3298,11 @@
                 "name": "AnonMethod"
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
                   "is": {
-                    "$children": [
+                    "name": [
                       "o",
                       "int"
                     ]
@@ -3561,21 +3317,19 @@
                 }
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
                   "access": {
-                    "$children": [
+                    "name": [
                       "xs",
                       "i"
                     ]
                   }
                 },
                 "name": "ElementAt",
-                "$children": [
+                "parameter": [
                   {
-                    "$type": "parameter",
                     "name": "xs",
                     "type": {
                       "array": true,
@@ -3585,7 +3339,6 @@
                     }
                   },
                   {
-                    "$type": "parameter",
                     "name": "i",
                     "type": {
                       "name": "int"
@@ -3594,7 +3347,6 @@
                 ]
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
@@ -3603,26 +3355,22 @@
                 "name": "Esc"
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "unsafe": true,
                 "body": {
                   "assign": {
-                    "$children": [
+                    "expression": [
                       {
-                        "$type": "expression",
                         "name": "r"
                       },
                       {
-                        "$type": "expression",
                         "int": "5"
                       }
                     ]
                   },
-                  "$children": [
+                  "variable": [
                     {
-                      "$type": "variable",
                       "expression": {
                         "int": "0"
                       },
@@ -3632,7 +3380,6 @@
                       }
                     },
                     {
-                      "$type": "variable",
                       "expression": {
                         "ref": true,
                         "name": "x"
@@ -3650,18 +3397,15 @@
                 "name": "RefExample"
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
                   "assign": {
-                    "$children": [
+                    "expression": [
                       {
-                        "$type": "expression",
                         "name": "target"
                       },
                       {
-                        "$type": "expression",
                         "access": {
                           "int": "0",
                           "name": "data"
@@ -3671,16 +3415,15 @@
                   }
                 },
                 "name": "Scoped",
-                "$children": [
+                "parameter": [
                   {
-                    "$type": "parameter",
                     "name": "data",
                     "type": {
                       "scoped": true,
                       "type": {
                         "path": {
                           "generic_type": {
-                            "$children": [
+                            "name": [
                               "Span",
                               "int"
                             ]
@@ -3691,7 +3434,6 @@
                     }
                   },
                   {
-                    "$type": "parameter",
                     "ref": true,
                     "name": "target",
                     "type": {
@@ -3701,25 +3443,21 @@
                 ]
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
                   "assign": {
-                    "$children": [
+                    "expression": [
                       {
-                        "$type": "expression",
                         "tuple": {
-                          "$children": [
+                          "declaration": [
                             {
-                              "$type": "declaration",
                               "name": "x",
                               "type": {
                                 "name": "int"
                               }
                             },
                             {
-                              "$type": "declaration",
                               "name": "y",
                               "type": {
                                 "name": "int"
@@ -3729,9 +3467,8 @@
                         }
                       },
                       {
-                        "$type": "expression",
                         "tuple": {
-                          "$children": [
+                          "int": [
                             "1",
                             "2"
                           ]
@@ -3742,10 +3479,8 @@
                   "return": {
                     "expression": {
                       "switch": {
-                        "name": "o",
-                        "$children": [
+                        "arm": [
                           {
-                            "$type": "arm",
                             "pattern": {
                               "declaration": true,
                               "name": "v",
@@ -3756,7 +3491,7 @@
                             "string": "\"string\"",
                             "when": {
                               "is": {
-                                "$children": [
+                                "name": [
                                   "v",
                                   "string"
                                 ]
@@ -3764,7 +3499,6 @@
                             }
                           },
                           {
-                            "$type": "arm",
                             "pattern": {
                               "constant": true,
                               "int": "1"
@@ -3772,22 +3506,20 @@
                             "string": "\"one\""
                           },
                           {
-                            "$type": "arm",
                             "discard": "_",
                             "string": {
-                              "$children": [
+                              "interpolation": [
                                 {
-                                  "$type": "interpolation",
                                   "name": "x"
                                 },
                                 {
-                                  "$type": "interpolation",
                                   "name": "y"
                                 }
                               ]
                             }
                           }
-                        ]
+                        ],
+                        "name": "o"
                       }
                     }
                   }
@@ -3801,7 +3533,6 @@
                 }
               },
               {
-                "$type": "method",
                 "public": true,
                 "static": true,
                 "body": {
@@ -3828,7 +3559,7 @@
                         },
                         "join": {
                           "in": true,
-                          "$children": [
+                          "name": [
                             "y",
                             "b",
                             "x",
@@ -3850,9 +3581,8 @@
                   }
                 },
                 "name": "JoinInto",
-                "$children": [
+                "parameter": [
                   {
-                    "$type": "parameter",
                     "name": "a",
                     "type": {
                       "array": true,
@@ -3862,7 +3592,6 @@
                     }
                   },
                   {
-                    "$type": "parameter",
                     "name": "b",
                     "type": {
                       "array": true,
@@ -3874,31 +3603,30 @@
                 ]
               },
               {
-                "$type": "method",
                 "public": true,
                 "body": {
                   "string": "\"default\""
                 },
                 "name": "IFormat"
-              },
+              }
+            ],
+            "operator": [
               {
-                "$type": "operator",
                 "public": true,
                 "static": true,
                 "body": {
                   "name": "a"
                 },
                 "generic_type": {
-                  "$children": [
+                  "name": [
                     "Container",
                     "T"
                   ]
                 },
-                "$children": [
+                "parameter": [
                   {
-                    "$type": "parameter",
                     "generic_type": {
-                      "$children": [
+                      "name": [
                         "Container",
                         "T"
                       ]
@@ -3906,9 +3634,8 @@
                     "name": "a"
                   },
                   {
-                    "$type": "parameter",
                     "generic_type": {
-                      "$children": [
+                      "name": [
                         "Container",
                         "T"
                       ]
@@ -3918,7 +3645,6 @@
                 ]
               },
               {
-                "$type": "operator",
                 "public": true,
                 "static": true,
                 "body": {
@@ -3926,7 +3652,7 @@
                 },
                 "parameter": {
                   "generic_type": {
-                    "$children": [
+                    "name": [
                       "Container",
                       "T"
                     ]
@@ -3942,7 +3668,6 @@
           "name": "Extras"
         },
         {
-          "$type": "class",
           "public": true,
           "body": {
             "method": {
@@ -3961,7 +3686,6 @@
           "name": "Wrap"
         },
         {
-          "$type": "class",
           "public": true,
           "static": true,
           "body": {
@@ -3991,16 +3715,14 @@
                 }
               },
               "name": "Move",
-              "$children": [
+              "parameter": [
                 {
-                  "$type": "parameter",
                   "name": "p",
                   "type": {
                     "name": "Point"
                   }
                 },
                 {
-                  "$type": "parameter",
                   "name": "dx",
                   "type": {
                     "name": "int"
@@ -4012,44 +3734,64 @@
           "name": "RecordUse"
         },
         {
-          "$type": "class",
           "internal": true,
           "static": true,
           "body": "{ }",
           "name": "Debugging"
         },
         {
-          "$type": "class",
           "internal": true,
           "static": true,
           "body": "{ }",
           "name": "Legacy"
         },
         {
-          "$type": "class",
           "internal": true,
           "static": true,
           "body": "{ }",
           "name": "Modern"
-        },
+        }
+      ],
+      "comment": [
         "// Iter 20: new shapes — statements, expressions, patterns, literals.",
         "/// <summary>cast + char + checked + with + patterns + array/stackalloc new</summary>",
         "// Record declaration with positional parameters + with-expression.",
         "// Global / assembly-level attribute (file scope).",
-        "// Preprocessor regions, conditionals, define/elif, nullable, pragma.",
+        "// Preprocessor regions, conditionals, define/elif, nullable, pragma."
+      ],
+      "int": "0168",
+      "interface": {
+        "internal": true,
+        "body": {
+          "method": {
+            "public": true,
+            "name": "IFormat"
+          }
+        },
+        "name": "IFormatProvider2"
+      },
+      "name": [
         "Tractor.Fixtures.FileScoped",
         "DEBUG",
         "LEGACY"
-      ]
-    },
+      ],
+      "record": {
+        "public": true,
+        "body": {},
+        "name": "Point"
+      },
+      "using": {
+        "name": "System"
+      }
+    }
+  ],
+  "using": [
     {
-      "$type": "using",
       "name": "System"
     },
     {
-      "$type": "using",
       "path": {
-        "$children": [
+        "name": [
           "System",
           "Collections",
           "Generic"
@@ -4057,18 +3799,16 @@
       }
     },
     {
-      "$type": "using",
       "path": {
-        "$children": [
+        "name": [
           "System",
           "Linq"
         ]
       }
     },
     {
-      "$type": "using",
       "path": {
-        "$children": [
+        "name": [
           "System",
           "Threading",
           "Tasks"
@@ -4076,9 +3816,8 @@
       }
     },
     {
-      "$type": "using",
       "path": {
-        "$children": [
+        "name": [
           "System",
           "Math"
         ]

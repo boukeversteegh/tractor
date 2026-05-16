@@ -179,15 +179,23 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
                         None => {
                             obj.insert(element_name, strip_top_level_type(value));
                         }
+                        Some(Value::Array(mut arr)) => {
+                            // Subsequent collision with the same element name
+                            // appends to the array under the same key.
+                            arr.push(strip_top_level_type(value));
+                            obj.insert(element_name, Value::Array(arr));
+                        }
                         Some(existing) => {
-                            // Same-element-name collision without `list=` —
-                            // shouldn't happen for role-mixed shapes after
-                            // Principle #19. Fall back to anonymous children;
-                            // restore the singleton (existing) without `$type`
-                            // and push the conflicting child with `$type` kept
-                            // (anonymous-array context).
-                            obj.insert(element_name, existing);
-                            array_children.push(value);
+                            // First collision: promote the singleton into an
+                            // array under the same key (S16-Z6 grouping —
+                            // `import: {…}` becomes `import: [{…}, {…}]` when
+                            // multiple `<import>` siblings exist). Both
+                            // entries strip `$type` because the array key
+                            // already names the type.
+                            obj.insert(
+                                element_name,
+                                Value::Array(vec![existing, strip_top_level_type(value)]),
+                            );
                         }
                     }
                 }

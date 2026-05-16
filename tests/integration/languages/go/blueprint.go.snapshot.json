@@ -4,21 +4,17 @@
     "exported": true,
     "name": "Alias",
     "type": {
-      "$children": [
+      "name": [
         "context",
         "Context"
       ]
     }
   },
-  "package": {
-    "name": "blueprint"
-  },
-  "$children": [
+  "comment": [
     "// Package blueprint is a kitchen-sink Go fixture for tractor snapshot tests.",
     "// Rendered by `tractor query <file> -p tree --single` with NO depth limit so",
     "// any design-principle transform change produces a visible snapshot diff.",
     {
-      "$type": "comment",
       "leading": true
     },
     "// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere",
@@ -26,11 +22,11 @@
     "// literals, slice expressions, parenthesized type conversions, generic",
     "// instantiation in value position, variadic argument expansion, and",
     {
-      "$type": "comment",
       "leading": true
-    },
+    }
+  ],
+  "const": [
     {
-      "$type": "const",
       "exported": true,
       "name": "Pi",
       "value": {
@@ -40,7 +36,6 @@
       }
     },
     {
-      "$type": "const",
       "exported": true,
       "name": "StatusIdle",
       "value": {
@@ -50,54 +45,50 @@
       }
     },
     {
-      "$type": "const",
       "exported": true,
       "name": "StatusRunning"
     },
     {
-      "$type": "const",
       "exported": true,
       "name": "StatusDone"
     },
     {
-      "$type": "const",
       "unexported": true,
       "name": "_"
     },
     {
-      "$type": "const",
       "exported": true,
       "name": "StatusError"
-    },
+    }
+  ],
+  "function": [
     {
-      "$type": "function",
       "unexported": true,
       "body": {
         "return": {
           "expression": {
             "access": {
-              "string": "\"wrap: %w\"",
-              "$children": [
+              "name": [
                 "fmt",
                 "err"
-              ]
+              ],
+              "string": "\"wrap: %w\""
             }
           }
         }
       },
+      "name": [
+        "wrap",
+        "error"
+      ],
       "parameter": {
-        "$children": [
+        "name": [
           "err",
           "error"
         ]
-      },
-      "$children": [
-        "wrap",
-        "error"
-      ]
+      }
     },
     {
-      "$type": "function",
       "unexported": true,
       "body": {
         "return": {
@@ -106,62 +97,54 @@
           }
         }
       },
-      "$children": [
+      "name": [
         "doThing",
         "error"
       ]
     },
     {
-      "$type": "function",
       "unexported": true,
       "body": {
         "return": {
-          "$children": [
+          "expression": [
             {
-              "$type": "expression",
               "int": "0"
             },
             {
-              "$type": "expression",
               "name": "ErrNotFound"
             }
           ]
         }
       },
       "name": "risky",
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "int"
         },
         {
-          "$type": "parameter",
           "name": "error"
         }
       ]
     },
     {
-      "$type": "function",
       "exported": true,
       "body": {
         "for": {
           "body": {
             "assign": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "out"
                 },
                 {
-                  "$type": "expression",
                   "call": {
                     "call": {
-                      "$children": [
+                      "name": [
                         "f",
                         "x"
                       ]
                     },
-                    "$children": [
+                    "name": [
                       "append",
                       "out"
                     ]
@@ -172,13 +155,11 @@
           },
           "range": {
             "left": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "_"
                 },
                 {
-                  "$type": "expression",
                   "name": "x"
                 }
               ]
@@ -206,7 +187,7 @@
             "expression": {
               "call": {
                 "call": {
-                  "$children": [
+                  "name": [
                     "len",
                     "xs"
                   ]
@@ -222,26 +203,21 @@
         }
       },
       "generic": {
-        "$children": [
+        "name": [
           "T",
           "U",
           "any"
         ]
       },
       "name": "Map",
-      "slice": {
-        "name": "U"
-      },
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "xs",
           "slice": {
             "name": "T"
           }
         },
         {
-          "$type": "parameter",
           "name": "f",
           "type": {
             "function": true,
@@ -251,22 +227,22 @@
             }
           }
         }
-      ]
+      ],
+      "slice": {
+        "name": "U"
+      }
     },
     {
-      "$type": "function",
       "exported": true,
       "body": {
         "for": {
           "body": {
             "assign": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "total"
                 },
                 {
-                  "$type": "expression",
                   "name": "x"
                 }
               ]
@@ -274,13 +250,11 @@
           },
           "range": {
             "left": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "_"
                 },
                 {
-                  "$type": "expression",
                   "name": "x"
                 }
               ]
@@ -295,23 +269,21 @@
         "return": "return"
       },
       "generic": {
-        "$children": [
+        "name": [
           "T",
           "Number"
         ]
       },
       "name": "Sum",
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "xs",
           "slice": {
             "name": "T"
           }
         },
         {
-          "$type": "parameter",
-          "$children": [
+          "name": [
             "total",
             "T"
           ]
@@ -319,7 +291,6 @@
       ]
     },
     {
-      "$type": "function",
       "exported": true,
       "body": {
         "for": {
@@ -334,21 +305,18 @@
               },
               "then": {
                 "body": {
-                  "$children": [
+                  "assign": [
                     {
-                      "$type": "assign",
-                      "$children": [
+                      "expression": [
                         {
-                          "$type": "expression",
                           "access": {
-                            "$children": [
+                            "name": [
                               "seen",
                               "x"
                             ]
                           }
                         },
                         {
-                          "$type": "expression",
                           "literal": {
                             "struct": {}
                           }
@@ -356,16 +324,13 @@
                       ]
                     },
                     {
-                      "$type": "assign",
-                      "$children": [
+                      "expression": [
                         {
-                          "$type": "expression",
                           "name": "out"
                         },
                         {
-                          "$type": "expression",
                           "call": {
-                            "$children": [
+                            "name": [
                               "append",
                               "out",
                               "x"
@@ -381,7 +346,7 @@
                 "short": true,
                 "left": {
                   "expression": {
-                    "$children": [
+                    "name": [
                       "_",
                       "ok"
                     ]
@@ -390,7 +355,7 @@
                 "right": {
                   "expression": {
                     "access": {
-                      "$children": [
+                      "name": [
                         "seen",
                         "x"
                       ]
@@ -402,13 +367,11 @@
           },
           "range": {
             "left": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "_"
                 },
                 {
-                  "$type": "expression",
                   "name": "x"
                 }
               ]
@@ -441,22 +404,20 @@
         }
       },
       "generic": {
-        "$children": [
+        "name": [
           "T",
           "comparable"
         ]
       },
       "name": "Uniq",
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "xs",
           "slice": {
             "name": "T"
           }
         },
         {
-          "$type": "parameter",
           "name": "out",
           "slice": {
             "name": "T"
@@ -465,20 +426,47 @@
       ]
     },
     {
-      "$type": "function",
       "unexported": true,
       "body": {
+        "assign": [
+          {
+            "expression": [
+              {
+                "name": "_"
+              },
+              {
+                "call": {
+                  "int": "3",
+                  "name": "multiStmt"
+                }
+              }
+            ]
+          },
+          {
+            "expression": [
+              {
+                "name": "_"
+              },
+              {
+                "call": {
+                  "name": [
+                    "ToUpper",
+                    "prefix"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
         "defer": {
           "call": {
             "closure": {
               "assign": {
-                "$children": [
+                "expression": [
                   {
-                    "$type": "expression",
                     "name": "_"
                   },
                   {
-                    "$type": "expression",
                     "call": {
                       "name": "recover"
                     }
@@ -491,13 +479,11 @@
         "for": {
           "body": {
             "assign": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "sum"
                 },
                 {
-                  "$type": "expression",
                   "name": "v"
                 }
               ]
@@ -505,13 +491,11 @@
           },
           "range": {
             "left": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "_"
                 },
                 {
-                  "$type": "expression",
                   "name": "v"
                 }
               ]
@@ -536,7 +520,7 @@
               "closure": {
                 "name": "int",
                 "parameter": {
-                  "$children": [
+                  "name": [
                     "n",
                     "int"
                   ]
@@ -584,71 +568,31 @@
               }
             }
           }
-        },
-        "$children": [
-          {
-            "$type": "assign",
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "_"
-              },
-              {
-                "$type": "expression",
-                "call": {
-                  "int": "3",
-                  "name": "multiStmt"
-                }
-              }
-            ]
-          },
-          {
-            "$type": "assign",
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "_"
-              },
-              {
-                "$type": "expression",
-                "call": {
-                  "$children": [
-                    "ToUpper",
-                    "prefix"
-                  ]
-                }
-              }
-            ]
-          }
-        ]
+        }
       },
       "name": "variadic",
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
-          "$children": [
+          "name": [
             "prefix",
             "string"
           ]
         },
         {
-          "$type": "parameter",
           "variadic": true,
-          "$children": [
+          "name": [
             "vals",
             "int"
           ]
         },
         {
-          "$type": "parameter",
-          "$children": [
+          "name": [
             "sum",
             "int"
           ]
         },
         {
-          "$type": "parameter",
-          "$children": [
+          "name": [
             "err",
             "error"
           ]
@@ -656,88 +600,18 @@
       ]
     },
     {
-      "$type": "function",
       "unexported": true,
       "body": {
-        "switch": {
-          "value": {
-            "expression": {
-              "access": {
-                "int": "0",
-                "name": "implicit"
-              }
-            }
-          },
-          "$children": [
-            {
-              "$type": "case",
-              "fallthrough": "fallthrough",
-              "value": {
-                "expression": {
-                  "int": "10"
-                }
-              }
-            },
-            {
-              "$type": "case",
-              "assign": {
-                "$children": [
-                  {
-                    "$type": "expression",
-                    "name": "_"
-                  },
-                  {
-                    "$type": "expression",
-                    "name": "sub"
-                  }
-                ]
-              },
-              "value": {
-                "expression": {
-                  "int": "20"
-                }
-              }
-            }
-          ]
-        },
-        "var": {
-          "unexported": true,
-          "array": {
-            "int": "5",
-            "name": "int"
-          },
-          "name": "fixed",
-          "value": {
-            "expression": {
-              "literal": {
-                "array": {
-                  "int": "5",
-                  "name": "int"
-                },
-                "$children": [
-                  "1",
-                  "2",
-                  "3",
-                  "4",
-                  "5"
-                ]
-              }
-            }
-          }
-        },
-        "$children": [
+        "assign": [
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
-                "$children": [
+                "name": [
                   "_",
                   "_"
                 ]
               },
               {
-                "$type": "expression",
                 "call": {
                   "name": "variadic",
                   "spread": {
@@ -754,28 +628,88 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
-                "$children": [
+                "name": [
                   "_",
                   "_",
                   "_"
                 ]
               },
               {
-                "$type": "expression",
-                "$children": [
+                "name": [
                   "chRecvOnly",
                   "mapper",
                   "sub"
                 ]
               }
             ]
+          }
+        ],
+        "switch": {
+          "case": [
+            {
+              "fallthrough": "fallthrough",
+              "value": {
+                "expression": {
+                  "int": "10"
+                }
+              }
+            },
+            {
+              "assign": {
+                "expression": [
+                  {
+                    "name": "_"
+                  },
+                  {
+                    "name": "sub"
+                  }
+                ]
+              },
+              "value": {
+                "expression": {
+                  "int": "20"
+                }
+              }
+            }
+          ],
+          "value": {
+            "expression": {
+              "access": {
+                "int": "0",
+                "name": "implicit"
+              }
+            }
+          }
+        },
+        "var": {
+          "unexported": true,
+          "array": {
+            "int": "5",
+            "name": "int"
           },
+          "name": "fixed",
+          "value": {
+            "expression": {
+              "literal": {
+                "array": {
+                  "int": "5",
+                  "name": "int"
+                },
+                "int": [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5"
+                ]
+              }
+            }
+          }
+        },
+        "variable": [
           {
-            "$type": "variable",
             "short": true,
             "left": {
               "expression": {
@@ -789,7 +723,7 @@
                     "implicit": true,
                     "name": "int"
                   },
-                  "$children": [
+                  "int": [
                     "10",
                     "20",
                     "30"
@@ -799,7 +733,6 @@
             }
           },
           {
-            "$type": "variable",
             "short": true,
             "left": {
               "expression": {
@@ -822,7 +755,6 @@
             }
           },
           {
-            "$type": "variable",
             "short": true,
             "left": {
               "expression": {
@@ -842,7 +774,6 @@
             }
           },
           {
-            "$type": "variable",
             "short": true,
             "left": {
               "expression": {
@@ -853,7 +784,7 @@
               "expression": {
                 "type": {
                   "generic": true,
-                  "$children": [
+                  "name": [
                     "Map",
                     "int",
                     "string"
@@ -867,33 +798,12 @@
       "name": "arraysAndCasts"
     },
     {
-      "$type": "function",
       "unexported": true,
       "body": {
         "switch": {
           "type": true,
-          "default": {
-            "return": {
-              "expression": {
-                "access": {
-                  "string": "\"%T\"",
-                  "$children": [
-                    "fmt",
-                    "v"
-                  ]
-                }
-              }
-            }
-          },
-          "name": "v",
-          "value": {
-            "expression": {
-              "name": "x"
-            }
-          },
-          "$children": [
+          "case": [
             {
-              "$type": "case",
               "return": {
                 "expression": {
                   "string": "\"nil\""
@@ -904,29 +814,24 @@
               }
             },
             {
-              "$type": "case",
               "return": {
                 "expression": {
                   "string": "\"int-ish\""
                 }
               },
-              "$children": [
+              "type": [
                 {
-                  "$type": "type",
                   "name": "int"
                 },
                 {
-                  "$type": "type",
                   "name": "int32"
                 },
                 {
-                  "$type": "type",
                   "name": "int64"
                 }
               ]
             },
             {
-              "$type": "case",
               "return": {
                 "expression": {
                   "binary": {
@@ -948,7 +853,6 @@
               }
             },
             {
-              "$type": "case",
               "return": {
                 "expression": {
                   "access": {
@@ -960,29 +864,46 @@
                 "name": "Stringer"
               }
             }
-          ]
+          ],
+          "default": {
+            "return": {
+              "expression": {
+                "access": {
+                  "name": [
+                    "fmt",
+                    "v"
+                  ],
+                  "string": "\"%T\""
+                }
+              }
+            }
+          },
+          "name": "v",
+          "value": {
+            "expression": {
+              "name": "x"
+            }
+          }
         }
       },
+      "name": [
+        "classify",
+        "string"
+      ],
       "parameter": {
-        "$children": [
+        "name": [
           "x",
           "any"
         ]
-      },
-      "$children": [
-        "classify",
-        "string"
-      ]
+      }
     },
     {
-      "$type": "function",
       "unexported": true,
       "body": {
         "assign": {
-          "$children": [
+          "expression": [
             {
-              "$type": "expression",
-              "$children": [
+              "name": [
                 "_",
                 "_",
                 "_",
@@ -992,12 +913,11 @@
               ]
             },
             {
-              "$type": "expression",
               "call": {
                 "int": "42",
                 "name": "UserID"
               },
-              "$children": [
+              "name": [
                 "raw",
                 "ch",
                 "pt",
@@ -1009,36 +929,14 @@
         },
         "expression": {
           "call": {
-            "$children": [
+            "name": [
               "close",
               "buffered"
             ]
           }
         },
-        "go": {
-          "call": {
-            "closure": {
-              "expression": {
-                "access": {
-                  "name": "fmt",
-                  "string": "\"bg\""
-                }
-              }
-            }
-          }
-        },
-        "return": {
-          "expression": {
-            "nil": "nil"
-          }
-        },
-        "send": {
-          "int": "1",
-          "name": "buffered"
-        },
-        "$children": [
+        "for": [
           {
-            "$type": "for",
             "body": {
               "if": {
                 "condition": {
@@ -1099,16 +997,13 @@
             }
           },
           {
-            "$type": "for",
             "body": {
               "assign": {
-                "$children": [
+                "expression": [
                   {
-                    "$type": "expression",
                     "name": "_"
                   },
                   {
-                    "$type": "expression",
                     "name": "i"
                   }
                 ]
@@ -1128,20 +1023,17 @@
             }
           },
           {
-            "$type": "for",
             "body": {
               "assign": {
-                "$children": [
+                "expression": [
                   {
-                    "$type": "expression",
-                    "$children": [
+                    "name": [
                       "_",
                       "_"
                     ]
                   },
                   {
-                    "$type": "expression",
-                    "$children": [
+                    "name": [
                       "k",
                       "v"
                     ]
@@ -1151,13 +1043,11 @@
             },
             "range": {
               "left": {
-                "$children": [
+                "expression": [
                   {
-                    "$type": "expression",
                     "name": "k"
                   },
                   {
-                    "$type": "expression",
                     "name": "v"
                   }
                 ]
@@ -1166,21 +1056,19 @@
                 "expression": {
                   "literal": {
                     "map": {
-                      "$children": [
+                      "name": [
                         "string",
                         "int"
                       ]
                     },
-                    "$children": [
+                    "pair": [
                       {
-                        "$type": "pair",
                         "string": "\"a\"",
                         "value": {
                           "int": "1"
                         }
                       },
                       {
-                        "$type": "pair",
                         "string": "\"b\"",
                         "value": {
                           "int": "2"
@@ -1193,7 +1081,6 @@
             }
           },
           {
-            "$type": "for",
             "body": {
               "unary": {
                 "postfix": true,
@@ -1216,9 +1103,22 @@
                 }
               }
             }
-          },
+          }
+        ],
+        "go": {
+          "call": {
+            "closure": {
+              "expression": {
+                "access": {
+                  "name": "fmt",
+                  "string": "\"bg\""
+                }
+              }
+            }
+          }
+        },
+        "if": [
           {
-            "$type": "if",
             "condition": {
               "expression": {
                 "binary": {
@@ -1238,13 +1138,11 @@
             "else": {
               "body": {
                 "assign": {
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "_"
                     },
                     {
-                      "$type": "expression",
                       "name": "x"
                     }
                   ]
@@ -1256,7 +1154,7 @@
                 "return": {
                   "expression": {
                     "call": {
-                      "$children": [
+                      "name": [
                         "wrap",
                         "err"
                       ]
@@ -1269,7 +1167,7 @@
               "short": true,
               "left": {
                 "expression": {
-                  "$children": [
+                  "name": [
                     "x",
                     "err"
                   ]
@@ -1285,7 +1183,6 @@
             }
           },
           {
-            "$type": "if",
             "condition": {
               "expression": {
                 "name": "ok"
@@ -1294,13 +1191,11 @@
             "then": {
               "body": {
                 "assign": {
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "_"
                     },
                     {
-                      "$type": "expression",
                       "name": "s"
                     }
                   ]
@@ -1311,7 +1206,7 @@
               "short": true,
               "left": {
                 "expression": {
-                  "$children": [
+                  "name": [
                     "s",
                     "ok"
                   ]
@@ -1320,7 +1215,7 @@
               "right": {
                 "expression": {
                   "assert": {
-                    "$children": [
+                    "name": [
                       "r",
                       "Stringer"
                     ]
@@ -1330,27 +1225,26 @@
             }
           },
           {
-            "$type": "if",
             "condition": {
               "expression": {
                 "logical": {
                   "left": {
                     "expression": {
                       "access": {
-                        "unary": {
-                          "name": "target"
-                        },
-                        "$children": [
+                        "name": [
                           "errors",
                           "err"
-                        ]
+                        ],
+                        "unary": {
+                          "name": "target"
+                        }
                       }
                     }
                   },
                   "right": {
                     "expression": {
                       "access": {
-                        "$children": [
+                        "name": [
                           "errors",
                           "err",
                           "ErrNotFound"
@@ -1385,15 +1279,15 @@
                 }
               }
             }
-          },
+          }
+        ],
+        "labeled": [
           {
-            "$type": "labeled",
             "for": {
               "body": {
                 "select": {
-                  "$children": [
+                  "case": [
                     {
-                      "$type": "case",
                       "if": {
                         "condition": {
                           "expression": {
@@ -1411,23 +1305,22 @@
                         }
                       },
                       "receive": {
-                        "unary": {
-                          "name": "in"
-                        },
-                        "$children": [
+                        "name": [
                           "v",
                           "ok"
-                        ]
+                        ],
+                        "unary": {
+                          "name": "in"
+                        }
                       },
                       "send": {
-                        "$children": [
+                        "name": [
                           "out",
                           "v"
                         ]
                       }
                     },
                     {
-                      "$type": "case",
                       "continue": {
                         "name": "Outer"
                       },
@@ -1437,7 +1330,6 @@
                       }
                     },
                     {
-                      "$type": "case",
                       "goto": {
                         "name": "cleanup"
                       },
@@ -1456,7 +1348,6 @@
             "name": "Outer"
           },
           {
-            "$type": "labeled",
             "name": "cleanup",
             "variable": {
               "short": true,
@@ -1477,13 +1368,23 @@
                 }
               }
             }
-          },
+          }
+        ],
+        "return": {
+          "expression": {
+            "nil": "nil"
+          }
+        },
+        "send": {
+          "int": "1",
+          "name": "buffered"
+        },
+        "var": [
           {
-            "$type": "var",
             "unexported": true,
             "name": "r",
             "type": {
-              "$children": [
+              "name": [
                 "io",
                 "Reader"
               ]
@@ -1493,7 +1394,7 @@
                 "call": {
                   "name": "new",
                   "type": {
-                    "$children": [
+                    "name": [
                       "myio",
                       "PipeReader"
                     ]
@@ -1503,19 +1404,19 @@
             }
           },
           {
-            "$type": "var",
             "unexported": true,
             "name": "target",
             "pointer": {
               "name": "MyErr"
             }
-          },
+          }
+        ],
+        "variable": [
           {
-            "$type": "variable",
             "short": true,
             "left": {
               "expression": {
-                "$children": [
+                "name": [
                   "raw",
                   "ch"
                 ]
@@ -1531,7 +1432,6 @@
             }
           },
           {
-            "$type": "variable",
             "short": true,
             "left": {
               "expression": {
@@ -1545,11 +1445,10 @@
             }
           },
           {
-            "$type": "variable",
             "short": true,
             "left": {
               "expression": {
-                "$children": [
+                "name": [
                   "pt",
                   "pts"
                 ]
@@ -1558,46 +1457,41 @@
             "right": {
               "expression": {
                 "literal": {
-                  "slice": {
-                    "name": "Point"
-                  },
-                  "$children": [
+                  "pair": [
                     {
-                      "$type": "pair",
                       "name": "X",
                       "value": {
                         "int": "0"
                       }
                     },
                     {
-                      "$type": "pair",
                       "name": "X",
                       "value": {
                         "int": "1"
                       }
                     },
                     {
-                      "$type": "pair",
                       "name": "Y",
                       "value": {
                         "int": "1"
                       }
                     }
-                  ]
+                  ],
+                  "slice": {
+                    "name": "Point"
+                  }
                 },
                 "unary": {
                   "literal": {
                     "name": "Point",
-                    "$children": [
+                    "pair": [
                       {
-                        "$type": "pair",
                         "name": "X",
                         "value": {
                           "int": "1"
                         }
                       },
                       {
-                        "$type": "pair",
                         "name": "Y",
                         "value": {
                           "int": "2"
@@ -1610,7 +1504,6 @@
             }
           },
           {
-            "$type": "variable",
             "short": true,
             "left": {
               "expression": {
@@ -1621,7 +1514,7 @@
               "expression": {
                 "literal": {
                   "map": {
-                    "$children": [
+                    "name": [
                       "string",
                       "Point"
                     ]
@@ -1643,61 +1536,57 @@
           }
         ]
       },
-      "$children": [
+      "name": [
         "controlFlow",
-        "error",
+        "error"
+      ],
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "ctx",
           "type": {
-            "$children": [
+            "name": [
               "context",
               "Context"
             ]
           }
         },
         {
-          "$type": "parameter",
           "chan": {
             "name": "int"
           },
           "name": "in"
         },
         {
-          "$type": "parameter",
           "chan": {
             "name": "int"
           },
           "name": "out"
         }
       ]
-    },
+    }
+  ],
+  "import": [
     {
-      "$type": "import",
       "path": {
         "name": "fmt"
       }
     },
     {
-      "$type": "import",
       "path": {
         "name": "context"
       }
     },
     {
-      "$type": "import",
       "path": {
         "name": "errors"
       }
     },
     {
-      "$type": "import",
       "path": {
         "name": "io"
       }
     },
     {
-      "$type": "import",
       "alias": true,
       "aliased": {
         "name": "myio"
@@ -1707,36 +1596,33 @@
       }
     },
     {
-      "$type": "import",
       "dot": true,
       "path": {
         "name": "strings"
       }
     },
     {
-      "$type": "import",
       "blank": true,
       "path": {
-        "$children": [
+        "name": [
           "net",
           "http",
           "pprof"
         ]
       }
-    },
+    }
+  ],
+  "interface": [
     {
-      "$type": "interface",
       "exported": true,
       "extends": {
         "type": {
-          "$children": [
+          "type": [
             {
-              "$type": "type",
               "approximation": true,
               "name": "int"
             },
             {
-              "$type": "type",
               "approximation": true,
               "name": "float64"
             }
@@ -1746,7 +1632,6 @@
       "name": "Number"
     },
     {
-      "$type": "interface",
       "exported": true,
       "method": {
         "name": "String",
@@ -1759,8 +1644,24 @@
       "name": "Stringer"
     },
     {
-      "$type": "interface",
       "exported": true,
+      "extends": [
+        {
+          "type": {
+            "type": {
+              "name": [
+                "io",
+                "Reader"
+              ]
+            }
+          }
+        },
+        {
+          "type": {
+            "name": "Stringer"
+          }
+        }
+      ],
       "method": {
         "name": "Close",
         "returns": {
@@ -1769,46 +1670,26 @@
           }
         }
       },
-      "name": "ReadStringer",
-      "$children": [
-        {
-          "$type": "extends",
-          "type": {
-            "type": {
-              "$children": [
-                "io",
-                "Reader"
-              ]
-            }
-          }
-        },
-        {
-          "$type": "extends",
-          "type": {
-            "name": "Stringer"
-          }
-        }
-      ]
-    },
+      "name": "ReadStringer"
+    }
+  ],
+  "method": [
     {
-      "$type": "method",
       "exported": true,
       "body": {
         "assign": {
-          "$children": [
+          "expression": [
             {
-              "$type": "expression",
               "access": {
                 "name": "c"
               }
             },
             {
-              "$type": "expression",
               "call": {
                 "access": {
                   "name": "c"
                 },
-                "$children": [
+                "name": [
                   "append",
                   "v"
                 ]
@@ -1818,14 +1699,13 @@
         }
       },
       "name": "Push",
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "c",
           "pointer": {
             "type": {
               "generic": true,
-              "$children": [
+              "name": [
                 "Container",
                 "T"
               ]
@@ -1833,8 +1713,7 @@
           }
         },
         {
-          "$type": "parameter",
-          "$children": [
+          "name": [
             "v",
             "T"
           ]
@@ -1842,70 +1721,60 @@
       ]
     },
     {
-      "$type": "method",
       "exported": true,
       "body": {
         "return": {
           "expression": {
             "access": {
-              "name": "fmt",
-              "string": "\"(%d,%d)\"",
-              "$children": [
+              "access": [
                 {
-                  "$type": "access",
                   "name": "p"
                 },
                 {
-                  "$type": "access",
                   "name": "p"
                 }
-              ]
+              ],
+              "name": "fmt",
+              "string": "\"(%d,%d)\""
             }
           }
         }
       },
+      "name": [
+        "String",
+        "string"
+      ],
       "parameter": {
-        "$children": [
+        "name": [
           "p",
           "Point"
         ]
-      },
-      "$children": [
-        "String",
-        "string"
-      ]
+      }
     },
     {
-      "$type": "method",
       "exported": true,
       "body": {
-        "$children": [
+        "assign": [
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "access": {
                   "name": "p"
                 }
               },
               {
-                "$type": "expression",
                 "name": "dx"
               }
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "access": {
                   "name": "p"
                 }
               },
               {
-                "$type": "expression",
                 "name": "dy"
               }
             ]
@@ -1913,17 +1782,15 @@
         ]
       },
       "name": "Shift",
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "p",
           "pointer": {
             "name": "Point"
           }
         },
         {
-          "$type": "parameter",
-          "$children": [
+          "name": [
             "dx",
             "dy",
             "int"
@@ -1932,7 +1799,6 @@
       ]
     },
     {
-      "$type": "method",
       "exported": true,
       "body": {
         "return": {
@@ -1943,19 +1809,23 @@
           }
         }
       },
+      "name": [
+        "Error",
+        "string"
+      ],
       "parameter": {
         "name": "e",
         "pointer": {
           "name": "MyErr"
         }
-      },
-      "$children": [
-        "Error",
-        "string"
-      ]
-    },
+      }
+    }
+  ],
+  "package": {
+    "name": "blueprint"
+  },
+  "struct": [
     {
-      "$type": "struct",
       "exported": true,
       "field": {
         "unexported": true,
@@ -1967,7 +1837,6 @@
       "name": "Container"
     },
     {
-      "$type": "struct",
       "exported": true,
       "field": {
         "unexported": true,
@@ -1979,26 +1848,22 @@
       "name": "MyErr"
     },
     {
-      "$type": "struct",
       "exported": true,
-      "name": "Point",
-      "$children": [
+      "field": [
         {
-          "$type": "field",
           "exported": true,
+          "name": [
+            "X",
+            "Y"
+          ],
           "string": {
             "raw": true
           },
           "type": {
             "name": "int"
-          },
-          "$children": [
-            "X",
-            "Y"
-          ]
+          }
         },
         {
-          "$type": "field",
           "exported": true,
           "name": "Name",
           "string": {
@@ -2008,21 +1873,18 @@
             "name": "string"
           }
         }
-      ]
+      ],
+      "name": "Point"
     },
     {
-      "$type": "struct",
       "exported": true,
-      "name": "Labeled",
-      "$children": [
+      "field": [
         {
-          "$type": "field",
           "type": {
             "name": "Point"
           }
         },
         {
-          "$type": "field",
           "exported": true,
           "name": "Tag",
           "type": {
@@ -2030,13 +1892,11 @@
           }
         },
         {
-          "$type": "field",
           "unexported": true,
           "name": "_",
           "struct": {}
         },
         {
-          "$type": "field",
           "exported": true,
           "name": "Meta",
           "struct": {
@@ -2049,10 +1909,12 @@
             }
           }
         }
-      ]
-    },
+      ],
+      "name": "Labeled"
+    }
+  ],
+  "type": [
     {
-      "$type": "type",
       "exported": true,
       "name": "UserID",
       "type": {
@@ -2060,35 +1922,33 @@
       }
     },
     {
-      "$type": "type",
       "exported": true,
       "name": "Handler",
       "type": {
         "function": true,
         "name": "error",
-        "$children": [
+        "parameter": [
           {
-            "$type": "parameter",
             "name": "ctx",
             "type": {
-              "$children": [
+              "name": [
                 "context",
                 "Context"
               ]
             }
           },
           {
-            "$type": "parameter",
-            "$children": [
+            "name": [
               "id",
               "UserID"
             ]
           }
         ]
       }
-    },
+    }
+  ],
+  "var": [
     {
-      "$type": "var",
       "exported": true,
       "name": "ErrNotFound",
       "value": {
@@ -2101,7 +1961,6 @@
       }
     },
     {
-      "$type": "var",
       "unexported": true,
       "name": "globalCount",
       "type": {
@@ -2109,19 +1968,18 @@
       }
     },
     {
-      "$type": "var",
       "unexported": true,
-      "$children": [
+      "name": [
         "name",
-        "age",
+        "age"
+      ],
+      "value": [
         {
-          "$type": "value",
           "expression": {
             "string": "\"alice\""
           }
         },
         {
-          "$type": "value",
           "expression": {
             "int": "30"
           }

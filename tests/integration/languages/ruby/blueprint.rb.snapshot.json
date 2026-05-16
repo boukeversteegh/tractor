@@ -1,50 +1,22 @@
 {
   "$type": "program",
-  "block": {
-    "end": true,
-    "call": {
-      "name": "puts",
-      "string": "\"shutting down\""
-    }
-  },
-  "unless": {
-    "access": {
-      "name": "MAX_RETRIES"
-    },
-    "then": {
-      "call": {
-        "name": "puts",
-        "string": {
-          "interpolation": {
-            "name": "MAX_RETRIES"
-          }
-        }
-      }
-    }
-  },
-  "$children": [
+  "assign": [
     {
-      "$type": "assign",
-      "$children": [
+      "expression": [
         {
-          "$type": "expression",
           "name": "MAX_RETRIES"
         },
         {
-          "$type": "expression",
           "int": "3"
         }
       ]
     },
     {
-      "$type": "assign",
-      "$children": [
+      "expression": [
         {
-          "$type": "expression",
           "name": "GREETINGS"
         },
         {
-          "$type": "expression",
           "array": {
             "string": true
           }
@@ -52,14 +24,11 @@
       ]
     },
     {
-      "$type": "assign",
-      "$children": [
+      "expression": [
         {
-          "$type": "expression",
           "name": "SYMBOLS"
         },
         {
-          "$type": "expression",
           "array": {
             "symbol": true
           }
@@ -67,22 +36,19 @@
       ]
     },
     {
-      "$type": "assign",
-      "$children": [
+      "expression": [
         {
-          "$type": "expression",
           "left": {
             "destructured": true,
-            "$children": [
+            "name": [
               "a",
               "b"
             ]
           }
         },
         {
-          "$type": "expression",
           "array": {
-            "$children": [
+            "int": [
               "10",
               "20"
             ]
@@ -91,59 +57,60 @@
       ]
     },
     {
-      "$type": "assign",
-      "$children": [
+      "expression": [
         {
-          "$type": "expression",
           "name": "maybe"
         },
         {
-          "$type": "expression",
           "access": {
-            "$children": [
+            "name": [
               "obj",
               "arg"
             ]
           }
         }
       ]
-    },
+    }
+  ],
+  "block": {
+    "end": true,
+    "call": {
+      "name": "puts",
+      "string": "\"shutting down\""
+    }
+  },
+  "comment": [
     "# Kitchen-sink Ruby blueprint for tractor snapshot tests.\n# Rendered by `tractor query <file> -p tree --single` with NO depth limit\n# so any design-principle transform change produces a visible snapshot diff.\n# The file is intentionally syntactically valid but not executed.",
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
-    },
+    }
+  ],
+  "method": [
     {
-      "$type": "method",
       "body": {
         "case": {
           "else": {
             "symbol": ":unknown"
           },
           "name": "value",
-          "$children": [
+          "when": [
             {
-              "$type": "when",
-              "then": {
-                "symbol": ":number"
-              },
-              "$children": [
+              "pattern": [
                 {
-                  "$type": "pattern",
                   "name": "Integer"
                 },
                 {
-                  "$type": "pattern",
                   "name": "Float"
                 }
-              ]
+              ],
+              "then": {
+                "symbol": ":number"
+              }
             },
             {
-              "$type": "when",
               "pattern": {
                 "range": {
                   "inclusive": true,
@@ -160,7 +127,6 @@
               }
             },
             {
-              "$type": "when",
               "pattern": {
                 "name": "String"
               },
@@ -169,10 +135,9 @@
               }
             },
             {
-              "$type": "when",
               "pattern": {
                 "array": {
-                  "$children": [
+                  "int": [
                     "1",
                     "2",
                     "3"
@@ -184,7 +149,6 @@
               }
             },
             {
-              "$type": "when",
               "pattern": {
                 "nil": "nil"
               },
@@ -201,26 +165,25 @@
       }
     },
     {
-      "$type": "method",
       "body": {
         "access": {
           "name": "items"
         },
         "array": {
-          "$children": [
+          "access": [
             {
-              "$type": "access",
-              "name": "adder",
-              "$children": [
+              "int": [
                 "1",
                 "2"
-              ]
+              ],
+              "name": "adder"
             },
             {
-              "$type": "access",
               "int": "3",
               "name": "doubler"
-            },
+            }
+          ],
+          "name": [
             "result",
             "ternary",
             "a",
@@ -229,142 +192,33 @@
             "flag"
           ]
         },
-        "call": {
-          "block": {
-            "break": "break"
-          },
-          "name": "loop"
-        },
-        "for": {
-          "body": {
-            "assign": {
-              "$children": [
-                {
-                  "$type": "expression",
-                  "name": "total"
-                },
-                {
-                  "$type": "expression",
-                  "name": "j"
-                }
-              ]
-            }
-          },
-          "name": "j",
-          "value": {
-            "expression": {
-              "range": {
-                "inclusive": true,
-                "from": {
-                  "int": "1"
-                },
-                "to": {
-                  "int": "3"
-                }
-              }
-            }
-          }
-        },
-        "until": {
-          "body": {
-            "assign": {
-              "$children": [
-                {
-                  "$type": "expression",
-                  "name": "i"
-                },
-                {
-                  "$type": "expression",
-                  "int": "1"
-                }
-              ]
-            }
-          },
-          "condition": {
-            "expression": {
-              "binary": {
-                "left": {
-                  "expression": {
-                    "name": "i"
-                  }
-                },
-                "right": {
-                  "expression": {
-                    "int": "6"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "while": {
-          "body": {
-            "assign": {
-              "$children": [
-                {
-                  "$type": "expression",
-                  "name": "i"
-                },
-                {
-                  "$type": "expression",
-                  "int": "1"
-                }
-              ]
-            }
-          },
-          "condition": {
-            "expression": {
-              "binary": {
-                "left": {
-                  "expression": {
-                    "name": "i"
-                  }
-                },
-                "right": {
-                  "expression": {
-                    "int": "3"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "$children": [
+        "assign": [
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "total"
               },
               {
-                "$type": "expression",
                 "int": "0"
               }
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "i"
               },
               {
-                "$type": "expression",
                 "int": "0"
               }
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "result"
               },
               {
-                "$type": "expression",
                 "begin": {
                   "access": {
                     "name": "items"
@@ -424,14 +278,11 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "adder"
               },
               {
-                "$type": "expression",
                 "lambda": {
                   "block": {
                     "binary": {
@@ -447,13 +298,11 @@
                       }
                     }
                   },
-                  "$children": [
+                  "parameter": [
                     {
-                      "$type": "parameter",
                       "name": "a"
                     },
                     {
-                      "$type": "parameter",
                       "name": "b"
                     }
                   ]
@@ -462,14 +311,11 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "doubler"
               },
               {
-                "$type": "expression",
                 "call": {
                   "block": {
                     "binary": {
@@ -494,14 +340,11 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "multi_stmt"
               },
               {
-                "$type": "expression",
                 "call": {
                   "block": {
                     "binary": {
@@ -517,7 +360,7 @@
                       }
                     },
                     "call": {
-                      "$children": [
+                      "name": [
                         "puts",
                         "n"
                       ]
@@ -532,14 +375,11 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "multi_lambda"
               },
               {
-                "$type": "expression",
                 "lambda": {
                   "block": {
                     "binary": {
@@ -555,7 +395,7 @@
                       }
                     },
                     "call": {
-                      "$children": [
+                      "name": [
                         "puts",
                         "n"
                       ]
@@ -569,14 +409,11 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "ternary"
               },
               {
-                "$type": "expression",
                 "ternary": {
                   "condition": {
                     "expression": {
@@ -600,27 +437,21 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "total"
               },
               {
-                "$type": "expression",
                 "int": "0"
               }
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "total"
               },
               {
-                "$type": "expression",
                 "binary": {
                   "left": {
                     "expression": {
@@ -637,22 +468,19 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
-                "spread": {
-                  "name": "rest"
-                },
-                "$children": [
+                "name": [
                   "a",
                   "b"
-                ]
+                ],
+                "spread": {
+                  "name": "rest"
+                }
               },
               {
-                "$type": "expression",
                 "array": {
-                  "$children": [
+                  "int": [
                     "1",
                     "2",
                     "3",
@@ -663,14 +491,11 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "flag"
               },
               {
-                "$type": "expression",
                 "logical": {
                   "left": {
                     "expression": {
@@ -700,19 +525,52 @@
                 }
               }
             ]
+          }
+        ],
+        "call": {
+          "block": {
+            "break": "break"
           },
+          "name": "loop"
+        },
+        "for": {
+          "body": {
+            "assign": {
+              "expression": [
+                {
+                  "name": "total"
+                },
+                {
+                  "name": "j"
+                }
+              ]
+            }
+          },
+          "name": "j",
+          "value": {
+            "expression": {
+              "range": {
+                "inclusive": true,
+                "from": {
+                  "int": "1"
+                },
+                "to": {
+                  "int": "3"
+                }
+              }
+            }
+          }
+        },
+        "logical": [
           {
-            "$type": "logical",
             "left": {
               "expression": {
                 "assign": {
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "flag"
                     },
                     {
-                      "$type": "expression",
                       "true": "true"
                     }
                   ]
@@ -726,17 +584,14 @@
             }
           },
           {
-            "$type": "logical",
             "left": {
               "expression": {
                 "assign": {
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "flag"
                     },
                     {
-                      "$type": "expression",
                       "true": "true"
                     }
                   ]
@@ -749,7 +604,67 @@
               }
             }
           }
-        ]
+        ],
+        "until": {
+          "body": {
+            "assign": {
+              "expression": [
+                {
+                  "name": "i"
+                },
+                {
+                  "int": "1"
+                }
+              ]
+            }
+          },
+          "condition": {
+            "expression": {
+              "binary": {
+                "left": {
+                  "expression": {
+                    "name": "i"
+                  }
+                },
+                "right": {
+                  "expression": {
+                    "int": "6"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "while": {
+          "body": {
+            "assign": {
+              "expression": [
+                {
+                  "name": "i"
+                },
+                {
+                  "int": "1"
+                }
+              ]
+            }
+          },
+          "condition": {
+            "expression": {
+              "binary": {
+                "left": {
+                  "expression": {
+                    "name": "i"
+                  }
+                },
+                "right": {
+                  "expression": {
+                    "int": "3"
+                  }
+                }
+              }
+            }
+          }
+        }
       },
       "name": "control",
       "parameter": {
@@ -757,45 +672,17 @@
       }
     },
     {
-      "$type": "method",
       "body": {
-        "call": {
-          "argument": {
-            "forward": true
-          },
-          "name": "forward"
-        },
-        "index": {
-          "int": "0",
-          "name": "arr"
-        },
-        "member": {
-          "static": true,
-          "member": {
-            "static": true,
-            "name": "Configuration"
-          },
-          "name": "Defaults"
-        },
-        "rescue": {
-          "name": "result",
-          "symbol": ":failed"
-        },
-        "$children": [
+        "assign": [
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "result"
               },
               {
-                "$type": "expression",
                 "match": {
-                  "name": "values",
-                  "$children": [
+                  "in": [
                     {
-                      "$type": "in",
                       "pattern": {
                         "array": true
                       },
@@ -804,10 +691,9 @@
                       }
                     },
                     {
-                      "$type": "in",
                       "if": {
                         "access": {
-                          "$children": [
+                          "name": [
                             "head",
                             "Integer"
                           ]
@@ -839,16 +725,15 @@
                       }
                     },
                     {
-                      "$type": "in",
                       "pattern": {
                         "array": true,
-                        "parameter": {
-                          "splat": true
-                        },
-                        "$children": [
+                        "name": [
                           "first",
                           "last"
-                        ]
+                        ],
+                        "parameter": {
+                          "splat": true
+                        }
                       },
                       "then": {
                         "symbol": ":find_pattern"
@@ -869,14 +754,13 @@
                       }
                     },
                     {
-                      "$type": "in",
                       "pattern": {
                         "hash": true,
                         "pattern": {
                           "keyword": true,
                           "pattern": {
                             "as": true,
-                            "$children": [
+                            "name": [
                               "Integer",
                               "k"
                             ]
@@ -889,10 +773,9 @@
                       }
                     },
                     {
-                      "$type": "in",
                       "pattern": {
                         "alternative": true,
-                        "$children": [
+                        "int": [
                           "1",
                           "2",
                           "3"
@@ -903,10 +786,9 @@
                       }
                     },
                     {
-                      "$type": "in",
                       "pattern": {
                         "as": true,
-                        "$children": [
+                        "name": [
                           "Integer",
                           "n"
                         ]
@@ -915,23 +797,21 @@
                         "name": "n"
                       }
                     }
-                  ]
+                  ],
+                  "name": "values"
                 }
               }
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "joined"
               },
               {
-                "$type": "expression",
                 "string": {
                   "concatenated": true,
-                  "$children": [
+                  "string": [
                     "\"first \"",
                     "\"second \"",
                     "\"third\""
@@ -941,16 +821,13 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "arr"
               },
               {
-                "$type": "expression",
                 "array": {
-                  "$children": [
+                  "int": [
                     "10",
                     "20",
                     "30"
@@ -959,25 +836,44 @@
               }
             ]
           }
-        ]
+        ],
+        "call": {
+          "argument": {
+            "forward": true
+          },
+          "name": "forward"
+        },
+        "index": {
+          "int": "0",
+          "name": "arr"
+        },
+        "member": {
+          "static": true,
+          "member": {
+            "static": true,
+            "name": "Configuration"
+          },
+          "name": "Defaults"
+        },
+        "rescue": {
+          "name": "result",
+          "symbol": ":failed"
+        }
       },
       "name": "patterns",
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "values"
         },
         {
-          "$type": "parameter",
           "forward": true
         }
       ]
     },
     {
-      "$type": "method",
       "body": {
         "access": {
-          "$children": [
+          "name": [
             "block",
             "x",
             "y"
@@ -985,24 +881,23 @@
         }
       },
       "name": "destructured",
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "destructured": true,
-          "$children": [
+          "name": [
             "x",
             "y"
           ]
         },
         {
-          "$type": "parameter",
           "block": true,
           "name": "block"
         }
       ]
-    },
+    }
+  ],
+  "program": [
     {
-      "$type": "program",
       "body": {
         "method": {
           "body": {
@@ -1019,7 +914,6 @@
       "name": "Greeter"
     },
     {
-      "$type": "program",
       "body": {
         "method": {
           "body": {
@@ -1041,49 +935,40 @@
       "name": "Logging"
     },
     {
-      "$type": "program",
       "body": {
-        "$children": [
+        "class": [
           {
-            "$type": "class",
             "body": {
-              "$children": [
+              "call": [
                 {
-                  "$type": "call",
                   "name": "attr_accessor",
                   "symbol": ":name"
                 },
                 {
-                  "$type": "call",
                   "name": "attr_reader",
                   "symbol": ":id"
-                },
+                }
+              ],
+              "method": [
                 {
-                  "$type": "method",
                   "body": {
-                    "$children": [
+                    "assign": [
                       {
-                        "$type": "assign",
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "@name"
                           },
                           {
-                            "$type": "expression",
                             "name": "name"
                           }
                         ]
                       },
                       {
-                        "$type": "assign",
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "@id"
                           },
                           {
-                            "$type": "expression",
                             "logical": {
                               "left": {
                                 "expression": {
@@ -1102,13 +987,11 @@
                     ]
                   },
                   "name": "initialize",
-                  "$children": [
+                  "parameter": [
                     {
-                      "$type": "parameter",
                       "name": "name"
                     },
                     {
-                      "$type": "parameter",
                       "keyword": true,
                       "name": "id",
                       "value": {
@@ -1118,13 +1001,12 @@
                   ]
                 },
                 {
-                  "$type": "method",
                   "body": {
                     "logical": {
                       "left": {
                         "expression": {
                           "access": {
-                            "$children": [
+                            "name": [
                               "other",
                               "Base"
                             ]
@@ -1161,57 +1043,24 @@
             "name": "Base"
           },
           {
-            "$type": "class",
             "body": {
-              "class": {
-                "singleton": true,
-                "body": {
-                  "method": {
-                    "body": {
-                      "assign": {
-                        "$children": [
-                          {
-                            "$type": "expression",
-                            "name": "@registry"
-                          },
-                          {
-                            "$type": "expression",
-                            "hash": "{}"
-                          }
-                        ]
-                      }
-                    },
-                    "name": "registry"
-                  }
-                },
-                "self": "self"
-              },
-              "interpolation": {
-                "name": "MAX_RETRIES"
-              },
-              "$children": [
+              "assign": [
                 {
-                  "$type": "assign",
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "SINGLE"
                     },
                     {
-                      "$type": "expression",
                       "string": "'single-quoted \\n'"
                     }
                   ]
                 },
                 {
-                  "$type": "assign",
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "DOUBLE"
                     },
                     {
-                      "$type": "expression",
                       "string": {
                         "interpolation": {
                           "name": "MAX_RETRIES"
@@ -1221,53 +1070,41 @@
                   ]
                 },
                 {
-                  "$type": "assign",
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "HEREDOC"
                     },
                     {
-                      "$type": "expression",
                       "string": "<<-TEXT"
                     }
                   ]
                 },
                 {
-                  "$type": "assign",
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "SQUIGGLY"
                     },
                     {
-                      "$type": "expression",
                       "string": "<<~TEXT"
                     }
                   ]
                 },
                 {
-                  "$type": "assign",
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "PATTERN"
                     },
                     {
-                      "$type": "expression",
                       "regex": {}
                     }
                   ]
                 },
                 {
-                  "$type": "assign",
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "RANGE_INCL"
                     },
                     {
-                      "$type": "expression",
                       "range": {
                         "inclusive": true,
                         "from": {
@@ -1281,14 +1118,11 @@
                   ]
                 },
                 {
-                  "$type": "assign",
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "RANGE_EXCL"
                     },
                     {
-                      "$type": "expression",
                       "range": {
                         "exclusive": true,
                         "from": {
@@ -1300,34 +1134,58 @@
                       }
                     }
                   ]
-                },
+                }
+              ],
+              "call": [
                 {
-                  "$type": "call",
-                  "$children": [
+                  "name": [
                     "include",
                     "Greeter"
                   ]
                 },
                 {
-                  "$type": "call",
-                  "$children": [
+                  "name": [
                     "extend",
                     "Logging"
                   ]
                 },
                 {
-                  "$type": "call",
                   "access": {
                     "name": "Module"
                   },
                   "name": "prepend"
+                }
+              ],
+              "class": {
+                "singleton": true,
+                "body": {
+                  "method": {
+                    "body": {
+                      "assign": {
+                        "expression": [
+                          {
+                            "name": "@registry"
+                          },
+                          {
+                            "hash": "{}"
+                          }
+                        ]
+                      }
+                    },
+                    "name": "registry"
+                  }
                 },
+                "self": "self"
+              },
+              "interpolation": {
+                "name": "MAX_RETRIES"
+              },
+              "method": [
                 {
-                  "$type": "method",
                   "singleton": true,
                   "body": {
                     "call": {
-                      "$children": [
+                      "name": [
                         "new",
                         "name"
                       ]
@@ -1340,50 +1198,14 @@
                   "self": "self"
                 },
                 {
-                  "$type": "method",
                   "body": {
-                    "ternary": {
-                      "condition": {
-                        "expression": {
-                          "access": {
-                            "name": "opts"
-                          }
-                        }
-                      },
-                      "else": {
-                        "expression": {
-                          "string": {
-                            "$children": [
-                              {
-                                "$type": "interpolation",
-                                "name": "msg"
-                              },
-                              {
-                                "$type": "interpolation",
-                                "access": {
-                                  "name": "opts"
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      },
-                      "then": {
-                        "expression": {
-                          "name": "msg"
-                        }
-                      }
-                    },
-                    "$children": [
+                    "assign": [
                       {
-                        "$type": "assign",
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "msg"
                           },
                           {
-                            "$type": "expression",
                             "ternary": {
                               "condition": {
                                 "expression": {
@@ -1393,13 +1215,11 @@
                               "else": {
                                 "expression": {
                                   "string": {
-                                    "$children": [
+                                    "interpolation": [
                                       {
-                                        "$type": "interpolation",
                                         "name": "greeting"
                                       },
                                       {
-                                        "$type": "interpolation",
                                         "name": "@name"
                                       }
                                     ]
@@ -1420,14 +1240,11 @@
                         ]
                       },
                       {
-                        "$type": "assign",
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "msg"
                           },
                           {
-                            "$type": "expression",
                             "ternary": {
                               "condition": {
                                 "expression": {
@@ -1452,12 +1269,41 @@
                           }
                         ]
                       }
-                    ]
+                    ],
+                    "ternary": {
+                      "condition": {
+                        "expression": {
+                          "access": {
+                            "name": "opts"
+                          }
+                        }
+                      },
+                      "else": {
+                        "expression": {
+                          "string": {
+                            "interpolation": [
+                              {
+                                "name": "msg"
+                              },
+                              {
+                                "access": {
+                                  "name": "opts"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "then": {
+                        "expression": {
+                          "name": "msg"
+                        }
+                      }
+                    }
                   },
                   "name": "greet?",
-                  "$children": [
+                  "parameter": [
                     {
-                      "$type": "parameter",
                       "default": true,
                       "name": "formal",
                       "value": {
@@ -1465,7 +1311,6 @@
                       }
                     },
                     {
-                      "$type": "parameter",
                       "keyword": true,
                       "name": "greeting",
                       "value": {
@@ -1473,28 +1318,23 @@
                       }
                     },
                     {
-                      "$type": "parameter",
                       "kwsplat": true,
                       "name": "opts"
                     },
                     {
-                      "$type": "parameter",
                       "block": true,
                       "name": "block"
                     }
                   ]
                 },
                 {
-                  "$type": "method",
                   "body": {
                     "assign": {
-                      "$children": [
+                      "expression": [
                         {
-                          "$type": "expression",
                           "name": "@name"
                         },
                         {
-                          "$type": "expression",
                           "access": {
                             "name": "@name"
                           }
@@ -1505,7 +1345,6 @@
                   "name": "shout!"
                 },
                 {
-                  "$type": "method",
                   "body": {
                     "binary": {
                       "left": {
@@ -1525,68 +1364,57 @@
                     }
                   },
                   "name": "collect",
-                  "$children": [
+                  "parameter": [
                     {
-                      "$type": "parameter",
                       "splat": true,
                       "name": "items"
                     },
                     {
-                      "$type": "parameter",
                       "kwsplat": true,
                       "name": "meta"
                     }
                   ]
                 },
                 {
-                  "$type": "method",
                   "body": {
                     "string": "'shh'"
                   },
                   "name": "secret"
                 },
                 {
-                  "$type": "method",
                   "body": {
                     "name": "@id"
                   },
                   "name": "peer_only"
                 },
                 {
-                  "$type": "method",
                   "body": {
                     "array": {
-                      "$children": [
+                      "name": [
                         "data",
                         "rocket",
                         "list",
                         "merged"
                       ]
                     },
-                    "$children": [
+                    "assign": [
                       {
-                        "$type": "assign",
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "data"
                           },
                           {
-                            "$type": "expression",
                             "hash": {
-                              "$children": [
+                              "pair": [
                                 {
-                                  "$type": "pair",
                                   "name": "@id",
                                   "symbol": "id"
                                 },
                                 {
-                                  "$type": "pair",
                                   "name": "@name",
                                   "symbol": "name"
                                 },
                                 {
-                                  "$type": "pair",
                                   "string": "'legacy'",
                                   "true": "true"
                                 }
@@ -1596,23 +1424,18 @@
                         ]
                       },
                       {
-                        "$type": "assign",
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "rocket"
                           },
                           {
-                            "$type": "expression",
                             "hash": {
-                              "$children": [
+                              "pair": [
                                 {
-                                  "$type": "pair",
                                   "int": "1",
                                   "symbol": ":foo"
                                 },
                                 {
-                                  "$type": "pair",
                                   "int": "2",
                                   "symbol": {
                                     "delimited": true
@@ -1624,42 +1447,36 @@
                         ]
                       },
                       {
-                        "$type": "assign",
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "list"
                           },
                           {
-                            "$type": "expression",
                             "array": {
+                              "int": [
+                                "1",
+                                "2",
+                                "3"
+                              ],
                               "spread": {
                                 "list": true,
                                 "array": {
-                                  "$children": [
+                                  "int": [
                                     "4",
                                     "5"
                                   ]
                                 }
-                              },
-                              "$children": [
-                                "1",
-                                "2",
-                                "3"
-                              ]
+                              }
                             }
                           }
                         ]
                       },
                       {
-                        "$type": "assign",
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "merged"
                           },
                           {
-                            "$type": "expression",
                             "hash": {
                               "pair": {
                                 "nil": "nil",
@@ -1676,7 +1493,9 @@
                     ]
                   },
                   "name": "describe"
-                },
+                }
+              ],
+              "name": [
                 "private",
                 "protected",
                 "public"
@@ -1693,5 +1512,20 @@
       },
       "name": "App"
     }
-  ]
+  ],
+  "unless": {
+    "access": {
+      "name": "MAX_RETRIES"
+    },
+    "then": {
+      "call": {
+        "name": "puts",
+        "string": {
+          "interpolation": {
+            "name": "MAX_RETRIES"
+          }
+        }
+      }
+    }
+  }
 }

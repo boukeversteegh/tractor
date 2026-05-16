@@ -1,42 +1,7 @@
 {
   "$type": "program",
-  "class": {
-    "body": {
-      "block": {
-        "static": true,
-        "body": {
-          "expression": {
-            "assign": {
-              "$children": [
-                {
-                  "$type": "expression",
-                  "access": {
-                    "name": "StaticBlock"
-                  }
-                },
-                {
-                  "$type": "expression",
-                  "number": "7"
-                }
-              ]
-            }
-          }
-        }
-      },
-      "field": {
-        "public": true,
-        "static": true,
-        "expression": {
-          "number": "0"
-        },
-        "name": "counter"
-      }
-    },
-    "name": "StaticBlock"
-  },
-  "$children": [
+  "alias": [
     {
-      "$type": "alias",
       "name": "Builder",
       "type": {
         "constructor": true,
@@ -51,7 +16,6 @@
       }
     },
     {
-      "$type": "alias",
       "generic": {
         "name": "T"
       },
@@ -82,7 +46,6 @@
       }
     },
     {
-      "$type": "alias",
       "name": "Reflective",
       "type": {
         "object": true,
@@ -98,17 +61,14 @@
       }
     },
     {
-      "$type": "alias",
       "name": "RestArgs",
       "type": {
         "tuple": true,
-        "$children": [
+        "type": [
           {
-            "$type": "type",
             "name": "number"
           },
           {
-            "$type": "type",
             "rest": true,
             "type": {
               "array": true,
@@ -119,13 +79,11 @@
       }
     },
     {
-      "$type": "alias",
       "name": "OptionalSlot",
       "type": {
         "tuple": true,
-        "$children": [
+        "type": [
           {
-            "$type": "type",
             "parameter": {
               "required": true,
               "name": "head",
@@ -135,7 +93,6 @@
             }
           },
           {
-            "$type": "type",
             "parameter": {
               "optional": true,
               "name": "tail",
@@ -148,7 +105,6 @@
       }
     },
     {
-      "$type": "alias",
       "name": "NestedTy",
       "type": {
         "lookup": true,
@@ -158,79 +114,97 @@
           "string": "\"counter\""
         }
       }
+    }
+  ],
+  "class": {
+    "body": {
+      "block": {
+        "static": true,
+        "body": {
+          "expression": {
+            "assign": {
+              "expression": [
+                {
+                  "access": {
+                    "name": "StaticBlock"
+                  }
+                },
+                {
+                  "number": "7"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "field": {
+        "public": true,
+        "static": true,
+        "expression": {
+          "number": "0"
+        },
+        "name": "counter"
+      }
     },
+    "name": "StaticBlock"
+  },
+  "comment": [
     "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax.",
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     "// Iter 18: TS 5+ / advanced type / declare / module shapes.",
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
-    },
+    }
+  ],
+  "declare": [
     {
-      "$type": "declare",
       "variable": {
         "const": true,
         "name": "__DEV__",
@@ -240,7 +214,6 @@
       }
     },
     {
-      "$type": "declare",
       "function": {
         "name": "externalThing",
         "parameter": {
@@ -258,7 +231,6 @@
       }
     },
     {
-      "$type": "declare",
       "namespace": {
         "body": {
           "function": {
@@ -272,16 +244,16 @@
         },
         "name": "SideEffect"
       }
-    },
+    }
+  ],
+  "export": [
     {
-      "$type": "export",
       "spec": {
         "name": "namedA"
       },
       "string": "\"./barrel\""
     },
     {
-      "$type": "export",
       "alias": {
         "generic": {
           "name": "T"
@@ -317,7 +289,6 @@
       }
     },
     {
-      "$type": "export",
       "interface": {
         "body": {
           "method": {
@@ -336,9 +307,8 @@
               }
             }
           },
-          "$children": [
+          "property": [
             {
-              "$type": "property",
               "readonly": true,
               "name": "id",
               "type": {
@@ -346,7 +316,6 @@
               }
             },
             {
-              "$type": "property",
               "optional": true,
               "name": "label",
               "type": {
@@ -354,7 +323,6 @@
               }
             },
             {
-              "$type": "property",
               "name": "value",
               "type": {
                 "name": "T"
@@ -375,21 +343,18 @@
       }
     },
     {
-      "$type": "export",
       "alias": {
         "name": "Point",
         "type": {
           "object": true,
-          "$children": [
+          "property": [
             {
-              "$type": "property",
               "name": "x",
               "type": {
                 "name": "number"
               }
             },
             {
-              "$type": "property",
               "name": "y",
               "type": {
                 "name": "number"
@@ -400,18 +365,15 @@
       }
     },
     {
-      "$type": "export",
       "alias": {
         "name": "Pair",
         "type": {
           "tuple": true,
-          "$children": [
+          "type": [
             {
-              "$type": "type",
               "name": "string"
             },
             {
-              "$type": "type",
               "name": "number"
             }
           ]
@@ -419,41 +381,34 @@
       }
     },
     {
-      "$type": "export",
       "alias": {
         "name": "Status",
         "type": {
           "union": true,
-          "$children": [
+          "type": [
             {
-              "$type": "type",
               "union": true,
-              "$children": [
+              "type": [
                 {
-                  "$type": "type",
                   "union": true,
-                  "$children": [
+                  "type": [
                     {
-                      "$type": "type",
                       "literal": true,
                       "string": "\"idle\""
                     },
                     {
-                      "$type": "type",
                       "literal": true,
                       "string": "\"loading\""
                     }
                   ]
                 },
                 {
-                  "$type": "type",
                   "literal": true,
                   "string": "\"ready\""
                 }
               ]
             },
             {
-              "$type": "type",
               "literal": true,
               "string": "\"error\""
             }
@@ -462,7 +417,6 @@
       }
     },
     {
-      "$type": "export",
       "alias": {
         "generic": {
           "name": "T"
@@ -486,7 +440,6 @@
       }
     },
     {
-      "$type": "export",
       "alias": {
         "generic": {
           "name": "T"
@@ -495,9 +448,8 @@
         "type": {
           "object": true,
           "indexer": {
-            "$children": [
+            "type": [
               {
-                "$type": "type",
                 "mapped": true,
                 "name": "K",
                 "type": {
@@ -506,11 +458,10 @@
                 }
               },
               {
-                "$type": "type",
                 "optional": true,
                 "type": {
                   "lookup": true,
-                  "$children": [
+                  "name": [
                     "T",
                     "K"
                   ]
@@ -522,7 +473,6 @@
       }
     },
     {
-      "$type": "export",
       "alias": {
         "name": "Greeting",
         "type": {
@@ -533,22 +483,18 @@
       }
     },
     {
-      "$type": "export",
       "enum": {
         "body": {
-          "$children": [
+          "constant": [
             {
-              "$type": "constant",
               "name": "Red",
               "string": "\"RED\""
             },
             {
-              "$type": "constant",
               "name": "Green",
               "string": "\"GREEN\""
             },
             {
-              "$type": "constant",
               "name": "Blue",
               "string": "\"BLUE\""
             }
@@ -558,13 +504,11 @@
       }
     },
     {
-      "$type": "export",
       "class": {
         "abstract": true,
         "body": {
-          "$children": [
+          "field": [
             {
-              "$type": "field",
               "public": true,
               "static": true,
               "expression": {
@@ -576,7 +520,6 @@
               }
             },
             {
-              "$type": "field",
               "protected": true,
               "readonly": true,
               "expression": {
@@ -590,7 +533,6 @@
               }
             },
             {
-              "$type": "field",
               "private": true,
               "expression": {
                 "object_creation": {
@@ -598,22 +540,22 @@
                 }
               },
               "generic_type": {
-                "$children": [
+                "name": [
                   "Map",
                   "string",
                   "T"
                 ]
               },
               "name": "_cache"
-            },
+            }
+          ],
+          "method": [
             {
-              "$type": "method",
               "public": true,
               "body": "{}",
               "name": "constructor",
-              "$children": [
+              "parameter": [
                 {
-                  "$type": "parameter",
                   "required": true,
                   "public": true,
                   "name": "name",
@@ -622,7 +564,6 @@
                   }
                 },
                 {
-                  "$type": "parameter",
                   "optional": true,
                   "private": true,
                   "readonly": true,
@@ -634,7 +575,6 @@
               ]
             },
             {
-              "$type": "method",
               "public": true,
               "abstract": true,
               "name": "render",
@@ -645,7 +585,6 @@
               }
             },
             {
-              "$type": "method",
               "public": true,
               "get": true,
               "body": {
@@ -665,7 +604,6 @@
               }
             },
             {
-              "$type": "method",
               "public": true,
               "set": true,
               "body": {
@@ -687,28 +625,21 @@
               }
             },
             {
-              "$type": "method",
               "public": true,
               "body": {
                 "expression": {
                   "access": {
-                    "this": "this",
-                    "$children": [
+                    "name": [
                       "key",
                       "value"
-                    ]
+                    ],
+                    "this": "this"
                   }
                 }
               },
               "name": "store",
-              "returns": {
-                "type": {
-                  "name": "void"
-                }
-              },
-              "$children": [
+              "parameter": [
                 {
-                  "$type": "parameter",
                   "required": true,
                   "name": "key",
                   "type": {
@@ -716,14 +647,18 @@
                   }
                 },
                 {
-                  "$type": "parameter",
                   "required": true,
                   "name": "value",
                   "type": {
                     "name": "T"
                   }
                 }
-              ]
+              ],
+              "returns": {
+                "type": {
+                  "name": "void"
+                }
+              }
             }
           ]
         },
@@ -739,7 +674,6 @@
       }
     },
     {
-      "$type": "export",
       "class": {
         "body": {
           "field": {
@@ -750,21 +684,18 @@
             },
             "name": "#counter"
           },
-          "$children": [
+          "method": [
             {
-              "$type": "method",
               "public": true,
               "body": {
-                "$children": [
+                "expression": [
                   {
-                    "$type": "expression",
                     "call": {
                       "name": "name",
                       "super": "super"
                     }
                   },
                   {
-                    "$type": "expression",
                     "unary": {
                       "postfix": true,
                       "access": {
@@ -775,9 +706,8 @@
                 ]
               },
               "name": "constructor",
-              "$children": [
+              "parameter": [
                 {
-                  "$type": "parameter",
                   "required": true,
                   "name": "name",
                   "type": {
@@ -785,7 +715,6 @@
                   }
                 },
                 {
-                  "$type": "parameter",
                   "required": true,
                   "private": true,
                   "list": "[]",
@@ -798,7 +727,6 @@
               ]
             },
             {
-              "$type": "method",
               "public": true,
               "override": true,
               "body": {
@@ -810,7 +738,7 @@
                           "name": "first"
                         }
                       },
-                      "$children": [
+                      "string": [
                         "Widget<",
                         ">"
                       ]
@@ -849,7 +777,6 @@
               }
             },
             {
-              "$type": "method",
               "public": true,
               "generator": true,
               "body": {
@@ -900,13 +827,11 @@
                   "name": "Generator",
                   "type": {
                     "tuple": true,
-                    "$children": [
+                    "type": [
                       {
-                        "$type": "type",
                         "name": "number"
                       },
                       {
-                        "$type": "type",
                         "name": "T"
                       }
                     ]
@@ -915,7 +840,6 @@
               }
             },
             {
-              "$type": "method",
               "public": true,
               "async": true,
               "body": {
@@ -926,7 +850,7 @@
                         "expression": {
                           "await": {
                             "call": {
-                              "$children": [
+                              "name": [
                                 "fetch",
                                 "u"
                               ]
@@ -958,13 +882,11 @@
                       "value": {
                         "expression": {
                           "list": {
-                            "$children": [
+                            "list_splat": [
                               {
-                                "$type": "list_splat",
                                 "name": "urls"
                               },
                               {
-                                "$type": "list_splat",
                                 "name": "extra"
                               }
                             ]
@@ -978,7 +900,7 @@
                       "throw": {
                         "expression": {
                           "as": {
-                            "$children": [
+                            "name": [
                               "e",
                               "Error"
                             ]
@@ -1000,18 +922,8 @@
                 }
               },
               "name": "loadAll",
-              "returns": {
-                "generic_type": {
-                  "name": "Promise",
-                  "type": {
-                    "array": true,
-                    "name": "T"
-                  }
-                }
-              },
-              "$children": [
+              "parameter": [
                 {
-                  "$type": "parameter",
                   "required": true,
                   "name": "urls",
                   "type": {
@@ -1020,7 +932,6 @@
                   }
                 },
                 {
-                  "$type": "parameter",
                   "required": true,
                   "rest": {
                     "name": "extra"
@@ -1030,10 +941,33 @@
                     "name": "string"
                   }
                 }
-              ]
+              ],
+              "returns": {
+                "generic_type": {
+                  "name": "Promise",
+                  "type": {
+                    "array": true,
+                    "name": "T"
+                  }
+                }
+              }
             }
           ]
         },
+        "extends": [
+          {
+            "type": {
+              "name": "Base"
+            }
+          },
+          {
+            "type": {
+              "type": {
+                "name": "T"
+              }
+            }
+          }
+        ],
         "generic": {
           "extends": {
             "type": {
@@ -1044,46 +978,89 @@
           "type": {
             "default": true,
             "generic_type": {
-              "$children": [
+              "name": [
                 "Shape",
                 "number"
               ]
             }
           }
         },
-        "name": "Widget",
-        "$children": [
-          {
-            "$type": "extends",
-            "type": {
-              "name": "Base"
-            }
-          },
-          {
-            "$type": "extends",
-            "type": {
-              "type": {
-                "name": "T"
-              }
-            }
-          }
-        ]
+        "name": "Widget"
       }
     },
     {
-      "$type": "export",
       "function": {
         "body": {
+          "for": [
+            {
+              "body": {
+                "expression": {
+                  "assign": {
+                    "expression": [
+                      {
+                        "nonnull": {
+                          "access": {
+                            "name": [
+                              "obj",
+                              "k"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "number": "1"
+                      }
+                    ]
+                  }
+                }
+              },
+              "left": {
+                "expression": {
+                  "name": "k"
+                }
+              },
+              "right": {
+                "expression": {
+                  "name": "obj"
+                }
+              }
+            },
+            {
+              "body": {
+                "expression": {
+                  "unary": {
+                    "name": "v"
+                  }
+                }
+              },
+              "left": {
+                "expression": {
+                  "pattern": {
+                    "array": true,
+                    "name": "v"
+                  }
+                }
+              },
+              "right": {
+                "expression": {
+                  "access": {
+                    "name": [
+                      "Object",
+                      "obj"
+                    ]
+                  }
+                }
+              }
+            }
+          ],
           "if": {
             "body": {
               "assign": {
-                "$children": [
+                "expression": [
                   {
-                    "$type": "expression",
                     "name": "status"
                   },
                   {
-                    "$type": "expression",
                     "string": "\"error\""
                   }
                 ]
@@ -1108,13 +1085,11 @@
             "else_if": {
               "body": {
                 "assign": {
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "status"
                     },
                     {
-                      "$type": "expression",
                       "string": "\"idle\""
                     }
                   ]
@@ -1139,13 +1114,11 @@
               "else_if": {
                 "body": {
                   "assign": {
-                    "$children": [
+                    "expression": [
                       {
-                        "$type": "expression",
                         "name": "status"
                       },
                       {
-                        "$type": "expression",
                         "string": "\"loading\""
                       }
                     ]
@@ -1170,13 +1143,11 @@
                 "else": {
                   "body": {
                     "assign": {
-                      "$children": [
+                      "expression": [
                         {
-                          "$type": "expression",
                           "name": "status"
                         },
                         {
-                          "$type": "expression",
                           "string": "\"ready\""
                         }
                       ]
@@ -1219,15 +1190,12 @@
             }
           },
           "switch": {
-            "name": "status",
-            "$children": [
+            "arm": [
               {
-                "$type": "arm",
                 "break": "break;",
                 "string": "\"ready\""
               },
               {
-                "$type": "arm",
                 "string": "\"error\"",
                 "throw": {
                   "expression": {
@@ -1239,89 +1207,14 @@
                 }
               },
               {
-                "$type": "arm",
                 "break": "break;",
                 "comment": "/* fallthrough */"
               }
-            ]
+            ],
+            "name": "status"
           },
-          "while": {
-            "body": {
-              "comment": "/* never */"
-            },
-            "condition": {
-              "expression": {
-                "false": "false"
-              }
-            }
-          },
-          "$children": [
+          "variable": [
             {
-              "$type": "for",
-              "body": {
-                "expression": {
-                  "assign": {
-                    "$children": [
-                      {
-                        "$type": "expression",
-                        "nonnull": {
-                          "access": {
-                            "$children": [
-                              "obj",
-                              "k"
-                            ]
-                          }
-                        }
-                      },
-                      {
-                        "$type": "expression",
-                        "number": "1"
-                      }
-                    ]
-                  }
-                }
-              },
-              "left": {
-                "expression": {
-                  "name": "k"
-                }
-              },
-              "right": {
-                "expression": {
-                  "name": "obj"
-                }
-              }
-            },
-            {
-              "$type": "for",
-              "body": {
-                "expression": {
-                  "unary": {
-                    "name": "v"
-                  }
-                }
-              },
-              "left": {
-                "expression": {
-                  "pattern": {
-                    "array": true,
-                    "name": "v"
-                  }
-                }
-              },
-              "right": {
-                "expression": {
-                  "access": {
-                    "$children": [
-                      "Object",
-                      "obj"
-                    ]
-                  }
-                }
-              }
-            },
-            {
-              "$type": "variable",
               "let": true,
               "name": "status",
               "type": {
@@ -1334,10 +1227,9 @@
               }
             },
             {
-              "$type": "variable",
               "const": true,
               "generic_type": {
-                "$children": [
+                "name": [
                   "Record",
                   "string",
                   "number"
@@ -1348,14 +1240,12 @@
                 "expression": {
                   "object": {
                     "literal": true,
-                    "$children": [
+                    "pair": [
                       {
-                        "$type": "pair",
                         "name": "a",
                         "number": "1"
                       },
                       {
-                        "$type": "pair",
                         "name": "b",
                         "number": "2"
                       }
@@ -1364,7 +1254,17 @@
                 }
               }
             }
-          ]
+          ],
+          "while": {
+            "body": {
+              "comment": "/* never */"
+            },
+            "condition": {
+              "expression": {
+                "false": "false"
+              }
+            }
+          }
         },
         "name": "controlFlow",
         "parameter": {
@@ -1380,105 +1280,92 @@
           }
         }
       }
-    },
+    }
+  ],
+  "expression": [
     {
-      "$type": "expression",
       "unary": {
         "name": "arrow"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "doubled"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "fallback"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "nonNull"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "ns"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "defaultExport"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "aliasedB"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "controlOdds"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "destructure"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "asserted"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "fixed"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "url"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "nestedVal"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "pattern"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "MetaCtor"
       }
     },
     {
-      "$type": "expression",
       "unary": {
         "name": "legacy"
       }
-    },
+    }
+  ],
+  "function": [
     {
-      "$type": "function",
       "body": {
         "return": {
           "expression": {
@@ -1561,7 +1448,6 @@
       }
     },
     {
-      "$type": "function",
       "async": true,
       "body": {
         "comment": {
@@ -1570,16 +1456,15 @@
         "return": {
           "expression": {
             "as": {
-              "$children": [
+              "name": [
                 "msg",
                 "Greeting"
               ]
             }
           }
         },
-        "$children": [
+        "variable": [
           {
-            "$type": "variable",
             "const": true,
             "pattern": {
               "array": true,
@@ -1592,7 +1477,7 @@
               "expression": {
                 "access": {
                   "call": {
-                    "$children": [
+                    "name": [
                       "String",
                       "input"
                     ]
@@ -1603,7 +1488,6 @@
             }
           },
           {
-            "$type": "variable",
             "const": true,
             "name": "spread",
             "value": {
@@ -1616,7 +1500,7 @@
                       "name": "scale"
                     }
                   },
-                  "$children": [
+                  "name": [
                     "label",
                     "head",
                     "rest"
@@ -1626,17 +1510,14 @@
             }
           },
           {
-            "$type": "variable",
             "const": true,
             "name": "msg",
             "value": {
               "expression": {
                 "as": {
                   "call": {
-                    "name": "tag",
-                    "$children": [
+                    "interpolation": [
                       {
-                        "$type": "interpolation",
                         "binary": {
                           "left": {
                             "expression": {
@@ -1651,11 +1532,13 @@
                         }
                       },
                       {
-                        "$type": "interpolation",
                         "access": {
                           "name": "spread"
                         }
-                      },
+                      }
+                    ],
+                    "name": "tag",
+                    "string": [
                       "hello, ",
                       " (",
                       ")"
@@ -1672,7 +1555,7 @@
         "extends": {
           "type": {
             "union": true,
-            "$children": [
+            "name": [
               "number",
               "string"
             ]
@@ -1681,17 +1564,8 @@
         "name": "T"
       },
       "name": "compute",
-      "returns": {
-        "generic_type": {
-          "$children": [
-            "Promise",
-            "Greeting"
-          ]
-        }
-      },
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "required": true,
           "name": "input",
           "type": {
@@ -1699,7 +1573,6 @@
           }
         },
         {
-          "$type": "parameter",
           "required": true,
           "object": {
             "literal": true
@@ -1714,9 +1587,8 @@
           },
           "type": {
             "object": true,
-            "$children": [
+            "property": [
               {
-                "$type": "property",
                 "optional": true,
                 "name": "scale",
                 "type": {
@@ -1724,7 +1596,6 @@
                 }
               },
               {
-                "$type": "property",
                 "optional": true,
                 "name": "label",
                 "type": {
@@ -1734,10 +1605,17 @@
             ]
           }
         }
-      ]
+      ],
+      "returns": {
+        "generic_type": {
+          "name": [
+            "Promise",
+            "Greeting"
+          ]
+        }
+      }
     },
     {
-      "$type": "function",
       "body": {
         "if": {
           "body": {
@@ -1785,7 +1663,6 @@
       }
     },
     {
-      "$type": "function",
       "body": {
         "return": {
           "expression": {
@@ -1816,7 +1693,6 @@
       }
     },
     {
-      "$type": "function",
       "body": {
         "do_while": {
           "binary": {
@@ -1865,21 +1741,17 @@
             "body": {
               "expression": {
                 "assign": {
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "total"
                     },
                     {
-                      "$type": "expression",
                       "assign": {
-                        "$children": [
+                        "expression": [
                           {
-                            "$type": "expression",
                             "name": "total"
                           },
                           {
-                            "$type": "expression",
                             "name": "i"
                           }
                         ]
@@ -1900,9 +1772,8 @@
                   ]
                 }
               },
-              "$children": [
+              "if": [
                 {
-                  "$type": "if",
                   "body": {
                     "name": "outer"
                   },
@@ -1924,7 +1795,6 @@
                   }
                 },
                 {
-                  "$type": "if",
                   "body": {
                     "name": "outer"
                   },
@@ -1947,11 +1817,20 @@
                 }
               ]
             },
+            "unary": [
+              {
+                "postfix": true,
+                "name": "i"
+              },
+              {
+                "postfix": true,
+                "name": "j"
+              }
+            ],
             "variable": {
               "let": true,
-              "$children": [
+              "declarator": [
                 {
-                  "$type": "declarator",
                   "name": "i",
                   "value": {
                     "expression": {
@@ -1960,7 +1839,6 @@
                   }
                 },
                 {
-                  "$type": "declarator",
                   "name": "j",
                   "value": {
                     "expression": {
@@ -1969,19 +1847,7 @@
                   }
                 }
               ]
-            },
-            "$children": [
-              {
-                "$type": "unary",
-                "postfix": true,
-                "name": "i"
-              },
-              {
-                "$type": "unary",
-                "postfix": true,
-                "name": "j"
-              }
-            ]
+            }
           },
           "name": "outer"
         },
@@ -2001,9 +1867,8 @@
             }
           }
         },
-        "$children": [
+        "variable": [
           {
-            "$type": "variable",
             "let": true,
             "name": "total",
             "value": {
@@ -2013,7 +1878,6 @@
             }
           },
           {
-            "$type": "variable",
             "let": true,
             "name": "n",
             "value": {
@@ -2039,7 +1903,6 @@
       }
     },
     {
-      "$type": "function",
       "body": {
         "return": {
           "expression": {
@@ -2083,33 +1946,25 @@
         }
       },
       "name": "destructure",
-      "returns": {
-        "type": {
-          "name": "number"
-        }
-      },
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "required": true,
           "pattern": {
             "object": true,
-            "$children": [
+            "pair": [
               {
-                "$type": "pair",
+                "name": [
+                  "a",
+                  "aa"
+                ],
                 "value": {
                   "expression": {
                     "number": "1"
                   }
-                },
-                "$children": [
-                  "a",
-                  "aa"
-                ]
+                }
               },
               {
-                "$type": "pair",
-                "$children": [
+                "name": [
                   "b",
                   "bb"
                 ]
@@ -2118,9 +1973,8 @@
           },
           "type": {
             "object": true,
-            "$children": [
+            "property": [
               {
-                "$type": "property",
                 "optional": true,
                 "name": "a",
                 "type": {
@@ -2128,7 +1982,6 @@
                 }
               },
               {
-                "$type": "property",
                 "name": "b",
                 "type": {
                   "name": "number"
@@ -2138,7 +1991,6 @@
           }
         },
         {
-          "$type": "parameter",
           "required": true,
           "pattern": {
             "array": true,
@@ -2157,22 +2009,26 @@
             "name": "number"
           }
         }
-      ]
-    },
+      ],
+      "returns": {
+        "type": {
+          "name": "number"
+        }
+      }
+    }
+  ],
+  "import": [
     {
-      "$type": "import",
       "default": true,
       "group": true,
       "name": "defaultExport",
       "path": "./barrel",
-      "$children": [
+      "spec": [
         {
-          "$type": "spec",
           "name": "namedA"
         },
         {
-          "$type": "spec",
-          "$children": [
+          "name": [
             "namedB",
             "aliasedB"
           ]
@@ -2180,14 +2036,12 @@
       ]
     },
     {
-      "$type": "import",
       "namespace": {
         "name": "ns"
       },
       "path": "./namespace"
     },
     {
-      "$type": "import",
       "group": true,
       "path": "./types",
       "spec": {
@@ -2195,22 +2049,55 @@
       }
     },
     {
-      "$type": "import",
       "sideeffect": true,
       "name": "legacy",
       "string": "\"./legacy\""
-    },
+    }
+  ],
+  "variable": [
     {
-      "$type": "variable",
       "const": true,
       "name": "tag",
       "value": {
         "expression": {
           "arrow": {
+            "parameter": [
+              {
+                "required": true,
+                "name": "parts",
+                "type": {
+                  "name": "TemplateStringsArray"
+                }
+              },
+              {
+                "required": true,
+                "rest": {
+                  "name": "vals"
+                },
+                "type": {
+                  "array": true,
+                  "name": "unknown"
+                }
+              }
+            ],
             "value": {
               "expression": {
                 "access": {
                   "arrow": {
+                    "parameter": [
+                      {
+                        "required": true,
+                        "name": "acc"
+                      },
+                      {
+                        "required": true,
+                        "name": "p"
+                      },
+                      {
+                        "required": true,
+                        "name": "i"
+                      }
+                    ],
                     "value": {
                       "expression": {
                         "binary": {
@@ -2236,7 +2123,7 @@
                                 "left": {
                                   "expression": {
                                     "access": {
-                                      "$children": [
+                                      "name": [
                                         "vals",
                                         "i"
                                       ]
@@ -2253,57 +2140,18 @@
                           }
                         }
                       }
-                    },
-                    "$children": [
-                      {
-                        "$type": "parameter",
-                        "required": true,
-                        "name": "acc"
-                      },
-                      {
-                        "$type": "parameter",
-                        "required": true,
-                        "name": "p"
-                      },
-                      {
-                        "$type": "parameter",
-                        "required": true,
-                        "name": "i"
-                      }
-                    ]
+                    }
                   },
                   "name": "parts",
                   "string": "\"\""
                 }
               }
-            },
-            "$children": [
-              {
-                "$type": "parameter",
-                "required": true,
-                "name": "parts",
-                "type": {
-                  "name": "TemplateStringsArray"
-                }
-              },
-              {
-                "$type": "parameter",
-                "required": true,
-                "rest": {
-                  "name": "vals"
-                },
-                "type": {
-                  "array": true,
-                  "name": "unknown"
-                }
-              }
-            ]
+            }
           }
         }
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "arrow",
       "value": {
@@ -2340,7 +2188,6 @@
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "doubled",
       "type": {
@@ -2378,7 +2225,7 @@
               }
             },
             "list": {
-              "$children": [
+              "number": [
                 "1",
                 "2",
                 "3"
@@ -2389,7 +2236,6 @@
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "arrowBlock",
       "value": {
@@ -2430,7 +2276,6 @@
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "maybe",
       "type": {
@@ -2448,7 +2293,6 @@
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "fallback",
       "value": {
@@ -2469,7 +2313,6 @@
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "nonNull",
       "value": {
@@ -2491,7 +2334,6 @@
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "asserted",
       "value": {
@@ -2511,7 +2353,6 @@
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "arrayOf",
       "value": {
@@ -2526,7 +2367,6 @@
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "fixed",
       "value": {
@@ -2538,7 +2378,6 @@
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "url",
       "value": {
@@ -2550,7 +2389,6 @@
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "nestedVal",
       "value": {
@@ -2562,7 +2400,6 @@
       }
     },
     {
-      "$type": "variable",
       "const": true,
       "name": "pattern",
       "value": {

@@ -1,77 +1,61 @@
 {
   "$type": "module",
-  "expression": {
-    "string": "\"\"\"Kitchen-sink Python blueprint for tractor snapshot tests.\n\nThis fixture is rendered by `tractor query <file> -p tree --single` with\nNO depth limit, so any design-principle transform change produces a visible\nsnapshot diff. It is intentionally syntactically valid but not runnable.\n\"\"\""
-  },
-  "$children": [
+  "assign": [
     {
-      "$type": "assign",
-      "type": {
-        "name": "bool"
-      },
-      "$children": [
+      "expression": [
         {
-          "$type": "expression",
           "name": "GLOBAL_FLAG"
         },
         {
-          "$type": "expression",
           "true": "True"
         }
-      ]
+      ],
+      "type": {
+        "name": "bool"
+      }
     },
     {
-      "$type": "assign",
-      "type": {
-        "name": "float"
-      },
-      "$children": [
+      "expression": [
         {
-          "$type": "expression",
           "name": "PI"
         },
         {
-          "$type": "expression",
           "float": "3.14159"
         }
-      ]
+      ],
+      "type": {
+        "name": "float"
+      }
     },
     {
-      "$type": "assign",
-      "$children": [
+      "expression": [
         {
-          "$type": "expression",
           "name": "RAW_PATH"
         },
         {
-          "$type": "expression",
           "name": "BYTES_BLOB"
         },
         {
-          "$type": "expression",
           "string": "r\"C:\\Users\\foo\\bar\""
         },
         {
-          "$type": "expression",
           "string": "b\"\\x00\\x01\\x02\""
         }
       ]
     },
     {
-      "$type": "assign",
-      "$children": [
+      "expression": [
         {
-          "$type": "expression",
           "name": "TRIPLE"
         },
         {
-          "$type": "expression",
           "string": "\"\"\"line one\\nline two\"\"\""
         }
       ]
-    },
+    }
+  ],
+  "class": [
     {
-      "$type": "class",
       "body": "pass",
       "generic": {
         "type_parameter": {
@@ -81,62 +65,43 @@
       "name": "Box"
     },
     {
-      "$type": "class",
       "body": {
-        "expression": {
-          "string": "\"\"\"A dataclass with default factory.\"\"\""
-        },
-        "$children": [
+        "assign": [
           {
-            "$type": "assign",
-            "type": {
-              "name": "int"
-            },
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "x"
               },
               {
-                "$type": "expression",
                 "int": "0"
               }
-            ]
-          },
-          {
-            "$type": "assign",
+            ],
             "type": {
               "name": "int"
-            },
-            "$children": [
+            }
+          },
+          {
+            "expression": [
               {
-                "$type": "expression",
                 "name": "y"
               },
               {
-                "$type": "expression",
                 "int": "0"
               }
-            ]
+            ],
+            "type": {
+              "name": "int"
+            }
           },
           {
-            "$type": "assign",
-            "generic_type": {
-              "$children": [
-                "list",
-                "str"
-              ]
-            },
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "tags"
               },
               {
-                "$type": "expression",
                 "call": {
                   "keyword_argument": {
-                    "$children": [
+                    "name": [
                       "default_factory",
                       "list"
                     ]
@@ -144,9 +109,18 @@
                   "name": "field"
                 }
               }
-            ]
+            ],
+            "generic_type": {
+              "name": [
+                "list",
+                "str"
+              ]
+            }
           }
-        ]
+        ],
+        "expression": {
+          "string": "\"\"\"A dataclass with default factory.\"\"\""
+        }
       },
       "decorator": {
         "name": "dataclass"
@@ -154,12 +128,10 @@
       "name": "Point"
     },
     {
-      "$type": "class",
       "body": "pass",
       "name": "Base"
     },
     {
-      "$type": "class",
       "body": "pass",
       "extends": {
         "type": {
@@ -169,18 +141,15 @@
       "name": "Meta"
     },
     {
-      "$type": "class",
       "body": {
         "class": {
           "body": {
             "assign": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "CONST"
                 },
                 {
-                  "$type": "expression",
                   "int": "42"
                 }
               ]
@@ -191,32 +160,27 @@
         "expression": {
           "string": "\"\"\"Class with inheritance and metaclass kwarg.\"\"\""
         },
-        "$children": [
+        "function": [
           {
-            "$type": "function",
             "public": true,
             "body": {
               "assign": {
-                "$children": [
+                "expression": [
                   {
-                    "$type": "expression",
                     "access": "self.name"
                   },
                   {
-                    "$type": "expression",
                     "name": "name"
                   }
                 ]
               }
             },
             "name": "__init__",
-            "$children": [
+            "parameter": [
               {
-                "$type": "parameter",
                 "name": "self"
               },
               {
-                "$type": "parameter",
                 "name": "name",
                 "type": {
                   "name": "str"
@@ -225,7 +189,6 @@
             ]
           },
           {
-            "$type": "function",
             "public": true,
             "body": {
               "return": {
@@ -234,7 +197,7 @@
                     "left": {
                       "expression": {
                         "call": {
-                          "$children": [
+                          "name": [
                             "isinstance",
                             "other",
                             "Derived"
@@ -245,10 +208,9 @@
                     "right": {
                       "expression": {
                         "comparison": {
-                          "$children": [
+                          "access": [
                             "self.name",
                             {
-                              "$type": "access",
                               "name": "other"
                             }
                           ]
@@ -260,58 +222,56 @@
               }
             },
             "name": "__eq__",
-            "$children": [
+            "parameter": [
               {
-                "$type": "parameter",
                 "name": "self"
               },
               {
-                "$type": "parameter",
                 "name": "other"
               }
             ]
           }
         ]
       },
-      "name": "Derived",
-      "$children": [
+      "extends": [
         {
-          "$type": "extends",
           "type": {
             "name": "Base"
           }
         },
         {
-          "$type": "extends",
           "type": {
             "keyword_argument": {
-              "$children": [
+              "name": [
                 "metaclass",
                 "Meta"
               ]
             }
           }
         }
-      ]
-    },
+      ],
+      "name": "Derived"
+    }
+  ],
+  "comment": [
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
-    },
+    }
+  ],
+  "expression": {
+    "string": "\"\"\"Kitchen-sink Python blueprint for tractor snapshot tests.\n\nThis fixture is rendered by `tractor query <file> -p tree --single` with\nNO depth limit, so any design-principle transform change produces a visible\nsnapshot diff. It is intentionally syntactically valid but not runnable.\n\"\"\""
+  },
+  "from": [
     {
-      "$type": "from",
       "from_import": {
         "name": "OrderedDict"
       },
@@ -320,45 +280,37 @@
       }
     },
     {
-      "$type": "from",
-      "path": {
-        "name": "typing"
-      },
-      "$children": [
+      "from_import": [
         {
-          "$type": "from_import",
           "name": "Optional"
         },
         {
-          "$type": "from_import",
           "name": "Union"
         }
-      ]
+      ],
+      "path": {
+        "name": "typing"
+      }
     },
     {
-      "$type": "from",
-      "path": {
-        "name": "dataclasses"
-      },
-      "$children": [
+      "from_import": [
         {
-          "$type": "from_import",
           "name": "dataclass"
         },
         {
-          "$type": "from_import",
           "name": "field"
         }
-      ]
+      ],
+      "path": {
+        "name": "dataclasses"
+      }
     },
     {
-      "$type": "from",
       "from_import": {
         "name": "sibling"
       }
     },
     {
-      "$type": "from",
       "from_import": {
         "aliased": {
           "name": "h"
@@ -370,19 +322,19 @@
       }
     },
     {
-      "$type": "from",
       "from_import": {
         "name": "*"
       },
       "path": {
-        "$children": [
+        "name": [
           "os",
           "path"
         ]
       }
-    },
+    }
+  ],
+  "function": [
     {
-      "$type": "function",
       "body": {
         "expression": {
           "string": "\"\"\"Cover default, varargs, keyword-only, and **kwargs.\"\"\""
@@ -416,33 +368,27 @@
         }
       },
       "name": "simple",
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "a"
         },
         {
-          "$type": "parameter",
           "int": "1",
           "name": "b"
         },
         {
-          "$type": "parameter",
           "name": "args"
         },
         {
-          "$type": "parameter",
           "int": "2",
           "name": "kw_only"
         },
         {
-          "$type": "parameter",
           "name": "kwargs"
         }
       ]
     },
     {
-      "$type": "function",
       "body": {
         "expression": {
           "string": "\"\"\"Cover positional-only and keyword-only boundaries.\"\"\""
@@ -450,7 +396,7 @@
         "return": {
           "expression": {
             "tuple": {
-              "$children": [
+              "name": [
                 "a",
                 "b",
                 "c",
@@ -464,37 +410,30 @@
       },
       "keyword_separator": "*",
       "name": "pos_only",
-      "positional_separator": "/",
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "a"
         },
         {
-          "$type": "parameter",
           "name": "b"
         },
         {
-          "$type": "parameter",
           "name": "c"
         },
         {
-          "$type": "parameter",
           "name": "d"
         },
         {
-          "$type": "parameter",
           "name": "e"
         },
         {
-          "$type": "parameter",
           "int": "0",
           "name": "f"
         }
-      ]
+      ],
+      "positional_separator": "/"
     },
     {
-      "$type": "function",
       "body": {
         "return": {
           "expression": {
@@ -521,7 +460,6 @@
       }
     },
     {
-      "$type": "function",
       "body": {
         "assert": {
           "comparison": {
@@ -530,6 +468,76 @@
           },
           "string": "\"x must be non-negative\""
         },
+        "assign": [
+          {
+            "expression": [
+              {
+                "name": "result"
+              },
+              {
+                "name": "x"
+              }
+            ],
+            "type": {
+              "name": "int"
+            }
+          },
+          {
+            "expression": [
+              {
+                "name": "result"
+              },
+              {
+                "int": "1"
+              }
+            ]
+          },
+          {
+            "expression": [
+              {
+                "name": "result"
+              },
+              {
+                "int": "2"
+              }
+            ]
+          },
+          {
+            "expression": [
+              {
+                "name": "matrix"
+              },
+              {
+                "list": {
+                  "list": [
+                    {
+                      "int": [
+                        "1",
+                        "0"
+                      ]
+                    },
+                    {
+                      "int": [
+                        "0",
+                        "1"
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "expression": [
+              {
+                "name": "matrix"
+              },
+              {
+                "name": "matrix"
+              }
+            ]
+          }
+        ],
         "return": {
           "expression": {
             "ternary": {
@@ -550,117 +558,19 @@
               }
             }
           }
-        },
-        "$children": [
-          {
-            "$type": "assign",
-            "type": {
-              "name": "int"
-            },
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "result"
-              },
-              {
-                "$type": "expression",
-                "name": "x"
-              }
-            ]
-          },
-          {
-            "$type": "assign",
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "result"
-              },
-              {
-                "$type": "expression",
-                "int": "1"
-              }
-            ]
-          },
-          {
-            "$type": "assign",
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "result"
-              },
-              {
-                "$type": "expression",
-                "int": "2"
-              }
-            ]
-          },
-          {
-            "$type": "assign",
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "matrix"
-              },
-              {
-                "$type": "expression",
-                "list": {
-                  "$children": [
-                    {
-                      "$type": "list",
-                      "$children": [
-                        "1",
-                        "0"
-                      ]
-                    },
-                    {
-                      "$type": "list",
-                      "$children": [
-                        "0",
-                        "1"
-                      ]
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "$type": "assign",
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "matrix"
-              },
-              {
-                "$type": "expression",
-                "name": "matrix"
-              }
-            ]
-          }
-        ]
-      },
-      "name": "annotated",
-      "returns": {
-        "generic_type": {
-          "none": "None",
-          "$children": [
-            "Union",
-            "int"
-          ]
         }
       },
-      "$children": [
+      "name": "annotated",
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "x",
           "type": {
             "name": "int"
           }
         },
         {
-          "$type": "parameter",
           "generic_type": {
-            "$children": [
+            "name": [
               "Optional",
               "str"
             ]
@@ -669,13 +579,12 @@
           "none": "None"
         },
         {
-          "$type": "parameter",
           "name": "z",
           "none": "None",
           "type": {
             "union": true,
             "generic_type": {
-              "$children": [
+              "name": [
                 "list",
                 "int"
               ]
@@ -683,17 +592,25 @@
             "none": "None"
           }
         }
-      ]
+      ],
+      "returns": {
+        "generic_type": {
+          "name": [
+            "Union",
+            "int"
+          ],
+          "none": "None"
+        }
+      }
     },
     {
-      "$type": "function",
       "async": true,
       "body": {
         "with": {
           "async": true,
           "as": {
             "call": {
-              "$children": [
+              "name": [
                 "open_conn",
                 "url"
               ]
@@ -702,13 +619,11 @@
           },
           "body": {
             "assign": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "data"
                 },
                 {
-                  "$type": "expression",
                   "access": {
                     "name": "conn"
                   }
@@ -723,13 +638,11 @@
                   }
                 }
               },
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "chunk"
                 },
                 {
-                  "$type": "expression",
                   "name": "conn"
                 }
               ]
@@ -756,7 +669,6 @@
       }
     },
     {
-      "$type": "function",
       "body": {
         "for": {
           "body": {
@@ -766,15 +678,13 @@
               }
             }
           },
-          "$children": [
+          "expression": [
             {
-              "$type": "expression",
               "name": "i"
             },
             {
-              "$type": "expression",
               "call": {
-                "$children": [
+                "name": [
                   "range",
                   "n"
                 ]
@@ -798,7 +708,7 @@
                   }
                 }
               },
-              "$children": [
+              "name": [
                 "range",
                 "n"
               ]
@@ -812,7 +722,6 @@
       }
     },
     {
-      "$type": "function",
       "body": {
         "function": {
           "body": {
@@ -832,15 +741,13 @@
                       }
                     }
                   },
-                  "$children": [
+                  "expression": [
                     {
-                      "$type": "expression",
                       "name": "_"
                     },
                     {
-                      "$type": "expression",
                       "call": {
-                        "$children": [
+                        "name": [
                           "range",
                           "times"
                         ]
@@ -850,13 +757,11 @@
                 }
               },
               "name": "wrapper",
-              "$children": [
+              "parameter": [
                 {
-                  "$type": "parameter",
                   "name": "a"
                 },
                 {
-                  "$type": "parameter",
                   "name": "kw"
                 }
               ]
@@ -884,26 +789,44 @@
       }
     },
     {
-      "$type": "function",
       "body": "pass",
-      "name": "stacked",
-      "$children": [
+      "decorator": [
         {
-          "$type": "decorator",
           "name": "staticmethod"
         },
         {
-          "$type": "decorator",
           "call": {
             "int": "3",
             "name": "repeat"
           }
         }
-      ]
+      ],
+      "name": "stacked"
     },
     {
-      "$type": "function",
       "body": {
+        "assign": [
+          {
+            "expression": [
+              {
+                "name": "total"
+              },
+              {
+                "int": "0"
+              }
+            ]
+          },
+          {
+            "expression": [
+              {
+                "name": "n"
+              },
+              {
+                "int": "0"
+              }
+            ]
+          }
+        ],
         "for": {
           "body": {
             "if": {
@@ -933,13 +856,11 @@
                 "else": {
                   "body": {
                     "assign": {
-                      "$children": [
+                      "expression": [
                         {
-                          "$type": "expression",
                           "name": "total"
                         },
                         {
-                          "$type": "expression",
                           "name": "v"
                         }
                       ]
@@ -952,32 +873,27 @@
           "else": {
             "body": {
               "assign": {
-                "$children": [
+                "expression": [
                   {
-                    "$type": "expression",
                     "name": "total"
                   },
                   {
-                    "$type": "expression",
                     "int": "1"
                   }
                 ]
               }
             }
           },
-          "$children": [
+          "expression": [
             {
-              "$type": "expression",
               "name": "i"
             },
             {
-              "$type": "expression",
               "name": "v"
             },
             {
-              "$type": "expression",
               "call": {
-                "$children": [
+                "name": [
                   "enumerate",
                   "items"
                 ]
@@ -1001,31 +917,19 @@
           "else": {
             "body": {
               "assign": {
-                "$children": [
+                "expression": [
                   {
-                    "$type": "expression",
                     "name": "total"
                   },
                   {
-                    "$type": "expression",
                     "int": "1"
                   }
                 ]
               }
             }
           },
-          "finally": {
-            "body": {
-              "expression": {
-                "call": {
-                  "name": "cleanup"
-                }
-              }
-            }
-          },
-          "$children": [
+          "except": [
             {
-              "$type": "except",
               "as": {
                 "expression": {
                   "name": "e"
@@ -1044,7 +948,7 @@
               },
               "type": {
                 "tuple": {
-                  "$children": [
+                  "name": [
                     "ValueError",
                     "TypeError"
                   ]
@@ -1052,24 +956,30 @@
               }
             },
             {
-              "$type": "except",
               "body": "pass",
               "type": {
                 "name": "Exception"
               }
             }
-          ]
+          ],
+          "finally": {
+            "body": {
+              "expression": {
+                "call": {
+                  "name": "cleanup"
+                }
+              }
+            }
+          }
         },
         "while": {
           "body": {
             "assign": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "n"
                 },
                 {
-                  "$type": "expression",
                   "int": "1"
                 }
               ]
@@ -1088,25 +998,8 @@
           }
         },
         "with": {
-          "body": {
-            "$children": [
-              {
-                "$type": "expression",
-                "access": {
-                  "name": "fa"
-                }
-              },
-              {
-                "$type": "expression",
-                "access": {
-                  "name": "fb"
-                }
-              }
-            ]
-          },
-          "$children": [
+          "as": [
             {
-              "$type": "as",
               "call": {
                 "name": "open",
                 "string": "\"a\""
@@ -1114,43 +1007,28 @@
               "name": "fa"
             },
             {
-              "$type": "as",
               "call": {
                 "name": "open",
                 "string": "\"b\""
               },
               "name": "fb"
             }
-          ]
-        },
-        "$children": [
-          {
-            "$type": "assign",
-            "$children": [
+          ],
+          "body": {
+            "expression": [
               {
-                "$type": "expression",
-                "name": "total"
+                "access": {
+                  "name": "fa"
+                }
               },
               {
-                "$type": "expression",
-                "int": "0"
-              }
-            ]
-          },
-          {
-            "$type": "assign",
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "n"
-              },
-              {
-                "$type": "expression",
-                "int": "0"
+                "access": {
+                  "name": "fb"
+                }
               }
             ]
           }
-        ]
+        }
       },
       "name": "control_flow",
       "parameter": {
@@ -1158,13 +1036,11 @@
       }
     },
     {
-      "$type": "function",
       "body": {
         "match": {
           "body": {
-            "$children": [
+            "arm": [
               {
-                "$type": "arm",
                 "body": {
                   "return": {
                     "expression": {
@@ -1180,15 +1056,15 @@
                 },
                 "pattern": {
                   "dict": true,
-                  "$children": [
+                  "string": [
                     "\"type\"",
-                    "\"id\"",
+                    "\"id\""
+                  ],
+                  "value": [
                     {
-                      "$type": "value",
                       "string": "\"ping\""
                     },
                     {
-                      "$type": "value",
                       "path": {
                         "name": "pid"
                       }
@@ -1197,7 +1073,6 @@
                 }
               },
               {
-                "$type": "arm",
                 "body": {
                   "return": {
                     "expression": {
@@ -1207,18 +1082,17 @@
                 },
                 "pattern": {
                   "list": true,
+                  "int": [
+                    "1",
+                    "2"
+                  ],
                   "pattern": {
                     "splat": true,
                     "name": "rest"
-                  },
-                  "$children": [
-                    "1",
-                    "2"
-                  ]
+                  }
                 }
               },
               {
-                "$type": "arm",
                 "body": {
                   "return": {
                     "expression": {
@@ -1230,14 +1104,12 @@
                   "path": {
                     "name": "Point"
                   },
-                  "$children": [
+                  "pattern": [
                     {
-                      "$type": "pattern",
                       "int": "0",
                       "name": "x"
                     },
                     {
-                      "$type": "pattern",
                       "name": "y",
                       "path": {
                         "name": "y"
@@ -1247,7 +1119,6 @@
                 }
               },
               {
-                "$type": "arm",
                 "body": {
                   "return": {
                     "expression": {
@@ -1257,7 +1128,7 @@
                 },
                 "pattern": {
                   "union": true,
-                  "$children": [
+                  "string": [
                     "\"yes\"",
                     "\"y\"",
                     "\"Y\""
@@ -1265,7 +1136,6 @@
                 }
               },
               {
-                "$type": "arm",
                 "body": {
                   "return": {
                     "expression": {
@@ -1285,42 +1155,14 @@
       }
     },
     {
-      "$type": "function",
       "body": {
-        "return": {
-          "$children": [
-            {
-              "$type": "expression",
-              "name": "squares"
-            },
-            {
-              "$type": "expression",
-              "name": "pairs"
-            },
-            {
-              "$type": "expression",
-              "name": "uniq"
-            },
-            {
-              "$type": "expression",
-              "name": "gen"
-            },
-            {
-              "$type": "expression",
-              "name": "matrix"
-            }
-          ]
-        },
-        "$children": [
+        "assign": [
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "squares"
               },
               {
-                "$type": "expression",
                 "list": {
                   "comprehension": true,
                   "binary": {
@@ -1340,7 +1182,7 @@
                     "name": "x"
                   },
                   "for": {
-                    "$children": [
+                    "name": [
                       "x",
                       "data"
                     ]
@@ -1350,28 +1192,25 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "pairs"
               },
               {
-                "$type": "expression",
                 "dict": {
                   "comprehension": true,
                   "for": {
                     "access": {
                       "name": "data"
                     },
-                    "$children": [
+                    "name": [
                       "k",
                       "v"
                     ]
                   },
                   "name": "v",
                   "pair": {
-                    "$children": [
+                    "name": [
                       "k",
                       "v"
                     ]
@@ -1381,18 +1220,15 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "uniq"
               },
               {
-                "$type": "expression",
                 "set": {
                   "comprehension": true,
                   "for": {
-                    "$children": [
+                    "name": [
                       "x",
                       "data"
                     ]
@@ -1403,31 +1239,28 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "gen"
               },
               {
-                "$type": "expression",
                 "generator": {
-                  "$children": [
+                  "for": [
                     {
-                      "$type": "for",
-                      "$children": [
+                      "name": [
                         "x",
                         "data"
                       ]
                     },
                     {
-                      "$type": "for",
                       "call": {
                         "int": "2",
                         "name": "range"
                       },
                       "name": "_"
-                    },
+                    }
+                  ],
+                  "name": [
                     "x",
                     "x"
                   ]
@@ -1436,31 +1269,21 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "matrix"
               },
               {
-                "$type": "expression",
                 "list": {
                   "comprehension": true,
                   "comparison": {
-                    "$children": [
+                    "name": [
                       "i",
                       "j"
                     ]
                   },
-                  "tuple": {
-                    "$children": [
-                      "i",
-                      "j"
-                    ]
-                  },
-                  "$children": [
+                  "for": [
                     {
-                      "$type": "for",
                       "call": {
                         "int": "3",
                         "name": "range"
@@ -1468,19 +1291,43 @@
                       "name": "i"
                     },
                     {
-                      "$type": "for",
                       "call": {
                         "int": "3",
                         "name": "range"
                       },
                       "name": "j"
                     }
-                  ]
+                  ],
+                  "tuple": {
+                    "name": [
+                      "i",
+                      "j"
+                    ]
+                  }
                 }
               }
             ]
           }
-        ]
+        ],
+        "return": {
+          "expression": [
+            {
+              "name": "squares"
+            },
+            {
+              "name": "pairs"
+            },
+            {
+              "name": "uniq"
+            },
+            {
+              "name": "gen"
+            },
+            {
+              "name": "matrix"
+            }
+          ]
+        }
       },
       "name": "comprehensions",
       "parameter": {
@@ -1488,87 +1335,14 @@
       }
     },
     {
-      "$type": "function",
       "body": {
-        "global": {
-          "name": "GLOBAL_FLAG"
-        },
-        "if": {
-          "body": {
-            "expression": {
-              "call": {
-                "name": "print",
-                "string": {
-                  "interpolation": {
-                    "name": "n"
-                  }
-                }
-              }
-            }
-          },
-          "condition": {
-            "expression": {
-              "comparison": {
-                "assign": {
-                  "call": {
-                    "$children": [
-                      "len",
-                      "items"
-                    ]
-                  },
-                  "name": "n"
-                },
-                "int": "3"
-              }
-            }
-          }
-        },
-        "return": {
-          "$children": [
-            {
-              "$type": "expression",
-              "name": "first"
-            },
-            {
-              "$type": "expression",
-              "name": "greeting"
-            },
-            {
-              "$type": "expression",
-              "name": "doubled"
-            },
-            {
-              "$type": "expression",
-              "name": "head"
-            },
-            {
-              "$type": "expression",
-              "name": "mid"
-            },
-            {
-              "$type": "expression",
-              "name": "tail"
-            },
-            {
-              "$type": "expression",
-              "name": "merged"
-            },
-            {
-              "$type": "expression",
-              "name": "combined"
-            }
-          ]
-        },
-        "$children": [
+        "assign": [
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "first"
               },
               {
-                "$type": "expression",
                 "ternary": {
                   "condition": {
                     "expression": {
@@ -1593,41 +1367,32 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "name"
               },
               {
-                "$type": "expression",
                 "string": "\"world\""
               }
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "greeting"
               },
               {
-                "$type": "expression",
                 "string": {
-                  "$children": [
+                  "interpolation": [
                     {
-                      "$type": "interpolation",
                       "cast": "!r",
                       "name": "name"
                     },
                     {
-                      "$type": "interpolation",
                       "format": ":>05d",
                       "name": "n"
                     },
                     {
-                      "$type": "interpolation",
                       "string": {
                         "interpolation": {
                           "name": "name"
@@ -1640,14 +1405,11 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "doubled"
               },
               {
-                "$type": "expression",
                 "call": {
                   "call": {
                     "lambda": {
@@ -1667,7 +1429,7 @@
                         "name": "v"
                       }
                     },
-                    "$children": [
+                    "name": [
                       "map",
                       "items"
                     ]
@@ -1678,41 +1440,32 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "head"
               },
               {
-                "$type": "expression",
                 "list_splat": {
                   "name": "mid"
                 }
               },
               {
-                "$type": "expression",
                 "name": "tail"
               },
               {
-                "$type": "expression",
                 "name": "items"
               }
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "merged"
               },
               {
-                "$type": "expression",
                 "dictionary": {
-                  "$children": [
+                  "dict_splat": [
                     {
-                      "$type": "dict_splat",
                       "dictionary": {
                         "pair": {
                           "int": "1",
@@ -1721,7 +1474,6 @@
                       }
                     },
                     {
-                      "$type": "dict_splat",
                       "dictionary": {
                         "pair": {
                           "int": "2",
@@ -1735,22 +1487,17 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "combined"
               },
               {
-                "$type": "expression",
                 "list": {
-                  "$children": [
+                  "list_splat": [
                     {
-                      "$type": "list_splat",
                       "name": "items"
                     },
                     {
-                      "$type": "list_splat",
                       "name": "items"
                     }
                   ]
@@ -1759,19 +1506,77 @@
             ]
           },
           {
-            "$type": "assign",
-            "$children": [
+            "expression": [
               {
-                "$type": "expression",
                 "name": "GLOBAL_FLAG"
               },
               {
-                "$type": "expression",
                 "false": "False"
               }
             ]
           }
-        ]
+        ],
+        "global": {
+          "name": "GLOBAL_FLAG"
+        },
+        "if": {
+          "body": {
+            "expression": {
+              "call": {
+                "name": "print",
+                "string": {
+                  "interpolation": {
+                    "name": "n"
+                  }
+                }
+              }
+            }
+          },
+          "condition": {
+            "expression": {
+              "comparison": {
+                "assign": {
+                  "call": {
+                    "name": [
+                      "len",
+                      "items"
+                    ]
+                  },
+                  "name": "n"
+                },
+                "int": "3"
+              }
+            }
+          }
+        },
+        "return": {
+          "expression": [
+            {
+              "name": "first"
+            },
+            {
+              "name": "greeting"
+            },
+            {
+              "name": "doubled"
+            },
+            {
+              "name": "head"
+            },
+            {
+              "name": "mid"
+            },
+            {
+              "name": "tail"
+            },
+            {
+              "name": "merged"
+            },
+            {
+              "name": "combined"
+            }
+          ]
+        }
       },
       "name": "expression_demo",
       "parameter": {
@@ -1779,16 +1584,13 @@
       }
     },
     {
-      "$type": "function",
       "body": {
         "assign": {
-          "$children": [
+          "expression": [
             {
-              "$type": "expression",
               "name": "counter"
             },
             {
-              "$type": "expression",
               "int": "0"
             }
           ]
@@ -1799,13 +1601,11 @@
         "function": {
           "body": {
             "assign": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "counter"
                 },
                 {
-                  "$type": "expression",
                   "int": "1"
                 }
               ]
@@ -1830,8 +1630,75 @@
       "name": "closure_demo"
     },
     {
-      "$type": "function",
       "body": {
+        "assign": [
+          {
+            "expression": {
+              "name": "matched"
+            },
+            "type": {
+              "name": "int"
+            }
+          },
+          {
+            "expression": [
+              {
+                "name": "flag"
+              },
+              {
+                "unary": {
+                  "name": "matched"
+                }
+              }
+            ]
+          },
+          {
+            "expression": [
+              {
+                "name": "bundle"
+              },
+              {
+                "tuple": {
+                  "list_splat": {
+                    "name": "items"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "expression": [
+              {
+                "name": "banner"
+              },
+              {
+                "string": {
+                  "string": [
+                    "\"first \"",
+                    "\"second \"",
+                    "\"third\""
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "expression": [
+              {
+                "name": "s"
+              },
+              {
+                "set": {
+                  "int": [
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
         "comment": {
           "leading": true
         },
@@ -1840,18 +1707,15 @@
         },
         "match": {
           "body": {
-            "$children": [
+            "arm": [
               {
-                "$type": "arm",
                 "body": {
                   "assign": {
-                    "$children": [
+                    "expression": [
                       {
-                        "$type": "expression",
                         "name": "matched"
                       },
                       {
-                        "$type": "expression",
                         "binary": {
                           "left": {
                             "expression": {
@@ -1870,29 +1734,24 @@
                 },
                 "pattern": {
                   "tuple": true,
-                  "$children": [
+                  "path": [
                     {
-                      "$type": "path",
                       "name": "a"
                     },
                     {
-                      "$type": "path",
                       "name": "b"
                     }
                   ]
                 }
               },
               {
-                "$type": "arm",
                 "body": {
                   "assign": {
-                    "$children": [
+                    "expression": [
                       {
-                        "$type": "expression",
                         "name": "matched"
                       },
                       {
-                        "$type": "expression",
                         "unary": {
                           "int": "1"
                         }
@@ -1901,23 +1760,20 @@
                   }
                 },
                 "pattern": {
-                  "$children": [
+                  "int": [
                     "1",
                     "2j"
                   ]
                 }
               },
               {
-                "$type": "arm",
                 "body": {
                   "assign": {
-                    "$children": [
+                    "expression": [
                       {
-                        "$type": "expression",
                         "name": "matched"
                       },
                       {
-                        "$type": "expression",
                         "int": "0"
                       }
                     ]
@@ -1929,29 +1785,23 @@
           "name": "values"
         },
         "return": {
-          "$children": [
+          "expression": [
             {
-              "$type": "expression",
               "name": "matched"
             },
             {
-              "$type": "expression",
               "name": "result"
             },
             {
-              "$type": "expression",
               "name": "flag"
             },
             {
-              "$type": "expression",
               "name": "bundle"
             },
             {
-              "$type": "expression",
               "name": "banner"
             },
             {
-              "$type": "expression",
               "name": "s"
             }
           ]
@@ -1959,15 +1809,13 @@
         "try": {
           "body": {
             "assign": {
-              "$children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "result"
                 },
                 {
-                  "$type": "expression",
                   "call": {
-                    "$children": [
+                    "name": [
                       "list",
                       "items"
                     ]
@@ -1979,13 +1827,11 @@
           "except": {
             "body": {
               "assign": {
-                "$children": [
+                "expression": [
                   {
-                    "$type": "expression",
                     "name": "result"
                   },
                   {
-                    "$type": "expression",
                     "list": "[]"
                   }
                 ]
@@ -1993,120 +1839,36 @@
             },
             "type": {
               "tuple": {
-                "$children": [
+                "name": [
                   "ValueError",
                   "TypeError"
                 ]
               }
             }
           }
-        },
-        "$children": [
-          {
-            "$type": "assign",
-            "expression": {
-              "name": "matched"
-            },
-            "type": {
-              "name": "int"
-            }
-          },
-          {
-            "$type": "assign",
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "flag"
-              },
-              {
-                "$type": "expression",
-                "unary": {
-                  "name": "matched"
-                }
-              }
-            ]
-          },
-          {
-            "$type": "assign",
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "bundle"
-              },
-              {
-                "$type": "expression",
-                "tuple": {
-                  "list_splat": {
-                    "name": "items"
-                  }
-                }
-              }
-            ]
-          },
-          {
-            "$type": "assign",
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "banner"
-              },
-              {
-                "$type": "expression",
-                "string": {
-                  "$children": [
-                    "\"first \"",
-                    "\"second \"",
-                    "\"third\""
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "$type": "assign",
-            "$children": [
-              {
-                "$type": "expression",
-                "name": "s"
-              },
-              {
-                "$type": "expression",
-                "set": {
-                  "$children": [
-                    "1",
-                    "2",
-                    "3"
-                  ]
-                }
-              }
-            ]
-          }
-        ]
+        }
       },
       "name": "patterns_and_misc",
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "values"
         },
         {
-          "$type": "parameter",
           "name": "items"
         },
         {
-          "$type": "parameter",
           "name": "x"
         }
       ]
-    },
+    }
+  ],
+  "import": [
     {
-      "$type": "import",
       "path": {
         "name": "os"
       }
     },
     {
-      "$type": "import",
       "aliased": {
         "name": "system"
       },
@@ -2115,24 +1877,22 @@
       }
     },
     {
-      "$type": "import",
       "path": {
         "name": "annotations"
       }
-    },
+    }
+  ],
+  "type_alias": [
     {
-      "$type": "type_alias",
-      "$children": [
+      "generic_type": [
         {
-          "$type": "generic_type",
-          "$children": [
+          "name": [
             "Vec",
             "T"
           ]
         },
         {
-          "$type": "generic_type",
-          "$children": [
+          "name": [
             "list",
             "T"
           ]
@@ -2140,7 +1900,6 @@
       ]
     },
     {
-      "$type": "type_alias",
       "binary": {
         "left": {
           "expression": {
@@ -2156,27 +1915,23 @@
       "name": "IntOrStr"
     },
     {
-      "$type": "type_alias",
-      "$children": [
+      "generic_type": [
         {
-          "$type": "generic_type",
           "list_splat": {
             "name": "Ts"
           },
           "name": "Pair",
-          "$children": [
+          "type_parameter": [
             {
-              "$type": "type_parameter",
-              "$children": [
+              "name": [
                 "T",
                 "int"
               ]
             },
             {
-              "$type": "type_parameter",
               "name": "U",
               "tuple": {
-                "$children": [
+                "name": [
                   "int",
                   "str"
                 ]
@@ -2185,11 +1940,10 @@
           ]
         },
         {
-          "$type": "generic_type",
           "list_splat": {
             "name": "Ts"
           },
-          "$children": [
+          "name": [
             "tuple",
             "T",
             "U"
@@ -2198,7 +1952,6 @@
       ]
     },
     {
-      "$type": "type_alias",
       "access": {
         "name": "OrderedDict"
       },

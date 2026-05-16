@@ -87,9 +87,17 @@ fn render(tree: &SyntaxTree, source: &str, lang: Option<&str>, strip_type: bool)
         if items.len() == 1 {
             obj.insert(key, render(items[0], source, lang, /*strip_type=*/ true));
         } else {
-            for item in items {
-                inline_overflow.push(item);
-            }
+            // Multiple same-named children render as an array under the
+            // key (`imports: [...]`, `classes: [...]`). Restores the
+            // pre-IR `data_to_json` grouping behaviour (S16-Z6) using
+            // only the variant-blind walker — no per-language render
+            // logic. Each item's `$type` is stripped because the
+            // surrounding key already names the type.
+            let arr: Vec<Value> = items
+                .iter()
+                .map(|item| render(item, source, lang, /*strip_type=*/ true))
+                .collect();
+            obj.insert(key, Value::Array(arr));
         }
     }
 

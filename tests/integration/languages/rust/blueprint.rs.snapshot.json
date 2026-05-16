@@ -1,222 +1,7 @@
 {
   "$type": "file",
-  "const": {
-    "pub": true,
-    "float": "3.141_592_653_589f64",
-    "$children": [
-      "PI",
-      "f64"
-    ]
-  },
-  "enum": {
-    "pub": true,
-    "lifetime": {
-      "name": "a"
-    },
-    "name": "Shape",
-    "$children": [
-      {
-        "$type": "variant",
-        "name": "Nothing"
-      },
-      {
-        "$type": "variant",
-        "body": {
-          "$children": [
-            "i32",
-            "i32"
-          ]
-        },
-        "name": "Dot"
-      },
-      {
-        "$type": "variant",
-        "body": {
-          "$children": [
-            {
-              "$type": "field",
-              "name": "w",
-              "type": {
-                "name": "u32"
-              }
-            },
-            {
-              "$type": "field",
-              "name": "h",
-              "type": {
-                "name": "u32"
-              }
-            }
-          ]
-        },
-        "name": "Rect"
-      },
-      {
-        "$type": "variant",
-        "body": {
-          "type": {
-            "borrowed": true,
-            "lifetime": {
-              "name": "a"
-            },
-            "type": {
-              "name": "str"
-            }
-          }
-        },
-        "int": "10",
-        "name": "Labeled"
-      }
-    ]
-  },
-  "macro": {
-    "definition": true,
-    "name": "collect_pairs",
-    "$children": [
-      {
-        "$type": "arm",
-        "name": "vec",
-        "$children": [
-          {
-            "$type": "repetition",
-            "$children": [
-              {
-                "$type": "pattern",
-                "binding": true,
-                "fragment": "ident",
-                "name": "$key"
-              },
-              {
-                "$type": "pattern",
-                "binding": true,
-                "fragment": "expr",
-                "name": "$value"
-              }
-            ]
-          },
-          "$(,)?",
-          {
-            "$type": "repetition",
-            "$children": [
-              "stringify",
-              "$key",
-              "$value"
-            ]
-          }
-        ]
-      },
-      {
-        "$type": "arm",
-        "$children": [
-          "Vec",
-          "new"
-        ]
-      }
-    ]
-  },
-  "trait": {
-    "pub": true,
-    "body": {
-      "const": {
-        "private": true,
-        "int": "64",
-        "$children": [
-          "MAX",
-          "usize"
-        ]
-      },
-      "type": {
-        "associated": true,
-        "name": "Canvas"
-      },
-      "$children": [
-        {
-          "$type": "function",
-          "private": true,
-          "name": "draw",
-          "$children": [
-            {
-              "$type": "parameter",
-              "self": true,
-              "name": "self"
-            },
-            {
-              "$type": "parameter",
-              "name": "c",
-              "type": {
-                "borrowed": true,
-                "mut": true,
-                "path": {
-                  "$children": [
-                    "Self",
-                    "Canvas"
-                  ]
-                }
-              }
-            }
-          ]
-        },
-        {
-          "$type": "function",
-          "private": true,
-          "body": {
-            "call": {
-              "path": {
-                "$children": [
-                  "String",
-                  "from"
-                ]
-              },
-              "string": "\"drawable\""
-            }
-          },
-          "name": "name",
-          "parameter": {
-            "self": true,
-            "name": "self"
-          },
-          "returns": {
-            "type": {
-              "name": "String"
-            }
-          }
-        }
-      ]
-    },
-    "extends": {
-      "type": {
-        "name": "Debug"
-      }
-    },
-    "name": "Drawable"
-  },
-  "union": {
-    "pub": true,
-    "body": {
-      "$children": [
-        {
-          "$type": "field",
-          "pub": true,
-          "name": "i",
-          "type": {
-            "name": "i32"
-          }
-        },
-        {
-          "$type": "field",
-          "pub": true,
-          "name": "f",
-          "type": {
-            "name": "f32"
-          }
-        }
-      ]
-    },
-    "name": "Either"
-  },
-  "$children": [
+  "alias": [
     {
-      "$type": "alias",
       "pub": true,
       "lifetime": {
         "name": "a"
@@ -252,21 +37,21 @@
       }
     },
     {
-      "$type": "alias",
       "pub": true,
       "name": "Callback",
       "type": {
         "function": true,
-        "$children": [
+        "name": [
           "i32",
           "i32"
         ]
       }
-    },
+    }
+  ],
+  "attribute": [
     {
-      "$type": "attribute",
       "inner": true,
-      "$children": [
+      "name": [
         "allow",
         "dead_code",
         "unused_variables",
@@ -275,72 +60,125 @@
       ]
     },
     {
-      "$type": "attribute",
-      "$children": [
+      "name": [
         "derive",
         "Debug",
         "Clone"
       ]
     },
     {
-      "$type": "attribute",
-      "$children": [
+      "name": [
         "derive",
         "Debug"
       ]
-    },
+    }
+  ],
+  "comment": [
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     {
-      "$type": "comment",
       "leading": true
     },
     "// `macro_rules!` definition exercises macro_rule / token_repetition_pattern /",
     {
-      "$type": "comment",
       "leading": true
+    }
+  ],
+  "const": {
+    "pub": true,
+    "float": "3.141_592_653_589f64",
+    "name": [
+      "PI",
+      "f64"
+    ]
+  },
+  "enum": {
+    "pub": true,
+    "lifetime": {
+      "name": "a"
     },
+    "name": "Shape",
+    "variant": [
+      {
+        "name": "Nothing"
+      },
+      {
+        "body": {
+          "name": [
+            "i32",
+            "i32"
+          ]
+        },
+        "name": "Dot"
+      },
+      {
+        "body": {
+          "field": [
+            {
+              "name": "w",
+              "type": {
+                "name": "u32"
+              }
+            },
+            {
+              "name": "h",
+              "type": {
+                "name": "u32"
+              }
+            }
+          ]
+        },
+        "name": "Rect"
+      },
+      {
+        "body": {
+          "type": {
+            "borrowed": true,
+            "lifetime": {
+              "name": "a"
+            },
+            "type": {
+              "name": "str"
+            }
+          }
+        },
+        "int": "10",
+        "name": "Labeled"
+      }
+    ]
+  },
+  "function": [
     {
-      "$type": "function",
       "private": true,
       "body": {
         "tuple": {
           "float": "1.0f64",
-          "$children": [
+          "int": [
             "1u32",
             "0x1F",
             "0b101",
@@ -352,7 +190,7 @@
       "returns": {
         "type": {
           "tuple": true,
-          "$children": [
+          "name": [
             "u32",
             "f64",
             "i32",
@@ -363,12 +201,10 @@
       }
     },
     {
-      "$type": "function",
       "private": true,
       "body": {
-        "$children": [
+        "let": [
           {
-            "$type": "let",
             "name": "plain",
             "value": {
               "expression": {
@@ -377,7 +213,6 @@
             }
           },
           {
-            "$type": "let",
             "name": "raw",
             "value": {
               "expression": {
@@ -388,7 +223,6 @@
             }
           },
           {
-            "$type": "let",
             "name": "raw_hash",
             "value": {
               "expression": {
@@ -399,7 +233,6 @@
             }
           },
           {
-            "$type": "let",
             "name": "bytes",
             "value": {
               "expression": {
@@ -408,7 +241,6 @@
             }
           },
           {
-            "$type": "let",
             "name": "chr",
             "value": {
               "expression": {
@@ -421,17 +253,15 @@
       "name": "strings_zoo"
     },
     {
-      "$type": "function",
       "private": true,
       "body": {
-        "$children": [
+        "let": [
           {
-            "$type": "let",
             "name": "id",
             "value": {
               "expression": {
                 "closure": {
-                  "$children": [
+                  "name": [
                     "x",
                     "x"
                   ]
@@ -440,11 +270,10 @@
             }
           },
           {
-            "$type": "let",
             "name": "add",
             "type": {
               "function": true,
-              "$children": [
+              "name": [
                 "i32",
                 "i32",
                 "i32"
@@ -465,7 +294,7 @@
                       }
                     }
                   },
-                  "$children": [
+                  "name": [
                     "a",
                     "b"
                   ]
@@ -474,13 +303,12 @@
             }
           },
           {
-            "$type": "let",
             "name": "s",
             "value": {
               "expression": {
                 "call": {
                   "path": {
-                    "$children": [
+                    "name": [
                       "String",
                       "from"
                     ]
@@ -491,19 +319,18 @@
             }
           },
           {
-            "$type": "let",
             "name": "moved",
             "value": {
               "expression": {
                 "closure": {
                   "block": {
                     "macro": {
-                      "string": "\"{}-{}\"",
-                      "$children": [
+                      "name": [
                         "format",
                         "s",
                         "x"
-                      ]
+                      ],
+                      "string": "\"{}-{}\""
                     }
                   },
                   "name": "String",
@@ -518,7 +345,6 @@
             }
           },
           {
-            "$type": "let",
             "name": "r",
             "type": {
               "borrowed": true,
@@ -539,12 +365,10 @@
       "name": "closures_and_refs"
     },
     {
-      "$type": "function",
       "pub": true,
       "body": {
-        "$children": [
+        "let": [
           {
-            "$type": "let",
             "name": "b",
             "type": {
               "generic": true,
@@ -558,7 +382,7 @@
                 "call": {
                   "int": "1",
                   "path": {
-                    "$children": [
+                    "name": [
                       "Box",
                       "new"
                     ]
@@ -568,7 +392,6 @@
             }
           },
           {
-            "$type": "let",
             "name": "rc",
             "type": {
               "generic": true,
@@ -582,7 +405,7 @@
                 "call": {
                   "call": {
                     "path": {
-                      "$children": [
+                      "name": [
                         "String",
                         "from"
                       ]
@@ -590,7 +413,7 @@
                     "string": "\"rc\""
                   },
                   "path": {
-                    "$children": [
+                    "name": [
                       "Rc",
                       "new"
                     ]
@@ -600,7 +423,6 @@
             }
           },
           {
-            "$type": "let",
             "name": "arc",
             "type": {
               "generic": true,
@@ -614,7 +436,7 @@
                 "call": {
                   "int": "9",
                   "path": {
-                    "$children": [
+                    "name": [
                       "Arc",
                       "new"
                     ]
@@ -624,7 +446,6 @@
             }
           },
           {
-            "$type": "let",
             "name": "cell",
             "type": {
               "generic": true,
@@ -641,15 +462,15 @@
               "expression": {
                 "call": {
                   "macro": {
-                    "name": "vec",
-                    "$children": [
+                    "int": [
                       "1",
                       "2",
                       "3"
-                    ]
+                    ],
+                    "name": "vec"
                   },
                   "path": {
-                    "$children": [
+                    "name": [
                       "RefCell",
                       "new"
                     ]
@@ -659,7 +480,6 @@
             }
           },
           {
-            "$type": "let",
             "name": "parsed",
             "value": {
               "expression": {
@@ -683,7 +503,6 @@
       "name": "smart_pointers"
     },
     {
-      "$type": "function",
       "pub": true,
       "body": {
         "if": {
@@ -692,7 +511,7 @@
               "int": "10",
               "name": "Some"
             },
-            "$children": [
+            "name": [
               "Some",
               "v"
             ]
@@ -712,83 +531,35 @@
             }
           }
         },
-        "name": "result",
-        "while": {
-          "body": {
-            "$children": [
-              {
-                "$type": "let",
-                "name": "_shadow",
-                "value": {
-                  "expression": {
-                    "name": "x"
-                  }
-                }
-              },
-              {
-                "$type": "let",
-                "name": "_shadow",
-                "value": {
-                  "expression": {
-                    "cast": {
-                      "type": {
-                        "name": "f64"
-                      },
-                      "value": {
-                        "expression": {
-                          "name": "x"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          },
-          "condition": {
-            "expression": {
-              "access": {
-                "name": "it"
-              },
-              "$children": [
-                "Some",
-                "x"
-              ]
-            }
-          }
-        },
-        "$children": [
+        "let": [
           {
-            "$type": "let",
             "name": "p",
             "value": {
               "expression": {
                 "call": {
+                  "int": [
+                    "1",
+                    "2"
+                  ],
                   "path": {
-                    "$children": [
+                    "name": [
                       "Point",
                       "new"
                     ]
                   },
-                  "string": "\"p\"",
-                  "$children": [
-                    "1",
-                    "2"
-                  ]
+                  "string": "\"p\""
                 }
               }
             }
           },
           {
-            "$type": "let",
             "name": "q",
             "value": {
               "expression": {
                 "literal": {
                   "body": {
-                    "$children": [
+                    "field": [
                       {
-                        "$type": "field",
                         "name": "x",
                         "value": {
                           "expression": {
@@ -797,7 +568,6 @@
                         }
                       },
                       {
-                        "$type": "field",
                         "name": "y",
                         "value": {
                           "expression": {
@@ -806,7 +576,6 @@
                         }
                       },
                       {
-                        "$type": "field",
                         "base": true,
                         "access": {
                           "name": "p"
@@ -820,18 +589,16 @@
             }
           },
           {
-            "$type": "let",
             "name": "result",
             "value": {
               "expression": {
                 "match": {
                   "body": {
-                    "$children": [
+                    "arm": [
                       {
-                        "$type": "arm",
                         "pattern": {
                           "path": {
-                            "$children": [
+                            "name": [
                               "Shape",
                               "Nothing"
                             ]
@@ -842,25 +609,26 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "pattern": {
                             "or": true,
-                            "$children": [
+                            "int": [
                               "0",
-                              "0",
+                              "0"
+                            ],
+                            "name": [
                               "y",
-                              "y",
+                              "y"
+                            ],
+                            "path": [
                               {
-                                "$type": "path",
-                                "$children": [
+                                "name": [
                                   "Shape",
                                   "Dot"
                                 ]
                               },
                               {
-                                "$type": "path",
-                                "$children": [
+                                "name": [
                                   "Shape",
                                   "Dot"
                                 ]
@@ -873,7 +641,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "condition": {
                             "binary": {
@@ -889,16 +656,16 @@
                               }
                             }
                           },
+                          "name": [
+                            "x",
+                            "y"
+                          ],
                           "path": {
-                            "$children": [
+                            "name": [
                               "Shape",
                               "Dot"
                             ]
-                          },
-                          "$children": [
-                            "x",
-                            "y"
-                          ]
+                          }
                         },
                         "value": {
                           "binary": {
@@ -916,7 +683,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "condition": {
                             "binary": {
@@ -935,19 +701,17 @@
                           "pattern": {
                             "struct": true,
                             "path": {
-                              "$children": [
+                              "name": [
                                 "Shape",
                                 "Rect"
                               ]
                             },
-                            "$children": [
+                            "pattern": [
                               {
-                                "$type": "pattern",
                                 "field": true,
                                 "name": "w"
                               },
                               {
-                                "$type": "pattern",
                                 "field": true,
                                 "name": "h"
                               }
@@ -979,10 +743,9 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "path": {
-                            "$children": [
+                            "name": [
                               "Shape",
                               "Labeled"
                             ]
@@ -1008,7 +771,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": "_",
                         "value": {
                           "unary": {
@@ -1028,15 +790,13 @@
             }
           },
           {
-            "$type": "let",
             "name": "bucket",
             "value": {
               "expression": {
                 "match": {
                   "body": {
-                    "$children": [
+                    "arm": [
                       {
-                        "$type": "arm",
                         "pattern": {
                           "range": {
                             "inclusive": true,
@@ -1053,7 +813,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "range": {
                             "inclusive": true,
@@ -1070,7 +829,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": "_",
                         "value": {
                           "string": "\"many\""
@@ -1088,25 +846,67 @@
             }
           },
           {
-            "$type": "let",
             "mut": true,
             "name": "it",
             "value": {
               "expression": {
                 "access": {
                   "macro": {
-                    "name": "vec",
-                    "$children": [
+                    "int": [
                       "1",
                       "2",
                       "3"
-                    ]
+                    ],
+                    "name": "vec"
                   }
                 }
               }
             }
           }
-        ]
+        ],
+        "name": "result",
+        "while": {
+          "body": {
+            "let": [
+              {
+                "name": "_shadow",
+                "value": {
+                  "expression": {
+                    "name": "x"
+                  }
+                }
+              },
+              {
+                "name": "_shadow",
+                "value": {
+                  "expression": {
+                    "cast": {
+                      "type": {
+                        "name": "f64"
+                      },
+                      "value": {
+                        "expression": {
+                          "name": "x"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "condition": {
+            "expression": {
+              "access": {
+                "name": "it"
+              },
+              "name": [
+                "Some",
+                "x"
+              ]
+            }
+          }
+        }
       },
       "name": "patterns",
       "parameter": {
@@ -1122,7 +922,6 @@
       }
     },
     {
-      "$type": "function",
       "pub": true,
       "body": {
         "for": {
@@ -1182,6 +981,10 @@
               }
             }
           },
+          "name": [
+            "'outer",
+            "i"
+          ],
           "value": {
             "expression": {
               "range": {
@@ -1194,12 +997,35 @@
                 }
               }
             }
-          },
-          "$children": [
-            "'outer",
-            "i"
-          ]
+          }
         },
+        "let": [
+          {
+            "mut": true,
+            "name": "n",
+            "value": {
+              "expression": {
+                "int": "0"
+              }
+            }
+          },
+          {
+            "name": "found",
+            "value": {
+              "expression": {
+                "loop": {
+                  "body": {
+                    "expression": {
+                      "break": {
+                        "int": "42"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
         "name": "found",
         "while": {
           "body": {
@@ -1226,36 +1052,7 @@
               }
             }
           }
-        },
-        "$children": [
-          {
-            "$type": "let",
-            "mut": true,
-            "name": "n",
-            "value": {
-              "expression": {
-                "int": "0"
-              }
-            }
-          },
-          {
-            "$type": "let",
-            "name": "found",
-            "value": {
-              "expression": {
-                "loop": {
-                  "body": {
-                    "expression": {
-                      "break": {
-                        "int": "42"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        ]
+        }
       },
       "name": "loops_and_flow",
       "returns": {
@@ -1265,18 +1062,16 @@
       }
     },
     {
-      "$type": "function",
       "pub": true,
       "body": {
         "call": {
-          "$children": [
+          "name": [
             "Ok",
             "casted"
           ]
         },
-        "$children": [
+        "let": [
           {
-            "$type": "let",
             "name": "parsed",
             "type": {
               "name": "i32"
@@ -1292,7 +1087,6 @@
             }
           },
           {
-            "$type": "let",
             "name": "casted",
             "value": {
               "expression": {
@@ -1328,7 +1122,7 @@
           "path": {
             "name": "ParseIntError",
             "path": {
-              "$children": [
+              "name": [
                 "std",
                 "num"
               ]
@@ -1341,16 +1135,15 @@
       }
     },
     {
-      "$type": "function",
       "pub": true,
       "body": {
         "macro": {
-          "string": "\"name={}\"",
-          "$children": [
+          "name": [
             "format",
             "d",
             "name"
-          ]
+          ],
+          "string": "\"name={}\""
         }
       },
       "lifetime": {
@@ -1398,7 +1191,6 @@
       }
     },
     {
-      "$type": "function",
       "pub": true,
       "body": {
         "macro": {
@@ -1414,7 +1206,6 @@
       }
     },
     {
-      "$type": "function",
       "pub": true,
       "body": {
         "await": {
@@ -1451,9 +1242,38 @@
       }
     },
     {
-      "$type": "function",
       "pub": true,
       "body": {
+        "let": [
+          {
+            "name": "x",
+            "value": {
+              "expression": {
+                "int": "5"
+              }
+            }
+          },
+          {
+            "name": "r",
+            "value": {
+              "expression": {
+                "cast": {
+                  "type": {
+                    "pointer": true,
+                    "name": "i32"
+                  },
+                  "value": {
+                    "expression": {
+                      "ref": {
+                        "name": "x"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
         "unsafe": {
           "block": {
             "expression": {
@@ -1475,47 +1295,45 @@
               }
             }
           }
-        },
-        "$children": [
-          {
-            "$type": "let",
-            "name": "x",
-            "value": {
-              "expression": {
-                "int": "5"
-              }
-            }
-          },
-          {
-            "$type": "let",
-            "name": "r",
-            "value": {
-              "expression": {
-                "cast": {
-                  "type": {
-                    "pointer": true,
-                    "name": "i32"
-                  },
-                  "value": {
-                    "expression": {
-                      "ref": {
-                        "name": "x"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        ]
+        }
       },
       "name": "unsafe_block"
     },
     {
-      "$type": "function",
       "pub": true,
       "body": "{}",
+      "generic": [
+        {
+          "name": "F"
+        },
+        {
+          "extends": {
+            "bound": {
+              "optional": true,
+              "name": "Sized"
+            }
+          },
+          "name": "T"
+        }
+      ],
       "name": "hrtb_demo",
+      "parameter": [
+        {
+          "name": "_f",
+          "type": {
+            "name": "F"
+          }
+        },
+        {
+          "name": "_t",
+          "type": {
+            "borrowed": true,
+            "type": {
+              "name": "T"
+            }
+          }
+        }
+      ],
       "where": {
         "bound": {
           "extends": {
@@ -1527,9 +1345,8 @@
               "type": {
                 "function": true,
                 "name": "Fn",
-                "$children": [
+                "type": [
                   {
-                    "$type": "type",
                     "borrowed": true,
                     "lifetime": {
                       "name": "a"
@@ -1539,7 +1356,6 @@
                     }
                   },
                   {
-                    "$type": "type",
                     "borrowed": true,
                     "lifetime": {
                       "name": "a"
@@ -1554,43 +1370,9 @@
           },
           "name": "F"
         }
-      },
-      "$children": [
-        {
-          "$type": "generic",
-          "name": "F"
-        },
-        {
-          "$type": "generic",
-          "extends": {
-            "bound": {
-              "optional": true,
-              "name": "Sized"
-            }
-          },
-          "name": "T"
-        },
-        {
-          "$type": "parameter",
-          "name": "_f",
-          "type": {
-            "name": "F"
-          }
-        },
-        {
-          "$type": "parameter",
-          "name": "_t",
-          "type": {
-            "borrowed": true,
-            "type": {
-              "name": "T"
-            }
-          }
-        }
-      ]
+      }
     },
     {
-      "$type": "function",
       "pub": true,
       "body": {
         "binary": {
@@ -1619,6 +1401,37 @@
             }
           }
         },
+        "comment": [
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          },
+          "// turbofish expression — `parse::<i32>` is generic_function but",
+          "// type-position turbofish like `Vec::<i32>::new` exercises",
+          {
+            "leading": true
+          }
+        ],
         "expression": {
           "assign": {
             "binary": {
@@ -1650,30 +1463,28 @@
                 }
               }
             },
+            "name": [
+              "Some",
+              "inner",
+              "opt",
+              "inner"
+            ],
             "pattern": {
               "struct": true,
               "name": "Point",
-              "$children": [
+              "pattern": [
                 {
-                  "$type": "pattern",
                   "field": true,
-                  "$children": [
+                  "name": [
                     "x",
                     "ix"
                   ]
                 },
                 {
-                  "$type": "pattern",
                   "rest": true
                 }
               ]
-            },
-            "$children": [
-              "Some",
-              "inner",
-              "opt",
-              "inner"
-            ]
+            }
           },
           "then": {
             "block": {
@@ -1696,58 +1507,17 @@
             }
           }
         },
-        "$children": [
+        "let": [
           {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "comment",
-            "leading": true
-          },
-          "// turbofish expression — `parse::<i32>` is generic_function but",
-          "// type-position turbofish like `Vec::<i32>::new` exercises",
-          {
-            "$type": "comment",
-            "leading": true
-          },
-          {
-            "$type": "let",
             "pattern": {
               "struct": true,
               "name": "Point",
-              "$children": [
+              "pattern": [
                 {
-                  "$type": "pattern",
                   "field": true,
                   "name": "x"
                 },
                 {
-                  "$type": "pattern",
                   "rest": true
                 }
               ]
@@ -1759,12 +1529,11 @@
             }
           },
           {
-            "$type": "let",
             "name": "tuple",
             "value": {
               "expression": {
                 "tuple": {
-                  "$children": [
+                  "int": [
                     "1",
                     "2",
                     "3"
@@ -1774,20 +1543,22 @@
             }
           },
           {
-            "$type": "let",
             "name": "total",
             "value": {
               "expression": {
                 "match": {
                   "body": {
-                    "$children": [
+                    "arm": [
                       {
-                        "$type": "arm",
                         "pattern": {
                           "pattern": {
                             "ref": true,
                             "pattern": {
                               "tuple": true,
+                              "name": [
+                                "b",
+                                "_c"
+                              ],
                               "pattern": {
                                 "capture": true,
                                 "name": "a",
@@ -1800,11 +1571,7 @@
                                     "int": "10"
                                   }
                                 }
-                              },
-                              "$children": [
-                                "b",
-                                "_c"
-                              ]
+                              }
                             }
                           }
                         },
@@ -1824,11 +1591,10 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "pattern": {
                             "tuple": true,
-                            "$children": [
+                            "name": [
                               "a",
                               "b",
                               "c"
@@ -1875,12 +1641,11 @@
             }
           },
           {
-            "$type": "let",
             "name": "arr",
             "value": {
               "expression": {
                 "array": {
-                  "$children": [
+                  "int": [
                     "1",
                     "2",
                     "3",
@@ -1892,25 +1657,23 @@
             }
           },
           {
-            "$type": "let",
             "name": "head_tail",
             "value": {
               "expression": {
                 "match": {
                   "body": {
-                    "$children": [
+                    "arm": [
                       {
-                        "$type": "arm",
                         "pattern": {
                           "pattern": {
                             "slice": true,
-                            "pattern": {
-                              "rest": true
-                            },
-                            "$children": [
+                            "name": [
                               "first",
                               "last"
-                            ]
+                            ],
+                            "pattern": {
+                              "rest": true
+                            }
                           }
                         },
                         "value": {
@@ -1929,7 +1692,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "pattern": {
                             "slice": true,
@@ -1943,7 +1705,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "pattern": {
                             "slice": true
@@ -1972,7 +1733,6 @@
             }
           },
           {
-            "$type": "let",
             "mut": true,
             "name": "counter",
             "value": {
@@ -1982,15 +1742,12 @@
             }
           },
           {
-            "$type": "let",
             "name": "triples",
             "value": {
               "expression": {
                 "array": {
-                  "name": "counter",
-                  "$children": [
+                  "binary": [
                     {
-                      "$type": "binary",
                       "left": {
                         "expression": {
                           "name": "counter"
@@ -2003,7 +1760,6 @@
                       }
                     },
                     {
-                      "$type": "binary",
                       "left": {
                         "expression": {
                           "name": "counter"
@@ -2015,13 +1771,13 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "name": "counter"
                 }
               }
             }
           },
           {
-            "$type": "let",
             "name": "unit_val",
             "value": {
               "expression": {
@@ -2032,7 +1788,6 @@
             }
           },
           {
-            "$type": "let",
             "pattern": {
               "wildcard": true
             },
@@ -2043,15 +1798,13 @@
             }
           },
           {
-            "$type": "let",
             "name": "signed",
             "value": {
               "expression": {
                 "match": {
                   "body": {
-                    "$children": [
+                    "arm": [
                       {
-                        "$type": "arm",
                         "pattern": {
                           "literal": {
                             "negative": true,
@@ -2063,7 +1816,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": {
                           "int": "0"
                         },
@@ -2072,7 +1824,6 @@
                         }
                       },
                       {
-                        "$type": "arm",
                         "pattern": "_",
                         "value": {
                           "string": "\"pos\""
@@ -2092,7 +1843,6 @@
             }
           },
           {
-            "$type": "let",
             "pattern": {
               "wildcard": true
             },
@@ -2103,7 +1853,6 @@
             }
           },
           {
-            "$type": "let",
             "name": "v",
             "value": {
               "expression": {
@@ -2125,14 +1874,8 @@
         ]
       },
       "name": "pattern_zoo",
-      "returns": {
-        "type": {
-          "name": "i32"
-        }
-      },
-      "$children": [
+      "parameter": [
         {
-          "$type": "parameter",
           "name": "p",
           "type": {
             "generic": true,
@@ -2146,7 +1889,6 @@
           }
         },
         {
-          "$type": "parameter",
           "name": "opt",
           "type": {
             "generic": true,
@@ -2163,38 +1905,33 @@
             }
           }
         }
-      ]
+      ],
+      "returns": {
+        "type": {
+          "name": "i32"
+        }
+      }
     },
     {
-      "$type": "function",
       "private": true,
       "body": {
-        "macro": {
-          "string": "\"hello, {}\"",
-          "$children": [
-            "println",
-            "GREETING"
-          ]
-        },
-        "$children": [
+        "let": [
           {
-            "$type": "let",
             "name": "v",
             "value": {
               "expression": {
                 "macro": {
-                  "name": "vec",
-                  "$children": [
+                  "int": [
                     "1",
                     "2",
                     "3"
-                  ]
+                  ],
+                  "name": "vec"
                 }
               }
             }
           },
           {
-            "$type": "let",
             "pattern": {
               "wildcard": true
             },
@@ -2202,16 +1939,16 @@
               "expression": {
                 "call": {
                   "call": {
+                    "int": [
+                      "1",
+                      "1"
+                    ],
                     "path": {
-                      "$children": [
+                      "name": [
                         "Shape",
                         "Dot"
                       ]
-                    },
-                    "$children": [
-                      "1",
-                      "1"
-                    ]
+                    }
                   },
                   "name": "patterns"
                 }
@@ -2219,7 +1956,6 @@
             }
           },
           {
-            "$type": "let",
             "pattern": {
               "wildcard": true
             },
@@ -2232,7 +1968,6 @@
             }
           },
           {
-            "$type": "let",
             "pattern": {
               "wildcard": true
             },
@@ -2240,19 +1975,19 @@
               "expression": {
                 "call": {
                   "call": {
+                    "int": [
+                      "1",
+                      "2"
+                    ],
                     "path": {
-                      "$children": [
+                      "name": [
                         "Point",
                         "new"
                       ]
                     },
-                    "string": "\"p\"",
-                    "$children": [
-                      "1",
-                      "2"
-                    ]
+                    "string": "\"p\""
                   },
-                  "$children": [
+                  "name": [
                     "pattern_zoo",
                     "None"
                   ]
@@ -2261,7 +1996,6 @@
             }
           },
           {
-            "$type": "let",
             "pattern": {
               "wildcard": true
             },
@@ -2282,9 +2016,11 @@
             "value": {
               "expression": {
                 "macro": {
-                  "$children": [
+                  "int": [
                     "1",
-                    "2",
+                    "2"
+                  ],
+                  "name": [
                     "collect_pairs",
                     "a",
                     "b"
@@ -2293,12 +2029,20 @@
               }
             }
           }
-        ]
+        ],
+        "macro": {
+          "name": [
+            "println",
+            "GREETING"
+          ],
+          "string": "\"hello, {}\""
+        }
       },
       "name": "main"
-    },
+    }
+  ],
+  "impl": [
     {
-      "$type": "impl",
       "body": {
         "const": {
           "pub": true,
@@ -2314,24 +2058,20 @@
             }
           }
         },
-        "$children": [
+        "function": [
           {
-            "$type": "function",
             "pub": true,
             "body": {
               "literal": {
                 "body": {
-                  "$children": [
+                  "field": [
                     {
-                      "$type": "field",
                       "name": "x"
                     },
                     {
-                      "$type": "field",
                       "name": "y"
                     },
                     {
-                      "$type": "field",
                       "name": "label"
                     }
                   ]
@@ -2340,28 +2080,20 @@
               }
             },
             "name": "new",
-            "returns": {
-              "type": {
-                "name": "Self"
-              }
-            },
-            "$children": [
+            "parameter": [
               {
-                "$type": "parameter",
                 "name": "x",
                 "type": {
                   "name": "T"
                 }
               },
               {
-                "$type": "parameter",
                 "name": "y",
                 "type": {
                   "name": "T"
                 }
               },
               {
-                "$type": "parameter",
                 "name": "label",
                 "type": {
                   "borrowed": true,
@@ -2373,10 +2105,14 @@
                   }
                 }
               }
-            ]
+            ],
+            "returns": {
+              "type": {
+                "name": "Self"
+              }
+            }
           },
           {
-            "$type": "function",
             "pub": true,
             "body": {
               "access": "self.clone()"
@@ -2393,7 +2129,6 @@
             }
           },
           {
-            "$type": "function",
             "pub": true,
             "body": {
               "int": "42"
@@ -2406,7 +2141,6 @@
             }
           },
           {
-            "$type": "function",
             "pub": true,
             "body": {
               "access": {
@@ -2436,13 +2170,11 @@
           "lifetime": {
             "name": "static"
           },
-          "$children": [
+          "type": [
             {
-              "$type": "type",
               "name": "Clone"
             },
             {
-              "$type": "type",
               "name": "Send"
             }
           ]
@@ -2464,7 +2196,6 @@
       }
     },
     {
-      "$type": "impl",
       "body": {
         "alias": {
           "private": true,
@@ -2481,20 +2212,18 @@
           "private": true,
           "body": "{}",
           "name": "draw",
-          "$children": [
+          "parameter": [
             {
-              "$type": "parameter",
               "self": true,
               "name": "self"
             },
             {
-              "$type": "parameter",
               "name": "_c",
               "type": {
                 "borrowed": true,
                 "mut": true,
                 "path": {
-                  "$children": [
+                  "name": [
                     "Self",
                     "Canvas"
                   ]
@@ -2531,17 +2260,14 @@
             "lifetime": {
               "name": "static"
             },
-            "$children": [
+            "type": [
               {
-                "$type": "type",
                 "name": "Clone"
               },
               {
-                "$type": "type",
                 "name": "Send"
               },
               {
-                "$type": "type",
                 "name": "Debug"
               }
             ]
@@ -2549,9 +2275,49 @@
           "name": "T"
         }
       }
-    },
+    }
+  ],
+  "macro": {
+    "definition": true,
+    "arm": [
+      {
+        "name": "vec",
+        "repetition": [
+          {
+            "pattern": [
+              {
+                "binding": true,
+                "fragment": "ident",
+                "name": "$key"
+              },
+              {
+                "binding": true,
+                "fragment": "expr",
+                "name": "$value"
+              }
+            ]
+          },
+          "$(,)?",
+          {
+            "name": [
+              "stringify",
+              "$key",
+              "$value"
+            ]
+          }
+        ]
+      },
+      {
+        "name": [
+          "Vec",
+          "new"
+        ]
+      }
+    ],
+    "name": "collect_pairs"
+  },
+  "mod": [
     {
-      "$type": "mod",
       "pub": true,
       "body": {
         "mod": {
@@ -2559,7 +2325,7 @@
             "const": {
               "pub": true,
               "int": "7",
-              "$children": [
+              "name": [
                 "INNER_CONST",
                 "u32"
               ]
@@ -2581,15 +2347,13 @@
       "name": "outer"
     },
     {
-      "$type": "mod",
       "foreign": true,
       "extern": true,
       "function": {
         "pub": true,
         "name": "printf",
-        "$children": [
+        "parameter": [
           {
-            "$type": "parameter",
             "name": "fmt",
             "type": {
               "pointer": true,
@@ -2597,15 +2361,15 @@
             }
           },
           {
-            "$type": "parameter",
             "variadic": true
           }
         ]
       },
       "string": "\"C\""
-    },
+    }
+  ],
+  "static": [
     {
-      "$type": "static",
       "pub": true,
       "name": "GREETING",
       "string": "\"hello\"",
@@ -2617,22 +2381,21 @@
       }
     },
     {
-      "$type": "static",
       "private": true,
       "mut": true,
       "int": "0",
-      "$children": [
+      "name": [
         "COUNTER",
         "u32"
       ]
-    },
+    }
+  ],
+  "struct": [
     {
-      "$type": "struct",
       "pub": true,
       "body": {
-        "$children": [
+        "field": [
           {
-            "$type": "field",
             "pub": true,
             "name": "x",
             "type": {
@@ -2640,7 +2403,6 @@
             }
           },
           {
-            "$type": "field",
             "pub": true,
             "name": "y",
             "type": {
@@ -2648,7 +2410,6 @@
             }
           },
           {
-            "$type": "field",
             "name": "label",
             "type": {
               "borrowed": true,
@@ -2675,13 +2436,11 @@
             "lifetime": {
               "name": "static"
             },
-            "$children": [
+            "type": [
               {
-                "$type": "type",
                 "name": "Clone"
               },
               {
-                "$type": "type",
                 "name": "Send"
               }
             ]
@@ -2691,10 +2450,9 @@
       }
     },
     {
-      "$type": "struct",
       "pub": true,
       "body": {
-        "$children": [
+        "name": [
           "T",
           "T"
         ]
@@ -2705,19 +2463,17 @@
       "name": "Pair"
     },
     {
-      "$type": "struct",
       "pub": true,
       "name": "Marker"
     },
     {
-      "$type": "struct",
       "pub": true,
       "body": {
         "field": {
           "name": "items",
           "type": {
             "array": true,
-            "$children": [
+            "name": [
               "u32",
               "N"
             ]
@@ -2727,35 +2483,128 @@
       "name": "FixedArray",
       "parameter": {
         "const": true,
-        "$children": [
+        "name": [
           "N",
           "usize"
         ]
       }
-    },
-    {
-      "$type": "use",
-      "group": true,
-      "$children": [
+    }
+  ],
+  "trait": {
+    "pub": true,
+    "body": {
+      "const": {
+        "private": true,
+        "int": "64",
+        "name": [
+          "MAX",
+          "usize"
+        ]
+      },
+      "function": [
         {
-          "$type": "use",
+          "private": true,
+          "name": "draw",
+          "parameter": [
+            {
+              "self": true,
+              "name": "self"
+            },
+            {
+              "name": "c",
+              "type": {
+                "borrowed": true,
+                "mut": true,
+                "path": {
+                  "name": [
+                    "Self",
+                    "Canvas"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "private": true,
+          "body": {
+            "call": {
+              "path": {
+                "name": [
+                  "String",
+                  "from"
+                ]
+              },
+              "string": "\"drawable\""
+            }
+          },
+          "name": "name",
+          "parameter": {
+            "self": true,
+            "name": "self"
+          },
+          "returns": {
+            "type": {
+              "name": "String"
+            }
+          }
+        }
+      ],
+      "type": {
+        "associated": true,
+        "name": "Canvas"
+      }
+    },
+    "extends": {
+      "type": {
+        "name": "Debug"
+      }
+    },
+    "name": "Drawable"
+  },
+  "union": {
+    "pub": true,
+    "body": {
+      "field": [
+        {
+          "pub": true,
+          "name": "i",
+          "type": {
+            "name": "i32"
+          }
+        },
+        {
+          "pub": true,
+          "name": "f",
+          "type": {
+            "name": "f32"
+          }
+        }
+      ]
+    },
+    "name": "Either"
+  },
+  "use": [
+    {
+      "group": true,
+      "use": [
+        {
           "name": "HashMap",
           "path": {
-            "$children": [
+            "name": [
               "std",
               "collections"
             ]
           }
         },
         {
-          "$type": "use",
           "alias": true,
           "aliased": {
             "name": "Set"
           },
           "name": "HashSet",
           "path": {
-            "$children": [
+            "name": [
               "std",
               "collections"
             ]
@@ -2764,34 +2613,30 @@
       ]
     },
     {
-      "$type": "use",
       "group": true,
-      "$children": [
+      "use": [
         {
-          "$type": "use",
           "name": "self",
           "path": {
-            "$children": [
+            "name": [
               "std",
               "fmt"
             ]
           }
         },
         {
-          "$type": "use",
           "name": "Debug",
           "path": {
-            "$children": [
+            "name": [
               "std",
               "fmt"
             ]
           }
         },
         {
-          "$type": "use",
           "name": "Display",
           "path": {
-            "$children": [
+            "name": [
               "std",
               "fmt"
             ]
@@ -2800,62 +2645,56 @@
       ]
     },
     {
-      "$type": "use",
       "name": "Rc",
       "path": {
-        "$children": [
+        "name": [
           "std",
           "rc"
         ]
       }
     },
     {
-      "$type": "use",
       "name": "Arc",
       "path": {
-        "$children": [
+        "name": [
           "std",
           "sync"
         ]
       }
     },
     {
-      "$type": "use",
       "name": "RefCell",
       "path": {
-        "$children": [
+        "name": [
           "std",
           "cell"
         ]
       }
     },
     {
-      "$type": "use",
       "group": true,
-      "$children": [
+      "use": [
         {
-          "$type": "use",
           "alias": true,
           "aliased": {
             "name": "IoRead"
           },
           "name": "Read",
           "path": {
-            "$children": [
+            "name": [
               "std",
               "io"
             ]
           }
         },
         {
-          "$type": "use",
           "alias": true,
           "aliased": {
             "name": "IoWrite"
           },
           "name": "Write",
           "path": {
-            "$children": [
+            "name": [
               "std",
               "io"
             ]
@@ -2864,19 +2703,17 @@
       ]
     },
     {
-      "$type": "use",
       "wildcard": true,
       "path": {
-        "$children": [
+        "name": [
           "std",
           "vec"
         ]
       }
     },
     {
-      "$type": "use",
       "extern": true,
-      "$children": [
+      "name": [
         "crate",
         "alloc"
       ]
