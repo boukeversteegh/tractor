@@ -325,3 +325,153 @@ impl<'a, T: WalkerTree> RenderItem<'a, T> {
     fn range_end(&self) -> u32 { self.range().end }
     fn sort_key(&self) -> u32 { self.range_start() }
 }
+
+// =============================================================================
+// Generic walker — JSON projection (`to_json`).
+// =============================================================================
+
+use std::collections::BTreeMap;
+use serde_json::{Map, Value};
+
+const KEY_TYPE: &str = "$type";
+const KEY_CHILDREN: &str = "$children";
+
+/// Generic variant-blind walker that renders any [`WalkerTree`] to
+/// `serde_json::Value`. Mirrors the XML walker's structure but emits
+/// JSON keys instead of XML elements; same source-of-truth metadata
+/// drives both.
+///
+/// ## Output shape
+///
+/// - **Scalar leaves** (no children, no flags, has stored text) →
+///   bare JSON string.
+/// - **Inline / Skip** (no element name) → render children inline at
+///   parent.
+/// - **Structural nodes** → JSON object with:
+///   - `$type`: element name (omitted when the parent's key already
+///     conveys the type).
+///   - One boolean field per flag (`"async": true`).
+///   - One child group per distinct child element name; singleton
+///     children are keyed directly (`"body": { … }`); multiple
+///     same-named children promote to a JSON array under that key
+///     (`"imports": [{…}, {…}]`).
+pub fn render_walker_to_json<T: WalkerTree>(
+    tree: &T,
+    source: &str,
+    context: Option<&str>,
+) -> Value {
+    render_json(tree, source, context, /*strip_type=*/ false)
+}
+
+fn render_json<T: WalkerTree>(
+    tree: &T,
+    source: &str,
+    context: Option<&str>,
+    strip_type: bool,
+) -> Value {
+    let tag = match tree.element_name_of() {
+        Some(t) => t,
+        None => return render_json_inline(tree, source, context),
+    };
+    let display = T::display_name_for(tag, context).to_string();
+
+    let flags = tree.flags_of();
+    let children = tree.children_of();
+
+    if children.is_empty() && flags.is_empty() {
+        if let Some(text) = leaf_text_for(tree, source) {
+            return Value::String(text);
+        }
+    }
+
+    let mut obj: Map<String, Value> = Map::new();
+    if !strip_type {
+        obj.insert(KEY_TYPE.to_string(), Value::String(display.clone()));
+    }
+
+    for marker in &flags {
+        obj.insert(marker.name.to_string(), Value::Bool(true));
+    }
+
+    let mut groups: BTreeMap<String, Vec<&T>> = BTreeMap::new();
+    let mut inline_overflow: Vec<&T> = Vec::new();
+    for child in &children {
+        push_json_child::<T>(child, context, &mut groups, &mut inline_overflow);
+    }
+
+    for (key, items) in groups {
+        if items.len() == 1 {
+            obj.insert(key, render_json(items[0], source, context, /*strip_type=*/ true));
+        } else {
+            let arr: Vec<Value> = items
+                .iter()
+                .map(|item| render_json(*item, source, context, /*strip_type=*/ true))
+                .collect();
+            obj.insert(key, Value::Array(arr));
+        }
+    }
+
+    if !inline_overflow.is_empty() {
+        let mut existing = obj
+            .remove(KEY_CHILDREN)
+            .and_then(|v| match v {
+                Value::Array(a) => Some(a),
+                _ => None,
+            })
+            .unwrap_or_default();
+        for item in inline_overflow {
+            existing.push(render_json(item, source, context, /*strip_type=*/ false));
+        }
+        obj.insert(KEY_CHILDREN.to_string(), Value::Array(existing));
+    }
+
+    Value::Object(obj)
+}
+
+fn render_json_inline<T: WalkerTree>(
+    tree: &T,
+    source: &str,
+    context: Option<&str>,
+) -> Value {
+    let children = tree.children_of();
+    match children.len() {
+        0 => Value::Null,
+        1 => render_json(children[0], source, context, /*strip_type=*/ false),
+        _ => Value::Array(
+            children
+                .iter()
+                .map(|c| render_json(*c, source, context, /*strip_type=*/ false))
+                .collect(),
+        ),
+    }
+}
+
+fn push_json_child<'a, T: WalkerTree>(
+    child: &'a T,
+    context: Option<&str>,
+    groups: &mut BTreeMap<String, Vec<&'a T>>,
+    inline_overflow: &mut Vec<&'a T>,
+) {
+    match child.element_name_of() {
+        Some(tag) => {
+            let display = T::display_name_for(tag, context).to_string();
+            groups.entry(display).or_default().push(child);
+        }
+        None => {
+            for grand in child.children_of() {
+                push_json_child::<T>(grand, context, groups, inline_overflow);
+            }
+        }
+    }
+}
+
+fn leaf_text_for<T: WalkerTree>(tree: &T, source: &str) -> Option<String> {
+    if let Some(text) = tree.scalar_text_of() {
+        return Some(text.to_string());
+    }
+    let range = tree.range_of();
+    if range.is_anchored() && !range.is_empty() {
+        return Some(range.slice(source).to_string());
+    }
+    None
+}
