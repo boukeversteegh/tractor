@@ -27,4 +27,9 @@ pub mod to_json;
 #[cfg(feature = "native")]
 pub mod render_common;
 
+// Auto-generated reflection metadata (mirror of `tree/syntax/metadata.generated.rs`).
+#[cfg(feature = "native")]
+#[path = "metadata.generated.rs"]
+pub mod metadata_generated;
+
 pub use types::{DataTree, ScalarKind};

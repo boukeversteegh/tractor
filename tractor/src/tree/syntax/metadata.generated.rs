@@ -125,7 +125,8 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
 
 /// Empty-element marker children for this tree node. Drawn from
 /// `Modifiers::markers_with_spans()`, any `Flag` field (named after
-/// the field with trailing `_` stripped), and any `Vec<Marker>` field.
+/// the field with trailing `_` stripped), `Vec<Marker>` and
+/// `Vec<&'static str>` marker-name fields.
 ///
 /// Each entry's `span` lets the XML renderer emit
 /// `line` / `column` attributes at the keyword position when the flag

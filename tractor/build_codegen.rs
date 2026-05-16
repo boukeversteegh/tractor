@@ -33,48 +33,97 @@ use std::path::Path;
 use quote::ToTokens;
 use syn::{Fields, Item, ItemEnum, Variant};
 
-const INPUT: &str = "src/tree/syntax/types.rs";
-const OUTPUT: &str = "src/tree/syntax/metadata.generated.rs";
+/// Per-tree codegen spec. Each tree (`SyntaxTree`, `DataTree`,
+/// `SqlTree`, ...) plugs into the same render pipeline by supplying
+/// one of these. The render functions below thread the `tree_name`
+/// through every template so the generated code references the right
+/// enum.
+pub struct TreeSpec {
+    /// Identifier of the enum in the source file (e.g. `"SyntaxTree"`).
+    /// Drives every `match`-arm prefix in the generated code.
+    pub tree_name: &'static str,
+    /// Source file holding the enum declaration, relative to `tractor/`.
+    pub input_path: &'static str,
+    /// Output path for the generated metadata file, relative to `tractor/`.
+    pub output_path: &'static str,
+    /// File header (doc comment + imports). The header is verbatim
+    /// per tree because the import set varies (`SyntaxTree` pulls in
+    /// `AccessReceiver` / `Expression` / etc.; `DataTree` doesn't).
+    pub header: &'static str,
+    /// Generate the `from_json` deserializer? Only `SyntaxTree`
+    /// needs it today; data trees are produced from CST, not from
+    /// JSON-as-input.
+    pub generate_from_json: bool,
+    /// Generate `span_mut_of` + `children_mut_of`? Used by
+    /// `assign_ids` and editable-tree mutations.
+    pub generate_mut: bool,
+}
+
+const SYNTAX_TREE_SPEC: TreeSpec = TreeSpec {
+    tree_name: "SyntaxTree",
+    input_path: "src/tree/syntax/types.rs",
+    output_path: "src/tree/syntax/metadata.generated.rs",
+    header: SYNTAX_HEADER,
+    generate_from_json: true,
+    generate_mut: true,
+};
+
+const DATA_TREE_SPEC: TreeSpec = TreeSpec {
+    tree_name: "DataTree",
+    input_path: "src/tree/data/types.rs",
+    output_path: "src/tree/data/metadata.generated.rs",
+    header: DATA_HEADER,
+    generate_from_json: false,
+    generate_mut: true,
+};
 
 /// Run the codegen. Called from `build.rs::main`.
 pub fn generate() {
-    // build.rs runs with CWD = tractor/, so the relative paths above
-    // resolve correctly. Tell cargo to re-run only when the source
-    // enum changes — keeps incremental builds fast.
-    println!("cargo:rerun-if-changed={}", INPUT);
     println!("cargo:rerun-if-changed=build_codegen.rs");
-
-    let src = fs::read_to_string(INPUT)
-        .unwrap_or_else(|e| panic!("reading {}: {}", INPUT, e));
-    let file: syn::File = syn::parse_file(&src)
-        .unwrap_or_else(|e| panic!("parsing {}: {}", INPUT, e));
-    let enum_item = find_enum(&file, "SyntaxTree")
-        .unwrap_or_else(|| panic!("SyntaxTree enum not found in {}", INPUT));
-
-    let mut out = String::new();
-    out.push_str(HEADER);
-    out.push_str(&render_element_name_of(enum_item));
-    out.push('\n');
-    out.push_str(&render_flags_of(enum_item));
-    out.push('\n');
-    out.push_str(&render_range_of(enum_item));
-    out.push('\n');
-    out.push_str(&render_span_of(enum_item));
-    out.push('\n');
-    out.push_str(&render_scalar_text_of(enum_item));
-    out.push('\n');
-    out.push_str(&render_children_of(enum_item));
-    out.push('\n');
-    out.push_str(&render_span_mut_of(enum_item));
-    out.push('\n');
-    out.push_str(&render_children_mut_of(enum_item));
-    out.push('\n');
-    out.push_str(&render_from_json(enum_item));
-
-    write_if_changed(OUTPUT, &out);
+    generate_for_tree(&SYNTAX_TREE_SPEC);
+    generate_for_tree(&DATA_TREE_SPEC);
 }
 
-const HEADER: &str = "\
+fn generate_for_tree(spec: &TreeSpec) {
+    println!("cargo:rerun-if-changed={}", spec.input_path);
+
+    let src = fs::read_to_string(spec.input_path)
+        .unwrap_or_else(|e| panic!("reading {}: {}", spec.input_path, e));
+    let file: syn::File = syn::parse_file(&src)
+        .unwrap_or_else(|e| panic!("parsing {}: {}", spec.input_path, e));
+    let enum_item = find_enum(&file, spec.tree_name).unwrap_or_else(|| {
+        panic!("{} enum not found in {}", spec.tree_name, spec.input_path)
+    });
+
+    let tree = spec.tree_name;
+    let mut out = String::new();
+    out.push_str(spec.header);
+    out.push_str(&render_element_name_of(enum_item, tree));
+    out.push('\n');
+    out.push_str(&render_flags_of(enum_item, tree));
+    out.push('\n');
+    out.push_str(&render_range_of(enum_item, tree));
+    out.push('\n');
+    out.push_str(&render_span_of(enum_item, tree));
+    out.push('\n');
+    out.push_str(&render_scalar_text_of(enum_item, tree));
+    out.push('\n');
+    out.push_str(&render_children_of(enum_item, tree));
+    if spec.generate_mut {
+        out.push('\n');
+        out.push_str(&render_span_mut_of(enum_item, tree));
+        out.push('\n');
+        out.push_str(&render_children_mut_of(enum_item, tree));
+    }
+    if spec.generate_from_json {
+        out.push('\n');
+        out.push_str(&render_from_json(enum_item));
+    }
+
+    write_if_changed(spec.output_path, &out);
+}
+
+const SYNTAX_HEADER: &str = "\
 // DO NOT EDIT — emitted by `tractor/build.rs` on every build.
 // Source: SyntaxTree enum in tractor/src/tree/syntax/types.rs.
 //
@@ -105,6 +154,26 @@ use super::types::{
     element_name_for_object_access, element_name_for_raw,
     element_name_for_simple_statement, element_name_for_type_parameter,
 };
+
+";
+
+const DATA_HEADER: &str = "\
+// DO NOT EDIT — emitted by `tractor/build.rs` on every build.
+// Source: DataTree enum in tractor/src/tree/data/types.rs.
+//
+// Variant-blind reflection metadata for the data-language tree
+// (JSON / YAML / TOML / INI / Markdown / ...). Mirrors the
+// `tree/syntax/metadata.generated.rs` shape one-for-one — same
+// codegen functions in `tractor/build_codegen.rs`, same accessor
+// signatures (modulo `from_json` which is `SyntaxTree`-only).
+
+#![cfg(feature = \"native\")]
+#![allow(clippy::too_many_lines)]
+
+#[allow(unused_imports)]
+use super::types::DataTree;
+#[allow(unused_imports)]
+use crate::tree::types::{ByteRange, Marker, Span};
 
 ";
 
@@ -147,22 +216,23 @@ fn find_field<'a>(v: &'a Variant, name: &str) -> Option<&'a syn::Field> {
     }
 }
 
-fn render_element_name_of(en: &ItemEnum) -> String {
+fn render_element_name_of(en: &ItemEnum, tree: &str) -> String {
     let mut out = String::new();
-    out.push_str(
+    out.push_str(&format!(
         "/// The XML element name for this tree node, or `None` if the
 /// node renders no wrapper (`Inline`, `Skip`).
 ///
 /// Borrowed lifetime: most arms return `&'static str` literals or
 /// `&'static str` field values, but `Unknown` / `Raw` carry `String`
 /// kinds so the return type ties to the tree.
-pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
-    match tree {
+pub fn element_name_of(tree: &{tree}) -> Option<&str> {{
+    match tree {{
 ",
-    );
+        tree = tree,
+    ));
     for v in &en.variants {
         let name = v.ident.to_string();
-        out.push_str(&element_arm(&name, v));
+        out.push_str(&element_arm(&name, v, tree));
     }
     out.push_str(
         "    }
@@ -187,20 +257,18 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
 /// name from a typed field do so by declaring `@element_name = X`
 /// and writing the corresponding `fn X(t: &SyntaxTree) -> &'static str`
 /// helper next to the variant in `types.rs`.
-fn element_arm(name: &str, v: &Variant) -> String {
+fn element_arm(name: &str, v: &Variant, tree: &str) -> String {
     if name == "Inline" || name == "Skip" {
-        return format!("        SyntaxTree::{} {{ .. }} => None,\n", name);
+        return format!("        {tree}::{name} {{ .. }} => None,\n");
     }
     if let Some(fn_ident) = element_name_annotation(v) {
         return format!(
-            "        SyntaxTree::{} {{ .. }} => Some({}(tree)),\n",
-            name, fn_ident
+            "        {tree}::{name} {{ .. }} => Some({fn_ident}(tree)),\n",
         );
     }
     format!(
-        "        SyntaxTree::{} {{ .. }} => Some({:?}),\n",
-        name,
-        snake_case(name)
+        "        {tree}::{name} {{ .. }} => Some({lit:?}),\n",
+        lit = snake_case(name),
     )
 }
 
@@ -230,23 +298,25 @@ fn element_name_annotation(v: &Variant) -> Option<String> {
     None
 }
 
-fn render_flags_of(en: &ItemEnum) -> String {
+fn render_flags_of(en: &ItemEnum, tree: &str) -> String {
     let mut out = String::new();
-    out.push_str(
+    out.push_str(&format!(
         "/// Empty-element marker children for this tree node. Drawn from
 /// `Modifiers::markers_with_spans()`, any `Flag` field (named after
-/// the field with trailing `_` stripped), and any `Vec<Marker>` field.
+/// the field with trailing `_` stripped), `Vec<Marker>` and
+/// `Vec<&'static str>` marker-name fields.
 ///
 /// Each entry's `span` lets the XML renderer emit
 /// `line` / `column` attributes at the keyword position when the flag
 /// is anchored, falling back to a default for implicit flags.
-pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
+pub fn flags_of(tree: &{tree}) -> Vec<Marker> {{
     let mut out: Vec<Marker> = Vec::new();
-    match tree {
+    match tree {{
 ",
-    );
+        tree = tree,
+    ));
     for v in &en.variants {
-        out.push_str(&flags_arm(v));
+        out.push_str(&flags_arm(v, tree));
     }
     out.push_str(
         "    }
@@ -257,7 +327,7 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
     out
 }
 
-fn flags_arm(v: &Variant) -> String {
+fn flags_arm(v: &Variant, tree: &str) -> String {
     let name = v.ident.to_string();
     let mut bindings: Vec<String> = Vec::new();
     let mut body = String::new();
@@ -303,6 +373,25 @@ fn flags_arm(v: &Variant) -> String {
                         fname
                     ));
                 }
+                "Vec<&'staticstr>" if fname == "markers" => {
+                    // `DataTree::Element.markers: Vec<&'static str>` —
+                    // open-set markers stored as bare names. Span
+                    // defaults to the host's span; range stays
+                    // synthetic since the marker has no source token.
+                    bindings.push(fname.clone());
+                    needs_span = true;
+                    body.push_str(&format!(
+                        "            for m in {} {{
+                out.push(Marker {{
+                    name: m,
+                    range: ByteRange::synthetic_empty(),
+                    span: *span,
+                }});
+            }}
+",
+                        fname
+                    ));
+                }
                 "Option<&'staticstr>" if fname == "marker" => {
                     // `Expression.marker: Option<&'static str>` carries a
                     // single optional marker name on the host element
@@ -330,7 +419,7 @@ fn flags_arm(v: &Variant) -> String {
     }
 
     if bindings.is_empty() {
-        return format!("        SyntaxTree::{} {{ .. }} => {{}}\n", name);
+        return format!("        {tree}::{name} {{ .. }} => {{}}\n");
     }
 
     if needs_span {
@@ -339,28 +428,28 @@ fn flags_arm(v: &Variant) -> String {
 
     let binding_list = bindings.join(", ");
     format!(
-        "        SyntaxTree::{} {{ {}, .. }} => {{
-{}
+        "        {tree}::{name} {{ {binding_list}, .. }} => {{
+{body}
         }}
-",
-        name, binding_list, body
+"
     )
 }
 
-fn render_range_of(en: &ItemEnum) -> String {
+fn render_range_of(en: &ItemEnum, tree: &str) -> String {
     let mut out = String::new();
-    out.push_str(
+    out.push_str(&format!(
         "/// Source byte range of this node. Used for verbatim-source
 /// recovery (`source[range]`) and for gap-text computation in the
 /// renderer. Every variant carries a `range: ByteRange` field.
-pub fn range_of(tree: &SyntaxTree) -> ByteRange {
-    match tree {
+pub fn range_of(tree: &{tree}) -> ByteRange {{
+    match tree {{
 ",
-    );
+        tree = tree,
+    ));
     for v in &en.variants {
         out.push_str(&format!(
-            "        SyntaxTree::{} {{ range, .. }} => *range,\n",
-            v.ident
+            "        {tree}::{name} {{ range, .. }} => *range,\n",
+            name = v.ident,
         ));
     }
     out.push_str(
@@ -371,20 +460,21 @@ pub fn range_of(tree: &SyntaxTree) -> ByteRange {
     out
 }
 
-fn render_span_of(en: &ItemEnum) -> String {
+fn render_span_of(en: &ItemEnum, tree: &str) -> String {
     let mut out = String::new();
-    out.push_str(
+    out.push_str(&format!(
         "/// Source-location span of this node. Used for XML attribute
 /// emission (`line` / `column` / `end_line` / `end_column` / `id`).
 /// Every variant carries a `span: Span` field.
-pub fn span_of(tree: &SyntaxTree) -> Span {
-    match tree {
+pub fn span_of(tree: &{tree}) -> Span {{
+    match tree {{
 ",
-    );
+        tree = tree,
+    ));
     for v in &en.variants {
         out.push_str(&format!(
-            "        SyntaxTree::{} {{ span, .. }} => *span,\n",
-            v.ident
+            "        {tree}::{name} {{ span, .. }} => *span,\n",
+            name = v.ident,
         ));
     }
     out.push_str(
@@ -395,27 +485,38 @@ pub fn span_of(tree: &SyntaxTree) -> Span {
     out
 }
 
-fn render_scalar_text_of(en: &ItemEnum) -> String {
+fn render_scalar_text_of(en: &ItemEnum, tree: &str) -> String {
     let mut out = String::new();
-    out.push_str(
+    out.push_str(&format!(
         "/// Stored text for scalar-leaf variants (`Name`, `Atom`, `Int`,
 /// `Float`, `String`, `True`, `False`, `None`, `Null`). Returns
 /// `None` for compound variants. The renderer uses this to emit
 /// leaf literals without consulting the source string (S13-Z1).
-pub fn scalar_text_of(tree: &SyntaxTree) -> Option<&str> {
-    match tree {
+pub fn scalar_text_of(tree: &{tree}) -> Option<&str> {{
+    match tree {{
 ",
-    );
+        tree = tree,
+    ));
     for v in &en.variants {
         // A variant counts as a scalar-text carrier when it has a
         // `text: String` field. Detected mechanically; no whitelist.
-        let has_text = find_field(v, "text")
-            .map(|f| type_str(&f.ty) == "String")
-            .unwrap_or(false);
-        if has_text {
+        // DataTree::String stores the unquoted content under `value`
+        // — handle that synonym too.
+        if let Some(text_field) = find_field(v, "text")
+            .filter(|f| type_str(&f.ty) == "String")
+        {
+            let fname = text_field.ident.as_ref().unwrap().to_string();
             out.push_str(&format!(
-                "        SyntaxTree::{} {{ text, .. }} => Some(text.as_str()),\n",
-                v.ident
+                "        {tree}::{name} {{ {fname}, .. }} => Some({fname}.as_str()),\n",
+                name = v.ident,
+            ));
+        } else if let Some(value_field) = find_field(v, "value")
+            .filter(|f| type_str(&f.ty) == "String")
+        {
+            let fname = value_field.ident.as_ref().unwrap().to_string();
+            out.push_str(&format!(
+                "        {tree}::{name} {{ {fname}, .. }} => Some({fname}.as_str()),\n",
+                name = v.ident,
             ));
         }
     }
@@ -444,20 +545,21 @@ pub fn scalar_text_of(tree: &SyntaxTree) -> Option<&str> {
 /// Other field types (markers, modifiers, ranges, strings, …) are
 /// ignored — they're shape metadata, not tree children. Output is
 /// sorted by `range.start` so consumers don't have to repeat it.
-fn render_children_of(en: &ItemEnum) -> String {
+fn render_children_of(en: &ItemEnum, tree: &str) -> String {
     let mut out = String::new();
-    out.push_str(
+    out.push_str(&format!(
         "/// Direct tree children of this node, in source order. Excludes
 /// synthetic render-time wrappers, modifier markers, and other shape
 /// metadata. Used by every variant-blind walker (`to_xot.rs`,
 /// `to_json.rs`, …) as the single source of truth for tree traversal.
-pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
-    let mut v: Vec<&SyntaxTree> = Vec::new();
-    match tree {
+pub fn children_of(tree: &{tree}) -> Vec<&{tree}> {{
+    let mut v: Vec<&{tree}> = Vec::new();
+    match tree {{
 ",
-    );
+        tree = tree,
+    ));
     for variant in &en.variants {
-        out.push_str(&children_arm(variant));
+        out.push_str(&children_arm(variant, tree));
     }
     out.push_str(
         "    }
@@ -469,67 +571,68 @@ pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
     out
 }
 
-fn children_arm(v: &Variant) -> String {
+fn children_arm(v: &Variant, tree: &str) -> String {
     let name = v.ident.to_string();
     let mut bindings: Vec<String> = Vec::new();
     let mut body = String::new();
+    let box_t = format!("Box<{}>", tree);
+    let opt_box_t = format!("Option<Box<{}>>", tree);
+    let vec_t = format!("Vec<{}>", tree);
 
     if let Fields::Named(named) = &v.fields {
         for field in &named.named {
             let Some(ident) = &field.ident else { continue };
             let fname = ident.to_string();
             let ty = type_str(&field.ty);
-            match ty.as_str() {
-                "Box<SyntaxTree>" => {
-                    bindings.push(fname.clone());
-                    body.push_str(&format!("            v.push({});\n", fname));
-                }
-                "Option<Box<SyntaxTree>>" => {
-                    bindings.push(fname.clone());
-                    body.push_str(&format!(
-                        "            if let Some(__t) = {} {{ v.push(__t); }}\n",
-                        fname
-                    ));
-                }
-                "Vec<SyntaxTree>" => {
-                    bindings.push(fname.clone());
-                    body.push_str(&format!(
-                        "            v.extend({}.iter());\n",
-                        fname
-                    ));
-                }
-                "Expression" => {
-                    bindings.push(fname.clone());
-                    body.push_str(&format!(
-                        "            v.push(&{}.inner);\n",
-                        fname
-                    ));
-                }
-                "Option<Expression>" => {
-                    bindings.push(fname.clone());
-                    body.push_str(&format!(
-                        "            if let Some(__e) = {} {{ v.push(&__e.inner); }}\n",
-                        fname
-                    ));
-                }
-                "LambdaBody" => {
-                    bindings.push(fname.clone());
-                    body.push_str(&format!(
-                        "            v.push({}.inner());\n",
-                        fname
-                    ));
-                }
-                "AccessReceiver" => {
-                    bindings.push(fname.clone());
-                    body.push_str(&format!(
-                        "            if let AccessReceiver::Instance(__t) = {} {{ v.push(__t); }}\n",
-                        fname
-                    ));
-                }
-                "Vec<AccessSegment>" => {
-                    bindings.push(fname.clone());
-                    body.push_str(&format!(
-                        "            for __s in {} {{
+            if ty == box_t {
+                bindings.push(fname.clone());
+                body.push_str(&format!("            v.push({});\n", fname));
+            } else if ty == opt_box_t {
+                bindings.push(fname.clone());
+                body.push_str(&format!(
+                    "            if let Some(__t) = {} {{ v.push(__t); }}\n",
+                    fname
+                ));
+            } else if ty == vec_t {
+                bindings.push(fname.clone());
+                body.push_str(&format!(
+                    "            v.extend({}.iter());\n",
+                    fname
+                ));
+            } else {
+                match ty.as_str() {
+                    "Expression" => {
+                        bindings.push(fname.clone());
+                        body.push_str(&format!(
+                            "            v.push(&{}.inner);\n",
+                            fname
+                        ));
+                    }
+                    "Option<Expression>" => {
+                        bindings.push(fname.clone());
+                        body.push_str(&format!(
+                            "            if let Some(__e) = {} {{ v.push(&__e.inner); }}\n",
+                            fname
+                        ));
+                    }
+                    "LambdaBody" => {
+                        bindings.push(fname.clone());
+                        body.push_str(&format!(
+                            "            v.push({}.inner());\n",
+                            fname
+                        ));
+                    }
+                    "AccessReceiver" => {
+                        bindings.push(fname.clone());
+                        body.push_str(&format!(
+                            "            if let AccessReceiver::Instance(__t) = {} {{ v.push(__t); }}\n",
+                            fname
+                        ));
+                    }
+                    "Vec<AccessSegment>" => {
+                        bindings.push(fname.clone());
+                        body.push_str(&format!(
+                            "            for __s in {} {{
                 match __s {{
                     AccessSegment::Member {{ .. }} => {{}}
                     AccessSegment::Index {{ indices, .. }} => v.extend(indices.iter()),
@@ -537,41 +640,42 @@ fn children_arm(v: &Variant) -> String {
                 }}
             }}
 ",
-                        fname
-                    ));
+                            fname
+                        ));
+                    }
+                    _ => {}
                 }
-                _ => {}
             }
         }
     }
 
     if bindings.is_empty() {
-        return format!("        SyntaxTree::{} {{ .. }} => {{}}\n", name);
+        return format!("        {tree}::{name} {{ .. }} => {{}}\n");
     }
 
     let binding_list = bindings.join(", ");
     format!(
-        "        SyntaxTree::{} {{ {}, .. }} => {{
-{}        }}
-",
-        name, binding_list, body
+        "        {tree}::{name} {{ {binding_list}, .. }} => {{
+{body}        }}
+"
     )
 }
 
-fn render_span_mut_of(en: &ItemEnum) -> String {
+fn render_span_mut_of(en: &ItemEnum, tree: &str) -> String {
     let mut out = String::new();
-    out.push_str(
+    out.push_str(&format!(
         "/// Mutable access to the source-location span. Used by
 /// `assign_ids` to stamp `NodeId`s into existing spans without
 /// rebuilding nodes. Delegates from `TreeNode::span_mut`.
-pub fn span_mut_of(tree: &mut SyntaxTree) -> &mut Span {
-    match tree {
+pub fn span_mut_of(tree: &mut {tree}) -> &mut Span {{
+    match tree {{
 ",
-    );
+        tree = tree,
+    ));
     for v in &en.variants {
         out.push_str(&format!(
-            "        SyntaxTree::{} {{ span, .. }} => span,\n",
-            v.ident
+            "        {tree}::{name} {{ span, .. }} => span,\n",
+            name = v.ident,
         ));
     }
     out.push_str(
@@ -585,18 +689,19 @@ pub fn span_mut_of(tree: &mut SyntaxTree) -> &mut Span {
 /// Mutable mirror of `children_of`. Same field-type rules as the
 /// immutable version, but produces `Vec<&mut SyntaxTree>` so callers
 /// can mutate sub-trees in place (used by editable-trees mutations).
-fn render_children_mut_of(en: &ItemEnum) -> String {
+fn render_children_mut_of(en: &ItemEnum, tree: &str) -> String {
     let mut out = String::new();
-    out.push_str(
+    out.push_str(&format!(
         "/// Mutable mirror of `children_of`. Source-sorted
-/// `Vec<&mut SyntaxTree>` covering every reachable sub-tree.
-pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
-    let mut v: Vec<&mut SyntaxTree> = Vec::new();
-    match tree {
+/// `Vec<&mut {tree}>` covering every reachable sub-tree.
+pub fn children_mut_of(tree: &mut {tree}) -> Vec<&mut {tree}> {{
+    let mut v: Vec<&mut {tree}> = Vec::new();
+    match tree {{
 ",
-    );
+        tree = tree,
+    ));
     for variant in &en.variants {
-        out.push_str(&children_mut_arm(variant));
+        out.push_str(&children_mut_arm(variant, tree));
     }
     out.push_str(
         "    }
@@ -608,38 +713,38 @@ pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
     out
 }
 
-fn children_mut_arm(v: &Variant) -> String {
+fn children_mut_arm(v: &Variant, tree: &str) -> String {
     let name = v.ident.to_string();
     let mut bindings: Vec<String> = Vec::new();
     let mut body = String::new();
+    let box_t = format!("Box<{}>", tree);
+    let opt_box_t = format!("Option<Box<{}>>", tree);
+    let vec_t = format!("Vec<{}>", tree);
 
     if let Fields::Named(named) = &v.fields {
         for field in &named.named {
             let Some(ident) = &field.ident else { continue };
             let fname = ident.to_string();
             let ty = type_str(&field.ty);
-            match ty.as_str() {
-                "Box<SyntaxTree>" => {
-                    bindings.push(fname.clone());
-                    body.push_str(&format!(
-                        "            v.push({}.as_mut());\n",
-                        fname
-                    ));
-                }
-                "Option<Box<SyntaxTree>>" => {
-                    bindings.push(fname.clone());
-                    body.push_str(&format!(
-                        "            if let Some(__t) = {} {{ v.push(__t.as_mut()); }}\n",
-                        fname
-                    ));
-                }
-                "Vec<SyntaxTree>" => {
-                    bindings.push(fname.clone());
-                    body.push_str(&format!(
-                        "            v.extend({}.iter_mut());\n",
-                        fname
-                    ));
-                }
+            if ty == box_t {
+                bindings.push(fname.clone());
+                body.push_str(&format!(
+                    "            v.push({}.as_mut());\n",
+                    fname
+                ));
+            } else if ty == opt_box_t {
+                bindings.push(fname.clone());
+                body.push_str(&format!(
+                    "            if let Some(__t) = {} {{ v.push(__t.as_mut()); }}\n",
+                    fname
+                ));
+            } else if ty == vec_t {
+                bindings.push(fname.clone());
+                body.push_str(&format!(
+                    "            v.extend({}.iter_mut());\n",
+                    fname
+                ));
+            } else { match ty.as_str() {
                 "Expression" => {
                     bindings.push(fname.clone());
                     body.push_str(&format!(
@@ -683,20 +788,19 @@ fn children_mut_arm(v: &Variant) -> String {
                     ));
                 }
                 _ => {}
-            }
+            } }
         }
     }
 
     if bindings.is_empty() {
-        return format!("        SyntaxTree::{} {{ .. }} => {{}}\n", name);
+        return format!("        {tree}::{name} {{ .. }} => {{}}\n");
     }
 
     let binding_list = bindings.join(", ");
     format!(
-        "        SyntaxTree::{} {{ {}, .. }} => {{
-{}        }}
-",
-        name, binding_list, body
+        "        {tree}::{name} {{ {binding_list}, .. }} => {{
+{body}        }}
+"
     )
 }
 
