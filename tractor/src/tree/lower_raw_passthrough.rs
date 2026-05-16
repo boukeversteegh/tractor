@@ -75,7 +75,22 @@ fn lower_inner(node: &RawNode, source: &str, include_anonymous: bool) -> SyntaxT
         .filter(|c| include_anonymous || c.is_named())
         .map(|c| lower_inner(c, source, include_anonymous))
         .collect();
-    SyntaxTree::Raw { kind, is_named, children, range, span }
+    if is_named {
+        SyntaxTree::Raw { kind, is_named, children, range, span }
+    } else {
+        // Anonymous tree-sitter tokens (punctuation, keywords) emit
+        // no wrapper element — their source bytes flow through via
+        // the gap-text path in the variant-blind walker. The `kind`
+        // is dropped because anonymous tokens have no useful kind
+        // name (`{`, `,`, `let`, ...).
+        let _ = kind;
+        SyntaxTree::Inline {
+            children,
+            list_name: None,
+            range,
+            span,
+        }
+    }
 }
 
 #[cfg(test)]

@@ -125,11 +125,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, range: _, span: _ } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, range: _, span: _ } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &["self", "super"]),
                             segments: vec![segment],
                             range,
@@ -173,11 +173,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, range: _, span: _ } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, range: _, span: _ } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &["self", "super"]),
                             segments: vec![segment],
                             range,
@@ -218,7 +218,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 None => Vec::new(),
             };
             // Chain folding: when the callee is itself an
-            // SyntaxTree::Access chain (e.g. `obj.foo()`, `a.b.c()`), absorb
+            // SyntaxTree::ObjectAccess chain (e.g. `obj.foo()`, `a.b.c()`), absorb
             // the call as the next segment instead of producing a
             // separate SyntaxTree::Call wrapping the chain. The last
             // AccessSegment::Member's name becomes the call's
@@ -228,7 +228,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             // Mirrors C#'s chain-inversion behaviour and matches the
             // imperative pipeline's chain shape.
             let callee_range = callee.range();
-            if let SyntaxTree::Access { receiver, mut segments, .. } = callee {
+            if let SyntaxTree::ObjectAccess { receiver, mut segments, .. } = callee {
                 // Absorb the trailing Member's name into a new Call
                 // segment, OR append a bare Call if no preceding member.
                 let last_member = if let Some(AccessSegment::Member { property_range, property_span, .. }) = segments.last() {
@@ -263,7 +263,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     }
                 };
                 segments.push(call_segment);
-                return SyntaxTree::Access { receiver, segments, range, span };
+                return SyntaxTree::ObjectAccess { receiver, segments, range, span };
             }
             SyntaxTree::Call {
                 callee: Box::new(callee),

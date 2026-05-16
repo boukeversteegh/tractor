@@ -437,7 +437,7 @@ pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax
             }
             out.push(')');
         }
-        SyntaxTree::Access { receiver, segments, .. } => {
+        SyntaxTree::ObjectAccess { receiver, segments, .. } => {
             match receiver {
                 AccessReceiver::Base { .. } => out.push_str("base"),
                 AccessReceiver::This { .. } => out.push_str("this"),

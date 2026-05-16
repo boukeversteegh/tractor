@@ -18,7 +18,7 @@ use crate::support::semantic::*;
 
 /// After chain inversion, TypeScript calls match the canonical
 /// shape: `<call>` directly contains the callee (no `<callee>`
-/// wrapper). Method calls become `<object[access]>` chains.
+/// wrapper). Method calls become `<object>` chains.
 #[test]
 fn typescript_callee() {
     claim("TypeScript plain call has the function name as a direct call child",
@@ -26,10 +26,10 @@ fn typescript_callee() {
         "//call/name='f'",
         1);
 
-    claim("TypeScript method call inverts to <object[access]> chain shape",
+    claim("TypeScript method call inverts to <object> chain shape",
         &mut parse_src("typescript", "console.log(x);\n"),
         &multi_xpath(r#"
-            //object[access]
+            //object
                 [name='console']
                 [call/name='log']
         "#),
@@ -44,7 +44,7 @@ fn typescript_callee() {
 /// (`member_access_expression`, `field_access`, `member_expression`).
 #[test]
 fn csharp_member() {
-    claim("C# method call inverts to <object[access]> chain shape (iter 245)",
+    claim("C# method call inverts to <object> chain shape (iter 245)",
         &mut parse_src("csharp", r#"
         class X {
             void f() {
@@ -53,7 +53,7 @@ fn csharp_member() {
         }
     "#),
         &multi_xpath(r#"
-            //object[access]
+            //object
                 [name='obj']
                 [call/name='Method']
         "#),
@@ -130,10 +130,10 @@ fn rust_field_unification() {
         "#),
         1);
 
-    claim("field access expression inverts to <object[access]> chain (iter 248)",
+    claim("field access expression inverts to <object> chain (iter 248)",
         &mut tree,
         &multi_xpath(r#"
-            //object[access]
+            //object
                 [name='p']
                 [member/name='x']
         "#),

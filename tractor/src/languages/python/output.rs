@@ -28,7 +28,7 @@ pub enum TractorNode {
     Import, From, Assert, Delete, Global, Nonlocal,
     // Access-receiver keyword markers — emitted as empty marker
     // elements when an Access chain's receiver is `self` or `super`.
-    // See `AccessReceiver` typing on `SyntaxTree::Access`.
+    // See `AccessReceiver` typing on `SyntaxTree::ObjectAccess`.
     #[strum(serialize = "self")]
     Self_,
     Super,

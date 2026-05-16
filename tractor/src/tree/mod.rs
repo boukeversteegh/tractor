@@ -44,7 +44,7 @@
 //! - `render` is mechanical: walks the tree and emits the corresponding
 //!   XML. No decisions live here.
 //! - Chain inversion is part of the lowering: every
-//!   `lower_<lang>_root` constructs left-deep [`SyntaxTree::Access`] directly
+//!   `lower_<lang>_root` constructs left-deep [`SyntaxTree::ObjectAccess`] directly
 //!   when it encounters chained member / index / call expressions —
 //!   no separate post-walk step exists.
 //! - Other cross-cutting normalisations (expression-host wrapping,

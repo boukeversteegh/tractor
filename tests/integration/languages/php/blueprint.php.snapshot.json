@@ -84,7 +84,7 @@
                 "assign": {
                   "expression": [
                     {
-                      "access": {
+                      "object": {
                         "variable": {
                           "name": "this"
                         }
@@ -102,7 +102,7 @@
                 "assign": {
                   "expression": [
                     {
-                      "access": {
+                      "object": {
                         "variable": {
                           "name": "this"
                         }
@@ -190,7 +190,7 @@
                       },
                       "right": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "variable": {
                               "name": "this"
                             }
@@ -208,7 +208,7 @@
                   "binary": {
                     "left": {
                       "expression": {
-                        "access": {
+                        "object": {
                           "variable": {
                             "name": "this"
                           }
@@ -253,7 +253,7 @@
                     "binary": {
                       "left": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "variable": {
                               "name": "this"
                             }
@@ -498,7 +498,7 @@
                       "assign": {
                         "expression": [
                           {
-                            "access": {
+                            "object": {
                               "variable": [
                                 {
                                   "name": "results"
@@ -510,7 +510,7 @@
                             }
                           },
                           {
-                            "access": {
+                            "object": {
                               "argument": {
                                 "variable": {
                                   "name": "item"
@@ -978,7 +978,7 @@
                   }
                 },
                 {
-                  "access": {
+                  "object": {
                     "variable": {
                       "name": "thing"
                     }
@@ -1110,7 +1110,7 @@
                   }
                 },
                 {
-                  "access": {
+                  "object": {
                     "int": "0",
                     "variable": {
                       "name": "items"
@@ -1500,7 +1500,7 @@
     {
       "body": {
         "return": {
-          "access": {
+          "object": {
             "variable": {
               "name": "thing"
             }

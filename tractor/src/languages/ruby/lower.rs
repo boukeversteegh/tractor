@@ -328,7 +328,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             }
         }
         // Ruby `.foo` and `&.foo` (safe-nav) — every member access is a
-        // call. Fold into SyntaxTree::Access mirroring TS/Rust/Go/PHP.
+        // call. Fold into SyntaxTree::ObjectAccess mirroring TS/Rust/Go/PHP.
         "call" => {
             let receiver_node = node.child_by_field_name("receiver");
             let method_node = node.child_by_field_name("method");
@@ -357,11 +357,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, .. } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, .. } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &["self", "super"]),
                             segments: vec![segment],
                             range, span,

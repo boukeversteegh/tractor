@@ -541,7 +541,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "inc_statement" => go_inc_dec(node, "increment", "++", source),
         "dec_statement" => go_inc_dec(node, "decrement", "--", source),
         // Chain inversion for Go: selector_expression (`obj.field`) +
-        // call_expression — fold into SyntaxTree::Access mirroring TS/Rust.
+        // call_expression — fold into SyntaxTree::ObjectAccess mirroring TS/Rust.
         "selector_expression" => {
             let operand_node = node.child_by_field_name("operand");
             let field_node = node.child_by_field_name("field");
@@ -559,11 +559,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, .. } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, .. } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &[]),
                             segments: vec![segment],
                             range, span,
@@ -586,7 +586,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 Some(f) => {
                     let callee = lower_node(f, source);
                     let callee_range = callee.range();
-                    if let SyntaxTree::Access { receiver, mut segments, .. } = callee {
+                    if let SyntaxTree::ObjectAccess { receiver, mut segments, .. } = callee {
                         let last_member = if let Some(AccessSegment::Member {
                             property_range, property_span, ..
                         }) = segments.last() {
@@ -609,7 +609,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             }
                         };
                         segments.push(call_segment);
-                        return SyntaxTree::Access { receiver, segments, range, span };
+                        return SyntaxTree::ObjectAccess { receiver, segments, range, span };
                     }
                     SyntaxTree::Call { callee: Box::new(callee), arguments, range, span }
                 }
@@ -619,7 +619,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "type_conversion_expression" => simple_statement_marked(node, "call", vec![Marker::implicit("type")], source),
         "type_instantiation_expression" => simple_statement_marked(node, "type", vec![Marker::implicit("generic")], source),
         "index_expression" => {
-            // `arr[i]` — fold into `SyntaxTree::Access { receiver, segments: [Index] }`
+            // `arr[i]` — fold into `SyntaxTree::ObjectAccess { receiver, segments: [Index] }`
             // so single-step bracket access produces the same
             // `<object[access]><index>...</index></object>` shape as a
             // multi-step chain. Mirrors TypeScript / C# / Rust.
@@ -634,11 +634,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, .. } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, .. } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &[]),
                             segments: vec![segment],
                             range,
@@ -650,7 +650,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             }
         }
         "slice_expression" => {
-            // `s[i:j]` / `s[i:j:k]` — chain-fold into SyntaxTree::Access only
+            // `s[i:j]` / `s[i:j:k]` — chain-fold into SyntaxTree::ObjectAccess only
             // when bounds exist. Full-slice `s[:]` stays un-inverted
             // (renders as `<index[slice]><object>s</object></index>`)
             // matching the imperative pipeline shape.
@@ -750,11 +750,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, .. } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, .. } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &[]),
                             segments: vec![segment],
                             range, span,

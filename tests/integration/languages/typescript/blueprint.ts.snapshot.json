@@ -125,7 +125,7 @@
             "assign": {
               "expression": [
                 {
-                  "access": {
+                  "object": {
                     "name": "StaticBlock"
                   }
                 },
@@ -272,7 +272,7 @@
             }
           },
           "right": {
-            "generic_type": {
+            "type": {
               "name": "Array",
               "type": {
                 "infer": true,
@@ -523,7 +523,7 @@
               "protected": true,
               "readonly": true,
               "expression": {
-                "access": {
+                "object": {
                   "name": "Date"
                 }
               },
@@ -539,14 +539,14 @@
                   "name": "Map"
                 }
               },
-              "generic_type": {
+              "name": "_cache",
+              "type": {
                 "name": [
                   "Map",
                   "string",
                   "T"
                 ]
-              },
-              "name": "_cache"
+              }
             }
           ],
           "method": [
@@ -590,7 +590,7 @@
               "body": {
                 "return": {
                   "expression": {
-                    "access": {
+                    "object": {
                       "this": "this"
                     }
                   }
@@ -608,7 +608,7 @@
               "set": true,
               "body": {
                 "expression": {
-                  "access": {
+                  "object": {
                     "name": "value",
                     "string": "\"primary\"",
                     "this": "this"
@@ -628,7 +628,7 @@
               "public": true,
               "body": {
                 "expression": {
-                  "access": {
+                  "object": {
                     "name": [
                       "key",
                       "value"
@@ -698,7 +698,7 @@
                   {
                     "unary": {
                       "postfix": true,
-                      "access": {
+                      "object": {
                         "name": "Widget"
                       }
                     }
@@ -753,7 +753,7 @@
                       "binary": {
                         "left": {
                           "expression": {
-                            "access": {
+                            "object": {
                               "number": "0",
                               "this": "this"
                             }
@@ -789,7 +789,7 @@
                     },
                     "right": {
                       "expression": {
-                        "access": {
+                        "object": {
                           "this": "this"
                         }
                       }
@@ -798,11 +798,11 @@
                   "body": {
                     "yield": {
                       "list": {
-                        "access": {
+                        "name": "i",
+                        "object": {
                           "name": "i",
                           "this": "this"
-                        },
-                        "name": "i"
+                        }
                       }
                     }
                   },
@@ -823,7 +823,7 @@
               },
               "name": "entries",
               "returns": {
-                "generic_type": {
+                "type": {
                   "name": "Generator",
                   "type": {
                     "tuple": true,
@@ -871,7 +871,7 @@
                     },
                     "return": {
                       "expression": {
-                        "access": {
+                        "object": {
                           "this": "this"
                         }
                       }
@@ -913,7 +913,7 @@
                   "finally": {
                     "body": {
                       "expression": {
-                        "access": {
+                        "object": {
                           "this": "this"
                         }
                       }
@@ -943,7 +943,7 @@
                 }
               ],
               "returns": {
-                "generic_type": {
+                "type": {
                   "name": "Promise",
                   "type": {
                     "array": true,
@@ -977,7 +977,7 @@
           "name": "T",
           "type": {
             "default": true,
-            "generic_type": {
+            "type": {
               "name": [
                 "Shape",
                 "number"
@@ -999,7 +999,7 @@
                     "expression": [
                       {
                         "nonnull": {
-                          "access": {
+                          "object": {
                             "name": [
                               "obj",
                               "k"
@@ -1043,7 +1043,7 @@
               },
               "right": {
                 "expression": {
-                  "access": {
+                  "object": {
                     "name": [
                       "Object",
                       "obj"
@@ -1228,14 +1228,14 @@
             },
             {
               "const": true,
-              "generic_type": {
+              "name": "obj",
+              "type": {
                 "name": [
                   "Record",
                   "string",
                   "number"
                 ]
               },
-              "name": "obj",
               "value": {
                 "expression": {
                   "object": {
@@ -1475,7 +1475,7 @@
             },
             "value": {
               "expression": {
-                "access": {
+                "object": {
                   "call": {
                     "name": [
                       "String",
@@ -1532,7 +1532,7 @@
                         }
                       },
                       {
-                        "access": {
+                        "object": {
                           "name": "spread"
                         }
                       }
@@ -1607,7 +1607,7 @@
         }
       ],
       "returns": {
-        "generic_type": {
+        "type": {
           "name": [
             "Promise",
             "Greeting"
@@ -1669,7 +1669,7 @@
             "binary": {
               "left": {
                 "expression": {
-                  "access": {
+                  "object": {
                     "name": "new.target"
                   }
                 }
@@ -1936,7 +1936,7 @@
               },
               "right": {
                 "expression": {
-                  "access": {
+                  "object": {
                     "name": "rest"
                   }
                 }
@@ -2082,7 +2082,7 @@
             ],
             "value": {
               "expression": {
-                "access": {
+                "object": {
                   "arrow": {
                     "parameter": [
                       {
@@ -2122,7 +2122,7 @@
                               "binary": {
                                 "left": {
                                   "expression": {
-                                    "access": {
+                                    "object": {
                                       "name": [
                                         "vals",
                                         "i"
@@ -2177,7 +2177,7 @@
             },
             "value": {
               "expression": {
-                "access": {
+                "object": {
                   "name": "xs",
                   "number": "0"
                 }
@@ -2196,7 +2196,7 @@
       },
       "value": {
         "expression": {
-          "access": {
+          "object": {
             "arrow": {
               "parameter": {
                 "required": true,
@@ -2382,7 +2382,7 @@
       "name": "url",
       "value": {
         "expression": {
-          "access": {
+          "object": {
             "name": "import.meta"
           }
         }
@@ -2393,7 +2393,7 @@
       "name": "nestedVal",
       "value": {
         "expression": {
-          "access": {
+          "object": {
             "name": "StaticBlock"
           }
         }

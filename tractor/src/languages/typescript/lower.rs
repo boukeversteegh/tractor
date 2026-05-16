@@ -893,16 +893,16 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, .. } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, .. } => {
                             segments.push(segment);
-                            SyntaxTree::Access {
+                            SyntaxTree::ObjectAccess {
                                 receiver,
                                 segments,
                                 range,
                                 span,
                             }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "super"]),
                             segments: vec![segment],
                             range,
@@ -930,7 +930,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 Some(f) => {
                     let callee = lower_node(f, source);
                     let callee_range = callee.range();
-                    if let SyntaxTree::Access { receiver, mut segments, .. } = callee {
+                    if let SyntaxTree::ObjectAccess { receiver, mut segments, .. } = callee {
                         let last_member = if let Some(AccessSegment::Member {
                             property_range, property_span, ..
                         }) = segments.last() {
@@ -957,7 +957,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             }
                         };
                         segments.push(call_segment);
-                        return SyntaxTree::Access { receiver, segments, range, span };
+                        return SyntaxTree::ObjectAccess { receiver, segments, range, span };
                     }
                     SyntaxTree::Call {
                         callee: Box::new(callee),
@@ -982,11 +982,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, .. } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, .. } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "super"]),
                             segments: vec![segment],
                             range,

@@ -58,7 +58,7 @@
     {
       "body": "pass",
       "generic": {
-        "type_parameter": {
+        "type": {
           "name": "T"
         }
       },
@@ -110,7 +110,7 @@
                 }
               }
             ],
-            "generic_type": {
+            "type": {
               "name": [
                 "list",
                 "str"
@@ -167,7 +167,7 @@
               "assign": {
                 "expression": [
                   {
-                    "access": "self.name"
+                    "object": "self.name"
                   },
                   {
                     "name": "name"
@@ -208,7 +208,7 @@
                     "right": {
                       "expression": {
                         "comparison": {
-                          "access": [
+                          "object": [
                             "self.name",
                             {
                               "name": "other"
@@ -442,7 +442,7 @@
         }
       },
       "generic": {
-        "type_parameter": {
+        "type": {
           "name": "T"
         }
       },
@@ -569,32 +569,32 @@
           }
         },
         {
-          "generic_type": {
+          "name": "y",
+          "none": "None",
+          "type": {
             "name": [
               "Optional",
               "str"
             ]
-          },
-          "name": "y",
-          "none": "None"
+          }
         },
         {
           "name": "z",
           "none": "None",
           "type": {
             "union": true,
-            "generic_type": {
+            "none": "None",
+            "type": {
               "name": [
                 "list",
                 "int"
               ]
-            },
-            "none": "None"
+            }
           }
         }
       ],
       "returns": {
-        "generic_type": {
+        "type": {
           "name": [
             "Union",
             "int"
@@ -624,7 +624,8 @@
                   "name": "data"
                 },
                 {
-                  "access": {
+                  "await": true,
+                  "object": {
                     "name": "conn"
                   }
                 }
@@ -1017,12 +1018,12 @@
           "body": {
             "expression": [
               {
-                "access": {
+                "object": {
                   "name": "fa"
                 }
               },
               {
-                "access": {
+                "object": {
                   "name": "fb"
                 }
               }
@@ -1200,13 +1201,13 @@
                 "dict": {
                   "comprehension": true,
                   "for": {
-                    "access": {
-                      "name": "data"
-                    },
                     "name": [
                       "k",
                       "v"
-                    ]
+                    ],
+                    "object": {
+                      "name": "data"
+                    }
                   },
                   "name": "v",
                   "pair": {
@@ -1356,7 +1357,7 @@
                   },
                   "then": {
                     "expression": {
-                      "access": {
+                      "object": {
                         "int": "0",
                         "name": "items"
                       }
@@ -1884,7 +1885,7 @@
   ],
   "type_alias": [
     {
-      "generic_type": [
+      "type": [
         {
           "name": [
             "Vec",
@@ -1915,13 +1916,13 @@
       "name": "IntOrStr"
     },
     {
-      "generic_type": [
+      "type": [
         {
           "list_splat": {
             "name": "Ts"
           },
           "name": "Pair",
-          "type_parameter": [
+          "type": [
             {
               "name": [
                 "T",
@@ -1952,10 +1953,10 @@
       ]
     },
     {
-      "access": {
+      "name": "Containing",
+      "object": {
         "name": "OrderedDict"
-      },
-      "name": "Containing"
+      }
     }
   ]
 }

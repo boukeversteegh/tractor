@@ -464,7 +464,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 Some(f) => {
                     let callee = lower_node(f, source);
                     let callee_range = callee.range();
-                    if let SyntaxTree::Access { receiver, mut segments, .. } = callee {
+                    if let SyntaxTree::ObjectAccess { receiver, mut segments, .. } = callee {
                         let last_member = if let Some(AccessSegment::Member {
                             property_range, property_span, ..
                         }) = segments.last() {
@@ -487,7 +487,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             }
                         };
                         segments.push(call_segment);
-                        return SyntaxTree::Access { receiver, segments, range, span };
+                        return SyntaxTree::ObjectAccess { receiver, segments, range, span };
                     }
                     SyntaxTree::Call { callee: Box::new(callee), arguments, range, span }
                 }
@@ -495,7 +495,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             }
         }
         "scoped_call_expression" => simple_statement_marked(node, "call", vec![Marker::implicit("static")], source),
-        // `$obj->method(args)` — fold into SyntaxTree::Access with a Call
+        // `$obj->method(args)` — fold into SyntaxTree::ObjectAccess with a Call
         // segment carrying the method name. tree-sitter PHP fields:
         // object, name, arguments.
         "member_call_expression" | "nullsafe_member_call_expression" => {
@@ -521,11 +521,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, .. } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, .. } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "self"]),
                             segments: vec![segment],
                             range, span,
@@ -552,11 +552,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, .. } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, .. } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "self"]),
                             segments: vec![segment],
                             range, span,
@@ -570,7 +570,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "nullsafe_member_access_expression" => simple_statement_marked(node, "member", vec![Marker::implicit("nullsafe")], source),
         "class_constant_access_expression" => simple_statement_marked(node, "member", vec![Marker::implicit("static")], source),
         "subscript_expression" => {
-            // `$arr[0]` — fold into `SyntaxTree::Access { receiver, segments: [Index] }`
+            // `$arr[0]` — fold into `SyntaxTree::ObjectAccess { receiver, segments: [Index] }`
             // so single-step bracket access produces the same
             // `<object[access]><index>...</index></object>` shape as a
             // multi-step chain. Mirrors TypeScript / C# / Go.
@@ -594,11 +594,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, .. } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, .. } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "self"]),
                             segments: vec![segment],
                             range, span,

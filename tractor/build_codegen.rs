@@ -101,7 +101,9 @@ use serde_json::Value;
 #[allow(unused_imports)]
 use super::types::{
     element_name_for_accessor, element_name_for_atom,
-    element_name_for_field_wrap, element_name_for_simple_statement,
+    element_name_for_field_wrap, element_name_for_generic_type,
+    element_name_for_object_access, element_name_for_raw,
+    element_name_for_simple_statement, element_name_for_type_parameter,
 };
 
 ";
@@ -298,6 +300,27 @@ fn flags_arm(v: &Variant) -> String {
                     bindings.push(fname.clone());
                     body.push_str(&format!(
                         "            for m in {} {{ out.push(*m); }}\n",
+                        fname
+                    ));
+                }
+                "Option<&'staticstr>" if fname == "marker" => {
+                    // `Expression.marker: Option<&'static str>` carries a
+                    // single optional marker name on the host element
+                    // (`non_null`, `ref`, etc. — Principle #15). The
+                    // synthetic span is the host's own span; the
+                    // walker's positional sort then keeps the marker
+                    // first in the element body (range_start = 0).
+                    bindings.push(fname.clone());
+                    needs_span = true;
+                    body.push_str(&format!(
+                        "            if let Some(name) = {} {{
+                out.push(Marker {{
+                    name,
+                    range: ByteRange::synthetic_empty(),
+                    span: *span,
+                }});
+            }}
+",
                         fname
                     ));
                 }

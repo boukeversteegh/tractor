@@ -21,7 +21,7 @@ program/
   │   ├─ generic/name = "T"
   │   └─ type[conditional]/
   │       ├─ left/type/name = "T"
-  │       ├─ right/generic_type/
+  │       ├─ right/type/
   │       │   ├─ name = "Array"
   │       │   └─ type[infer]/name = "U"
   │       ├─ then/type/name = "U"
@@ -120,10 +120,10 @@ program/
   │       ├─ field[protected and readonly]/
   │       │   ├─ name = "createdAt"
   │       │   ├─ type/name = "number"
-  │       │   └─ expression/access/name = "Date"
+  │       │   └─ expression/object/name = "Date"
   │       ├─ field[private]/
   │       │   ├─ name = "_cache"
-  │       │   ├─ generic_type/
+  │       │   ├─ type/
   │       │   │   ├─ name = "Map"
   │       │   │   ├─ name = "string"
   │       │   │   └─ name = "T"
@@ -143,13 +143,13 @@ program/
   │       ├─ method[public and get]/
   │       │   ├─ name = "cacheSize"
   │       │   ├─ returns/type/name = "number"
-  │       │   └─ body/return/expression/access/this = "this"
+  │       │   └─ body/return/expression/object/this = "this"
   │       ├─ method[public and set]/
   │       │   ├─ name = "primary"
   │       │   ├─ parameter[required]/
   │       │   │   ├─ name = "value"
   │       │   │   └─ type/name = "T"
-  │       │   └─ body/expression/access/
+  │       │   └─ body/expression/object/
   │       │       ├─ this = "this"
   │       │       ├─ string = "\"primary\""
   │       │       └─ name = "value"
@@ -162,7 +162,7 @@ program/
   │           │   ├─ name = "value"
   │           │   └─ type/name = "T"
   │           ├─ returns/type/name = "void"
-  │           └─ body/expression/access/
+  │           └─ body/expression/object/
   │               ├─ this = "this"
   │               ├─ name = "key"
   │               └─ name = "value"
@@ -171,7 +171,7 @@ program/
   │   ├─ generic/
   │   │   ├─ name = "T"
   │   │   ├─ extends/type/name = "Shape"
-  │   │   └─ type[default]/generic_type/
+  │   │   └─ type[default]/type/
   │   │       ├─ name = "Shape"
   │   │       └─ name = "number"
   │   ├─ extends/type/name = "Base"
@@ -193,7 +193,7 @@ program/
   │       │       ├─ expression/call/
   │       │       │   ├─ super = "super"
   │       │       │   └─ name = "name"
-  │       │       └─ expression/unary[postfix]/access/name = "Widget"
+  │       │       └─ expression/unary[postfix]/object/name = "Widget"
   │       ├─ method[public and override]/
   │       │   ├─ name = "render"
   │       │   ├─ returns/type/name = "string"
@@ -201,7 +201,7 @@ program/
   │       │       ├─ variable[const]/
   │       │       │   ├─ name = "first"
   │       │       │   └─ value/expression/binary/
-  │       │       │       ├─ left/expression/access/
+  │       │       │       ├─ left/expression/object/
   │       │       │       │   ├─ this = "this"
   │       │       │       │   └─ number = "0"
   │       │       │       └─ right/expression/string = "\"unnamed\""
@@ -211,7 +211,7 @@ program/
   │       │           └─ string = ">"
   │       ├─ method[public and generator]/
   │       │   ├─ name = "entries"
-  │       │   ├─ returns/generic_type/
+  │       │   ├─ returns/type/
   │       │   │   ├─ name = "Generator"
   │       │   │   └─ type[tuple]/
   │       │   │       ├─ type/name = "number"
@@ -222,11 +222,11 @@ program/
   │       │       │   └─ value/expression/number = "0"
   │       │       ├─ binary/
   │       │       │   ├─ left/expression/name = "i"
-  │       │       │   └─ right/expression/access/this = "this"
+  │       │       │   └─ right/expression/object/this = "this"
   │       │       ├─ unary[postfix]/name = "i"
   │       │       └─ body/yield/list/
   │       │           ├─ name = "i"
-  │       │           └─ access/
+  │       │           └─ object/
   │       │               ├─ this = "this"
   │       │               └─ name = "i"
   │       └─ method[public and async]/
@@ -237,7 +237,7 @@ program/
   │           ├─ parameter[required]/
   │           │   ├─ rest/name = "extra"
   │           │   └─ type[array]/name = "string"
-  │           ├─ returns/generic_type/
+  │           ├─ returns/type/
   │           │   ├─ name = "Promise"
   │           │   └─ type[array]/name = "T"
   │           └─ body/try/
@@ -253,13 +253,13 @@ program/
   │               │   │   └─ body/expression/await/call/
   │               │   │       ├─ name = "fetch"
   │               │   │       └─ name = "u"
-  │               │   └─ return/expression/access/this = "this"
+  │               │   └─ return/expression/object/this = "this"
   │               ├─ catch/
   │               │   ├─ name = "e"
   │               │   └─ body/throw/expression/as/
   │               │       ├─ name = "e"
   │               │       └─ name = "Error"
-  │               └─ finally/body/expression/access/this = "this"
+  │               └─ finally/body/expression/object/this = "this"
   ├─ function/
   │   ├─ name = "isShape"
   │   ├─ parameter[required]/
@@ -288,7 +288,7 @@ program/
   │       ├─ parameter[required]/
   │       │   ├─ rest/name = "vals"
   │       │   └─ type[array]/name = "unknown"
-  │       └─ value/expression/access/
+  │       └─ value/expression/object/
   │           ├─ name = "parts"
   │           ├─ arrow/
   │           │   ├─ parameter[required]/name = "acc"
@@ -299,7 +299,7 @@ program/
   │           │       │   ├─ left/expression/name = "acc"
   │           │       │   └─ right/expression/name = "p"
   │           │       └─ right/expression/binary/
-  │           │           ├─ left/expression/access/
+  │           │           ├─ left/expression/object/
   │           │           │   ├─ name = "vals"
   │           │           │   └─ name = "i"
   │           │           └─ right/expression/string = "\"\""
@@ -328,7 +328,7 @@ program/
   │   │   │       ├─ name = "label"
   │   │   │       └─ type/name = "string"
   │   │   └─ object[literal] = "{}"
-  │   ├─ returns/generic_type/
+  │   ├─ returns/type/
   │   │   ├─ name = "Promise"
   │   │   └─ name = "Greeting"
   │   └─ body/
@@ -336,7 +336,7 @@ program/
   │       │   ├─ pattern[array]/
   │       │   │   ├─ name = "head"
   │       │   │   └─ rest/name = "rest"
-  │       │   └─ value/expression/access/
+  │       │   └─ value/expression/object/
   │       │       ├─ call/
   │       │       │   ├─ name = "String"
   │       │       │   └─ name = "input"
@@ -359,7 +359,7 @@ program/
   │       │       │   │   ├─ left/expression/name = "label"
   │       │       │   │   └─ right/expression/string = "\"world\""
   │       │       │   ├─ string = "("
-  │       │       │   ├─ interpolation/access/name = "spread"
+  │       │       │   ├─ interpolation/object/name = "spread"
   │       │       │   └─ string = ")"
   │       │       └─ name = "Greeting"
   │       └─ return/expression/as/
@@ -416,7 +416,7 @@ program/
   │       │       └─ break = "break;"
   │       ├─ variable[const]/
   │       │   ├─ name = "obj"
-  │       │   ├─ generic_type/
+  │       │   ├─ type/
   │       │   │   ├─ name = "Record"
   │       │   │   ├─ name = "string"
   │       │   │   └─ name = "number"
@@ -431,13 +431,13 @@ program/
   │       │   ├─ left/expression/name = "k"
   │       │   ├─ right/expression/name = "obj"
   │       │   └─ body/expression/assign/
-  │       │       ├─ expression/nonnull/access/
+  │       │       ├─ expression/nonnull/object/
   │       │       │   ├─ name = "obj"
   │       │       │   └─ name = "k"
   │       │       └─ expression/number = "1"
   │       ├─ for/
   │       │   ├─ left/expression/pattern[array]/name = "v"
-  │       │   ├─ right/expression/access/
+  │       │   ├─ right/expression/object/
   │       │   │   ├─ name = "Object"
   │       │   │   └─ name = "obj"
   │       │   └─ body/expression/unary/name = "v"
@@ -459,13 +459,13 @@ program/
   │       ├─ returns/type[union]/
   │       │   ├─ name = "U"
   │       │   └─ type[literal]/name = "undefined"
-  │       └─ value/expression/access/
+  │       └─ value/expression/object/
   │           ├─ name = "xs"
   │           └─ number = "0"
   ├─ variable[const]/
   │   ├─ name = "doubled"
   │   ├─ type[array]/name = "number"
-  │   └─ value/expression/access/
+  │   └─ value/expression/object/
   │       ├─ list/
   │       │   ├─ number = "1"
   │       │   ├─ number = "2"
@@ -580,7 +580,7 @@ program/
   │       │   ├─ name = "counter"
   │       │   └─ expression/number = "0"
   │       └─ block[static]/body/expression/assign/
-  │           ├─ expression/access/name = "StaticBlock"
+  │           ├─ expression/object/name = "StaticBlock"
   │           └─ expression/number = "7"
   ├─ comment[leading] = "// Asserts / type predicate annotations."
   ├─ function/
@@ -612,14 +612,14 @@ program/
   ├─ comment[leading] = "// `import.meta` / `new.target` meta-properties."
   ├─ variable[const]/
   │   ├─ name = "url"
-  │   └─ value/expression/access/name = "import.meta"
+  │   └─ value/expression/object/name = "import.meta"
   ├─ function/
   │   ├─ name = "MetaCtor"
   │   ├─ parameter[required]/
   │   │   ├─ this = "this"
   │   │   └─ type/name = "unknown"
   │   └─ body/return/expression/binary/
-  │       ├─ left/expression/access/name = "new.target"
+  │       ├─ left/expression/object/name = "new.target"
   │       └─ right/expression/string = "\"\""
   ├─ comment[leading] = "// Nested type / value identifiers."
   ├─ alias/
@@ -629,7 +629,7 @@ program/
   │       └─ type[literal]/string = "\"counter\""
   ├─ variable[const]/
   │   ├─ name = "nestedVal"
-  │   └─ value/expression/access/name = "StaticBlock"
+  │   └─ value/expression/object/name = "StaticBlock"
   ├─ comment[leading] = "// Regex literal + flags."
   ├─ variable[const]/
   │   ├─ name = "pattern"
@@ -726,7 +726,7 @@ program/
   │       │   │   ├─ left/expression/name = "aa"
   │       │   │   └─ right/expression/name = "bb"
   │       │   └─ right/expression/name = "c"
-  │       └─ right/expression/access/name = "rest"
+  │       └─ right/expression/object/name = "rest"
   ├─ expression/unary/name = "controlOdds"
   ├─ expression/unary/name = "destructure"
   ├─ expression/unary/name = "asserted"

@@ -131,7 +131,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         //     member_binding_expression(.b)
         //       identifier(b)
         //
-        // Architectural payoff: lower this to the SAME `SyntaxTree::Access`
+        // Architectural payoff: lower this to the SAME `SyntaxTree::ObjectAccess`
         // shape as regular `.b`, with `optional: true` on the
         // segment. No special chain-inversion adapter, no
         // pre-pass to undo tree-sitter's structure, no
@@ -168,11 +168,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 }
             }
             match object_ir {
-                SyntaxTree::Access { receiver, mut segments, range: _, span: _ } => {
+                SyntaxTree::ObjectAccess { receiver, mut segments, range: _, span: _ } => {
                     segments.extend(new_segments);
-                    SyntaxTree::Access { receiver, segments, range, span }
+                    SyntaxTree::ObjectAccess { receiver, segments, range, span }
                 }
-                other => SyntaxTree::Access {
+                other => SyntaxTree::ObjectAccess {
                     receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "base"]),
                     segments: new_segments,
                     range,
@@ -1628,11 +1628,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, range: _, span: _ } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, range: _, span: _ } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "base"]),
                             segments: vec![segment],
                             range,
@@ -1683,11 +1683,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, range: _, span: _ } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, range: _, span: _ } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &["this", "base"]),
                             segments: vec![segment],
                             range,
@@ -1746,7 +1746,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             // `<object[access]><name>obj</name><call><name>Method</name>...</call>`
             // shape. Otherwise standalone Call.
             match callee {
-                SyntaxTree::Access { receiver, mut segments, range: _, span: _ } => {
+                SyntaxTree::ObjectAccess { receiver, mut segments, range: _, span: _ } => {
                     // Extract method name from the trailing Member, if
                     // any, and shorten that segment's range so the
                     // call's range starts where the member did.
@@ -1769,7 +1769,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         range: segment_range,
                         span,
                     });
-                    SyntaxTree::Access { receiver, segments, range, span }
+                    SyntaxTree::ObjectAccess { receiver, segments, range, span }
                 }
                 callee => SyntaxTree::Call {
                     callee: Box::new(callee),

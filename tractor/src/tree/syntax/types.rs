@@ -462,8 +462,15 @@ pub enum SyntaxTree {
 
     /// `<object>` host for receiver-bearing access chains
     /// (member / index / call). Iter 345 renamed `subscript` to
-    /// `index`; chain inversion produces the same `<object[access]>`
-    /// shape for member and index access uniformly (Principle #5).
+    /// `index`; chain inversion produces the same `<object>` shape
+    /// for member and index access uniformly (Principle #5).
+    ///
+    /// The variant is named `ObjectAccess` for semantic clarity in
+    /// the typed tree (vs. the visibility-level `Access` enum and
+    /// the receiver-kind `AccessReceiver` enum that live next to
+    /// it); the `@element_name` override below renders it as plain
+    /// `<object>` so XPath queries — and the existing renderer
+    /// vocabulary — keep working against the conventional shape.
     ///
     /// `receiver` is the leftmost atom of the chain. `segments` are the
     /// access steps in source order. The renderer emits them
@@ -471,7 +478,9 @@ pub enum SyntaxTree {
     /// text-concatenation on `<object>` returns the source slice
     /// verbatim — including the `.` / `[` / `]` punctuation that lives
     /// in the segments.
-    Access {
+    ///
+    /// @element_name = element_name_for_object_access
+    ObjectAccess {
         receiver: AccessReceiver,
         segments: Vec<AccessSegment>,
         range: ByteRange,
@@ -544,8 +553,16 @@ pub enum SyntaxTree {
 
     // ----- Generic types --------------------------------------------------
 
-    /// `<type[generic]>` — `Name[T, U, ...]` generic type expression.
-    /// `name` is the base type name; `params` are the type arguments.
+    /// `<type>` — `Name[T, U, ...]` generic type expression. The
+    /// variant is named `GenericType` for typed-tree clarity (vs.
+    /// the simpler `SimpleStatement { element_name: "type", ... }`
+    /// shape that non-parameterized type references use), but renders
+    /// as plain `<type>` so XPath queries against the type namespace
+    /// match uniformly — `<type>List</type>` and `<type>List<int></type>`
+    /// both surface via `//type`. `name` is the base type name;
+    /// `params` are the type arguments.
+    ///
+    /// @element_name = element_name_for_generic_type
     GenericType {
         name: Box<SyntaxTree>,
         params: Vec<SyntaxTree>,
@@ -999,6 +1016,14 @@ pub enum SyntaxTree {
 
     /// `<type>` — type-parameter slot inside `<generic>`. Has a name
     /// and optional constraint.
+    ///
+    /// Renamed for typed-tree clarity (distinct from non-parameterized
+    /// type-reference shapes that use `SimpleStatement {
+    /// element_name: "type" }`); the override below renders as the
+    /// same `<type>` element so XPath queries against the type
+    /// namespace work uniformly.
+    ///
+    /// @element_name = element_name_for_type_parameter
     TypeParameter {
         name: Box<SyntaxTree>,
         constraint: Option<Box<SyntaxTree>>,
@@ -1117,7 +1142,7 @@ pub enum SyntaxTree {
     /// `<call>` for a *standalone* call `f(args)` whose callee is a
     /// bare atom (typically `<name>`). When the callee is itself a
     /// chain (`a.b()`), lowering folds the call into an
-    /// [`SyntaxTree::Access`] chain segment instead. (Future: add
+    /// [`SyntaxTree::ObjectAccess`] chain segment instead. (Future: add
     /// `AccessSegment::Call` and the chained-call lowering.)
     Call {
         callee: Box<SyntaxTree>,
@@ -1388,6 +1413,14 @@ pub enum SyntaxTree {
     /// most plumbing but diverge in semantics — coverage audits
     /// should treat `Unknown` as a debt to pay down and `Raw` as the
     /// chosen shape.
+    ///
+    /// Lowering ensures `Raw` is only constructed for *named*
+    /// tree-sitter nodes; anonymous tokens flow through as
+    /// [`SyntaxTree::Inline`] (no wrapper element). That keeps the
+    /// element-name override below total — it always has a kind to
+    /// return.
+    ///
+    /// @element_name = element_name_for_raw
     Raw {
         kind: String,
         is_named: bool,
@@ -1778,7 +1811,50 @@ pub fn element_name_for_atom(t: &SyntaxTree) -> &'static str {
     }
 }
 
-/// One step in an [`SyntaxTree::Access`] chain.
+/// Override for [`SyntaxTree::ObjectAccess`]: the variant is named
+/// `ObjectAccess` for typed-tree clarity (distinct from the
+/// visibility-level `Access` enum and the `AccessReceiver` kind),
+/// but renders as plain `<object>` to match the conventional XPath
+/// vocabulary that pre-dates the typed promotion. No state — every
+/// `ObjectAccess` becomes `<object>`.
+pub fn element_name_for_object_access(_t: &SyntaxTree) -> &'static str {
+    "object"
+}
+
+/// Override for [`SyntaxTree::Raw`]: tree-sitter passthrough nodes
+/// render with their grammar `kind` as the element name
+/// (`<let_declaration>`, `<object>`, `<pair>`, ...). The `kind`
+/// string is leaked into the static pool once per distinct kind —
+/// acceptable here because raw mode is a developer-facing debug
+/// view, the kind set per grammar is bounded, and the leak avoids
+/// extending the `&'static str` codegen protocol for one use site.
+pub fn element_name_for_raw(t: &SyntaxTree) -> &'static str {
+    if let SyntaxTree::Raw { kind, .. } = t {
+        Box::leak(kind.clone().into_boxed_str())
+    } else {
+        "raw"
+    }
+}
+
+/// Override for [`SyntaxTree::GenericType`]: parameterized type
+/// references render as plain `<type>` (matching non-parameterized
+/// `SimpleStatement { element_name: "type", ... }`) so XPath queries
+/// against the type namespace (`//type`, `//type[.='List<int>']`)
+/// see both forms uniformly. No state — every `GenericType` becomes
+/// `<type>`.
+pub fn element_name_for_generic_type(_t: &SyntaxTree) -> &'static str {
+    "type"
+}
+
+/// Override for [`SyntaxTree::TypeParameter`]: PEP 695 / generic
+/// parameter declarations render as `<type>` so the type namespace
+/// stays uniform under `<generic>` — `<generic><type><name>T</name></type></generic>`
+/// rather than `<generic><type_parameter><name>T</name></type_parameter></generic>`.
+pub fn element_name_for_type_parameter(_t: &SyntaxTree) -> &'static str {
+    "type"
+}
+
+/// One step in an [`SyntaxTree::ObjectAccess`] chain.
 ///
 /// The renderer emits these *right-nested*: the first segment is a
 /// child of `<object>`, the second is a child of the first, and so on.
@@ -1854,7 +1930,7 @@ impl AccessSegment {
     }
 }
 
-/// Receiver of an [`SyntaxTree::Access`] chain. Distinguishes the four
+/// Receiver of an [`SyntaxTree::ObjectAccess`] chain. Distinguishes the four
 /// reserved-keyword receivers (`base`, `this`, `super`, `self`) from
 /// arbitrary expression receivers so the renderer dispatches by type
 /// rather than by inspecting source text.

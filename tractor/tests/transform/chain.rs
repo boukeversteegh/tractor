@@ -1,9 +1,9 @@
 //! Cross-language: member-access / method-call chain inversion
-//! shape (`<object[access]>`).
+//! shape (`<object>`).
 //!
 //! After iter 248 (chain inversion rolled out across all 8
 //! programming languages), every right-deep `<member>`/`<call>`
-//! tree gets rewritten into the inverted `<object[access]>`
+//! tree gets rewritten into the inverted `<object>`
 //! shape — receiver as the first child, each access/call step
 //! nested as the LAST child of the previous step. The full
 //! design lives in `docs/design-chain-inversion.md`.
@@ -28,12 +28,12 @@
 //! - **Ruby**: parses every `.foo` as a method call, so even
 //!   bare property access (`obj.foo.bar`) emits `<call>` on
 //!   every step rather than `<member>`. The canonical shape is
-//!   `//object[access]/call/call/call` for Ruby; `//object[access]/call/member/call`
+//!   `//object/call/call/call` for Ruby; `//object/call/member/call`
 //!   for the other 7 languages.
 //! - **PHP**: the receiver is wrapped in `<variable>` (because
 //!   PHP variables carry the `$` sigil), so the receiver query
-//!   is `//object[access]/variable/name='obj'` rather than
-//!   `//object[access]/name='obj'`.
+//!   is `//object/variable/name='obj'` rather than
+//!   `//object/name='obj'`.
 //!
 //! (Iter 255: the redundant `[instance]` marker that C# and PHP
 //! previously added to every chain step was removed. The chain-
@@ -46,11 +46,11 @@
 //!
 //! All other 5 languages (Python, Go, TypeScript, Rust) match a
 //! single canonical shape:
-//!     `//object[access]/<step>/<step>/.../<step>`
+//!     `//object/<step>/<step>/.../<step>`
 //! where each `<step>` is `<member>` for property access,
 //! `<call>` for invocation, and `<index>` for bracket access
 //! (`arr[0]`, `obj["key"]`), with the receiver as the first
-//! direct child of `<object[access]>`. Iter 345 unified bracket
+//! direct child of `<object>`. Iter 345 unified bracket
 //! and dot access into the same chain shape — same structure,
 //! step element name differs by access kind.
 
@@ -60,20 +60,20 @@ use crate::support::semantic::*;
 fn python() {
     let mut tree = parse_src("python", "obj.foo().bar.baz()\n");
 
-    claim("Python chain `obj.foo().bar.baz()` inverts to <object[access]>",
-        &mut tree, "//object[access]", 1);
+    claim("Python chain `obj.foo().bar.baz()` inverts to <object>",
+        &mut tree, "//object", 1);
 
     claim("Python chain receiver is `obj` (first child of the chain wrapper)",
-        &mut tree, "//object[access]/name='obj'", 1);
+        &mut tree, "//object/name='obj'", 1);
 
     claim("Python full chain reads as a path: receiver / call / member / call",
         &mut tree,
-        "//object[access][name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
+        "//object[name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
         1);
 
     claim("Python chain depth is 3 nested step-elements (Law-of-Demeter probe)",
         &mut tree,
-        "//object[access][count(.//*[self::member or self::call or self::subscript]) >= 3]",
+        "//object[count(.//*[self::member or self::call or self::subscript]) >= 3]",
         1);
 }
 
@@ -83,17 +83,17 @@ fn typescript_meta_property_chain() {
     // are single atomic compound identifiers. Pre-iter 283 they
     // renamed to `<member>` and collided with the chain step
     // `<member>` (both ended up as `<member>` siblings under
-    // `<object[access]>`, JSON overflowed). Iter 283 renamed
+    // `<object>`, JSON overflowed). Iter 283 renamed
     // meta_property to `<name>` so the receiver slot is bare-name
     // (matching Python's `__file__` precedent).
     claim("TS `import.meta.url` chain has <name>import.meta</name> receiver",
         &mut parse_src("typescript", "const u = import.meta.url;\n"),
-        "//object[access][name='import.meta']/member[name='url']",
+        "//object[name='import.meta']/member[name='url']",
         1);
 
     claim("TS meta-property `new.target.name` chain similarly uses <name> receiver",
         &mut parse_src("typescript", "const t = new.target.name;\n"),
-        "//object[access][name='new.target']/member[name='name']",
+        "//object[name='new.target']/member[name='name']",
         1);
 }
 
@@ -101,15 +101,15 @@ fn typescript_meta_property_chain() {
 fn typescript() {
     let mut tree = parse_src("typescript", "obj.foo().bar.baz();\n");
 
-    claim("TypeScript chain `obj.foo().bar.baz()` inverts to <object[access]>",
-        &mut tree, "//object[access]", 1);
+    claim("TypeScript chain `obj.foo().bar.baz()` inverts to <object>",
+        &mut tree, "//object", 1);
 
     claim("TypeScript chain receiver is `obj`",
-        &mut tree, "//object[access]/name='obj'", 1);
+        &mut tree, "//object/name='obj'", 1);
 
     claim("TypeScript full chain reads as a path: receiver / call / member / call",
         &mut tree,
-        "//object[access][name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
+        "//object[name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
         1);
 }
 
@@ -123,15 +123,15 @@ fn java() {
         }
     "#);
 
-    claim("Java chain `obj.foo().bar.baz()` inverts to <object[access]>",
-        &mut tree, "//object[access]", 1);
+    claim("Java chain `obj.foo().bar.baz()` inverts to <object>",
+        &mut tree, "//object", 1);
 
     claim("Java chain receiver is `obj`",
-        &mut tree, "//object[access]/name='obj'", 1);
+        &mut tree, "//object/name='obj'", 1);
 
     claim("Java full chain reads as a path: receiver / call / member / call",
         &mut tree,
-        "//object[access][name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
+        "//object[name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
         1);
 }
 
@@ -145,15 +145,15 @@ fn csharp() {
         }
     "#);
 
-    claim("C# chain `obj.foo().bar.baz()` inverts to <object[access]>",
-        &mut tree, "//object[access]", 1);
+    claim("C# chain `obj.foo().bar.baz()` inverts to <object>",
+        &mut tree, "//object", 1);
 
     claim("C# chain receiver is `obj`",
-        &mut tree, "//object[access]/name='obj'", 1);
+        &mut tree, "//object/name='obj'", 1);
 
     claim("C# full chain reads as a path: receiver / call / member / call",
         &mut tree,
-        "//object[access][name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
+        "//object[name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
         1);
 }
 
@@ -164,15 +164,15 @@ fn go() {
         func main() { obj.foo().bar.baz() }
     "#);
 
-    claim("Go chain `obj.foo().bar.baz()` inverts to <object[access]>",
-        &mut tree, "//object[access]", 1);
+    claim("Go chain `obj.foo().bar.baz()` inverts to <object>",
+        &mut tree, "//object", 1);
 
     claim("Go chain receiver is `obj`",
-        &mut tree, "//object[access]/name='obj'", 1);
+        &mut tree, "//object/name='obj'", 1);
 
     claim("Go full chain reads as a path: receiver / call / member / call",
         &mut tree,
-        "//object[access][name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
+        "//object[name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
         1);
 }
 
@@ -184,15 +184,15 @@ fn rust() {
         }
     "#);
 
-    claim("Rust chain `obj.foo().bar.baz()` inverts to <object[access]>",
-        &mut tree, "//object[access]", 1);
+    claim("Rust chain `obj.foo().bar.baz()` inverts to <object>",
+        &mut tree, "//object", 1);
 
     claim("Rust chain receiver is `obj`",
-        &mut tree, "//object[access]/name='obj'", 1);
+        &mut tree, "//object/name='obj'", 1);
 
     claim("Rust full chain reads as a path: receiver / call / member / call",
         &mut tree,
-        "//object[access][name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
+        "//object[name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
         1);
 }
 
@@ -204,34 +204,34 @@ fn ruby() {
     // `obj.foo.bar.baz` as four method calls.
     let mut tree = parse_src("ruby", "obj.foo.bar.baz\n");
 
-    claim("Ruby chain `obj.foo.bar.baz` inverts to <object[access]>",
-        &mut tree, "//object[access]", 1);
+    claim("Ruby chain `obj.foo.bar.baz` inverts to <object>",
+        &mut tree, "//object", 1);
 
     claim("Ruby chain receiver is `obj`",
-        &mut tree, "//object[access]/name='obj'", 1);
+        &mut tree, "//object/name='obj'", 1);
 
     claim("Ruby every step is a <call> (no <member>; Ruby treats . as method call)",
         &mut tree,
-        "//object[access][name='obj']/call[name='foo']/call[name='bar']/call[name='baz']",
+        "//object[name='obj']/call[name='foo']/call[name='bar']/call[name='baz']",
         1);
 
     claim("Ruby chain has zero <member> steps (Ruby invariant)",
-        &mut tree, "//object[access]//member", 0);
+        &mut tree, "//object//member", 0);
 }
 
 #[test]
 fn php() {
     let mut tree = parse_src("php", "<?php $obj->foo()->bar->baz();\n");
 
-    claim("PHP chain `$obj->foo()->bar->baz()` inverts to <object[access]>",
-        &mut tree, "//object[access]", 1);
+    claim("PHP chain `$obj->foo()->bar->baz()` inverts to <object>",
+        &mut tree, "//object", 1);
 
     claim("PHP chain receiver is `$obj` (a <variable> with name='obj')",
-        &mut tree, "//object[access]/variable/name='obj'", 1);
+        &mut tree, "//object/variable/name='obj'", 1);
 
     claim("PHP full chain reads as a path: receiver / call / member / call",
         &mut tree,
-        "//object[access][variable/name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
+        "//object[variable/name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
         1);
 }
 
@@ -244,7 +244,7 @@ fn php() {
 /// uniformity (Goal #1: Intuitive Queries).
 #[test]
 fn cross_language_uniformity() {
-    let canonical_xpath = "//object[access]/call[name='foo']/member[name='bar']/call[name='baz']";
+    let canonical_xpath = "//object/call[name='foo']/member[name='bar']/call[name='baz']";
 
     for (lang, src) in &[
         ("python",     "obj.foo().bar.baz()\n"),
@@ -285,13 +285,13 @@ fn cross_language_uniformity() {
     claim(
         "ruby: canonical xpath does NOT match (Ruby treats . as method call)",
         &mut parse_src("ruby", "obj.foo.bar.baz\n"),
-        "//object[access]/call[name='foo']/member[name='bar']/call[name='baz']",
+        "//object/call[name='foo']/member[name='bar']/call[name='baz']",
         0,
     );
     claim(
         "ruby: all-call xpath matches the Ruby chain shape",
         &mut parse_src("ruby", "obj.foo.bar.baz\n"),
-        "//object[access]/call[name='foo']/call[name='bar']/call[name='baz']",
+        "//object/call[name='foo']/call[name='bar']/call[name='baz']",
         1,
     );
 }
@@ -305,7 +305,7 @@ fn cross_language_uniformity() {
 /// in the inverted output (iter 345).
 
 /// Cross-language: every `arr[0]` standalone bracket access
-/// produces the unified `<object[access]>/<receiver/>/<index>/<key>`
+/// produces the unified `<object>/<receiver/>/<index>/<key>`
 /// shape — same as `obj.field` modulo step name (`<member>` vs
 /// `<index>`). Iter 345 contract.
 ///
@@ -324,9 +324,9 @@ fn cross_language_index_access_chain_inverts() {
         ("php",        "<?php $r = $arr[0];"),
     ] {
         claim(
-            &format!("{lang}: `arr[0]` chain-inverts to <object[access]>/<receiver/>/<index>/<key>"),
+            &format!("{lang}: `arr[0]` chain-inverts to <object>/<receiver/>/<index>/<key>"),
             &mut parse_src(lang, src),
-            "//object[access]/index",
+            "//object/index",
             1,
         );
     }
@@ -336,7 +336,7 @@ fn cross_language_index_access_chain_inverts() {
 fn subscript_typescript() {
     claim("TS index-access chain produces <index> step inside chain (iter 345)",
         &mut parse_src("typescript", "arr[0].field;\n"),
-        "//object[access][name='arr']/index[number='0']/member[name='field']",
+        "//object[name='arr']/index[number='0']/member[name='field']",
         1);
 }
 
@@ -344,7 +344,7 @@ fn subscript_typescript() {
 fn subscript_python() {
     claim("Python index-access chain produces <index> step inside chain (iter 345)",
         &mut parse_src("python", "arr[0].field\n"),
-        "//object[access][name='arr']/index[int='0']/member[name='field']",
+        "//object[name='arr']/index[int='0']/member[name='field']",
         1);
 }
 
@@ -352,7 +352,7 @@ fn subscript_python() {
 fn subscript_rust() {
     claim("Rust index-access chain produces <index> step inside chain (iter 345)",
         &mut parse_src("rust", "fn main() { let _ = arr[0].field; }"),
-        "//object[access][name='arr']/index[int='0']/member[name='field']",
+        "//object[name='arr']/index[int='0']/member[name='field']",
         1);
 }
 
@@ -378,16 +378,16 @@ fn csharp_base_member_access() {
         }
     "#);
 
-    claim("C# `base.Priority` inverts to <object[access and base]>",
+    claim("C# `base.Priority` inverts to <object[base]>",
         &mut tree,
-        "//object[access and base]/member[name='Priority']",
+        "//object[base]/member[name='Priority']",
         2);
 
     claim("C# `base.X` is queryable via //object[base]",
         &mut tree, "//object[base]", 2);
 
-    claim("C# `base.X` chains share the chain-root marker //object[access]",
-        &mut tree, "//object[access]", 2);
+    claim("C# `base.X` chains share the chain-root marker //object",
+        &mut tree, "//object", 2);
 }
 
 #[test]
@@ -398,9 +398,9 @@ fn csharp_this_member_access() {
         }
     "#);
 
-    claim("C# `this.Foo` inverts to <object[access and this]>",
+    claim("C# `this.Foo` inverts to <object[this]>",
         &mut tree,
-        "//object[access and this]/member[name='Foo']",
+        "//object[this]/member[name='Foo']",
         1);
 
     claim("C# `this.X` is queryable via //object[this]",
@@ -411,23 +411,23 @@ fn csharp_this_member_access() {
 
 /// Per the inverter's "useful-chain guard", bare identifiers and
 /// top-level function calls (no receiver chain) are NOT wrapped
-/// in `<object[access]>`. This is by design — wrapping them would
+/// in `<object>`. This is by design — wrapping them would
 /// add noise without informational value.
 #[test]
 fn no_wrap_for_bare_identifier_or_top_level_call() {
     // Bare identifier: `x` — no chain, no wrapper.
-    claim("Python bare identifier produces no <object[access]>",
+    claim("Python bare identifier produces no <object>",
         &mut parse_src("python", "x\n"),
-        "//object[access]", 0);
-    claim("TypeScript bare identifier produces no <object[access]>",
+        "//object", 0);
+    claim("TypeScript bare identifier produces no <object>",
         &mut parse_src("typescript", "x;\n"),
-        "//object[access]", 0);
+        "//object", 0);
 
     // Top-level call: `f(x)` — no receiver chain, no wrapper.
-    claim("Python top-level call produces no <object[access]>",
+    claim("Python top-level call produces no <object>",
         &mut parse_src("python", "f(x)\n"),
-        "//object[access]", 0);
-    claim("TypeScript top-level call produces no <object[access]>",
+        "//object", 0);
+    claim("TypeScript top-level call produces no <object>",
         &mut parse_src("typescript", "f(x);\n"),
-        "//object[access]", 0);
+        "//object", 0);
 }

@@ -19,7 +19,7 @@
 //!   - **Under-typed** — a typed tree ancestor's range contains this
 //!     CST node but no tree has its exact range. Common case:
 //!     chain-folded structure (the inner `member_access_expression`
-//!     for `a.b` of `a.b.c` is folded into `SyntaxTree::Access`'s segment
+//!     for `a.b` of `a.b.c` is folded into `SyntaxTree::ObjectAccess`'s segment
 //!     list). Acceptable when intentional; suspicious when it's
 //!     meaningful structure that got buried.
 //!   - **Under-unknown** — under an `SyntaxTree::Unknown`'s range. The whole

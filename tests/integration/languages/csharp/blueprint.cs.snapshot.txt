@@ -59,7 +59,7 @@ unit/
   │   │       │       └─ name = "id"
   │   │       ├─ method[public]/name = "AllAsync"
   │   │       └─ event[private]/
-  │   │           ├─ type[nullable]/generic_type/
+  │   │           ├─ type[nullable]/type/
   │   │           │   ├─ name = "EventHandler"
   │   │           │   └─ name = "T"
   │   │           └─ name = "Added"
@@ -86,11 +86,11 @@ unit/
   │   │       │   │   └─ name = "b"
   │   │       │   └─ body/object_creation/
   │   │       │       ├─ binary/
-  │   │       │       │   ├─ left/expression/access/name = "a"
-  │   │       │       │   └─ right/expression/access/name = "b"
+  │   │       │       │   ├─ left/expression/object/name = "a"
+  │   │       │       │   └─ right/expression/object/name = "b"
   │   │       │       └─ binary/
-  │   │       │           ├─ left/expression/access/name = "a"
-  │   │       │           └─ right/expression/access/name = "b"
+  │   │       │           ├─ left/expression/object/name = "a"
+  │   │       │           └─ right/expression/object/name = "b"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "bool"
   │   │       │   ├─ parameter/
@@ -101,11 +101,11 @@ unit/
   │   │       │   │   └─ name = "b"
   │   │       │   └─ body/logical/
   │   │       │       ├─ left/expression/binary/
-  │   │       │       │   ├─ left/expression/access/name = "a"
-  │   │       │       │   └─ right/expression/access/name = "b"
+  │   │       │       │   ├─ left/expression/object/name = "a"
+  │   │       │       │   └─ right/expression/object/name = "b"
   │   │       │       └─ right/expression/binary/
-  │   │       │           ├─ left/expression/access/name = "a"
-  │   │       │           └─ right/expression/access/name = "b"
+  │   │       │           ├─ left/expression/object/name = "a"
+  │   │       │           └─ right/expression/object/name = "b"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "bool"
   │   │       │   ├─ parameter/
@@ -133,7 +133,7 @@ unit/
   │   │       │           └─ right/expression/name = "this"
   │   │       └─ method[public and override]/
   │   │           ├─ name = "GetHashCode"
-  │   │           └─ body/access/
+  │   │           └─ body/object/
   │   │               ├─ name = "HashCode"
   │   │               ├─ name = "X"
   │   │               └─ name = "Y"
@@ -182,15 +182,15 @@ unit/
   │   │       │   ├─ name = "Priority"
   │   │       │   ├─ get = "get;"
   │   │       │   ├─ set[protected] = "protected set;"
-  │   │       │   └─ access/name = "Priority"
+  │   │       │   └─ object/name = "Priority"
   │   │       ├─ indexer[public]/
   │   │       │   ├─ type/name = "int"
   │   │       │   ├─ parameter/
   │   │       │   │   ├─ type/name = "string"
   │   │       │   │   └─ name = "key"
-  │   │       │   └─ value/access/name = "key"
+  │   │       │   └─ value/object/name = "key"
   │   │       ├─ event[public]/
-  │   │       │   ├─ type[nullable]/generic_type/
+  │   │       │   ├─ type[nullable]/type/
   │   │       │   │   ├─ name = "Action"
   │   │       │   │   └─ name = "EntityBase"
   │   │       │   └─ name = "Changed"
@@ -211,16 +211,16 @@ unit/
   │   │       ├─ method[public and abstract]/name = "Describe"
   │   │       └─ method[protected and virtual]/
   │   │           ├─ name = "OnChanged"
-  │   │           └─ body/access/name = "Changed"
+  │   │           └─ body/object/name = "Changed"
   │   ├─ class[public and sealed and partial]/
   │   │   ├─ name = "Widget"
   │   │   ├─ extends/type/name = "EntityBase"
-  │   │   ├─ extends/generic_type/
+  │   │   ├─ extends/type/
   │   │   │   ├─ name = "IRepository"
   │   │   │   └─ name = "Widget"
   │   │   └─ body/
   │   │       ├─ event[public]/
-  │   │       │   ├─ type[nullable]/generic_type/
+  │   │       │   ├─ type[nullable]/type/
   │   │       │   │   ├─ name = "EventHandler"
   │   │       │   │   └─ name = "Widget"
   │   │       │   └─ name = "Added"
@@ -241,15 +241,15 @@ unit/
   │   │       ├─ property[public and override]/
   │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
-  │   │       │   ├─ get/access = "base.Priority"
+  │   │       │   ├─ get/object = "base.Priority"
   │   │       │   └─ set[protected]/assign/
-  │   │       │       ├─ expression/access = "base.Priority"
+  │   │       │       ├─ expression/object = "base.Priority"
   │   │       │       └─ expression/name = "value"
   │   │       ├─ method[public and override]/
   │   │       │   ├─ name = "Describe"
   │   │       │   └─ body/string/
   │   │       │       ├─ interpolation/name = "Id"
-  │   │       │       └─ interpolation/expression/name = "Name"
+  │   │       │       └─ interpolation/expression[non_null]/name = "Name"
   │   │       ├─ method[public]/
   │   │       │   ├─ name = "Find"
   │   │       │   ├─ parameter/
@@ -264,7 +264,7 @@ unit/
   │   │       ├─ method[public and async]/
   │   │       │   ├─ name = "AllAsync"
   │   │       │   └─ body/
-  │   │       │       ├─ expression/access/
+  │   │       │       ├─ expression[await]/object/
   │   │       │       │   ├─ name = "Task"
   │   │       │       │   └─ int = "1"
   │   │       │       └─ return/expression/index = "[this]"
@@ -276,7 +276,7 @@ unit/
   │   │           │   ├─ type/name = "T"
   │   │           │   └─ name = "input"
   │   │           ├─ parameter/
-  │   │           │   ├─ generic_type/
+  │   │           │   ├─ type/
   │   │           │   │   ├─ name = "Transformer"
   │   │           │   │   ├─ name = "T"
   │   │           │   │   └─ name = "TResult"
@@ -292,7 +292,7 @@ unit/
   │   │       │   ├─ type/name = "Widget"
   │   │       │   └─ name = "w"
   │   │       └─ body/binary/
-  │   │           ├─ left/expression/access/name = "w"
+  │   │           ├─ left/expression/object/name = "w"
   │   │           └─ right/expression/string = "\"!\""
   │   └─ class[internal and static]/
   │       ├─ name = "Demo"
@@ -302,7 +302,7 @@ unit/
   │           │   ├─ type[nullable]/type/name = "Widget"
   │           │   └─ name = "maybe"
   │           ├─ parameter/
-  │           │   ├─ generic_type/
+  │           │   ├─ type/
   │           │   │   ├─ name = "IEnumerable"
   │           │   │   └─ name = "int"
   │           │   └─ name = "numbers"
@@ -320,7 +320,7 @@ unit/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "shouted"
   │               │   └─ expression/binary/
-  │               │       ├─ left/expression/access/name = "widget"
+  │               │       ├─ left/expression/object/name = "widget"
   │               │       └─ right/expression/string = "\"n/a\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
@@ -329,7 +329,7 @@ unit/
   │               │       ├─ condition/expression/is/
   │               │       │   ├─ name = "widget"
   │               │       │   └─ pattern[recursive]/properties/subpattern/
-  │               │       │       ├─ access/name = "Name"
+  │               │       │       ├─ object/name = "Name"
   │               │       │       └─ pattern[relational]/int = "0"
   │               │       ├─ then/expression/string = "\"named\""
   │               │       └─ else/expression/string = "\"blank\""
@@ -342,14 +342,14 @@ unit/
   │               │       ├─ arm/
   │               │       │   ├─ pattern[recursive]/properties/subpattern/
   │               │       │   │   ├─ name = "Priority"
-  │               │       │   │   └─ pattern[constant]/access/name = "Priority"
+  │               │       │   │   └─ pattern[constant]/object/name = "Priority"
   │               │       │   └─ string = "\"hot\""
   │               │       ├─ arm/
   │               │       │   ├─ pattern[declaration]/
   │               │       │   │   ├─ type/name = "Widget"
   │               │       │   │   └─ name = "w"
   │               │       │   ├─ when/binary/
-  │               │       │   │   ├─ left/expression/access/name = "w"
+  │               │       │   │   ├─ left/expression/object/name = "w"
   │               │       │   │   └─ right/expression/int = "100"
   │               │       │   └─ string = "\"big\""
   │               │       └─ arm/
@@ -359,7 +359,7 @@ unit/
   │               ├─ variable/
   │               │   ├─ type/name = "object"
   │               │   ├─ name = "token"
-  │               │   └─ expression/name = "widget"
+  │               │   └─ expression[non_null]/name = "widget"
   │               ├─ switch/
   │               │   ├─ value/name = "token"
   │               │   └─ body/
@@ -367,9 +367,9 @@ unit/
   │               │       │   ├─ pattern[declaration]/
   │               │       │   │   ├─ type/name = "Widget"
   │               │       │   │   └─ name = "w"
-  │               │       │   ├─ expression/access/
+  │               │       │   ├─ expression/object/
   │               │       │   │   ├─ name = "Console"
-  │               │       │   │   └─ access/name = "w"
+  │               │       │   │   └─ object/name = "w"
   │               │       │   └─ break = "break;"
   │               │       ├─ arm/
   │               │       │   ├─ pattern[constant]/null = "null"
@@ -381,9 +381,9 @@ unit/
   │               │   │   └─ pattern[declaration]/
   │               │   │       ├─ type/name = "Widget"
   │               │   │       └─ name = "probe"
-  │               │   └─ body/expression/access/
+  │               │   └─ body/expression/object/
   │               │       ├─ name = "Console"
-  │               │       └─ access/name = "probe"
+  │               │       └─ object/name = "probe"
   │               ├─ comment[leading] = "// LINQ query syntax + method syntax"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
@@ -404,7 +404,7 @@ unit/
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "odds"
-  │               │   └─ expression/access/
+  │               │   └─ expression/object/
   │               │       ├─ name = "numbers"
   │               │       ├─ lambda/
   │               │       │   ├─ parameter/name = "n"
@@ -428,7 +428,7 @@ unit/
   │               │       ├─ left/expression/name = "x"
   │               │       └─ right/expression/name = "x"
   │               ├─ variable/
-  │               │   ├─ generic_type/
+  │               │   ├─ type/
   │               │   │   ├─ name = "Func"
   │               │   │   ├─ name = "int"
   │               │   │   └─ name = "int"
@@ -441,7 +441,7 @@ unit/
   │               │           │   └─ right/expression/name = "x"
   │               │           └─ right/expression/name = "x"
   │               ├─ variable/
-  │               │   ├─ generic_type/
+  │               │   ├─ type/
   │               │   │   ├─ name = "Func"
   │               │   │   ├─ name = "int"
   │               │   │   └─ name = "int"
@@ -452,19 +452,19 @@ unit/
   │               │           ├─ left/expression/name = "x"
   │               │           └─ right/expression/int = "1"
   │               ├─ variable/
-  │               │   ├─ generic_type/
+  │               │   ├─ type/
   │               │   │   ├─ name = "Action"
   │               │   │   └─ name = "string"
   │               │   ├─ name = "log"
   │               │   └─ expression/lambda/
   │               │       ├─ parameter/name = "msg"
-  │               │       └─ access/
+  │               │       └─ object/
   │               │           ├─ name = "Console"
   │               │           └─ name = "msg"
   │               ├─ expression/call/
   │               │   ├─ name = "log"
   │               │   └─ string/
-  │               │       ├─ interpolation/access/name = "evens"
+  │               │       ├─ interpolation/object/name = "evens"
   │               │       ├─ interpolation/call/
   │               │       │   ├─ name = "cube"
   │               │       │   └─ int = "3"
@@ -506,7 +506,7 @@ unit/
   │               │   ├─ right/expression/name = "odds"
   │               │   └─ body/expression/call/
   │               │       ├─ name = "log"
-  │               │       └─ access/name = "n"
+  │               │       └─ object/name = "n"
   │               ├─ comment[leading] = "// try/catch/finally with when + using declaration + using statement"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
@@ -525,7 +525,7 @@ unit/
   │               │   │   │   │       ├─ name = "System"
   │               │   │   │   │       ├─ name = "IO"
   │               │   │   │   │       └─ name = "MemoryStream"
-  │               │   │   │   └─ body/expression/access/
+  │               │   │   │   └─ body/expression/object/
   │               │   │   │       ├─ name = "inner"
   │               │   │   │       └─ int = "1"
   │               │   │   └─ throw/expression/object_creation/
@@ -535,15 +535,15 @@ unit/
   │               │   │   ├─ type/name = "InvalidOperationException"
   │               │   │   ├─ as/expression/name = "ex"
   │               │   │   ├─ filter/expression/binary/
-  │               │   │   │   ├─ left/expression/access/name = "ex"
+  │               │   │   │   ├─ left/expression/object/name = "ex"
   │               │   │   │   └─ right/expression/int = "0"
   │               │   │   └─ body/expression/call/
   │               │   │       ├─ name = "log"
-  │               │   │       └─ access/name = "ex"
+  │               │   │       └─ object/name = "ex"
   │               │   ├─ catch/
   │               │   │   ├─ type/name = "Exception"
   │               │   │   └─ body/throw = "throw;"
-  │               │   └─ finally/body/expression/access/name = "scope"
+  │               │   └─ finally/body/expression/object/name = "scope"
   │               ├─ comment[leading] = "// tuples + deconstruction + target-typed new + collection expression"
   │               ├─ variable/
   │               │   ├─ type[tuple]/
@@ -555,7 +555,7 @@ unit/
   │               │   │       └─ name = "tag"
   │               │   ├─ name = "pair"
   │               │   └─ expression/tuple/
-  │               │       ├─ access/name = "odds"
+  │               │       ├─ object/name = "odds"
   │               │       └─ string = "\"odd\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
@@ -564,7 +564,7 @@ unit/
   │               │   │   └─ name = "tg"
   │               │   └─ expression/name = "pair"
   │               ├─ variable/
-  │               │   ├─ generic_type/
+  │               │   ├─ type/
   │               │   │   ├─ name = "List"
   │               │   │   └─ name = "int"
   │               │   ├─ name = "list"
@@ -574,7 +574,7 @@ unit/
   │               │       ├─ int = "3"
   │               │       └─ range/name = "odds"
   │               ├─ variable/
-  │               │   ├─ generic_type/
+  │               │   ├─ type/
   │               │   │   ├─ name = "Dictionary"
   │               │   │   ├─ name = "string"
   │               │   │   └─ name = "int"
@@ -612,19 +612,19 @@ unit/
   │                   │   │   │   ├─ left/expression/binary/
   │                   │   │   │   │   ├─ left/expression/binary/
   │                   │   │   │   │   │   ├─ left/expression/binary/
-  │                   │   │   │   │   │   │   ├─ left/expression/access/name = "list"
-  │                   │   │   │   │   │   │   └─ right/expression/access/name = "map"
-  │                   │   │   │   │   │   └─ right/expression/access/name = "plain"
-  │                   │   │   │   │   └─ right/expression/access/name = "verbatim"
-  │                   │   │   │   └─ right/expression/access/name = "interp"
-  │                   │   │   └─ right/expression/access/name = "raw"
+  │                   │   │   │   │   │   │   ├─ left/expression/object/name = "list"
+  │                   │   │   │   │   │   │   └─ right/expression/object/name = "map"
+  │                   │   │   │   │   │   └─ right/expression/object/name = "plain"
+  │                   │   │   │   │   └─ right/expression/object/name = "verbatim"
+  │                   │   │   │   └─ right/expression/object/name = "interp"
+  │                   │   │   └─ right/expression/object/name = "raw"
   │                   │   └─ right/expression/ternary/
   │                   │       ├─ condition/expression/binary/
   │                   │       │   ├─ left/expression/name = "label"
   │                   │       │   └─ right/expression/name = "kind"
   │                   │       ├─ then/expression/int = "0"
   │                   │       └─ else/expression/int = "1"
-  │                   └─ right/expression/access/name = "shouted"
+  │                   └─ right/expression/object/name = "shouted"
   └─ namespace/
       ├─ name = "Tractor.Fixtures.FileScoped"
       ├─ using/name = "System"
@@ -638,7 +638,7 @@ unit/
       │   ├─ name = "Entry"
       │   └─ body/method[public and static]/
       │       ├─ name = "Get"
-      │       └─ body/access/name = "Hidden"
+      │       └─ body/object/name = "Hidden"
       ├─ comment = "// Iter 20: new shapes — statements, expressions, patterns, literals."
       ├─ comment = "/// <summary>cast + char + checked + with + patterns + array/stackalloc new</summary>"
       ├─ class[public and static]/
@@ -793,7 +793,7 @@ unit/
       │       │           ├─ pattern[declaration]/
       │       │           │   ├─ type/name = "var"
       │       │           │   └─ name = "x"
-      │       │           └─ access/expression/name = "x"
+      │       │           └─ object/expression[non_null]/name = "x"
       │       ├─ comment[leading] = "// Attributes, generic constraints, indexer, destructor."
       │       ├─ class[public]/
       │       │   ├─ attribute/
@@ -844,16 +844,16 @@ unit/
       │       │   └─ expression/int = "0"
       │       ├─ comment[leading] = "// Operator overloads + conversion operator."
       │       ├─ operator[public and static]/
-      │       │   ├─ generic_type/
+      │       │   ├─ type/
       │       │   │   ├─ name = "Container"
       │       │   │   └─ name = "T"
       │       │   ├─ parameter/
-      │       │   │   ├─ generic_type/
+      │       │   │   ├─ type/
       │       │   │   │   ├─ name = "Container"
       │       │   │   │   └─ name = "T"
       │       │   │   └─ name = "a"
       │       │   ├─ parameter/
-      │       │   │   ├─ generic_type/
+      │       │   │   ├─ type/
       │       │   │   │   ├─ name = "Container"
       │       │   │   │   └─ name = "T"
       │       │   │   └─ name = "b"
@@ -861,7 +861,7 @@ unit/
       │       ├─ operator[public and static]/
       │       │   ├─ type/name = "int"
       │       │   ├─ parameter/
-      │       │   │   ├─ generic_type/
+      │       │   │   ├─ type/
       │       │   │   │   ├─ name = "Container"
       │       │   │   │   └─ name = "T"
       │       │   │   └─ name = "c"
@@ -934,7 +934,7 @@ unit/
       │       │   ├─ parameter/
       │       │   │   ├─ type/name = "string"
       │       │   │   └─ name = "s"
-      │       │   └─ body/access/name = "s"
+      │       │   └─ body/object/name = "s"
       │       ├─ comment[leading] = "// LINQ join / let / group, as / is simple expressions."
       │       ├─ method[public and static]/
       │       │   ├─ name = "LinqExtras"
@@ -966,14 +966,14 @@ unit/
       │       │       │       │   ├─ name = "y"
       │       │       │       │   └─ name = "x"
       │       │       │       ├─ name = "grp"
-      │       │       │       └─ select/access/name = "grp"
+      │       │       │       └─ select/object/name = "grp"
       │       │       ├─ if/
       │       │       │   ├─ condition/expression/is/
       │       │       │   │   ├─ name = "xs"
       │       │       │   │   └─ pattern[declaration]/
       │       │       │   │       ├─ type[array]/type/name = "int"
       │       │       │   │       └─ name = "arr"
-      │       │       │   └─ body/return/expression/access/name = "arr"
+      │       │       │   └─ body/return/expression/object/name = "arr"
       │       │       ├─ variable/
       │       │       │   ├─ type/name = "object"
       │       │       │   ├─ name = "o"
@@ -985,9 +985,9 @@ unit/
       │       │       │       ├─ left/name = "o"
       │       │       │       └─ right/type[array]/type/name = "int"
       │       │       └─ return/expression/binary/
-      │       │           ├─ left/expression/access/name = "joined"
+      │       │           ├─ left/expression/object/name = "joined"
       │       │           └─ right/expression/binary/
-      │       │               ├─ left/expression/access/name = "asArr"
+      │       │               ├─ left/expression/object/name = "asArr"
       │       │               └─ right/expression/int = "0"
       │       ├─ comment[leading] = "// List patterns (C# 11). Slice patterns omitted because the\n    // pinned tree-sitter-c-sharp grammar emits ERROR for `..` in\n    // list patterns; the IR pipeline handles them when the grammar\n    // is regenerated."
       │       ├─ method[public and static]/
@@ -1095,7 +1095,7 @@ unit/
       │       │       │       ├─ type/name = "int"
       │       │       │       └─ int = "3"
       │       │       ├─ variable/
-      │       │       │   ├─ generic_type/
+      │       │       │   ├─ type/
       │       │       │   │   ├─ name = "Span"
       │       │       │   │   └─ name = "int"
       │       │       │   ├─ name = "span"
@@ -1107,7 +1107,7 @@ unit/
       │       │       │       ├─ int = "2"
       │       │       │       └─ int = "3"
       │       │       └─ variable/
-      │       │           ├─ generic_type/
+      │       │           ├─ type/
       │       │           │   ├─ name = "Span"
       │       │           │   └─ name = "int"
       │       │           ├─ name = "auto"
@@ -1143,7 +1143,7 @@ unit/
       │       │   ├─ parameter/
       │       │   │   ├─ type/name = "int"
       │       │   │   └─ name = "i"
-      │       │   └─ body/access/
+      │       │   └─ body/object/
       │       │       ├─ name = "xs"
       │       │       └─ name = "i"
       │       ├─ comment[leading] = "// String escape sequences."
@@ -1171,7 +1171,7 @@ unit/
       │       │   ├─ parameter/
       │       │   │   ├─ type[scoped]/type/path/
       │       │   │   │   ├─ name = "System"
-      │       │   │   │   └─ generic_type/
+      │       │   │   │   └─ type/
       │       │   │   │       ├─ name = "Span"
       │       │   │   │       └─ name = "int"
       │       │   │   └─ name = "data"
@@ -1180,7 +1180,7 @@ unit/
       │       │   │   └─ name = "target"
       │       │   └─ body/assign/
       │       │       ├─ expression/name = "target"
-      │       │       └─ expression/access/
+      │       │       └─ expression/object/
       │       │           ├─ name = "data"
       │       │           └─ int = "0"
       │       ├─ comment[leading] = "// Var pattern + parenthesized pattern + parenthesized variable\n    // designation (`(int x, int y) = pair`)."
@@ -1243,8 +1243,8 @@ unit/
       │       │       │       │   ├─ name = "x"
       │       │       │       │   ├─ name = "y"
       │       │       │       │   └─ name = "matched"
-      │       │       │       └─ select/access/name = "matched"
-      │       │       └─ return/expression/access/name = "q"
+      │       │       │       └─ select/object/name = "matched"
+      │       │       └─ return/expression/object/name = "q"
       │       ├─ comment[leading] = "// Explicit interface implementation."
       │       └─ method[public]/
       │           ├─ name = "IFormat"
@@ -1275,7 +1275,7 @@ unit/
       │           └─ literal/
       │               ├─ name = "X"
       │               └─ binary/
-      │                   ├─ left/expression/access/name = "p"
+      │                   ├─ left/expression/object/name = "p"
       │                   └─ right/expression/name = "dx"
       ├─ comment = "// Global / assembly-level attribute (file scope)."
       ├─ attribute/

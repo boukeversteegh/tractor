@@ -62,7 +62,7 @@
           "name": "maybe"
         },
         {
-          "access": {
+          "object": {
             "name": [
               "obj",
               "arg"
@@ -166,11 +166,16 @@
     },
     {
       "body": {
-        "access": {
-          "name": "items"
-        },
         "array": {
-          "access": [
+          "name": [
+            "result",
+            "ternary",
+            "a",
+            "b",
+            "rest",
+            "flag"
+          ],
+          "object": [
             {
               "int": [
                 "1",
@@ -182,14 +187,6 @@
               "int": "3",
               "name": "doubler"
             }
-          ],
-          "name": [
-            "result",
-            "ternary",
-            "a",
-            "b",
-            "rest",
-            "flag"
           ]
         },
         "assign": [
@@ -220,17 +217,11 @@
               },
               {
                 "begin": {
-                  "access": {
-                    "name": "items"
-                  },
                   "else": {
                     "string": "'ok'"
                   },
                   "ensure": {
                     "if": {
-                      "access": {
-                        "name": "items"
-                      },
                       "logical": {
                         "left": {
                           "expression": {
@@ -244,20 +235,26 @@
                             "false": "false"
                           }
                         }
+                      },
+                      "object": {
+                        "name": "items"
                       }
                     }
+                  },
+                  "object": {
+                    "name": "items"
                   },
                   "rescue": {
                     "exceptions": {
                       "name": "StandardError"
                     },
                     "then": {
-                      "access": {
-                        "name": "e"
-                      },
                       "if": {
                         "false": "false",
                         "retry": "retry"
+                      },
+                      "object": {
+                        "name": "e"
                       }
                     },
                     "variable": {
@@ -265,12 +262,12 @@
                     }
                   },
                   "unless": {
-                    "access": {
-                      "name": "items"
-                    },
                     "call": {
                       "name": "raise",
                       "string": "'boom'"
+                    },
+                    "object": {
+                      "name": "items"
                     }
                   }
                 }
@@ -417,7 +414,7 @@
                 "ternary": {
                   "condition": {
                     "expression": {
-                      "access": {
+                      "object": {
                         "name": "total"
                       }
                     }
@@ -605,6 +602,9 @@
             }
           }
         ],
+        "object": {
+          "name": "items"
+        },
         "until": {
           "body": {
             "assign": {
@@ -692,7 +692,7 @@
                     },
                     {
                       "if": {
-                        "access": {
+                        "object": {
                           "name": [
                             "head",
                             "Integer"
@@ -716,7 +716,7 @@
                           },
                           "right": {
                             "expression": {
-                              "access": {
+                              "object": {
                                 "name": "tail"
                               }
                             }
@@ -872,7 +872,7 @@
     },
     {
       "body": {
-        "access": {
+        "object": {
           "name": [
             "block",
             "x",
@@ -1005,7 +1005,7 @@
                     "logical": {
                       "left": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "name": [
                               "other",
                               "Base"
@@ -1018,7 +1018,7 @@
                           "binary": {
                             "left": {
                               "expression": {
-                                "access": {
+                                "object": {
                                   "name": "other"
                                 }
                               }
@@ -1150,10 +1150,10 @@
                   ]
                 },
                 {
-                  "access": {
+                  "name": "prepend",
+                  "object": {
                     "name": "Module"
-                  },
-                  "name": "prepend"
+                  }
                 }
               ],
               "class": {
@@ -1273,7 +1273,7 @@
                     "ternary": {
                       "condition": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "name": "opts"
                           }
                         }
@@ -1286,7 +1286,7 @@
                                 "name": "msg"
                               },
                               {
-                                "access": {
+                                "object": {
                                   "name": "opts"
                                 }
                               }
@@ -1335,7 +1335,7 @@
                           "name": "@name"
                         },
                         {
-                          "access": {
+                          "object": {
                             "name": "@name"
                           }
                         }
@@ -1349,14 +1349,14 @@
                     "binary": {
                       "left": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "name": "items"
                           }
                         }
                       },
                       "right": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "name": "meta"
                           }
                         }
@@ -1514,7 +1514,7 @@
     }
   ],
   "unless": {
-    "access": {
+    "object": {
       "name": "MAX_RETRIES"
     },
     "then": {

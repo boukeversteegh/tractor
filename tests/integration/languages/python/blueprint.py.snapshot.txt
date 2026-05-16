@@ -79,7 +79,7 @@ module/
   ├─ comment[leading] = "# PEP 695 generic function/class/type-alias declarations."
   ├─ function/
   │   ├─ name = "identity"
-  │   ├─ generic/type_parameter/name = "T"
+  │   ├─ generic/type/name = "T"
   │   ├─ parameter/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "T"
@@ -87,13 +87,13 @@ module/
   │   └─ body/return/expression/name = "v"
   ├─ class/
   │   ├─ name = "Box"
-  │   ├─ generic/type_parameter/name = "T"
+  │   ├─ generic/type/name = "T"
   │   └─ body = "pass"
   ├─ type_alias/
-  │   ├─ generic_type/
+  │   ├─ type/
   │   │   ├─ name = "Vec"
   │   │   └─ name = "T"
-  │   └─ generic_type/
+  │   └─ type/
   │       ├─ name = "list"
   │       └─ name = "T"
   ├─ function/
@@ -103,19 +103,19 @@ module/
   │   │   └─ type/name = "int"
   │   ├─ parameter/
   │   │   ├─ name = "y"
-  │   │   ├─ generic_type/
+  │   │   ├─ type/
   │   │   │   ├─ name = "Optional"
   │   │   │   └─ name = "str"
   │   │   └─ none = "None"
   │   ├─ parameter/
   │   │   ├─ name = "z"
   │   │   ├─ type[union]/
-  │   │   │   ├─ generic_type/
+  │   │   │   ├─ type/
   │   │   │   │   ├─ name = "list"
   │   │   │   │   └─ name = "int"
   │   │   │   └─ none = "None"
   │   │   └─ none = "None"
-  │   ├─ returns/generic_type/
+  │   ├─ returns/type/
   │   │   ├─ name = "Union"
   │   │   ├─ name = "int"
   │   │   └─ none = "None"
@@ -170,7 +170,7 @@ module/
   │           │   └─ body/yield/expression/name = "chunk"
   │           ├─ assign/
   │           │   ├─ expression/name = "data"
-  │           │   └─ expression/access/name = "conn"
+  │           │   └─ expression[await]/object/name = "conn"
   │           └─ return/expression/name = "data"
   ├─ function/
   │   ├─ name = "gen_demo"
@@ -233,7 +233,7 @@ module/
   │       │   └─ expression/int = "0"
   │       └─ assign/
   │           ├─ expression/name = "tags"
-  │           ├─ generic_type/
+  │           ├─ type/
   │           │   ├─ name = "list"
   │           │   └─ name = "str"
   │           └─ expression/call/
@@ -268,7 +268,7 @@ module/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "str"
   │       │   └─ body/assign/
-  │       │       ├─ expression/access = "self.name"
+  │       │       ├─ expression/object = "self.name"
   │       │       └─ expression/name = "name"
   │       └─ function[public]/
   │           ├─ name = "__eq__"
@@ -280,8 +280,8 @@ module/
   │               │   ├─ name = "other"
   │               │   └─ name = "Derived"
   │               └─ right/expression/comparison/
-  │                   ├─ access = "self.name"
-  │                   └─ access/name = "other"
+  │                   ├─ object = "self.name"
+  │                   └─ object/name = "other"
   ├─ function/
   │   ├─ name = "control_flow"
   │   ├─ parameter/name = "items"
@@ -353,8 +353,8 @@ module/
   │       │   │   │   └─ string = "\"b\""
   │       │   │   └─ name = "fb"
   │       │   └─ body/
-  │       │       ├─ expression/access/name = "fa"
-  │       │       └─ expression/access/name = "fb"
+  │       │       ├─ expression/object/name = "fa"
+  │       │       └─ expression/object/name = "fb"
   │       └─ return/expression/name = "total"
   ├─ function/
   │   ├─ name = "match_demo"
@@ -420,7 +420,7 @@ module/
   │       │       ├─ for/
   │       │       │   ├─ name = "k"
   │       │       │   ├─ name = "v"
-  │       │       │   └─ access/name = "data"
+  │       │       │   └─ object/name = "data"
   │       │       └─ name = "v"
   │       ├─ assign/
   │       │   ├─ expression/name = "uniq"
@@ -474,7 +474,7 @@ module/
   │       ├─ assign/
   │       │   ├─ expression/name = "first"
   │       │   └─ expression/ternary/
-  │       │       ├─ then/expression/access/
+  │       │       ├─ then/expression/object/
   │       │       │   ├─ name = "items"
   │       │       │   └─ int = "0"
   │       │       ├─ condition/expression/name = "items"
@@ -578,25 +578,25 @@ module/
   │       ├─ left/expression/name = "int"
   │       └─ right/expression/name = "str"
   ├─ type_alias/
-  │   ├─ generic_type/
+  │   ├─ type/
   │   │   ├─ name = "Pair"
-  │   │   ├─ type_parameter/
+  │   │   ├─ type/
   │   │   │   ├─ name = "T"
   │   │   │   └─ name = "int"
-  │   │   ├─ type_parameter/
+  │   │   ├─ type/
   │   │   │   ├─ name = "U"
   │   │   │   └─ tuple/
   │   │   │       ├─ name = "int"
   │   │   │       └─ name = "str"
   │   │   └─ list_splat/name = "Ts"
-  │   └─ generic_type/
+  │   └─ type/
   │       ├─ name = "tuple"
   │       ├─ name = "T"
   │       ├─ name = "U"
   │       └─ list_splat/name = "Ts"
   ├─ type_alias/
   │   ├─ name = "Containing"
-  │   └─ access/name = "OrderedDict"
+  │   └─ object/name = "OrderedDict"
   └─ function/
       ├─ name = "patterns_and_misc"
       ├─ parameter/name = "values"

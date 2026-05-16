@@ -378,13 +378,13 @@ fn go_inc_dec_statement_extracts_op() {
 }
 
 /// Go `arr[i]` index expression — chain-inverts to the unified
-/// `<object[access]>` shape (iter 345) matching member access. The
+/// `<object>` shape (iter 345) matching member access. The
 /// array is the chain receiver; the index sits inside `<index>`.
 #[test]
 fn go_index_expression_wraps_operand() {
-    claim("Go `seen[x]` chain-inverts to <object[access]>/<receiver/>/<index>/<key>",
+    claim("Go `seen[x]` chain-inverts to <object>/<receiver/>/<index>/<key>",
         &mut parse_src("go", "package m\nfunc f(seen []int, x int) { _ = seen[x] }"),
-        "//object[access][name='seen']/index/name='x'",
+        "//object[name='seen']/index/name='x'",
         1);
 
     claim("Go unary `-x` is unchanged (no chain inversion for unary)",
@@ -394,7 +394,7 @@ fn go_index_expression_wraps_operand() {
 }
 
 /// Go `s[i:j]` / `s[i:j:k]` / `s[:]` slice expression — chain-inverts
-/// to the unified `<object[access]>` shape (iter 345). The slice
+/// to the unified `<object>` shape (iter 345). The slice
 /// bounds (`<from>` / `<to>` / `<capacity>`) all live inside
 /// `<index>` (multi-component subscript via `Vec<XotNode>` index_nodes).
 /// The `<slice/>` marker on `<index>` distinguishes slice ops.
@@ -411,12 +411,12 @@ fn go_slice_expression_wraps_bounds() {
 
     claim("Go `s[1:3]` chain-inverts; <index[slice]> holds <from>/<to>",
         &mut tree,
-        "//object[access][name='s']/index[slice][from/int='1'][to/int='3'][not(capacity)]",
+        "//object[name='s']/index[slice][from/int='1'][to/int='3'][not(capacity)]",
         1);
 
     claim("Go `s[1:3:4]` adds <capacity> slot inside <index[slice]>",
         &mut tree,
-        "//object[access][name='s']/index[slice][from/int='1'][to/int='3'][capacity/int='4']",
+        "//object[name='s']/index[slice][from/int='1'][to/int='3'][capacity/int='4']",
         1);
 
     // Go `s[:]` full-slice shorthand has no `<from>`/`<to>` index
@@ -431,14 +431,14 @@ fn go_slice_expression_wraps_bounds() {
 }
 
 /// PHP `$arr[$key]` subscript expression — chain-inverts to the
-/// unified `<object[access]>` shape (iter 345) matching member
+/// unified `<object>` shape (iter 345) matching member
 /// access. The array variable is the chain receiver; the key is
 /// inside `<index>`.
 #[test]
 fn php_subscript_wraps_operand() {
-    claim("PHP `$arr[$key]` chain-inverts to <object[access]>/<receiver/>/<index>/<key>",
+    claim("PHP `$arr[$key]` chain-inverts to <object>/<receiver/>/<index>/<key>",
         &mut parse_src("php", "<?php $r = $arr[$key];"),
-        "//object[access][variable/name='arr']/index/variable/name='key'",
+        "//object[variable/name='arr']/index/variable/name='key'",
         1);
 }
 
@@ -486,13 +486,13 @@ fn csharp_null_forgiving_postfix_unary() {
         &mut tree, "//unary[op[logical[not]]]", 0);
 
     // Iter 245: C# chain inversion. Member access becomes
-    // `<object[access]>` with the non-null expression as the
+    // `<object>` with the non-null expression as the
     // chain receiver (a direct child of the chain wrapper).
     claim("simple `name!.Length` puts <expression[non_null]> as the chain receiver",
         &mut tree,
         &multi_xpath(r#"
             //variable[name='simple']
-                /value/expression/object[access]
+                /value/expression/object
                     [expression[non_null]/name='nullable']
                     [member/name='Length']
         "#),
@@ -502,7 +502,7 @@ fn csharp_null_forgiving_postfix_unary() {
         &mut tree,
         &multi_xpath(r#"
             //variable[name='chained']
-                /value/expression/object[access]
+                /value/expression/object
                     [expression[non_null]/name='nullable']
                     [.//call/name='ToUpper']
                     [.//member/name='Length']
@@ -515,8 +515,8 @@ fn csharp_null_forgiving_postfix_unary() {
             //variable[name='combined']
                 /value/expression/binary
                     [op[plus]]
-                    [left/expression/object[access][expression[non_null]/name='first'][member/name='Length']]
-                    [right/expression/object[access][expression[non_null]/name='second'][member/name='Length']]
+                    [left/expression/object[expression[non_null]/name='first'][member/name='Length']]
+                    [right/expression/object[expression[non_null]/name='second'][member/name='Length']]
         "#),
         1);
 }

@@ -1138,7 +1138,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 
         // ----- Expressions ---------------------------------------------
         // ----- Chain inversion -----------------------------------------
-        // `obj.field` — fold into SyntaxTree::Access if obj is itself a chain.
+        // `obj.field` — fold into SyntaxTree::ObjectAccess if obj is itself a chain.
         "field_expression" => {
             let value_node = node.child_by_field_name("value");
             let field_node = node.child_by_field_name("field");
@@ -1156,11 +1156,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     };
                     match object_ir {
-                        SyntaxTree::Access { receiver, mut segments, .. } => {
+                        SyntaxTree::ObjectAccess { receiver, mut segments, .. } => {
                             segments.push(segment);
-                            SyntaxTree::Access { receiver, segments, range, span }
+                            SyntaxTree::ObjectAccess { receiver, segments, range, span }
                         }
-                        other => SyntaxTree::Access {
+                        other => SyntaxTree::ObjectAccess {
                             receiver: crate::tree::types::AccessReceiver::from_tree(other, &["self", "super"]),
                             segments: vec![segment],
                             range, span,
@@ -1183,7 +1183,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 Some(f) => {
                     let callee = lower_node(f, source);
                     let callee_range = callee.range();
-                    if let SyntaxTree::Access { receiver, mut segments, .. } = callee {
+                    if let SyntaxTree::ObjectAccess { receiver, mut segments, .. } = callee {
                         let last_member = if let Some(AccessSegment::Member {
                             property_range, property_span, ..
                         }) = segments.last() {
@@ -1209,7 +1209,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             }
                         };
                         segments.push(call_segment);
-                        return SyntaxTree::Access { receiver, segments, range, span };
+                        return SyntaxTree::ObjectAccess { receiver, segments, range, span };
                     }
                     SyntaxTree::Call { callee: Box::new(callee), arguments, range, span }
                 }
@@ -1218,7 +1218,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         }
         "generic_function" => simple_statement_marked(node, "call", vec![Marker::implicit("generic")], source),
         "index_expression" => {
-            // `expr[index]` — fold into SyntaxTree::Access if expr is a chain.
+            // `expr[index]` — fold into SyntaxTree::ObjectAccess if expr is a chain.
             let kids: Vec<&RawNode> = node.named_children().collect();
             if let (Some(obj), Some(idx)) = (kids.first(), kids.get(1)) {
                 let object_ir = lower_node(*obj, source);
@@ -1230,11 +1230,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     span,
                 };
                 return match object_ir {
-                    SyntaxTree::Access { receiver, mut segments, .. } => {
+                    SyntaxTree::ObjectAccess { receiver, mut segments, .. } => {
                         segments.push(segment);
-                        SyntaxTree::Access { receiver, segments, range, span }
+                        SyntaxTree::ObjectAccess { receiver, segments, range, span }
                     }
-                    other => SyntaxTree::Access {
+                    other => SyntaxTree::ObjectAccess {
                         receiver: crate::tree::types::AccessReceiver::from_tree(other, &["self", "super"]),
                         segments: vec![segment],
                         range, span,
@@ -1759,7 +1759,7 @@ fn lower_children(node: &RawNode, source: &str) -> Vec<SyntaxTree> {
 
 
 /// Wrap a leaf-like SyntaxTree (identifier-shaped) in `<type>` so it surfaces
-/// as `<type><name>X</name></type>`. Already-typed (SyntaxTree::Access,
+/// as `<type><name>X</name></type>`. Already-typed (SyntaxTree::ObjectAccess,
 /// SyntaxTree::SimpleStatement<element_name="type"|"path"|"alias">, etc.) pass
 /// through unchanged.
 fn wrap_in_type_if_leaf(inner: SyntaxTree, range: ByteRange, span: Span) -> SyntaxTree {

@@ -65,7 +65,7 @@
               "name": "Changed",
               "type": {
                 "nullable": true,
-                "generic_type": {
+                "type": {
                   "name": [
                     "Action",
                     "EntityBase"
@@ -124,7 +124,7 @@
                 "name": "int"
               },
               "value": {
-                "access": {
+                "object": {
                   "name": "key"
                 }
               }
@@ -139,7 +139,7 @@
                 "protected": true,
                 "virtual": true,
                 "body": {
-                  "access": {
+                  "object": {
                     "name": "Changed"
                   }
                 },
@@ -169,11 +169,11 @@
               {
                 "public": true,
                 "virtual": true,
-                "access": {
-                  "name": "Priority"
-                },
                 "get": "get;",
                 "name": "Priority",
+                "object": {
+                  "name": "Priority"
+                },
                 "set": {
                   "protected": true
                 },
@@ -232,7 +232,7 @@
               "name": "Added",
               "type": {
                 "nullable": true,
-                "generic_type": {
+                "type": {
                   "name": [
                     "EventHandler",
                     "Widget"
@@ -252,6 +252,7 @@
                       },
                       {
                         "expression": {
+                          "non_null": true,
                           "name": "Name"
                         }
                       }
@@ -305,7 +306,8 @@
                 "async": true,
                 "body": {
                   "expression": {
-                    "access": {
+                    "await": true,
+                    "object": {
                       "int": "1",
                       "name": "Task"
                     }
@@ -346,14 +348,14 @@
                     }
                   },
                   {
-                    "generic_type": {
+                    "name": "fn",
+                    "type": {
                       "name": [
                         "Transformer",
                         "T",
                         "TResult"
                       ]
-                    },
-                    "name": "fn"
+                    }
                   }
                 ]
               }
@@ -362,7 +364,7 @@
               "public": true,
               "override": true,
               "get": {
-                "access": "base.Priority"
+                "object": "base.Priority"
               },
               "name": "Priority",
               "set": {
@@ -370,7 +372,7 @@
                 "assign": {
                   "expression": [
                     {
-                      "access": "base.Priority"
+                      "object": "base.Priority"
                     },
                     {
                       "name": "value"
@@ -390,7 +392,7 @@
               }
             },
             {
-              "generic_type": {
+              "type": {
                 "name": [
                   "IRepository",
                   "Widget"
@@ -411,7 +413,7 @@
                 "binary": {
                   "left": {
                     "expression": {
-                      "access": {
+                      "object": {
                         "name": "w"
                       }
                     }
@@ -528,7 +530,7 @@
                     "string": {
                       "interpolation": [
                         {
-                          "access": {
+                          "object": {
                             "name": "evens"
                           }
                         },
@@ -552,10 +554,10 @@
                   "body": {
                     "expression": {
                       "call": {
-                        "access": {
+                        "name": "log",
+                        "object": {
                           "name": "n"
-                        },
-                        "name": "log"
+                        }
                       }
                     }
                   },
@@ -576,11 +578,11 @@
                 "if": {
                   "body": {
                     "expression": {
-                      "access": {
-                        "access": {
+                      "object": {
+                        "name": "Console",
+                        "object": {
                           "name": "probe"
-                        },
-                        "name": "Console"
+                        }
                       }
                     }
                   },
@@ -645,14 +647,14 @@
                                                         "binary": {
                                                           "left": {
                                                             "expression": {
-                                                              "access": {
+                                                              "object": {
                                                                 "name": "list"
                                                               }
                                                             }
                                                           },
                                                           "right": {
                                                             "expression": {
-                                                              "access": {
+                                                              "object": {
                                                                 "name": "map"
                                                               }
                                                             }
@@ -662,7 +664,7 @@
                                                     },
                                                     "right": {
                                                       "expression": {
-                                                        "access": {
+                                                        "object": {
                                                           "name": "plain"
                                                         }
                                                       }
@@ -672,7 +674,7 @@
                                               },
                                               "right": {
                                                 "expression": {
-                                                  "access": {
+                                                  "object": {
                                                     "name": "verbatim"
                                                   }
                                                 }
@@ -682,7 +684,7 @@
                                         },
                                         "right": {
                                           "expression": {
-                                            "access": {
+                                            "object": {
                                               "name": "interp"
                                             }
                                           }
@@ -692,7 +694,7 @@
                                   },
                                   "right": {
                                     "expression": {
-                                      "access": {
+                                      "object": {
                                         "name": "raw"
                                       }
                                     }
@@ -737,7 +739,7 @@
                       },
                       "right": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "name": "shouted"
                           }
                         }
@@ -751,11 +753,11 @@
                       {
                         "break": "break;",
                         "expression": {
-                          "access": {
-                            "access": {
+                          "object": {
+                            "name": "Console",
+                            "object": {
                               "name": "w"
-                            },
-                            "name": "Console"
+                            }
                           }
                         },
                         "pattern": {
@@ -801,7 +803,7 @@
                     "using": {
                       "body": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "int": "1",
                             "name": "inner"
                           }
@@ -836,10 +838,10 @@
                       "body": {
                         "expression": {
                           "call": {
-                            "access": {
+                            "name": "log",
+                            "object": {
                               "name": "ex"
-                            },
-                            "name": "log"
+                            }
                           }
                         }
                       },
@@ -848,7 +850,7 @@
                           "binary": {
                             "left": {
                               "expression": {
-                                "access": {
+                                "object": {
                                   "name": "ex"
                                 }
                               }
@@ -877,7 +879,7 @@
                   "finally": {
                     "body": {
                       "expression": {
-                        "access": {
+                        "object": {
                           "name": "scope"
                         }
                       }
@@ -914,7 +916,7 @@
                       "binary": {
                         "left": {
                           "expression": {
-                            "access": {
+                            "object": {
                               "name": "widget"
                             }
                           }
@@ -942,7 +944,7 @@
                                 "recursive": true,
                                 "properties": {
                                   "subpattern": {
-                                    "access": {
+                                    "object": {
                                       "name": "Name"
                                     },
                                     "pattern": {
@@ -984,7 +986,7 @@
                                   "name": "Priority",
                                   "pattern": {
                                     "constant": true,
-                                    "access": {
+                                    "object": {
                                       "name": "Priority"
                                     }
                                   }
@@ -1006,7 +1008,7 @@
                               "binary": {
                                 "left": {
                                   "expression": {
-                                    "access": {
+                                    "object": {
                                       "name": "w"
                                     }
                                   }
@@ -1034,6 +1036,7 @@
                   },
                   {
                     "expression": {
+                      "non_null": true,
                       "name": "widget"
                     },
                     "name": "token",
@@ -1106,7 +1109,7 @@
                   },
                   {
                     "expression": {
-                      "access": {
+                      "object": {
                         "lambda": [
                           {
                             "binary": {
@@ -1193,14 +1196,14 @@
                         }
                       }
                     },
-                    "generic_type": {
+                    "name": "cube",
+                    "type": {
                       "name": [
                         "Func",
                         "int",
                         "int"
                       ]
-                    },
-                    "name": "cube"
+                    }
                   },
                   {
                     "expression": {
@@ -1228,19 +1231,19 @@
                         }
                       }
                     },
-                    "generic_type": {
+                    "name": "blockLambda",
+                    "type": {
                       "name": [
                         "Func",
                         "int",
                         "int"
                       ]
-                    },
-                    "name": "blockLambda"
+                    }
                   },
                   {
                     "expression": {
                       "lambda": {
-                        "access": {
+                        "object": {
                           "name": [
                             "Console",
                             "msg"
@@ -1251,13 +1254,13 @@
                         }
                       }
                     },
-                    "generic_type": {
+                    "name": "log",
+                    "type": {
                       "name": [
                         "Action",
                         "string"
                       ]
-                    },
-                    "name": "log"
+                    }
                   },
                   {
                     "expression": {
@@ -1297,7 +1300,7 @@
                   {
                     "expression": {
                       "tuple": {
-                        "access": {
+                        "object": {
                           "name": "odds"
                         },
                         "string": "\"odd\""
@@ -1350,13 +1353,13 @@
                         }
                       }
                     },
-                    "generic_type": {
+                    "name": "list",
+                    "type": {
                       "name": [
                         "List",
                         "int"
                       ]
-                    },
-                    "name": "list"
+                    }
                   },
                   {
                     "expression": {
@@ -1389,14 +1392,14 @@
                         ]
                       }
                     },
-                    "generic_type": {
+                    "name": "map",
+                    "type": {
                       "name": [
                         "Dictionary",
                         "string",
                         "int"
                       ]
-                    },
-                    "name": "map"
+                    }
                   },
                   {
                     "expression": {
@@ -1479,13 +1482,13 @@
                   }
                 },
                 {
-                  "generic_type": {
+                  "name": "numbers",
+                  "type": {
                     "name": [
                       "IEnumerable",
                       "int"
                     ]
-                  },
-                  "name": "numbers"
+                  }
                 }
               ]
             }
@@ -1563,7 +1566,7 @@
             "name": "Added",
             "type": {
               "nullable": true,
-              "generic_type": {
+              "type": {
                 "name": [
                   "EventHandler",
                   "T"
@@ -1683,7 +1686,7 @@
               "public": true,
               "override": true,
               "body": {
-                "access": {
+                "object": {
                   "name": [
                     "HashCode",
                     "X",
@@ -1704,14 +1707,14 @@
                     {
                       "left": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "name": "a"
                           }
                         }
                       },
                       "right": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "name": "b"
                           }
                         }
@@ -1720,14 +1723,14 @@
                     {
                       "left": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "name": "a"
                           }
                         }
                       },
                       "right": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "name": "b"
                           }
                         }
@@ -1764,14 +1767,14 @@
                       "binary": {
                         "left": {
                           "expression": {
-                            "access": {
+                            "object": {
                               "name": "a"
                             }
                           }
                         },
                         "right": {
                           "expression": {
-                            "access": {
+                            "object": {
                               "name": "b"
                             }
                           }
@@ -1784,14 +1787,14 @@
                       "binary": {
                         "left": {
                           "expression": {
-                            "access": {
+                            "object": {
                               "name": "a"
                             }
                           }
                         },
                         "right": {
                           "expression": {
-                            "access": {
+                            "object": {
                               "name": "b"
                             }
                           }
@@ -1925,7 +1928,7 @@
               "public": true,
               "static": true,
               "body": {
-                "access": {
+                "object": {
                   "name": "Hidden"
                 }
               },
@@ -2580,8 +2583,9 @@
                             "string": "\"not string\""
                           },
                           {
-                            "access": {
+                            "object": {
                               "expression": {
+                                "non_null": true,
                                 "name": "x"
                               }
                             },
@@ -2735,7 +2739,7 @@
                   }
                 },
                 "body": {
-                  "access": {
+                  "object": {
                     "name": "s"
                   }
                 },
@@ -2755,7 +2759,7 @@
                     "body": {
                       "return": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "name": "arr"
                           }
                         }
@@ -2784,7 +2788,7 @@
                       "binary": {
                         "left": {
                           "expression": {
-                            "access": {
+                            "object": {
                               "name": "joined"
                             }
                           }
@@ -2794,7 +2798,7 @@
                             "binary": {
                               "left": {
                                 "expression": {
-                                  "access": {
+                                  "object": {
                                     "name": "asArr"
                                   }
                                 }
@@ -2857,7 +2861,7 @@
                           },
                           "name": "grp",
                           "select": {
-                            "access": {
+                            "object": {
                               "name": "grp"
                             }
                           }
@@ -3233,13 +3237,13 @@
                           }
                         }
                       },
-                      "generic_type": {
+                      "name": "span",
+                      "type": {
                         "name": [
                           "Span",
                           "int"
                         ]
-                      },
-                      "name": "span"
+                      }
                     },
                     {
                       "expression": {
@@ -3252,13 +3256,13 @@
                           ]
                         }
                       },
-                      "generic_type": {
+                      "name": "auto",
+                      "type": {
                         "name": [
                           "Span",
                           "int"
                         ]
-                      },
-                      "name": "auto"
+                      }
                     }
                   ]
                 },
@@ -3320,7 +3324,7 @@
                 "public": true,
                 "static": true,
                 "body": {
-                  "access": {
+                  "object": {
                     "name": [
                       "xs",
                       "i"
@@ -3406,7 +3410,7 @@
                         "name": "target"
                       },
                       {
-                        "access": {
+                        "object": {
                           "int": "0",
                           "name": "data"
                         }
@@ -3422,13 +3426,13 @@
                       "scoped": true,
                       "type": {
                         "path": {
-                          "generic_type": {
+                          "name": "System",
+                          "type": {
                             "name": [
                               "Span",
                               "int"
                             ]
-                          },
-                          "name": "System"
+                          }
                         }
                       }
                     }
@@ -3538,7 +3542,7 @@
                 "body": {
                   "return": {
                     "expression": {
-                      "access": {
+                      "object": {
                         "name": "q"
                       }
                     }
@@ -3568,7 +3572,7 @@
                           ]
                         },
                         "select": {
-                          "access": {
+                          "object": {
                             "name": "matched"
                           }
                         }
@@ -3617,32 +3621,32 @@
                 "body": {
                   "name": "a"
                 },
-                "generic_type": {
+                "parameter": [
+                  {
+                    "name": "a",
+                    "type": {
+                      "name": [
+                        "Container",
+                        "T"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "b",
+                    "type": {
+                      "name": [
+                        "Container",
+                        "T"
+                      ]
+                    }
+                  }
+                ],
+                "type": {
                   "name": [
                     "Container",
                     "T"
                   ]
-                },
-                "parameter": [
-                  {
-                    "generic_type": {
-                      "name": [
-                        "Container",
-                        "T"
-                      ]
-                    },
-                    "name": "a"
-                  },
-                  {
-                    "generic_type": {
-                      "name": [
-                        "Container",
-                        "T"
-                      ]
-                    },
-                    "name": "b"
-                  }
-                ]
+                }
               },
               {
                 "public": true,
@@ -3651,13 +3655,13 @@
                   "int": "0"
                 },
                 "parameter": {
-                  "generic_type": {
+                  "name": "c",
+                  "type": {
                     "name": [
                       "Container",
                       "T"
                     ]
-                  },
-                  "name": "c"
+                  }
                 },
                 "type": {
                   "name": "int"
@@ -3698,7 +3702,7 @@
                     "binary": {
                       "left": {
                         "expression": {
-                          "access": {
+                          "object": {
                             "name": "p"
                           }
                         }

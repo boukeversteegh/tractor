@@ -182,13 +182,13 @@ fn test_csharp_null_forgiving_operator() {
 
     // Can query for member access on null-forgiving expression.
     // Post iter-245 (C# chain inversion): the chain is
-    // `<object[access]><expression[non_null]>name</expression><member>Length</member></object>`,
+    // `<object><expression[non_null]>name</expression><member>Length</member></object>`,
     // so the non-null expression is the chain receiver (a direct
     // child of the chain wrapper).
     let matches = engine.query_documents(
         &mut result.documents,
         result.doc_handle,
-        "//object[access]/expression[non_null]",
+        "//object/expression[non_null]",
         result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");

@@ -61,10 +61,10 @@ program/
   │   │   │   └─ int = "0"
   │   │   └─ body/
   │   │       ├─ expression/assign/
-  │   │       │   ├─ expression/access/variable/name = "this"
+  │   │       │   ├─ expression/object/variable/name = "this"
   │   │       │   └─ expression/variable/name = "name"
   │   │       └─ expression/assign/
-  │   │           ├─ expression/access/variable/name = "this"
+  │   │           ├─ expression/object/variable/name = "this"
   │   │           └─ expression/variable/name = "count"
   │   ├─ method[public and abstract]/
   │   │   ├─ name = "render"
@@ -93,15 +93,15 @@ program/
   │   │       │   ├─ expression/variable/name = "target"
   │   │       │   └─ expression/binary/
   │   │       │       ├─ left/expression/variable/name = "who"
-  │   │       │       └─ right/expression/access/variable/name = "this"
+  │   │       │       └─ right/expression/object/variable/name = "this"
   │   │       └─ if/
   │   │           ├─ condition/expression/binary/
-  │   │           │   ├─ left/expression/access/variable/name = "this"
+  │   │           │   ├─ left/expression/object/variable/name = "this"
   │   │           │   └─ right/expression/int = "10"
   │   │           ├─ then/body/return/string/interpolation/variable/name = "target"
   │   │           ├─ else_if/
   │   │           │   ├─ condition/expression/binary/
-  │   │           │   │   ├─ left/expression/access/variable/name = "this"
+  │   │           │   │   ├─ left/expression/object/variable/name = "this"
   │   │           │   │   └─ right/expression/int = "0"
   │   │           │   └─ body/return/string/interpolation/variable/name = "target"
   │   │           └─ else/body/return/string/interpolation/variable/name = "target"
@@ -175,10 +175,10 @@ program/
   │   │       │       │   └─ then/body/continue = "continue;"
   │   │       │       └─ try/
   │   │       │           ├─ body/expression/assign/
-  │   │       │           │   ├─ expression/access/
+  │   │       │           │   ├─ expression/object/
   │   │       │           │   │   ├─ variable/name = "results"
   │   │       │           │   │   └─ variable/name = "key"
-  │   │       │           │   └─ expression/access/
+  │   │       │           │   └─ expression/object/
   │   │       │           │       ├─ variable/name = "this"
   │   │       │           │       └─ argument/variable/name = "item"
   │   │       │           └─ catch/
@@ -332,7 +332,7 @@ program/
   │       │       └─ name = "name"
   │       ├─ expression/assign/
   │       │   ├─ expression/variable/name = "size"
-  │       │   └─ expression/access/variable/name = "thing"
+  │       │   └─ expression/object/variable/name = "thing"
   │       ├─ comment[leading] = "// Anonymous class."
   │       ├─ expression/assign/
   │       │   ├─ expression/variable/name = "anon"
@@ -366,7 +366,7 @@ program/
   │       │       └─ int = "3"
   │       ├─ expression/assign/
   │       │   ├─ expression/variable/name = "alias"
-  │       │   └─ expression/access/
+  │       │   └─ expression/object/
   │       │       ├─ variable/name = "items"
   │       │       └─ int = "0"
   │       ├─ foreach/
@@ -468,7 +468,7 @@ program/
   │   │   │   └─ type/name = "Countable2"
   │   │   └─ variable/name = "thing"
   │   ├─ type = "int"
-  │   └─ body/return/access/variable/name = "thing"
+  │   └─ body/return/object/variable/name = "thing"
   ├─ comment[leading] = "// DNF type in parameter position."
   ├─ function/
   │   ├─ name = "dnf_demo"

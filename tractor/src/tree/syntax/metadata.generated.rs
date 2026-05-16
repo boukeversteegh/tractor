@@ -24,7 +24,9 @@ use serde_json::Value;
 #[allow(unused_imports)]
 use super::types::{
     element_name_for_accessor, element_name_for_atom,
-    element_name_for_field_wrap, element_name_for_simple_statement,
+    element_name_for_field_wrap, element_name_for_generic_type,
+    element_name_for_object_access, element_name_for_raw,
+    element_name_for_simple_statement, element_name_for_type_parameter,
 };
 
 /// The XML element name for this tree node, or `None` if the
@@ -37,7 +39,7 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
     match tree {
         SyntaxTree::Module { .. } => Some("module"),
         SyntaxTree::Expression { .. } => Some("expression"),
-        SyntaxTree::Access { .. } => Some("access"),
+        SyntaxTree::ObjectAccess { .. } => Some(element_name_for_object_access(tree)),
         SyntaxTree::Binary { .. } => Some("binary"),
         SyntaxTree::Logical { .. } => Some("logical"),
         SyntaxTree::Unary { .. } => Some("unary"),
@@ -46,7 +48,7 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
         SyntaxTree::Set { .. } => Some("set"),
         SyntaxTree::Dictionary { .. } => Some("dictionary"),
         SyntaxTree::Pair { .. } => Some("pair"),
-        SyntaxTree::GenericType { .. } => Some("generic_type"),
+        SyntaxTree::GenericType { .. } => Some(element_name_for_generic_type(tree)),
         SyntaxTree::Comparison { .. } => Some("comparison"),
         SyntaxTree::If { .. } => Some("if"),
         SyntaxTree::ElseIf { .. } => Some("else_if"),
@@ -84,7 +86,7 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
         SyntaxTree::Decorator { .. } => Some("decorator"),
         SyntaxTree::Returns { .. } => Some("returns"),
         SyntaxTree::Generic { .. } => Some("generic"),
-        SyntaxTree::TypeParameter { .. } => Some("type_parameter"),
+        SyntaxTree::TypeParameter { .. } => Some(element_name_for_type_parameter(tree)),
         SyntaxTree::Return { .. } => Some("return"),
         SyntaxTree::Comment { .. } => Some("comment"),
         SyntaxTree::Assign { .. } => Some("assign"),
@@ -117,7 +119,7 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
         SyntaxTree::Null { .. } => Some("null"),
         SyntaxTree::Inline { .. } => None,
         SyntaxTree::Unknown { .. } => Some("unknown"),
-        SyntaxTree::Raw { .. } => Some("raw"),
+        SyntaxTree::Raw { .. } => Some(element_name_for_raw(tree)),
     }
 }
 
@@ -132,8 +134,17 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
     let mut out: Vec<Marker> = Vec::new();
     match tree {
         SyntaxTree::Module { .. } => {}
-        SyntaxTree::Expression { .. } => {}
-        SyntaxTree::Access { .. } => {}
+        SyntaxTree::Expression { marker, span, .. } => {
+            if let Some(name) = marker {
+                out.push(Marker {
+                    name,
+                    range: ByteRange::synthetic_empty(),
+                    span: *span,
+                });
+            }
+
+        }
+        SyntaxTree::ObjectAccess { .. } => {}
         SyntaxTree::Binary { .. } => {}
         SyntaxTree::Logical { .. } => {}
         SyntaxTree::Unary { extra_markers, .. } => {
@@ -382,7 +393,7 @@ pub fn range_of(tree: &SyntaxTree) -> ByteRange {
     match tree {
         SyntaxTree::Module { range, .. } => *range,
         SyntaxTree::Expression { range, .. } => *range,
-        SyntaxTree::Access { range, .. } => *range,
+        SyntaxTree::ObjectAccess { range, .. } => *range,
         SyntaxTree::Binary { range, .. } => *range,
         SyntaxTree::Logical { range, .. } => *range,
         SyntaxTree::Unary { range, .. } => *range,
@@ -473,7 +484,7 @@ pub fn span_of(tree: &SyntaxTree) -> Span {
     match tree {
         SyntaxTree::Module { span, .. } => *span,
         SyntaxTree::Expression { span, .. } => *span,
-        SyntaxTree::Access { span, .. } => *span,
+        SyntaxTree::ObjectAccess { span, .. } => *span,
         SyntaxTree::Binary { span, .. } => *span,
         SyntaxTree::Logical { span, .. } => *span,
         SyntaxTree::Unary { span, .. } => *span,
@@ -589,7 +600,7 @@ pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
         SyntaxTree::Expression { inner, .. } => {
             v.push(inner);
         }
-        SyntaxTree::Access { receiver, segments, .. } => {
+        SyntaxTree::ObjectAccess { receiver, segments, .. } => {
             if let AccessReceiver::Instance(__t) = receiver { v.push(__t); }
             for __s in segments {
                 match __s {
@@ -922,7 +933,7 @@ pub fn span_mut_of(tree: &mut SyntaxTree) -> &mut Span {
     match tree {
         SyntaxTree::Module { span, .. } => span,
         SyntaxTree::Expression { span, .. } => span,
-        SyntaxTree::Access { span, .. } => span,
+        SyntaxTree::ObjectAccess { span, .. } => span,
         SyntaxTree::Binary { span, .. } => span,
         SyntaxTree::Logical { span, .. } => span,
         SyntaxTree::Unary { span, .. } => span,
@@ -1017,7 +1028,7 @@ pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
         SyntaxTree::Expression { inner, .. } => {
             v.push(inner.as_mut());
         }
-        SyntaxTree::Access { receiver, segments, .. } => {
+        SyntaxTree::ObjectAccess { receiver, segments, .. } => {
             if let AccessReceiver::Instance(__t) = receiver { v.push(__t.as_mut()); }
             for __s in segments.iter_mut() {
                 match __s {
@@ -1571,7 +1582,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 span,
             }
         }
-        "access" => {
+        "object_access" => {
             let mut __kids = children;
             let receiver = {
                 let inner = if let Some(v) = map.get("receiver") {
@@ -1590,7 +1601,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             let segments = { let _ = &mut __kids; Vec::new() };
             let range = ByteRange::synthetic_empty();
             let span = Span::point(0, 0);
-            SyntaxTree::Access {
+            SyntaxTree::ObjectAccess {
                 receiver,
                 segments,
                 range,

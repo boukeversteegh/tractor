@@ -212,7 +212,7 @@ file/
   │       │   ├─ name = "async_clone"
   │       │   ├─ parameter[self]/name = "self"
   │       │   ├─ returns/type/name = "Self"
-  │       │   └─ body/access = "self.clone()"
+  │       │   └─ body/object = "self.clone()"
   │       ├─ function[pub]/
   │       │   ├─ name = "const_fn"
   │       │   ├─ returns/type/name = "u32"
@@ -223,7 +223,7 @@ file/
   │           │   ├─ name = "ptr"
   │           │   └─ type[pointer]/name = "T"
   │           ├─ returns/type/name = "T"
-  │           └─ body/access/unary/name = "ptr"
+  │           └─ body/object/unary/name = "ptr"
   ├─ impl/
   │   ├─ lifetime/name = "a"
   │   ├─ generic/name = "T"
@@ -415,9 +415,9 @@ file/
   │       │           └─ int = "3"
   │       └─ let/
   │           ├─ name = "parsed"
-  │           └─ value/expression/access/
+  │           └─ value/expression/object/
   │               ├─ call/call[generic]/
-  │               │   ├─ access/string = "\"42\""
+  │               │   ├─ object/string = "\"42\""
   │               │   └─ name = "i32"
   │               └─ int = "0"
   ├─ function[pub]/
@@ -447,7 +447,7 @@ file/
   │       │           ├─ field/
   │       │           │   ├─ name = "y"
   │       │           │   └─ value/expression/int = "20"
-  │       │           └─ field[base]/access/name = "p"
+  │       │           └─ field[base]/object/name = "p"
   │       ├─ let/
   │       │   ├─ name = "result"
   │       │   └─ value/expression/match/
@@ -507,7 +507,7 @@ file/
   │       │           │   │   │   └─ name = "Labeled"
   │       │           │   │   └─ pattern[ref]/name = "name"
   │       │           │   └─ value/cast/
-  │       │           │       ├─ value/expression/access/name = "name"
+  │       │           │       ├─ value/expression/object/name = "name"
   │       │           │       └─ type/name = "i32"
   │       │           └─ arm/
   │       │               ├─ pattern = "_"
@@ -542,7 +542,7 @@ file/
   │       │       └─ value/expression/name = "v"
   │       ├─ let[mut]/
   │       │   ├─ name = "it"
-  │       │   └─ value/expression/access/macro/
+  │       │   └─ value/expression/object/macro/
   │       │       ├─ name = "vec"
   │       │       ├─ int = "1"
   │       │       ├─ int = "2"
@@ -551,7 +551,7 @@ file/
   │       │   ├─ condition/expression/
   │       │   │   ├─ name = "Some"
   │       │   │   ├─ name = "x"
-  │       │   │   └─ access/name = "it"
+  │       │   │   └─ object/name = "it"
   │       │   └─ body/
   │       │       ├─ let/
   │       │       │   ├─ name = "_shadow"
@@ -612,7 +612,7 @@ file/
   │       ├─ let/
   │       │   ├─ name = "parsed"
   │       │   ├─ type/name = "i32"
-  │       │   └─ value/expression/try/access/string = "\"10\""
+  │       │   └─ value/expression/try/object/string = "\"10\""
   │       ├─ let/
   │       │   ├─ name = "casted"
   │       │   └─ value/expression/cast/
@@ -831,7 +831,7 @@ file/
   │       ├─ let/
   │       │   ├─ name = "head_tail"
   │       │   └─ value/expression/match/
-  │       │       ├─ value/expression/ref/access/
+  │       │       ├─ value/expression/ref/object/
   │       │       │   ├─ name = "arr"
   │       │       │   └─ range[exclusive] = ".."
   │       │       └─ body/
@@ -925,9 +925,9 @@ file/
   │       │       └─ name = "new"
   │       └─ binary/
   │           ├─ left/expression/cast/
-  │           │   ├─ value/expression/access/name = "v"
+  │           │   ├─ value/expression/object/name = "v"
   │           │   └─ type/name = "i32"
-  │           └─ right/expression/access/
+  │           └─ right/expression/object/
   │               ├─ name = "triples"
   │               └─ int = "0"
   └─ function[private]/

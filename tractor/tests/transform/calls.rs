@@ -24,40 +24,40 @@ fn rust_method_call() {
         "#),
         1);
 
-    claim("Rust method call inverts to <object[access]> chain shape (iter 248)",
+    claim("Rust method call inverts to <object> chain shape (iter 248)",
         &mut parse_src("rust", r#"
         fn use_calls(v: Vec<i32>) {
             let n = v.len();
         }
     "#),
         &multi_xpath(r#"
-            //object[access]
+            //object
                 [name='v']
                 [call/name='len']
         "#),
         1);
 
-    claim("Rust method call on literal receiver inverts to <object[access]>",
+    claim("Rust method call on literal receiver inverts to <object>",
         &mut parse_src("rust", r#"
         fn use_calls() {
             let s = "hi".to_string();
         }
     "#),
         &multi_xpath(r#"
-            //object[access]
+            //object
                 [string]
                 [call/name='to_string']
         "#),
         1);
 
-    claim("Rust expression statement method call inverts to <object[access]>",
+    claim("Rust expression statement method call inverts to <object>",
         &mut parse_src("rust", r#"
         fn use_calls(s: String) {
             s.to_uppercase();
         }
     "#),
         &multi_xpath(r#"
-            //object[access]
+            //object
                 [name='s']
                 [call/name='to_uppercase']
         "#),

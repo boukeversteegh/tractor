@@ -100,7 +100,7 @@
                 "assign": {
                   "expression": [
                     {
-                      "access": {
+                      "object": {
                         "this": "this"
                       }
                     },
@@ -142,17 +142,17 @@
           },
           {
             "protected": true,
-            "generic_type": {
-              "generic_type": {
+            "name": "items",
+            "type": {
+              "name": "List",
+              "type": {
                 "name": [
                   "Map",
                   "String",
                   "T"
                 ]
-              },
-              "name": "List"
-            },
-            "name": "items"
+              }
+            }
           },
           {
             "package": true,
@@ -207,7 +207,7 @@
             "body": {
               "return": {
                 "expression": {
-                  "access": {
+                  "object": {
                     "name": "mapper",
                     "string": "\"hello\""
                   }
@@ -219,14 +219,14 @@
             },
             "name": "factory",
             "parameter": {
-              "generic_type": {
+              "name": "mapper",
+              "type": {
                 "name": [
                   "Function",
                   "String",
                   "R"
                 ]
-              },
-              "name": "mapper"
+              }
             },
             "returns": {
               "type": {
@@ -535,7 +535,7 @@
                         "case": {
                           "guard": {
                             "unary": {
-                              "access": {
+                              "object": {
                                 "name": "s"
                               }
                             }
@@ -653,7 +653,7 @@
       },
       "generic": {
         "extends": {
-          "generic_type": {
+          "type": {
             "name": [
               "Comparable",
               "T"
@@ -663,7 +663,7 @@
         "name": "T"
       },
       "implements": {
-        "generic_type": {
+        "type": {
           "name": [
             "Handler",
             "T"
@@ -680,13 +680,13 @@
           "body": {
             "return": {
               "expression": {
-                "access": {
-                  "access": {
+                "object": {
+                  "name": "String",
+                  "object": {
                     "call": {
                       "name": "getClass"
                     }
                   },
-                  "name": "String",
                   "string": "\"hello from %s\""
                 }
               }
@@ -781,11 +781,11 @@
                       "name": "String"
                     }
                   },
-                  "generic_type": {
+                  "name": "cls",
+                  "type": {
                     "name": "Class",
                     "type": "?"
-                  },
-                  "name": "cls"
+                  }
                 },
                 {
                   "expression": {
@@ -796,14 +796,14 @@
                       ]
                     }
                   },
-                  "generic_type": {
+                  "name": "ref",
+                  "type": {
                     "name": [
                       "java.util.function.Function",
                       "Object",
                       "String"
                     ]
-                  },
-                  "name": "ref"
+                  }
                 }
               ]
             },

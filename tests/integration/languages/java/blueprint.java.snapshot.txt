@@ -30,11 +30,11 @@ program/
   │   ├─ name = "Demo"
   │   ├─ generic/
   │   │   ├─ name = "T"
-  │   │   └─ extends/generic_type/
+  │   │   └─ extends/type/
   │   │       ├─ name = "Comparable"
   │   │       └─ name = "T"
   │   ├─ extends/type/name = "Base"
-  │   ├─ implements/generic_type/
+  │   ├─ implements/type/
   │   │   ├─ name = "Handler"
   │   │   └─ name = "T"
   │   └─ body/
@@ -48,9 +48,9 @@ program/
   │       │   ├─ type/name = "String"
   │       │   └─ name = "name"
   │       ├─ field[protected]/
-  │       │   ├─ generic_type/
+  │       │   ├─ type/
   │       │   │   ├─ name = "List"
-  │       │   │   └─ generic_type/
+  │       │   │   └─ type/
   │       │   │       ├─ name = "Map"
   │       │   │       ├─ name = "String"
   │       │   │       └─ name = "T"
@@ -73,19 +73,19 @@ program/
   │       │   └─ body/
   │       │       ├─ call[super] = "();"
   │       │       └─ expression/assign/
-  │       │           ├─ expression/access/this = "this"
+  │       │           ├─ expression/object/this = "this"
   │       │           └─ expression/name = "name"
   │       ├─ method[public and static]/
   │       │   ├─ generic/name = "R"
   │       │   ├─ returns/type/name = "R"
   │       │   ├─ name = "factory"
   │       │   ├─ parameter/
-  │       │   │   ├─ generic_type/
+  │       │   │   ├─ type/
   │       │   │   │   ├─ name = "Function"
   │       │   │   │   ├─ name = "String"
   │       │   │   │   └─ name = "R"
   │       │   │   └─ name = "mapper"
-  │       │   └─ body/return/expression/access/
+  │       │   └─ body/return/expression/object/
   │       │       ├─ name = "mapper"
   │       │       └─ string = "\"hello\""
   │       ├─ method[public and synchronized]/
@@ -176,7 +176,7 @@ program/
   │       │       │   │   ├─ pattern/
   │       │       │   │   │   ├─ type/name = "String"
   │       │       │   │   │   └─ name = "s"
-  │       │       │   │   └─ guard/unary/access/name = "s"
+  │       │       │   │   └─ guard/unary/object/name = "s"
   │       │       │   └─ expression/binary/
   │       │       │       ├─ left/expression/string = "\"non-empty: \""
   │       │       │       └─ right/expression/name = "s"
@@ -231,10 +231,10 @@ program/
   │   └─ body/method[package]/
   │       ├─ returns/type/name = "String"
   │       ├─ name = "greet"
-  │       └─ body/return/expression/access/
+  │       └─ body/return/expression/object/
   │           ├─ name = "String"
   │           ├─ string = "\"hello from %s\""
-  │           └─ access/call/name = "getClass"
+  │           └─ object/call/name = "getClass"
   ├─ comment = "// Iter 19: new shapes — control flow, expressions, literals, patterns."
   ├─ comment[leading] = "/** @interface (annotation type) with a constant. */"
   ├─ interface/
@@ -277,13 +277,13 @@ program/
           │       │   ├─ name = "ch"
           │       │   └─ expression/string = "'A'"
           │       ├─ variable/
-          │       │   ├─ generic_type/
+          │       │   ├─ type/
           │       │   │   ├─ name = "Class"
           │       │   │   └─ type = "?"
           │       │   ├─ name = "cls"
           │       │   └─ expression/type/name = "String"
           │       └─ variable/
-          │           ├─ generic_type/
+          │           ├─ type/
           │           │   ├─ name = "java.util.function.Function"
           │           │   ├─ name = "Object"
           │           │   └─ name = "String"

@@ -28,7 +28,7 @@ file/
   ├─ const[exported]/name = "StatusError"
   ├─ var[exported]/
   │   ├─ name = "ErrNotFound"
-  │   └─ value/expression/access/
+  │   └─ value/expression/object/
   │       ├─ name = "errors"
   │       └─ string = "\"not found\""
   ├─ var[unexported]/
@@ -124,10 +124,10 @@ file/
   │   │   ├─ name = "v"
   │   │   └─ name = "T"
   │   └─ body/assign/
-  │       ├─ expression/access/name = "c"
+  │       ├─ expression/object/name = "c"
   │       └─ expression/call/
   │           ├─ name = "append"
-  │           ├─ access/name = "c"
+  │           ├─ object/name = "c"
   │           └─ name = "v"
   ├─ method[exported]/
   │   ├─ parameter/
@@ -135,11 +135,11 @@ file/
   │   │   └─ name = "Point"
   │   ├─ name = "String"
   │   ├─ name = "string"
-  │   └─ body/return/expression/access/
+  │   └─ body/return/expression/object/
   │       ├─ name = "fmt"
   │       ├─ string = "\"(%d,%d)\""
-  │       ├─ access/name = "p"
-  │       └─ access/name = "p"
+  │       ├─ object/name = "p"
+  │       └─ object/name = "p"
   ├─ method[exported]/
   │   ├─ parameter/
   │   │   ├─ name = "p"
@@ -151,10 +151,10 @@ file/
   │   │   └─ name = "int"
   │   └─ body/
   │       ├─ assign/
-  │       │   ├─ expression/access/name = "p"
+  │       │   ├─ expression/object/name = "p"
   │       │   └─ expression/name = "dx"
   │       └─ assign/
-  │           ├─ expression/access/name = "p"
+  │           ├─ expression/object/name = "p"
   │           └─ expression/name = "dy"
   ├─ method[exported]/
   │   ├─ parameter/
@@ -162,14 +162,14 @@ file/
   │   │   └─ pointer/name = "MyErr"
   │   ├─ name = "Error"
   │   ├─ name = "string"
-  │   └─ body/return/expression/access/name = "e"
+  │   └─ body/return/expression/object/name = "e"
   ├─ function[unexported]/
   │   ├─ name = "wrap"
   │   ├─ parameter/
   │   │   ├─ name = "err"
   │   │   └─ name = "error"
   │   ├─ name = "error"
-  │   └─ body/return/expression/access/
+  │   └─ body/return/expression/object/
   │       ├─ name = "fmt"
   │       ├─ string = "\"wrap: %w\""
   │       └─ name = "err"
@@ -274,13 +274,13 @@ file/
   │       │       │   ├─ left/expression/
   │       │       │   │   ├─ name = "_"
   │       │       │   │   └─ name = "ok"
-  │       │       │   └─ right/expression/access/
+  │       │       │   └─ right/expression/object/
   │       │       │       ├─ name = "seen"
   │       │       │       └─ name = "x"
   │       │       ├─ condition/expression/unary/name = "ok"
   │       │       └─ then/body/
   │       │           ├─ assign/
-  │       │           │   ├─ expression/access/
+  │       │           │   ├─ expression/object/
   │       │           │   │   ├─ name = "seen"
   │       │           │   │   └─ name = "x"
   │       │           │   └─ expression/literal/struct = "struct{}"
@@ -375,7 +375,7 @@ file/
   │       │       └─ int = "30"
   │       ├─ variable[short]/
   │       │   ├─ left/expression/name = "sub"
-  │       │   └─ right/expression/access[slice]/
+  │       │   └─ right/expression/object[slice]/
   │       │       ├─ name = "fixed"
   │       │       ├─ from/int = "1"
   │       │       └─ to/int = "3"
@@ -399,7 +399,7 @@ file/
   │       │       ├─ string = "\"nums\""
   │       │       └─ spread/index[slice]/object/name = "fixed"
   │       ├─ switch/
-  │       │   ├─ value/expression/access/
+  │       │   ├─ value/expression/object/
   │       │   │   ├─ name = "implicit"
   │       │   │   └─ int = "0"
   │       │   ├─ case/
@@ -443,8 +443,8 @@ file/
   │       │       └─ right/expression/name = "v"
   │       ├─ case/
   │       │   ├─ type/name = "Stringer"
-  │       │   └─ return/expression/access/name = "v"
-  │       └─ default/return/expression/access/
+  │       │   └─ return/expression/object/name = "v"
+  │       └─ default/return/expression/object/
   │           ├─ name = "fmt"
   │           ├─ string = "\"%T\""
   │           └─ name = "v"
@@ -475,7 +475,7 @@ file/
           │   │   ├─ left/expression/
           │   │   │   ├─ name = "x"
           │   │   │   └─ name = "err"
-          │   │   └─ right/expression/access/name = "io"
+          │   │   └─ right/expression/object/name = "io"
           │   ├─ condition/expression/binary/
           │   │   ├─ left/expression/name = "err"
           │   │   └─ right/expression/nil = "nil"
@@ -535,7 +535,7 @@ file/
           │   │   ├─ left/expression/name = "n"
           │   │   └─ right/expression/int = "3"
           │   └─ body/unary[postfix]/name = "n"
-          ├─ go/call/closure/expression/access/
+          ├─ go/call/closure/expression/object/
           │   ├─ name = "fmt"
           │   └─ string = "\"bg\""
           ├─ labeled/
@@ -558,7 +558,7 @@ file/
           │       │   │   └─ int = "42"
           │       │   └─ continue/name = "Outer"
           │       └─ case/
-          │           ├─ receive/unary/access/name = "ctx"
+          │           ├─ receive/unary/object/name = "ctx"
           │           └─ goto/name = "cleanup"
           ├─ labeled/
           │   ├─ name = "cleanup"
@@ -639,11 +639,11 @@ file/
           │   │   ├─ left/expression/name = "err"
           │   │   └─ right/expression/call/name = "doThing"
           │   ├─ condition/expression/logical/
-          │   │   ├─ left/expression/access/
+          │   │   ├─ left/expression/object/
           │   │   │   ├─ name = "errors"
           │   │   │   ├─ name = "err"
           │   │   │   └─ unary/name = "target"
-          │   │   └─ right/expression/access/
+          │   │   └─ right/expression/object/
           │   │       ├─ name = "errors"
           │   │       ├─ name = "err"
           │   │       └─ name = "ErrNotFound"
