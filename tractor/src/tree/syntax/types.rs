@@ -1446,6 +1446,34 @@ impl Access {
         }
     }
 
+    /// Pick the access level out of a list of marker names. Mirror of
+    /// [`Self::marker_names`] — recognises both simple forms
+    /// (`public`, `private`, ...) and the C# compound pairs
+    /// (`protected internal`, `private protected`). Returns `None`
+    /// when no access marker is present.
+    pub fn from_marker_names(names: &[&str]) -> Option<Access> {
+        let has = |n: &str| names.iter().any(|&m| m == n);
+        if has("protected") && has("internal") {
+            Some(Access::ProtectedInternal)
+        } else if has("private") && has("protected") {
+            Some(Access::PrivateProtected)
+        } else if has("public") {
+            Some(Access::Public)
+        } else if has("private") {
+            Some(Access::Private)
+        } else if has("protected") {
+            Some(Access::Protected)
+        } else if has("internal") {
+            Some(Access::Internal)
+        } else if has("file") {
+            Some(Access::File)
+        } else if has("package") {
+            Some(Access::Package)
+        } else {
+            None
+        }
+    }
+
     /// Parse from the source-text of a C# `modifier` node. Returns
     /// `None` for non-access modifiers (`static`, `sealed`, `abstract`,
     /// `partial`, `async`, etc.) — those belong on a separate field.
@@ -1607,26 +1635,56 @@ impl Modifiers {
         out
     }
 
+    /// Reconstruct a `Modifiers` value from the list of marker names
+    /// emitted by [`Self::marker_names`] / [`Self::markers_with_spans`].
+    /// Used by `from_json` to invert the XML/JSON marker projection
+    /// back into the typed flag set.
+    ///
+    /// Unknown names are ignored (a renderer may emit markers that
+    /// don't map to typed flags — e.g. `[sideeffect]` lives in
+    /// `extra_markers`, not `Modifiers`). Access markers map back to
+    /// the closed enum via [`Access::from_marker_names`].
+    pub fn from_marker_names(names: &[&str]) -> Self {
+        let mut m = Modifiers::default();
+        // Access modifiers come from a closed set; collect first so
+        // multi-token access names (`protected internal`) reconstruct
+        // correctly.
+        m.access = Access::from_marker_names(names);
+        for n in names {
+            let _ = m.set_flag(n, true);
+        }
+        m
+    }
+
     /// Flip a modifier flag from text input. Returns Err for unknown
     /// names. Used by the eventual `tractor modify --set foo=true`
     /// CLI surface.
     pub fn set_flag(&mut self, name: &str, value: bool) -> Result<(), &'static str> {
         let flag = Flag::from_bool(value);
         match name {
-            "static"   => self.static_ = flag,
-            "abstract" => self.abstract_ = flag,
-            "sealed"   => self.sealed = flag,
-            "virtual"  => self.virtual_ = flag,
-            "override" => self.override_ = flag,
-            "readonly" => self.readonly = flag,
-            "partial"  => self.partial = flag,
-            "async"    => self.async_ = flag,
-            "const"    => self.const_ = flag,
-            "extern"   => self.extern_ = flag,
-            "unsafe"   => self.unsafe_ = flag,
-            "volatile" => self.volatile = flag,
-            "new"      => self.new_ = flag,
-            "required" => self.required = flag,
+            "static"       => self.static_ = flag,
+            "abstract"     => self.abstract_ = flag,
+            "sealed"       => self.sealed = flag,
+            "virtual"      => self.virtual_ = flag,
+            "override"     => self.override_ = flag,
+            "readonly"     => self.readonly = flag,
+            "partial"      => self.partial = flag,
+            "async"        => self.async_ = flag,
+            "const"        => self.const_ = flag,
+            "extern"       => self.extern_ = flag,
+            "unsafe"       => self.unsafe_ = flag,
+            "volatile"     => self.volatile = flag,
+            "new"          => self.new_ = flag,
+            "required"     => self.required = flag,
+            "final"        => self.final_ = flag,
+            "synchronized" => self.synchronized_ = flag,
+            "transient"    => self.transient = flag,
+            "native"       => self.native = flag,
+            "strictfp"     => self.strictfp = flag,
+            "default"      => self.default = flag,
+            "get"          => self.getter = flag,
+            "set"          => self.setter = flag,
+            "generator"    => self.generator = flag,
             _ => return Err("unknown modifier flag"),
         }
         Ok(())

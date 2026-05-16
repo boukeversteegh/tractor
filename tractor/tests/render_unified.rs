@@ -92,7 +92,6 @@ fn canonical_render_re_parses_to_equivalent_root() {
     // Python. Picked Python because its canonical form (`x`) is the
     // shortest re-parseable thing across the eight languages.
     let tree = SyntaxTree::Module {
-        element_name: "module",
         children: vec![SyntaxTree::Name {
             text: "synthetic_identifier".to_string(),
             range: tractor::tree::ByteRange::synthetic_empty(),

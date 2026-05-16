@@ -2,16 +2,22 @@
 // Source: SyntaxTree enum in tractor/src/tree/syntax/types.rs.
 //
 // Variant-blind reflection metadata that drives the XML and JSON
-// renderers' mechanical walks (`to_xot.rs`, `to_json.rs`). Rules
-// are derived from field types only — no per-variant special cases.
-// See `tractor/build_codegen.rs`.
+// renderers' mechanical walks (`to_xot.rs`, `to_json.rs`, `from_json.rs`).
+// Rules are derived from field types only — no per-variant special
+// cases. See `tractor/build_codegen.rs`.
 
 #![cfg(feature = "native")]
+#![allow(clippy::too_many_lines)]
 
 #[allow(unused_imports)]
 use super::types::{
-    AccessReceiver, AccessSegment, ByteRange, Flag, Marker, Span, SyntaxTree,
+    Access, AccessReceiver, AccessorKind, AccessSegment, ByteRange,
+    Expression, Flag, LambdaBody, Marker, Modifiers, ParamKind, QuoteStyle,
+    Span, SyntaxTree,
 };
+
+#[allow(unused_imports)]
+use serde_json::Value;
 
 // Per-variant element-name overrides declared via
 // `@element_name = <fn>` on the variant's doc comment in `types.rs`.
@@ -1335,4 +1341,3192 @@ pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
     }
     v.sort_by_key(|c| range_of(c).start);
     v
+}
+
+/// Reconstruct a `SyntaxTree` from its JSON projection.
+///
+/// Inverse of `tree_to_json` (modulo lossy bits — source positions,
+/// the `Vec<AccessSegment>` chain shape, ordering of duplicate-named
+/// children). The reconstructed tree is suitable for re-rendering
+/// via `render_source` to produce parseable source code; bit-identity
+/// is **not** preserved.
+///
+/// Generated mechanically from `SyntaxTree` field types — no
+/// per-variant special cases. See `build_codegen.rs::render_from_json`.
+pub fn tree_from_json(value: &Value) -> SyntaxTree {
+    tree_from_json_value(value)
+}
+
+/// Leak `s` into the static string pool. Used for `&'static str`
+/// fields (`element_name`, `kind`, `wrapper`) where the JSON carries
+/// a runtime string. One-time leak per distinct tag is acceptable for
+/// a deserializer; the alternative would be a static interner map.
+fn intern_static(s: &str) -> &'static str {
+    Box::leak(s.to_string().into_boxed_str())
+}
+
+/// Strip a common plural suffix so a Vec<SyntaxTree> field named
+/// `decorators` falls back to looking up `decorator` (the singular
+/// element name). Heuristic — covers `…s`, `…es`, `…_clauses`,
+/// `…_branches`. Returns the input unchanged when no rule fires.
+fn strip_plural(s: &str) -> &str {
+    for suffix in ["_clauses", "_branches"] {
+        if let Some(stripped) = s.strip_suffix(suffix) {
+            // `where_clauses` → `where`; matches the typical
+            // SimpleStatement element_name pinned at lowering time.
+            return stripped;
+        }
+    }
+    for suffix in ["ies", "es", "s"] {
+        if let Some(stripped) = s.strip_suffix(suffix) {
+            if suffix == "ies" {
+                // Heuristic — return the stripped form; caller still
+                // owns the lookup-fallback chain so a miss here just
+                // means we drain from __kids.
+                return stripped;
+            }
+            return stripped;
+        }
+    }
+    s
+}
+
+fn tree_from_json_value(value: &Value) -> SyntaxTree {
+    tree_from_json_with_type_hint(value, None)
+}
+
+/// Reconstruct with an optional `$type` hint. Used when recursing
+/// into a child looked up by JSON key: the key implies the child's
+/// type, and `to_json` strips `$type` from such children to avoid
+/// duplication. The inverse restores it here.
+fn tree_from_json_with_type_hint(value: &Value, type_hint: Option<&str>) -> SyntaxTree {
+    match value {
+        Value::Null => SyntaxTree::Null {
+            text: String::new(),
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(0, 0),
+        },
+        Value::Bool(true) => SyntaxTree::True {
+            text: "true".to_string(),
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(0, 0),
+        },
+        Value::Bool(false) => SyntaxTree::False {
+            text: "false".to_string(),
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(0, 0),
+        },
+        Value::Number(n) => SyntaxTree::Int {
+            text: n.to_string(),
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(0, 0),
+        },
+        Value::String(s) => {
+            // A bare string under a typed key (e.g. `"name": "foo"`)
+            // is the scalar form of a leaf variant — pick the variant
+            // by the hint so `name`, `int`, `string`, etc. all
+            // reconstruct correctly. Without a hint it falls back to
+            // `Name` (the most common leaf shape).
+            scalar_leaf_from_text(type_hint.unwrap_or("name"), s.clone())
+        }
+        Value::Array(arr) => {
+            // Arrays under a typed key carry siblings of that type
+            // (after the Z6 array-grouping fix). Each element inherits
+            // the parent key as its type hint.
+            let children: Vec<SyntaxTree> = arr
+                .iter()
+                .map(|v| tree_from_json_with_type_hint(v, type_hint))
+                .collect();
+            SyntaxTree::Inline {
+                children,
+                list_name: None,
+                range: ByteRange::synthetic_empty(),
+                span: Span::point(0, 0),
+            }
+        }
+        Value::Object(map) => from_json_object_with_hint(map, type_hint),
+    }
+}
+
+/// Construct the right scalar-leaf variant for a JSON string value,
+/// keyed by the surrounding `$type` hint. Falls back to `Name` for
+/// unknown hints — keeps the lossy inversion robust.
+fn scalar_leaf_from_text(tag: &str, text: String) -> SyntaxTree {
+    let range = ByteRange::synthetic_empty();
+    let span = Span::point(0, 0);
+    match tag {
+        "int" => SyntaxTree::Int { text, range, span },
+        "float" => SyntaxTree::Float { text, range, span },
+        "string" => SyntaxTree::String {
+            text,
+            quote_style: QuoteStyle::Double,
+            range,
+            span,
+        },
+        "true" => SyntaxTree::True { text, range, span },
+        "false" => SyntaxTree::False { text, range, span },
+        "none" => SyntaxTree::None { text, range, span },
+        "null" => SyntaxTree::Null { text, range, span },
+        // Anything else: a bare string under an arbitrary key is most
+        // likely an identifier-like leaf. Use Name so renderers see
+        // text content without needing source bytes.
+        _ => SyntaxTree::Name { text, range, span },
+    }
+}
+
+fn from_json_object_with_hint(
+    map: &serde_json::Map<String, Value>,
+    type_hint: Option<&str>,
+) -> SyntaxTree {
+    // Resolve $type — prefer the explicit field; fall back to the
+    // hint passed in by the parent context (key under which this
+    // object was nested).
+    let tag = map
+        .get("$type")
+        .and_then(|v| v.as_str())
+        .or(type_hint)
+        .unwrap_or("");
+    dispatch_from_json_object(map, tag)
+}
+
+fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) -> SyntaxTree {
+    // Drain non-meta values into a flat list of children, in stable
+    // key order. Each child carries the JSON key as a type hint so
+    // nested objects with stripped `$type` reconstruct under the
+    // correct variant. Booleans become marker names; numbers/null
+    // are converted via the value-level dispatcher.
+    let mut children: Vec<SyntaxTree> = Vec::new();
+    let mut markers: Vec<&'static str> = Vec::new();
+    for (key, val) in map.iter() {
+        if key == "$type" { continue; }
+        if key == "$children" {
+            if let Value::Array(arr) = val {
+                for item in arr { children.push(tree_from_json_value(item)); }
+            }
+            continue;
+        }
+        match val {
+            Value::Bool(true) => markers.push(intern_static(key)),
+            Value::Bool(false) => {}
+            Value::Array(arr) => {
+                for item in arr {
+                    children.push(tree_from_json_with_type_hint(item, Some(key.as_str())));
+                }
+            }
+            _ => children.push(tree_from_json_with_type_hint(val, Some(key.as_str()))),
+        }
+    }
+    let marker_strs: Vec<&str> = markers.iter().copied().collect();
+    let _ = &marker_strs;
+    let leaf_text = map.get("text").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let _ = &leaf_text;
+    let static_tag: &'static str = intern_static(tag);
+    let _ = static_tag;
+    match tag {
+        "module" => {
+            let mut __kids = children;
+            let children = {
+                let singular = strip_plural("children");
+                if let Some(v) = map.get("children").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Module {
+                children,
+                range,
+                span,
+            }
+        }
+        "expression" => {
+            let mut __kids = children;
+            let inner = {
+                if let Some(v) = map.get("inner") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("inner")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let marker = None;
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Expression {
+                inner,
+                marker,
+                range,
+                span,
+            }
+        }
+        "access" => {
+            let mut __kids = children;
+            let receiver = {
+                let inner = if let Some(v) = map.get("receiver") {
+                    tree_from_json_with_type_hint(v, Some("receiver"))
+                } else if !__kids.is_empty() {
+                    __kids.remove(0)
+                } else {
+                    SyntaxTree::Unknown {
+                        kind: "from_json:missing_receiver".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    }
+                };
+                AccessReceiver::from_tree(inner, &["this", "self", "super", "base"])
+            };
+            let segments = { let _ = &mut __kids; Vec::new() };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Access {
+                receiver,
+                segments,
+                range,
+                span,
+            }
+        }
+        "binary" => {
+            let mut __kids = children;
+            let op_text = map.get("op_text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let op_marker = static_tag;
+            let op_range = ByteRange::synthetic_empty();
+            let left = {
+                if let Some(v) = map.get("left") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("left")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let right = {
+                if let Some(v) = map.get("right") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("right")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Binary {
+                op_text,
+                op_marker,
+                op_range,
+                left,
+                right,
+                range,
+                span,
+            }
+        }
+        "logical" => {
+            let mut __kids = children;
+            let op_text = map.get("op_text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let op_marker = static_tag;
+            let op_range = ByteRange::synthetic_empty();
+            let left = {
+                if let Some(v) = map.get("left") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("left")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let right = {
+                if let Some(v) = map.get("right") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("right")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Logical {
+                op_text,
+                op_marker,
+                op_range,
+                left,
+                right,
+                range,
+                span,
+            }
+        }
+        "unary" => {
+            let mut __kids = children;
+            let op_text = map.get("op_text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let op_marker = static_tag;
+            let op_range = ByteRange::synthetic_empty();
+            let operand = {
+                if let Some(v) = map.get("operand") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("operand")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let extra_markers = Vec::new();
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Unary {
+                op_text,
+                op_marker,
+                op_range,
+                operand,
+                extra_markers,
+                range,
+                span,
+            }
+        }
+        "tuple" => {
+            let mut __kids = children;
+            let children = {
+                let singular = strip_plural("children");
+                if let Some(v) = map.get("children").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Tuple {
+                children,
+                range,
+                span,
+            }
+        }
+        "list" => {
+            let mut __kids = children;
+            let children = {
+                let singular = strip_plural("children");
+                if let Some(v) = map.get("children").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::List {
+                children,
+                range,
+                span,
+            }
+        }
+        "set" => {
+            let mut __kids = children;
+            let children = {
+                let singular = strip_plural("children");
+                if let Some(v) = map.get("children").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Set {
+                children,
+                range,
+                span,
+            }
+        }
+        "dictionary" => {
+            let mut __kids = children;
+            let pairs = {
+                let singular = strip_plural("pairs");
+                if let Some(v) = map.get("pairs").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Dictionary {
+                pairs,
+                range,
+                span,
+            }
+        }
+        "pair" => {
+            let mut __kids = children;
+            let key = {
+                if let Some(v) = map.get("key") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("key")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let value = {
+                if let Some(v) = map.get("value") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("value")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Pair {
+                key,
+                value,
+                range,
+                span,
+            }
+        }
+        "generic_type" => {
+            let mut __kids = children;
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let params = {
+                let singular = strip_plural("params");
+                if let Some(v) = map.get("params").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::GenericType {
+                name,
+                params,
+                range,
+                span,
+            }
+        }
+        "comparison" => {
+            let mut __kids = children;
+            let left = {
+                if let Some(v) = map.get("left") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("left")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let op_text = map.get("op_text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let op_marker = static_tag;
+            let op_range = ByteRange::synthetic_empty();
+            let right = {
+                if let Some(v) = map.get("right") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("right")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Comparison {
+                left,
+                op_text,
+                op_marker,
+                op_range,
+                right,
+                range,
+                span,
+            }
+        }
+        "if" => {
+            let mut __kids = children;
+            let condition = {
+                if let Some(v) = map.get("condition") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("condition")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let else_branch = {
+                if let Some(v) = map.get("else_branch") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("else_branch"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::If {
+                condition,
+                body,
+                else_branch,
+                range,
+                span,
+            }
+        }
+        "else_if" => {
+            let mut __kids = children;
+            let condition = {
+                if let Some(v) = map.get("condition") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("condition")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let else_branch = {
+                if let Some(v) = map.get("else_branch") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("else_branch"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::ElseIf {
+                condition,
+                body,
+                else_branch,
+                range,
+                span,
+            }
+        }
+        "else" => {
+            let mut __kids = children;
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Else {
+                body,
+                range,
+                span,
+            }
+        }
+        "for" => {
+            let mut __kids = children;
+            let is_async = map.get("is_async").and_then(|v| v.as_bool()).unwrap_or(false);
+            let targets = {
+                let singular = strip_plural("targets");
+                if let Some(v) = map.get("targets").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let iterables = {
+                let singular = strip_plural("iterables");
+                if let Some(v) = map.get("iterables").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let else_body = {
+                if let Some(v) = map.get("else_body") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("else_body"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::For {
+                is_async,
+                targets,
+                iterables,
+                body,
+                else_body,
+                range,
+                span,
+            }
+        }
+        "while" => {
+            let mut __kids = children;
+            let condition = {
+                if let Some(v) = map.get("condition") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("condition")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let else_body = {
+                if let Some(v) = map.get("else_body") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("else_body"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::While {
+                condition,
+                body,
+                else_body,
+                range,
+                span,
+            }
+        }
+        "foreach" => {
+            let mut __kids = children;
+            let type_ann = {
+                if let Some(v) = map.get("type_ann") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("type_ann"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let target = {
+                if let Some(v) = map.get("target") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("target")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let iterable = {
+                if let Some(v) = map.get("iterable") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("iterable")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Foreach {
+                type_ann,
+                target,
+                iterable,
+                body,
+                range,
+                span,
+            }
+        }
+        "c_for" => {
+            let mut __kids = children;
+            let initializer = {
+                if let Some(v) = map.get("initializer") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("initializer"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let condition = {
+                if let Some(v) = map.get("condition") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("condition"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let updates = {
+                let singular = strip_plural("updates");
+                if let Some(v) = map.get("updates").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::CFor {
+                initializer,
+                condition,
+                updates,
+                body,
+                range,
+                span,
+            }
+        }
+        "do_while" => {
+            let mut __kids = children;
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let condition = {
+                if let Some(v) = map.get("condition") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("condition")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::DoWhile {
+                body,
+                condition,
+                range,
+                span,
+            }
+        }
+        "break" => {
+            let mut __kids = children;
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Break {
+                range,
+                span,
+            }
+        }
+        "continue" => {
+            let mut __kids = children;
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Continue {
+                range,
+                span,
+            }
+        }
+        "field_wrap" => {
+            let mut __kids = children;
+            let wrapper = static_tag;
+            let inner = {
+                if let Some(v) = map.get("inner") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("inner")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::FieldWrap {
+                wrapper,
+                inner,
+                range,
+                span,
+            }
+        }
+        "simple_statement" => {
+            let mut __kids = children;
+            let element_name = static_tag;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let extra_markers = Vec::new();
+            let children = {
+                let singular = strip_plural("children");
+                if let Some(v) = map.get("children").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::SimpleStatement {
+                element_name,
+                modifiers,
+                extra_markers,
+                children,
+                range,
+                span,
+            }
+        }
+        "try" => {
+            let mut __kids = children;
+            let try_body = {
+                if let Some(v) = map.get("try_body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("try_body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let handlers = {
+                let singular = strip_plural("handlers");
+                if let Some(v) = map.get("handlers").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let else_body = {
+                if let Some(v) = map.get("else_body") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("else_body"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let finally_body = {
+                if let Some(v) = map.get("finally_body") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("finally_body"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Try {
+                try_body,
+                handlers,
+                else_body,
+                finally_body,
+                range,
+                span,
+            }
+        }
+        "except" => {
+            let mut __kids = children;
+            let type_target = {
+                if let Some(v) = map.get("type_target") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("type_target"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let binding = {
+                if let Some(v) = map.get("binding") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("binding"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let filter = {
+                if let Some(v) = map.get("filter") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("filter"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Except {
+                type_target,
+                binding,
+                filter,
+                body,
+                range,
+                span,
+            }
+        }
+        "catch" => {
+            let mut __kids = children;
+            let type_target = {
+                if let Some(v) = map.get("type_target") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("type_target"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let binding = {
+                if let Some(v) = map.get("binding") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("binding"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let filter = {
+                if let Some(v) = map.get("filter") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("filter"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Catch {
+                type_target,
+                binding,
+                filter,
+                body,
+                range,
+                span,
+            }
+        }
+        "type_alias" => {
+            let mut __kids = children;
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let type_params = {
+                if let Some(v) = map.get("type_params") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("type_params"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let value = {
+                if let Some(v) = map.get("value") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("value")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::TypeAlias {
+                name,
+                type_params,
+                value,
+                range,
+                span,
+            }
+        }
+        "keyword_argument" => {
+            let mut __kids = children;
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let value = {
+                if let Some(v) = map.get("value") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("value")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::KeywordArgument {
+                name,
+                value,
+                range,
+                span,
+            }
+        }
+        "list_splat" => {
+            let mut __kids = children;
+            let inner = {
+                if let Some(v) = map.get("inner") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("inner")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::ListSplat {
+                inner,
+                range,
+                span,
+            }
+        }
+        "dict_splat" => {
+            let mut __kids = children;
+            let inner = {
+                if let Some(v) = map.get("inner") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("inner")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::DictSplat {
+                inner,
+                range,
+                span,
+            }
+        }
+        "ternary" => {
+            let mut __kids = children;
+            let condition = {
+                if let Some(v) = map.get("condition") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("condition")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let if_true = {
+                if let Some(v) = map.get("if_true") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("if_true")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let if_false = {
+                if let Some(v) = map.get("if_false") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("if_false")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Ternary {
+                condition,
+                if_true,
+                if_false,
+                range,
+                span,
+            }
+        }
+        "object_creation" => {
+            let mut __kids = children;
+            let type_target = {
+                if let Some(v) = map.get("type_target") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("type_target"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let arguments = {
+                let singular = strip_plural("arguments");
+                if let Some(v) = map.get("arguments").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let initializer = {
+                if let Some(v) = map.get("initializer") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("initializer"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::ObjectCreation {
+                type_target,
+                arguments,
+                initializer,
+                range,
+                span,
+            }
+        }
+        "lambda" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let parameters = {
+                let singular = strip_plural("parameters");
+                if let Some(v) = map.get("parameters").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let body = {
+                let inner = if let Some(v) = map.get("body").or_else(|| map.get("body")) {
+                    tree_from_json_with_type_hint(v, Some("body"))
+                } else if !__kids.is_empty() {
+                    __kids.remove(0)
+                } else {
+                    SyntaxTree::Body {
+                        children: Vec::new(),
+                        block_wrap: false,
+                        pass_only: false,
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    }
+                };
+                LambdaBody::Expression(Box::new(inner))
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Lambda {
+                modifiers,
+                parameters,
+                body,
+                range,
+                span,
+            }
+        }
+        "function" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let generics = {
+                let singular = strip_plural("generics");
+                if let Some(v) = map.get("generics").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let parameters = {
+                let singular = strip_plural("parameters");
+                if let Some(v) = map.get("parameters").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let returns = {
+                if let Some(v) = map.get("returns") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("returns"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let throws = {
+                let singular = strip_plural("throws");
+                if let Some(v) = map.get("throws").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("body"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Function {
+                modifiers,
+                decorators,
+                name,
+                generics,
+                parameters,
+                returns,
+                throws,
+                body,
+                range,
+                span,
+            }
+        }
+        "method" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let generics = {
+                let singular = strip_plural("generics");
+                if let Some(v) = map.get("generics").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let parameters = {
+                let singular = strip_plural("parameters");
+                if let Some(v) = map.get("parameters").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let returns = {
+                if let Some(v) = map.get("returns") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("returns"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let throws = {
+                let singular = strip_plural("throws");
+                if let Some(v) = map.get("throws").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("body"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Method {
+                modifiers,
+                decorators,
+                name,
+                generics,
+                parameters,
+                returns,
+                throws,
+                body,
+                range,
+                span,
+            }
+        }
+        "class" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let generics = {
+                let singular = strip_plural("generics");
+                if let Some(v) = map.get("generics").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let bases = {
+                let singular = strip_plural("bases");
+                if let Some(v) = map.get("bases").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let where_clauses = {
+                let singular = strip_plural("where_clauses");
+                if let Some(v) = map.get("where_clauses").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Class {
+                modifiers,
+                decorators,
+                name,
+                generics,
+                bases,
+                where_clauses,
+                body,
+                range,
+                span,
+            }
+        }
+        "struct" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let generics = {
+                let singular = strip_plural("generics");
+                if let Some(v) = map.get("generics").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let bases = {
+                let singular = strip_plural("bases");
+                if let Some(v) = map.get("bases").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let where_clauses = {
+                let singular = strip_plural("where_clauses");
+                if let Some(v) = map.get("where_clauses").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Struct {
+                modifiers,
+                decorators,
+                name,
+                generics,
+                bases,
+                where_clauses,
+                body,
+                range,
+                span,
+            }
+        }
+        "interface" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let generics = {
+                let singular = strip_plural("generics");
+                if let Some(v) = map.get("generics").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let bases = {
+                let singular = strip_plural("bases");
+                if let Some(v) = map.get("bases").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let where_clauses = {
+                let singular = strip_plural("where_clauses");
+                if let Some(v) = map.get("where_clauses").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Interface {
+                modifiers,
+                decorators,
+                name,
+                generics,
+                bases,
+                where_clauses,
+                body,
+                range,
+                span,
+            }
+        }
+        "record" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let generics = {
+                let singular = strip_plural("generics");
+                if let Some(v) = map.get("generics").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let bases = {
+                let singular = strip_plural("bases");
+                if let Some(v) = map.get("bases").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let where_clauses = {
+                let singular = strip_plural("where_clauses");
+                if let Some(v) = map.get("where_clauses").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Record {
+                modifiers,
+                decorators,
+                name,
+                generics,
+                bases,
+                where_clauses,
+                body,
+                range,
+                span,
+            }
+        }
+        "body" => {
+            let mut __kids = children;
+            let children = {
+                let singular = strip_plural("children");
+                if let Some(v) = map.get("children").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let pass_only = map.get("pass_only").and_then(|v| v.as_bool()).unwrap_or(false);
+            let block_wrap = map.get("block_wrap").and_then(|v| v.as_bool()).unwrap_or(false);
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Body {
+                children,
+                pass_only,
+                block_wrap,
+                range,
+                span,
+            }
+        }
+        "parameter" => {
+            let mut __kids = children;
+            let kind = {
+                if marker_strs.iter().any(|m| *m == "args") {
+                    ParamKind::Args
+                } else if marker_strs.iter().any(|m| *m == "kwargs") {
+                    ParamKind::Kwargs
+                } else {
+                    ParamKind::Regular
+                }
+            };
+            let extra_markers = Vec::new();
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let type_ann = {
+                if let Some(v) = map.get("type_ann") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("type_ann"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let default = {
+                if let Some(v) = map.get("default") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("default"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Parameter {
+                kind,
+                extra_markers,
+                modifiers,
+                name,
+                type_ann,
+                default,
+                range,
+                span,
+            }
+        }
+        "positional_separator" => {
+            let mut __kids = children;
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::PositionalSeparator {
+                range,
+                span,
+            }
+        }
+        "keyword_separator" => {
+            let mut __kids = children;
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::KeywordSeparator {
+                range,
+                span,
+            }
+        }
+        "decorator" => {
+            let mut __kids = children;
+            let inner = {
+                if let Some(v) = map.get("inner") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("inner")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Decorator {
+                inner,
+                range,
+                span,
+            }
+        }
+        "returns" => {
+            let mut __kids = children;
+            let type_ann = {
+                if let Some(v) = map.get("type_ann") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("type_ann")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Returns {
+                type_ann,
+                range,
+                span,
+            }
+        }
+        "generic" => {
+            let mut __kids = children;
+            let items = {
+                let singular = strip_plural("items");
+                if let Some(v) = map.get("items").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Generic {
+                items,
+                range,
+                span,
+            }
+        }
+        "type_parameter" => {
+            let mut __kids = children;
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let constraint = {
+                if let Some(v) = map.get("constraint") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("constraint"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::TypeParameter {
+                name,
+                constraint,
+                range,
+                span,
+            }
+        }
+        "return" => {
+            let mut __kids = children;
+            let value = {
+                if let Some(v) = map.get("value") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("value"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Return {
+                value,
+                range,
+                span,
+            }
+        }
+        "comment" => {
+            let mut __kids = children;
+            let leading = { if map.get("leading").and_then(|v| v.as_bool()).unwrap_or(false) {
+                    Flag::implicit_at(0, 0)
+                } else { Flag::Off } };
+            let trailing = { if map.get("trailing").and_then(|v| v.as_bool()).unwrap_or(false) {
+                    Flag::implicit_at(0, 0)
+                } else { Flag::Off } };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Comment {
+                leading,
+                trailing,
+                range,
+                span,
+            }
+        }
+        "assign" => {
+            let mut __kids = children;
+            let targets = {
+                let singular = strip_plural("targets");
+                if let Some(v) = map.get("targets").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let type_annotation = {
+                if let Some(v) = map.get("type_annotation") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("type_annotation"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let op_text = map.get("op_text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let op_range = ByteRange::synthetic_empty();
+            let op_markers = Vec::new();
+            let values = {
+                let singular = strip_plural("values");
+                if let Some(v) = map.get("values").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Assign {
+                targets,
+                type_annotation,
+                op_text,
+                op_range,
+                op_markers,
+                values,
+                range,
+                span,
+            }
+        }
+        "import" => {
+            let mut __kids = children;
+            let has_alias = map.get("has_alias").and_then(|v| v.as_bool()).unwrap_or(false);
+            let children = {
+                let singular = strip_plural("children");
+                if let Some(v) = map.get("children").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Import {
+                has_alias,
+                children,
+                range,
+                span,
+            }
+        }
+        "from" => {
+            let mut __kids = children;
+            let relative = map.get("relative").and_then(|v| v.as_bool()).unwrap_or(false);
+            let path = {
+                if let Some(v) = map.get("path") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("path"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let imports = {
+                let singular = strip_plural("imports");
+                if let Some(v) = map.get("imports").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::From {
+                relative,
+                path,
+                imports,
+                range,
+                span,
+            }
+        }
+        "from_import" => {
+            let mut __kids = children;
+            let has_alias = map.get("has_alias").and_then(|v| v.as_bool()).unwrap_or(false);
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let alias = {
+                if let Some(v) = map.get("alias") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("alias"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::FromImport {
+                has_alias,
+                name,
+                alias,
+                range,
+                span,
+            }
+        }
+        "path" => {
+            let mut __kids = children;
+            let segments = {
+                let singular = strip_plural("segments");
+                if let Some(v) = map.get("segments").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Path {
+                segments,
+                range,
+                span,
+            }
+        }
+        "aliased" => {
+            let mut __kids = children;
+            let inner = {
+                if let Some(v) = map.get("inner") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("inner")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Aliased {
+                inner,
+                range,
+                span,
+            }
+        }
+        "call" => {
+            let mut __kids = children;
+            let callee = {
+                if let Some(v) = map.get("callee") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("callee")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let arguments = {
+                let singular = strip_plural("arguments");
+                if let Some(v) = map.get("arguments").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Call {
+                callee,
+                arguments,
+                range,
+                span,
+            }
+        }
+        "name" => {
+            let mut __kids = children;
+            let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Name {
+                text,
+                range,
+                span,
+            }
+        }
+        "int" => {
+            let mut __kids = children;
+            let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Int {
+                text,
+                range,
+                span,
+            }
+        }
+        "float" => {
+            let mut __kids = children;
+            let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Float {
+                text,
+                range,
+                span,
+            }
+        }
+        "string" => {
+            let mut __kids = children;
+            let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let quote_style = QuoteStyle::Double;
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::String {
+                text,
+                quote_style,
+                range,
+                span,
+            }
+        }
+        "true" => {
+            let mut __kids = children;
+            let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::True {
+                text,
+                range,
+                span,
+            }
+        }
+        "false" => {
+            let mut __kids = children;
+            let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::False {
+                text,
+                range,
+                span,
+            }
+        }
+        "none" => {
+            let mut __kids = children;
+            let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::None {
+                text,
+                range,
+                span,
+            }
+        }
+        "atom" => {
+            let mut __kids = children;
+            let element_name = static_tag;
+            let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Atom {
+                element_name,
+                text,
+                range,
+                span,
+            }
+        }
+        "enum" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let underlying_type = {
+                if let Some(v) = map.get("underlying_type") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("underlying_type"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let members = {
+                let singular = strip_plural("members");
+                if let Some(v) = map.get("members").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Enum {
+                modifiers,
+                decorators,
+                name,
+                underlying_type,
+                members,
+                range,
+                span,
+            }
+        }
+        "enum_member" => {
+            let mut __kids = children;
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let value = {
+                if let Some(v) = map.get("value") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("value"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::EnumMember {
+                decorators,
+                name,
+                value,
+                range,
+                span,
+            }
+        }
+        "property" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let type_ann = {
+                if let Some(v) = map.get("type_ann") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("type_ann"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let accessors = {
+                let singular = strip_plural("accessors");
+                if let Some(v) = map.get("accessors").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let value = {
+                if let Some(v) = map.get("value") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("value"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Property {
+                modifiers,
+                decorators,
+                type_ann,
+                name,
+                accessors,
+                value,
+                range,
+                span,
+            }
+        }
+        "accessor" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let kind = {
+                map.get("kind").and_then(|v| v.as_str()).map(|s| match s {
+                    "get" => AccessorKind::Get,
+                    "set" => AccessorKind::Set,
+                    "init" => AccessorKind::Init,
+                    _ => AccessorKind::Get,
+                }).unwrap_or(AccessorKind::Get)
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("body"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Accessor {
+                modifiers,
+                kind,
+                body,
+                range,
+                span,
+            }
+        }
+        "constructor" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let parameters = {
+                let singular = strip_plural("parameters");
+                if let Some(v) = map.get("parameters").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let body = {
+                if let Some(v) = map.get("body") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("body")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Constructor {
+                modifiers,
+                decorators,
+                name,
+                parameters,
+                body,
+                range,
+                span,
+            }
+        }
+        "using" => {
+            let mut __kids = children;
+            let is_static = map.get("is_static").and_then(|v| v.as_bool()).unwrap_or(false);
+            let alias = {
+                if let Some(v) = map.get("alias") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("alias"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let path = {
+                if let Some(v) = map.get("path") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("path")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Using {
+                is_static,
+                alias,
+                path,
+                range,
+                span,
+            }
+        }
+        "namespace" => {
+            let mut __kids = children;
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let children = {
+                let singular = strip_plural("children");
+                if let Some(v) = map.get("children").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let file_scoped = map.get("file_scoped").and_then(|v| v.as_bool()).unwrap_or(false);
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Namespace {
+                name,
+                children,
+                file_scoped,
+                range,
+                span,
+            }
+        }
+        "variable" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let type_ann = {
+                if let Some(v) = map.get("type_ann") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("type_ann"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let value = {
+                if let Some(v) = map.get("value").or_else(|| map.get("expression")) {
+                    Some(Expression::wrap(tree_from_json_with_type_hint(v, Some("expression"))))
+                } else if !__kids.is_empty() {
+                    Some(Expression::wrap(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Variable {
+                modifiers,
+                decorators,
+                type_ann,
+                name,
+                value,
+                range,
+                span,
+            }
+        }
+        "field" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let type_ann = {
+                if let Some(v) = map.get("type_ann") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("type_ann"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let value = {
+                if let Some(v) = map.get("value").or_else(|| map.get("expression")) {
+                    Some(Expression::wrap(tree_from_json_with_type_hint(v, Some("expression"))))
+                } else if !__kids.is_empty() {
+                    Some(Expression::wrap(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Field {
+                modifiers,
+                decorators,
+                type_ann,
+                name,
+                value,
+                range,
+                span,
+            }
+        }
+        "event" => {
+            let mut __kids = children;
+            let modifiers = Modifiers::from_marker_names(&marker_strs);
+            let decorators = {
+                let singular = strip_plural("decorators");
+                if let Some(v) = map.get("decorators").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let type_ann = {
+                if let Some(v) = map.get("type_ann") {
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some("type_ann"))))
+                } else if !__kids.is_empty() {
+                    Some(Box::new(__kids.remove(0)))
+                } else { None }
+            };
+            let name = {
+                if let Some(v) = map.get("name") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("name")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let value = {
+                if let Some(v) = map.get("value").or_else(|| map.get("expression")) {
+                    Some(Expression::wrap(tree_from_json_with_type_hint(v, Some("expression"))))
+                } else if !__kids.is_empty() {
+                    Some(Expression::wrap(__kids.remove(0)))
+                } else { None }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Event {
+                modifiers,
+                decorators,
+                type_ann,
+                name,
+                value,
+                range,
+                span,
+            }
+        }
+        "is" => {
+            let mut __kids = children;
+            let value = {
+                if let Some(v) = map.get("value") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("value")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let type_target = {
+                if let Some(v) = map.get("type_target") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("type_target")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Is {
+                value,
+                type_target,
+                range,
+                span,
+            }
+        }
+        "cast" => {
+            let mut __kids = children;
+            let type_ann = {
+                if let Some(v) = map.get("type_ann") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("type_ann")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let value = {
+                if let Some(v) = map.get("value") {
+                    Box::new(tree_from_json_with_type_hint(v, Some("value")))
+                } else if !__kids.is_empty() {
+                    Box::new(__kids.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Cast {
+                type_ann,
+                value,
+                range,
+                span,
+            }
+        }
+        "null" => {
+            let mut __kids = children;
+            let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Null {
+                text,
+                range,
+                span,
+            }
+        }
+        "unknown" => {
+            let mut __kids = children;
+            let kind = map.get("kind").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Unknown {
+                kind,
+                range,
+                span,
+            }
+        }
+        "raw" => {
+            let mut __kids = children;
+            let kind = map.get("kind").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let is_named = map.get("is_named").and_then(|v| v.as_bool()).unwrap_or(false);
+            let children = {
+                let singular = strip_plural("children");
+                if let Some(v) = map.get("children").or_else(|| map.get(singular)) {
+                    match v {
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }
+                } else {
+                    std::mem::take(&mut __kids)
+                }
+            };
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Raw {
+                kind,
+                is_named,
+                children,
+                range,
+                span,
+            }
+        }
+        _ => SyntaxTree::Unknown {
+            kind: format!("from_json:{}", tag),
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(0, 0),
+        },
+    }
 }

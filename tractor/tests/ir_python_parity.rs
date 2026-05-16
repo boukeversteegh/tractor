@@ -131,7 +131,7 @@ fn ir_pipeline_view(source: &str) -> (String, XotResult) {
     let mut xot = Xot::new();
     let doc_root_name = xot.add_name("_doc_root");
     let doc_root = xot.new_element(doc_root_name);
-    render_to_xot(&mut xot, doc_root, &tree, source).expect("render");
+    render_to_xot(&mut xot, doc_root, &tree, source, None).expect("render");
     // The structural view starts at the tree-emitted root.
     let ir_root = xot
         .children(doc_root)

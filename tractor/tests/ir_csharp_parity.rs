@@ -130,7 +130,7 @@ fn assert_ir_invariants(source: &str, label: &str) {
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &tree, source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, source, None).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let xpath_text = text_concat(&xot, root);
     assert_eq!(xpath_text, source, "XPath text-content recovery broken for {label}");
@@ -197,7 +197,7 @@ fn find_unknown_kinds_in_blueprint_ir() {
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &tree, &source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, &source, None).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     fn walk(xot: &Xot, node: XotNode, counts: &mut std::collections::BTreeMap<String, usize>) {
         if let Some(elem) = xot.element(node) {
@@ -281,7 +281,7 @@ fn dump_for_raw_xml() {
     let mut xot = Xot::new();
     let n = xot.add_name("_root");
     let dr = xot.new_element(n);
-    render_to_xot(&mut xot, dr, &tree, s).expect("render");
+    render_to_xot(&mut xot, dr, &tree, s, None).expect("render");
     let xml = xot.to_string(dr).unwrap();
     eprintln!("{xml}");
 }
@@ -612,7 +612,7 @@ fn dump_ifelse_render() {
     let mut xot = Xot::new();
     let n = xot.add_name("_root");
     let dr = xot.new_element(n);
-    render_to_xot(&mut xot, dr, &tree, s).expect("render");
+    render_to_xot(&mut xot, dr, &tree, s, None).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let xml_node = xot_node_to_xml_node(&xot, root);
     let mut opts = RenderOptions::new();
@@ -803,7 +803,7 @@ fn ir_tree_render() {
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &tree, source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, source, None).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
 
     let xml_node = xot_node_to_xml_node(&xot, root);
@@ -845,7 +845,7 @@ fn blueprint_tree_parity() {
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &tree, &source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, &source, None).expect("render");
     let ir_root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let ir_xml = xot_node_to_xml_node(&xot, ir_root);
     let ir_render = render_query_tree_node(&ir_xml, &opts);
@@ -898,7 +898,7 @@ fn blueprint_parity() {
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &tree, &source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, &source, None).expect("render");
     let ir_root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let ir_view = structural_view(&xot, ir_root);
 
@@ -957,7 +957,7 @@ fn blueprint_coverage_audit() {
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &tree, &source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, &source, None).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let xpath = text_concat(&xot, root);
     if xpath != source {
@@ -1039,7 +1039,7 @@ fn assert_expression_parity(expr: &str, label: &str) {
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &tree, &source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, &source, None).expect("render");
     let ir_root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
 
     let xpath_text = text_concat(&xot, ir_root);
@@ -1118,7 +1118,7 @@ fn conditional_access_isomorphism() {
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
         let dr = xot.new_element(dr_name);
-        render_to_xot(&mut xot, dr, &access, source).expect("render");
+        render_to_xot(&mut xot, dr, &access, source, None).expect("render");
         let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
         structural_view(&xot, root)
     }
@@ -1189,7 +1189,7 @@ fn non_null_assertion() {
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &tree, s).expect("render");
+    render_to_xot(&mut xot, dr, &tree, s, None).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let view = structural_view(&xot, root);
     eprintln!("--- obj! ---\n{view}");
@@ -1230,7 +1230,7 @@ fn is_type_test() {
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &tree, s).expect("render");
+    render_to_xot(&mut xot, dr, &tree, s, None).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let view = structural_view(&xot, root);
     eprintln!("--- x is int ---\n{view}");
@@ -1298,7 +1298,7 @@ fn access_marker_swap_via_enum_mutation() {
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
         let dr = xot.new_element(dr_name);
-        render_to_xot(&mut xot, dr, tree, src).expect("render");
+        render_to_xot(&mut xot, dr, tree, src, None).expect("render");
         let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
         structural_view(&xot, root)
     }
@@ -1364,7 +1364,7 @@ fn static_marker_via_modifiers_mutation() {
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
         let dr = xot.new_element(dr_name);
-        render_to_xot(&mut xot, dr, tree, src).expect("render");
+        render_to_xot(&mut xot, dr, tree, src, None).expect("render");
         let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
         structural_view(&xot, root)
     }
@@ -1422,7 +1422,7 @@ fn cast_expression() {
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &tree, s).expect("render");
+    render_to_xot(&mut xot, dr, &tree, s, None).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let view = structural_view(&xot, root);
     eprintln!("--- (int)y ---\n{view}");

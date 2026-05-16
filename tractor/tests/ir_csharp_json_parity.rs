@@ -47,7 +47,7 @@ fn ir_json_matches_snapshot() {
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
     let tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
-    let json = tree_to_json(&tree, &source);
+    let json = tree_to_json(&tree, &source, None);
 
     let snap = fs::read_to_string(snapshot_path()).expect("snapshot");
     let expected: Value = serde_json::from_str(&snap).expect("parse snapshot");
@@ -79,6 +79,6 @@ fn dump_ir_json() {
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
     let tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
-    let json = tree_to_json(&tree, &source);
+    let json = tree_to_json(&tree, &source, None);
     println!("{}", serde_json::to_string_pretty(&json).unwrap());
 }

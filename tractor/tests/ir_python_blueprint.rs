@@ -81,7 +81,7 @@ fn ir_view(source: &str) -> (String, String, usize) {
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &tree, source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, source, None).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
 
     // Count Unknown elements as a coverage signal.
@@ -258,7 +258,7 @@ fn blueprint_coverage_audit() {
     let mut xot = xot::Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    tractor::tree::render_to_xot(&mut xot, dr, &tree, &source).expect("render");
+    tractor::tree::render_to_xot(&mut xot, dr, &tree, &source, None).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let xpath_text = text_concat(&xot, root);
     assert_eq!(xpath_text, source, "XPath text-content recovery broken");

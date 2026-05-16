@@ -65,7 +65,7 @@ fn python_missing_kinds() {
     // inner-handler fallthrough (the audit only sees outer kinds).
     let mut xot = xot::Xot::new();
     let doc = xot.new_document();
-    tractor::tree::render_to_xot(&mut xot, doc, &tree, &source).expect("render");
+    tractor::tree::render_to_xot(&mut xot, doc, &tree, &source, None).expect("render");
     let xml = xot.to_string(doc).unwrap();
     let mut counts = std::collections::BTreeMap::<String, usize>::new();
     for token in xml.split("<unknown kind=\"").skip(1) {

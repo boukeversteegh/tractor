@@ -68,6 +68,8 @@ pub fn generate() {
     out.push_str(&render_span_mut_of(enum_item));
     out.push('\n');
     out.push_str(&render_children_mut_of(enum_item));
+    out.push('\n');
+    out.push_str(&render_from_json(enum_item));
 
     write_if_changed(OUTPUT, &out);
 }
@@ -77,16 +79,22 @@ const HEADER: &str = "\
 // Source: SyntaxTree enum in tractor/src/tree/syntax/types.rs.
 //
 // Variant-blind reflection metadata that drives the XML and JSON
-// renderers' mechanical walks (`to_xot.rs`, `to_json.rs`). Rules
-// are derived from field types only — no per-variant special cases.
-// See `tractor/build_codegen.rs`.
+// renderers' mechanical walks (`to_xot.rs`, `to_json.rs`, `from_json.rs`).
+// Rules are derived from field types only — no per-variant special
+// cases. See `tractor/build_codegen.rs`.
 
 #![cfg(feature = \"native\")]
+#![allow(clippy::too_many_lines)]
 
 #[allow(unused_imports)]
 use super::types::{
-    AccessReceiver, AccessSegment, ByteRange, Flag, Marker, Span, SyntaxTree,
+    Access, AccessReceiver, AccessorKind, AccessSegment, ByteRange,
+    Expression, Flag, LambdaBody, Marker, Modifiers, ParamKind, QuoteStyle,
+    Span, SyntaxTree,
 };
+
+#[allow(unused_imports)]
+use serde_json::Value;
 
 // Per-variant element-name overrides declared via
 // `@element_name = <fn>` on the variant's doc comment in `types.rs`.
@@ -667,6 +675,559 @@ fn children_mut_arm(v: &Variant) -> String {
 ",
         name, binding_list, body
     )
+}
+
+/// Generate `tree_from_json`: best-effort reverse of [`to_json`].
+///
+/// Strategy: dispatch on JSON shape, then on `$type` for objects:
+/// - **Scalar JSON value** (string / number / bool / null) →
+///   reconstruct the matching scalar-leaf variant via [`leaf_from_json`].
+/// - **Array** → `SyntaxTree::Inline` carrying each element as a
+///   child (mirrors how the forward walker emits inline children).
+/// - **Object with `$type`** → look up the variant by tag, populate
+///   fields type-by-type from JSON keys.
+/// - **Object without `$type`** → `SyntaxTree::Inline` over the
+///   non-meta values, in stable key order.
+///
+/// Field-population rules per variant (no per-variant special cases):
+/// - `Box<SyntaxTree>` / `Option<Box<SyntaxTree>>` / `Vec<SyntaxTree>`
+///   → drained positionally from the variant's collected tree children
+///   (non-meta object values + `$children`).
+/// - `Expression` / `Option<Expression>` → wrap drained child.
+/// - `LambdaBody` → wrap drained child as `LambdaBody::Expression`
+///   (a conservative default; round-trip Lambda may need
+///   re-classification at use site).
+/// - `AccessReceiver` → drained child as `Instance`; keyword
+///   receivers (`this`, `self`, ...) round-trip via the same name
+///   leaves.
+/// - `Vec<AccessSegment>` → empty (no JSON encoding inverse).
+/// - `text: String`, `op_text: String`, etc. → take the matching
+///   JSON key as a string, falling back to the empty string.
+/// - `Flag` field → JSON bool at `strip_trailing_underscore(field_name)`.
+/// - `Modifiers` → reconstructed from all truthy JSON-bool keys via
+///   `Modifiers::from_marker_names`.
+/// - `Vec<Marker>` → empty.
+/// - `Vec<&'static str>` → empty.
+/// - `Option<&'static str>` / `Option<ByteRange>` / `Option<Span>` → `None`.
+/// - `&'static str` (`element_name`, `kind`, `wrapper`) → derived
+///   from the `$type` field via `Box::leak`. Acceptable for a
+///   deserializer.
+/// - `String` (other than `text`/`op_text`) → empty.
+/// - `bool` → JSON bool at the matching field name; default `false`.
+/// - Typed enums (`AccessorKind`, `ParamKind`, `QuoteStyle`,
+///   `Option<Access>`) → parsed from a matching string field with
+///   a sensible default.
+/// - `ByteRange` / `Span` → synthetic (no source coordinates after
+///   the JSON hop).
+fn render_from_json(en: &ItemEnum) -> String {
+    let mut out = String::new();
+    out.push_str(FROM_JSON_PREAMBLE);
+
+    // Build $type → arm body for each variant. Skip Inline and Skip
+    // (they have no $type; reached via the inline fallback).
+    let mut variants: Vec<(&Variant, String)> = Vec::new();
+    for v in &en.variants {
+        let name = v.ident.to_string();
+        if name == "Inline" || name == "Skip" {
+            continue;
+        }
+        variants.push((v, snake_case(&name)));
+    }
+
+    out.push_str(
+        "fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) -> SyntaxTree {
+    // Drain non-meta values into a flat list of children, in stable
+    // key order. Each child carries the JSON key as a type hint so
+    // nested objects with stripped `$type` reconstruct under the
+    // correct variant. Booleans become marker names; numbers/null
+    // are converted via the value-level dispatcher.
+    let mut children: Vec<SyntaxTree> = Vec::new();
+    let mut markers: Vec<&'static str> = Vec::new();
+    for (key, val) in map.iter() {
+        if key == \"$type\" { continue; }
+        if key == \"$children\" {
+            if let Value::Array(arr) = val {
+                for item in arr { children.push(tree_from_json_value(item)); }
+            }
+            continue;
+        }
+        match val {
+            Value::Bool(true) => markers.push(intern_static(key)),
+            Value::Bool(false) => {}
+            Value::Array(arr) => {
+                for item in arr {
+                    children.push(tree_from_json_with_type_hint(item, Some(key.as_str())));
+                }
+            }
+            _ => children.push(tree_from_json_with_type_hint(val, Some(key.as_str()))),
+        }
+    }
+    let marker_strs: Vec<&str> = markers.iter().copied().collect();
+    let _ = &marker_strs;
+    let leaf_text = map.get(\"text\").and_then(|v| v.as_str()).unwrap_or(\"\").to_string();
+    let _ = &leaf_text;
+    let static_tag: &'static str = intern_static(tag);
+    let _ = static_tag;
+    match tag {
+",
+    );
+
+    for (v, tag) in &variants {
+        out.push_str(&from_json_arm(v, tag));
+    }
+
+    // Unknown $type → SyntaxTree::Unknown carrying the tag.
+    out.push_str(
+        "        _ => SyntaxTree::Unknown {
+            kind: format!(\"from_json:{}\", tag),
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(0, 0),
+        },
+    }
+}
+",
+    );
+
+    out
+}
+
+const FROM_JSON_PREAMBLE: &str = "\
+/// Reconstruct a `SyntaxTree` from its JSON projection.
+///
+/// Inverse of `tree_to_json` (modulo lossy bits — source positions,
+/// the `Vec<AccessSegment>` chain shape, ordering of duplicate-named
+/// children). The reconstructed tree is suitable for re-rendering
+/// via `render_source` to produce parseable source code; bit-identity
+/// is **not** preserved.
+///
+/// Generated mechanically from `SyntaxTree` field types — no
+/// per-variant special cases. See `build_codegen.rs::render_from_json`.
+pub fn tree_from_json(value: &Value) -> SyntaxTree {
+    tree_from_json_value(value)
+}
+
+/// Leak `s` into the static string pool. Used for `&'static str`
+/// fields (`element_name`, `kind`, `wrapper`) where the JSON carries
+/// a runtime string. One-time leak per distinct tag is acceptable for
+/// a deserializer; the alternative would be a static interner map.
+fn intern_static(s: &str) -> &'static str {
+    Box::leak(s.to_string().into_boxed_str())
+}
+
+/// Strip a common plural suffix so a Vec<SyntaxTree> field named
+/// `decorators` falls back to looking up `decorator` (the singular
+/// element name). Heuristic — covers `…s`, `…es`, `…_clauses`,
+/// `…_branches`. Returns the input unchanged when no rule fires.
+fn strip_plural(s: &str) -> &str {
+    for suffix in [\"_clauses\", \"_branches\"] {
+        if let Some(stripped) = s.strip_suffix(suffix) {
+            // `where_clauses` → `where`; matches the typical
+            // SimpleStatement element_name pinned at lowering time.
+            return stripped;
+        }
+    }
+    for suffix in [\"ies\", \"es\", \"s\"] {
+        if let Some(stripped) = s.strip_suffix(suffix) {
+            if suffix == \"ies\" {
+                // Heuristic — return the stripped form; caller still
+                // owns the lookup-fallback chain so a miss here just
+                // means we drain from __kids.
+                return stripped;
+            }
+            return stripped;
+        }
+    }
+    s
+}
+
+fn tree_from_json_value(value: &Value) -> SyntaxTree {
+    tree_from_json_with_type_hint(value, None)
+}
+
+/// Reconstruct with an optional `$type` hint. Used when recursing
+/// into a child looked up by JSON key: the key implies the child's
+/// type, and `to_json` strips `$type` from such children to avoid
+/// duplication. The inverse restores it here.
+fn tree_from_json_with_type_hint(value: &Value, type_hint: Option<&str>) -> SyntaxTree {
+    match value {
+        Value::Null => SyntaxTree::Null {
+            text: String::new(),
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(0, 0),
+        },
+        Value::Bool(true) => SyntaxTree::True {
+            text: \"true\".to_string(),
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(0, 0),
+        },
+        Value::Bool(false) => SyntaxTree::False {
+            text: \"false\".to_string(),
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(0, 0),
+        },
+        Value::Number(n) => SyntaxTree::Int {
+            text: n.to_string(),
+            range: ByteRange::synthetic_empty(),
+            span: Span::point(0, 0),
+        },
+        Value::String(s) => {
+            // A bare string under a typed key (e.g. `\"name\": \"foo\"`)
+            // is the scalar form of a leaf variant — pick the variant
+            // by the hint so `name`, `int`, `string`, etc. all
+            // reconstruct correctly. Without a hint it falls back to
+            // `Name` (the most common leaf shape).
+            scalar_leaf_from_text(type_hint.unwrap_or(\"name\"), s.clone())
+        }
+        Value::Array(arr) => {
+            // Arrays under a typed key carry siblings of that type
+            // (after the Z6 array-grouping fix). Each element inherits
+            // the parent key as its type hint.
+            let children: Vec<SyntaxTree> = arr
+                .iter()
+                .map(|v| tree_from_json_with_type_hint(v, type_hint))
+                .collect();
+            SyntaxTree::Inline {
+                children,
+                list_name: None,
+                range: ByteRange::synthetic_empty(),
+                span: Span::point(0, 0),
+            }
+        }
+        Value::Object(map) => from_json_object_with_hint(map, type_hint),
+    }
+}
+
+/// Construct the right scalar-leaf variant for a JSON string value,
+/// keyed by the surrounding `$type` hint. Falls back to `Name` for
+/// unknown hints — keeps the lossy inversion robust.
+fn scalar_leaf_from_text(tag: &str, text: String) -> SyntaxTree {
+    let range = ByteRange::synthetic_empty();
+    let span = Span::point(0, 0);
+    match tag {
+        \"int\" => SyntaxTree::Int { text, range, span },
+        \"float\" => SyntaxTree::Float { text, range, span },
+        \"string\" => SyntaxTree::String {
+            text,
+            quote_style: QuoteStyle::Double,
+            range,
+            span,
+        },
+        \"true\" => SyntaxTree::True { text, range, span },
+        \"false\" => SyntaxTree::False { text, range, span },
+        \"none\" => SyntaxTree::None { text, range, span },
+        \"null\" => SyntaxTree::Null { text, range, span },
+        // Anything else: a bare string under an arbitrary key is most
+        // likely an identifier-like leaf. Use Name so renderers see
+        // text content without needing source bytes.
+        _ => SyntaxTree::Name { text, range, span },
+    }
+}
+
+fn from_json_object_with_hint(
+    map: &serde_json::Map<String, Value>,
+    type_hint: Option<&str>,
+) -> SyntaxTree {
+    // Resolve $type — prefer the explicit field; fall back to the
+    // hint passed in by the parent context (key under which this
+    // object was nested).
+    let tag = map
+        .get(\"$type\")
+        .and_then(|v| v.as_str())
+        .or(type_hint)
+        .unwrap_or(\"\");
+    dispatch_from_json_object(map, tag)
+}
+
+";
+
+/// Build one `$type` arm: pop children positionally into typed slots,
+/// fill scalars from JSON keys, default everything else.
+fn from_json_arm(v: &Variant, tag: &str) -> String {
+    let name = v.ident.to_string();
+    let mut field_pops = String::new();
+    let mut struct_fields: Vec<String> = Vec::new();
+    // Children are consumed positionally; track remaining via a
+    // mutable Vec drained from front.
+    field_pops.push_str("            let mut __kids = children;\n");
+    let _ = tag;
+    if let Fields::Named(named) = &v.fields {
+        for field in &named.named {
+            let Some(ident) = &field.ident else { continue };
+            let fname = ident.to_string();
+            let ty = type_str(&field.ty);
+            let (build_expr, _) = from_json_field_expr(&fname, &ty);
+            field_pops.push_str(&format!(
+                "            let {fname} = {build_expr};\n",
+                fname = fname,
+                build_expr = build_expr,
+            ));
+            struct_fields.push(fname);
+        }
+    }
+    let assigns = struct_fields
+        .iter()
+        .map(|f| format!("                {f}"))
+        .collect::<Vec<_>>()
+        .join(",\n");
+    format!(
+        "        {tag:?} => {{
+{field_pops}            SyntaxTree::{name} {{
+{assigns},
+            }}
+        }}
+",
+        tag = tag,
+        field_pops = field_pops,
+        name = name,
+        assigns = assigns,
+    )
+}
+
+/// Per-field-type expression that produces the field value from the
+/// in-scope `__kids: Vec<SyntaxTree>`, `marker_strs: Vec<&str>`,
+/// `leaf_text: String`, `map: &serde_json::Map<...>`, `static_tag`.
+///
+/// For tree-child fields, the lookup is two-tier: first try
+/// `map.get(field_name)` (works when the JSON key matches the
+/// field's typical inner element name — most slot-wrapper shapes:
+/// `Binary.left/right`, `If.condition`, `Class.body`, etc.); fall
+/// back to draining from `__kids` positionally. `__kids` is the
+/// flattened list of all non-meta JSON values in stable key order,
+/// so positional drain handles variants whose JSON keys don't match
+/// field names (e.g. `Class.bases` lives under `type` in JSON).
+///
+/// Returns `(expr, consumes_kid)`; second component is informational
+/// only.
+fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
+    match ty {
+        // ----- Tree-child fields (lookup → drain fallback) ------------
+        // Every keyed lookup passes the field name as the type hint so
+        // child objects with stripped `$type` reconstruct as the
+        // expected variant.
+        "Box<SyntaxTree>" => (
+            format!(
+                "{{
+                if let Some(v) = map.get({fname:?}) {{
+                    Box::new(tree_from_json_with_type_hint(v, Some({fname:?})))
+                }} else if !__kids.is_empty() {{
+                    Box::new(__kids.remove(0))
+                }} else {{
+                    Box::new(SyntaxTree::Unknown {{
+                        kind: \"from_json:missing_child\".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    }})
+                }}
+            }}",
+                fname = fname,
+            ),
+            true,
+        ),
+        "Option<Box<SyntaxTree>>" => (
+            format!(
+                "{{
+                if let Some(v) = map.get({fname:?}) {{
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some({fname:?}))))
+                }} else if !__kids.is_empty() {{
+                    Some(Box::new(__kids.remove(0)))
+                }} else {{ None }}
+            }}",
+                fname = fname,
+            ),
+            true,
+        ),
+        "Vec<SyntaxTree>" => (
+            format!(
+                "{{
+                let singular = strip_plural({fname:?});
+                if let Some(v) = map.get({fname:?}).or_else(|| map.get(singular)) {{
+                    match v {{
+                        Value::Array(arr) => arr.iter()
+                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .collect(),
+                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                    }}
+                }} else {{
+                    std::mem::take(&mut __kids)
+                }}
+            }}",
+                fname = fname,
+            ),
+            true,
+        ),
+        "Expression" => (
+            format!(
+                "{{
+                let inner = if let Some(v) = map.get({fname:?}).or_else(|| map.get(\"expression\")) {{
+                    tree_from_json_with_type_hint(v, Some(\"expression\"))
+                }} else if !__kids.is_empty() {{
+                    __kids.remove(0)
+                }} else {{
+                    SyntaxTree::Unknown {{
+                        kind: \"from_json:missing_expression\".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    }}
+                }};
+                Expression::wrap(inner)
+            }}",
+                fname = fname,
+            ),
+            true,
+        ),
+        "Option<Expression>" => (
+            format!(
+                "{{
+                if let Some(v) = map.get({fname:?}).or_else(|| map.get(\"expression\")) {{
+                    Some(Expression::wrap(tree_from_json_with_type_hint(v, Some(\"expression\"))))
+                }} else if !__kids.is_empty() {{
+                    Some(Expression::wrap(__kids.remove(0)))
+                }} else {{ None }}
+            }}",
+                fname = fname,
+            ),
+            true,
+        ),
+        "LambdaBody" => (
+            format!(
+                "{{
+                let inner = if let Some(v) = map.get({fname:?}).or_else(|| map.get(\"body\")) {{
+                    tree_from_json_with_type_hint(v, Some(\"body\"))
+                }} else if !__kids.is_empty() {{
+                    __kids.remove(0)
+                }} else {{
+                    SyntaxTree::Body {{
+                        children: Vec::new(),
+                        block_wrap: false,
+                        pass_only: false,
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    }}
+                }};
+                LambdaBody::Expression(Box::new(inner))
+            }}",
+                fname = fname,
+            ),
+            true,
+        ),
+        "AccessReceiver" => (
+            format!(
+                "{{
+                let inner = if let Some(v) = map.get({fname:?}) {{
+                    tree_from_json_with_type_hint(v, Some({fname:?}))
+                }} else if !__kids.is_empty() {{
+                    __kids.remove(0)
+                }} else {{
+                    SyntaxTree::Unknown {{
+                        kind: \"from_json:missing_receiver\".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    }}
+                }};
+                AccessReceiver::from_tree(inner, &[\"this\", \"self\", \"super\", \"base\"])
+            }}",
+                fname = fname,
+            ),
+            true,
+        ),
+        "Vec<AccessSegment>" => (
+            // Access segments don't have a clean JSON inverse; any
+            // remaining children get dropped here. Round-trip is lossy.
+            "{ let _ = &mut __kids; Vec::new() }".into(),
+            false,
+        ),
+
+        // ----- Shape metadata --------------------------------------
+        "Modifiers" => (
+            "Modifiers::from_marker_names(&marker_strs)".into(),
+            false,
+        ),
+        "Vec<Marker>" => ("Vec::new()".into(), false),
+        "Vec<&'staticstr>" => ("Vec::new()".into(), false),
+        "Option<Access>" => (
+            "Access::from_marker_names(&marker_strs)".into(),
+            false,
+        ),
+        "Flag" => {
+            let marker = strip_trailing_underscore(fname);
+            (
+                format!(
+                    "{{ if map.get({marker:?}).and_then(|v| v.as_bool()).unwrap_or(false) {{
+                    Flag::implicit_at(0, 0)
+                }} else {{ Flag::Off }} }}",
+                    marker = marker,
+                ),
+                false,
+            )
+        }
+        "bool" => (
+            format!(
+                "map.get({fname:?}).and_then(|v| v.as_bool()).unwrap_or(false)",
+                fname = fname,
+            ),
+            false,
+        ),
+        "String" => (
+            // Conventional key names: 'text' for scalar leaves, the
+            // field's own name otherwise. Falls back to empty string
+            // when the key is missing.
+            format!(
+                "map.get({fname:?}).and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default()",
+                fname = fname,
+            ),
+            false,
+        ),
+        "&'staticstr" => (
+            // Variant-tag-derived string fields. For element_name /
+            // kind / wrapper the natural inverse is the $type tag —
+            // we leak it once via intern_static so the resulting
+            // reference is genuinely 'static.
+            "static_tag".into(),
+            false,
+        ),
+        "Option<&'staticstr>" => ("None".into(), false),
+        "Option<ByteRange>" => ("None".into(), false),
+        "Option<Span>" => ("None".into(), false),
+        "AccessorKind" => (
+            "{
+                map.get(\"kind\").and_then(|v| v.as_str()).map(|s| match s {
+                    \"get\" => AccessorKind::Get,
+                    \"set\" => AccessorKind::Set,
+                    \"init\" => AccessorKind::Init,
+                    _ => AccessorKind::Get,
+                }).unwrap_or(AccessorKind::Get)
+            }".into(),
+            false,
+        ),
+        "ParamKind" => (
+            "{
+                if marker_strs.iter().any(|m| *m == \"args\") {
+                    ParamKind::Args
+                } else if marker_strs.iter().any(|m| *m == \"kwargs\") {
+                    ParamKind::Kwargs
+                } else {
+                    ParamKind::Regular
+                }
+            }".into(),
+            false,
+        ),
+        "QuoteStyle" => (
+            "QuoteStyle::Double".into(),
+            false,
+        ),
+        "ByteRange" => ("ByteRange::synthetic_empty()".into(), false),
+        "Span" => ("Span::point(0, 0)".into(), false),
+        _ => (
+            // Unknown field type — emit a TODO comment in the output so
+            // future field-type additions trigger a build-time warning.
+            format!(
+                "Default::default() /* TODO: from_json for {fname}: {ty} */",
+                fname = fname,
+                ty = ty,
+            ),
+            false,
+        ),
+    }
 }
 
 fn strip_trailing_underscore(s: &str) -> String {
