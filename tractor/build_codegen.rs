@@ -1738,15 +1738,20 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
         "Option<ByteRange>" => ("None".into(), false),
         "Option<Span>" => ("None".into(), false),
         "Option<ExpressionMarker>" => (
-            // Scan boolean keys for a recognised ExpressionMarker
-            // name (`non_null` / `await` / `try`). Mirrors the JSON
-            // shape emitted by the walker: closed-enum markers
-            // serialise as boolean fields on the host object.
-            "map.iter()
-                .find_map(|(k, v)| match v {
-                    Value::Bool(true) => ExpressionMarker::from_marker_name(k.as_str()),
-                    _ => None,
-                })".into(),
+            // Reuse the marker list the outer scope already built
+            // from boolean-true keys (same source `Modifiers` uses).
+            // ExpressionMarker is a closed enum, so from_marker_name
+            // is the only step needed — no separate map scan.
+            "marker_strs.iter().find_map(|s| ExpressionMarker::from_marker_name(s))".into(),
+            false,
+        ),
+        "OperatorKind" => (
+            // Same pattern: the marker_strs list (boolean-true keys)
+            // is the source. OperatorKind is required (not Option), so
+            // fall back to a default if no recognised name appears.
+            "marker_strs.iter()
+                .find_map(|s| OperatorKind::from_marker_name(s))
+                .unwrap_or(OperatorKind::Plus)".into(),
             false,
         ),
         "AccessorKind" => (

@@ -2015,6 +2015,47 @@ impl OperatorKind {
         }
     }
 
+    /// Inverse of [`marker_name`]: used by `from_json` to recover the
+    /// kind from the boolean-key marker name emitted by the walker.
+    pub fn from_marker_name(name: &str) -> Option<Self> {
+        Some(match name {
+            "plus" => OperatorKind::Plus,
+            "minus" => OperatorKind::Minus,
+            "multiply" => OperatorKind::Multiply,
+            "divide" => OperatorKind::Divide,
+            "modulo" => OperatorKind::Modulo,
+            "power" => OperatorKind::Power,
+            "floor_divide" => OperatorKind::FloorDivide,
+            "matrix_multiply" => OperatorKind::MatrixMultiply,
+            "concat" => OperatorKind::Concat,
+            "bitwise_and" => OperatorKind::BitwiseAnd,
+            "bitwise_or" => OperatorKind::BitwiseOr,
+            "bitwise_xor" => OperatorKind::BitwiseXor,
+            "shift_left" => OperatorKind::ShiftLeft,
+            "shift_right" => OperatorKind::ShiftRight,
+            "shift_right_unsigned" => OperatorKind::ShiftRightUnsigned,
+            "bitwise_clear" => OperatorKind::BitwiseClear,
+            "and" => OperatorKind::And,
+            "or" => OperatorKind::Or,
+            "xor" => OperatorKind::Xor,
+            "equal" => OperatorKind::Equal,
+            "not_equal" => OperatorKind::NotEqual,
+            "identical" => OperatorKind::Identical,
+            "not_identical" => OperatorKind::NotIdentical,
+            "case_equal" => OperatorKind::CaseEqual,
+            "less" => OperatorKind::Less,
+            "less_or_equal" => OperatorKind::LessOrEqual,
+            "greater" => OperatorKind::Greater,
+            "greater_or_equal" => OperatorKind::GreaterOrEqual,
+            "spaceship" => OperatorKind::Spaceship,
+            "instanceof" => OperatorKind::Instanceof,
+            "in" => OperatorKind::In,
+            "channel_receive" => OperatorKind::ChannelReceive,
+            "null_coalesce" => OperatorKind::NullCoalesce,
+            _ => return None,
+        })
+    }
+
     pub const fn family(self) -> OperatorFamily {
         match self {
             OperatorKind::Plus

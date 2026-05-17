@@ -2212,11 +2212,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                     })
                 }
             };
-            let marker = map.iter()
-                .find_map(|(k, v)| match v {
-                    Value::Bool(true) => ExpressionMarker::from_marker_name(k.as_str()),
-                    _ => None,
-                });
+            let marker = marker_strs.iter().find_map(|s| ExpressionMarker::from_marker_name(s));
             let range = ByteRange::synthetic_empty();
             let span = Span::point(0, 0);
             SyntaxTree::Expression {
@@ -2457,7 +2453,9 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 .collect();
             let _ = &children;
             let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
-            let kind = Default::default() /* TODO: from_json for kind: OperatorKind */;
+            let kind = marker_strs.iter()
+                .find_map(|s| OperatorKind::from_marker_name(s))
+                .unwrap_or(OperatorKind::Plus);
             let range = ByteRange::synthetic_empty();
             let span = Span::point(0, 0);
             SyntaxTree::Operator {
