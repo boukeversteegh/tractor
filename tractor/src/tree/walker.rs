@@ -32,6 +32,33 @@
 
 use crate::tree::types::{ByteRange, Marker, Span};
 
+/// A single projected field of a tree node. Returned by
+/// [`WalkerTree::fields_of`] when the variant opts into field
+/// projection (`@field_projection` annotation in `types.rs`). The
+/// walker reads this to render the tree's Rust struct *fields*
+/// directly, instead of the variant-blind flat `children_of` view.
+///
+/// The Rust struct field name is the projection key — for XML it
+/// becomes the wrapper element name (`<left>{child}</left>`), for
+/// JSON it becomes the object key (`"left": {child}`). This is the
+/// inverse of the historic SimpleStatement wrapper pattern: the
+/// wrapper now lives in the projection layer, not in the tree.
+pub enum TreeField<'a, T> {
+    /// Single tree child — `Box<SyntaxTree>` field or the inner of an
+    /// `Option<Box<SyntaxTree>>` (Some). XML: `<name>{value}</name>`;
+    /// JSON: `"name": {value}`.
+    Single { name: &'static str, value: &'a T },
+    /// List of tree children — `Vec<SyntaxTree>` field. JSON always
+    /// emits `"name": [items]`. XML drops the `<name>` wrapper when
+    /// every item shares the same element name (homogeneous list); if
+    /// items differ, XML wraps in `<name>{items}</name>`.
+    Many { name: &'static str, items: Vec<&'a T> },
+    /// Empty-element marker — `Flag` field, expanded `Modifiers` entry,
+    /// or `Vec<Marker>` member. Same emission as the variant-blind
+    /// `flags_of` path: `<name/>` in XML, `"name": true` in JSON.
+    Flag { name: &'static str, marker: Marker },
+}
+
 /// Tree contract consumed by the generic walker. Implemented by each
 /// of the three tree families (`SyntaxTree`, `DataTree`, `SqlTree`)
 /// in terms of its own `metadata_generated` accessors.
@@ -67,6 +94,24 @@ pub trait WalkerTree: Sized {
     /// leaves slice source instead.
     fn scalar_text_of(&self) -> Option<&str>;
 
+    /// Per-variant field-projection view. Emits one [`TreeField`] per
+    /// projected struct field (tree children + flags). Only consulted
+    /// when [`use_field_projection`](Self::use_field_projection)
+    /// returns `true`. The default impl returns an empty `Vec` so
+    /// trees that don't opt in carry no overhead.
+    fn fields_of(&self) -> Vec<TreeField<'_, Self>> {
+        Vec::new()
+    }
+
+    /// Per-variant opt-in flag: when `true`, the walker projects this
+    /// node via [`fields_of`](Self::fields_of) (XML wrappers + JSON
+    /// keys derived from Rust field names); when `false`, the legacy
+    /// variant-blind path (children + flags flat) is used. Generated
+    /// from `@field_projection` doc-comment annotations on variants.
+    fn use_field_projection(&self) -> bool {
+        false
+    }
+
     /// Per-context display name (language vocabulary for SyntaxTree,
     /// format vocabulary for DataTree, ...). Default returns `name`
     /// unchanged; trees with per-context naming override to consult
@@ -95,6 +140,12 @@ impl WalkerTree for crate::tree::SyntaxTree {
     }
     fn scalar_text_of(&self) -> Option<&str> {
         crate::tree::syntax::metadata_generated::scalar_text_of(self)
+    }
+    fn fields_of(&self) -> Vec<TreeField<'_, Self>> {
+        crate::tree::syntax::metadata_generated::fields_of(self)
+    }
+    fn use_field_projection(&self) -> bool {
+        crate::tree::syntax::metadata_generated::use_field_projection(self)
     }
     fn display_name_for<'a>(name: &'a str, context: Option<&str>) -> &'a str {
         crate::tree::syntax::element_naming::element_name_for_lang(name, context)
@@ -210,6 +261,10 @@ fn render_body<T: WalkerTree>(
     source: &str,
     context: Option<&str>,
 ) -> Result<(), xot::Error> {
+    if tree.use_field_projection() {
+        return render_body_via_fields(xot, node, tree, source, context);
+    }
+
     let parent_range = tree.range_of();
     let anchored = parent_range.is_anchored();
 
@@ -275,6 +330,145 @@ fn render_inline_into<T: WalkerTree>(
     context: Option<&str>,
 ) -> Result<(), xot::Error> {
     render_body(xot, parent, tree, source, context)
+}
+
+/// Field-projection XML body emitter. Used when the variant opts in
+/// via `@field_projection`. Reads [`WalkerTree::fields_of`] to project
+/// the variant's Rust struct fields as named XML wrappers, instead of
+/// the variant-blind flat `children_of` view.
+///
+/// Per-field rules:
+/// - [`TreeField::Flag`]: emit `<name/>` marker (same as `flags_of`
+///   path).
+/// - [`TreeField::Single`]: emit `<name>{value}</name>` — the field
+///   name becomes the wrapper element, and the value renders inside.
+/// - [`TreeField::Many`]: emit each item flat when items are
+///   homogeneous (every item shares the same `element_name_of`);
+///   otherwise wrap in `<name>{items}</name>`.
+fn render_body_via_fields<T: WalkerTree>(
+    xot: &mut Xot,
+    node: XotNode,
+    tree: &T,
+    source: &str,
+    context: Option<&str>,
+) -> Result<(), xot::Error> {
+    let parent_range = tree.range_of();
+    let anchored = parent_range.is_anchored();
+    let fields = tree.fields_of();
+
+    let mut items: Vec<FieldRenderItem<T>> = Vec::new();
+    for f in fields {
+        match f {
+            TreeField::Flag { marker, .. } => {
+                items.push(FieldRenderItem::Marker(marker));
+            }
+            TreeField::Single { name, value } => {
+                items.push(FieldRenderItem::Wrapped {
+                    wrapper: name,
+                    children: vec![value],
+                });
+            }
+            TreeField::Many { name, items: vs } => {
+                if vs.is_empty() {
+                    continue;
+                }
+                if is_homogeneous::<T>(&vs) {
+                    for v in vs {
+                        items.push(FieldRenderItem::Flat(v));
+                    }
+                } else {
+                    items.push(FieldRenderItem::Wrapped { wrapper: name, children: vs });
+                }
+            }
+        }
+    }
+    items.sort_by_key(|i| i.sort_key());
+
+    let mut cursor: u32 = parent_range.start;
+    for item in &items {
+        let item_start = item.range_start();
+        if anchored {
+            let from = cursor;
+            let to = item_start.max(cursor);
+            if to > from {
+                emit_text(xot, node, &source[from as usize..to as usize])?;
+            }
+        }
+        match item {
+            FieldRenderItem::Marker(m) => emit_marker(xot, node, m)?,
+            FieldRenderItem::Flat(child) => {
+                render_walker_to_xot(xot, node, *child, source, context)?;
+            }
+            FieldRenderItem::Wrapped { wrapper, children } => {
+                let display = T::display_name_for(wrapper, context).to_string();
+                let name_id = xot.add_name(&display);
+                let wrap = xot.new_element(name_id);
+                xot.append(node, wrap)?;
+                if let Some(first) = children.first() {
+                    set_span_attrs(xot, wrap, first.span_of());
+                }
+                for child in children {
+                    render_walker_to_xot(xot, wrap, *child, source, context)?;
+                }
+            }
+        }
+        let end = item.range_end();
+        if end > cursor {
+            cursor = end;
+        }
+    }
+
+    if anchored && parent_range.end > cursor {
+        emit_text(xot, node, &source[cursor as usize..parent_range.end as usize])?;
+    }
+    Ok(())
+}
+
+enum FieldRenderItem<'a, T> {
+    Marker(Marker),
+    Flat(&'a T),
+    Wrapped { wrapper: &'static str, children: Vec<&'a T> },
+}
+
+impl<'a, T: WalkerTree> FieldRenderItem<'a, T> {
+    fn range_start(&self) -> u32 {
+        match self {
+            FieldRenderItem::Marker(m) => m.range.start,
+            FieldRenderItem::Flat(t) => t.range_of().start,
+            FieldRenderItem::Wrapped { children, .. } => {
+                children.iter().map(|c| c.range_of().start).min().unwrap_or(0)
+            }
+        }
+    }
+    fn range_end(&self) -> u32 {
+        match self {
+            FieldRenderItem::Marker(m) => m.range.end,
+            FieldRenderItem::Flat(t) => t.range_of().end,
+            FieldRenderItem::Wrapped { children, .. } => {
+                children.iter().map(|c| c.range_of().end).max().unwrap_or(0)
+            }
+        }
+    }
+    fn sort_key(&self) -> u32 { self.range_start() }
+}
+
+/// Children are "homogeneous" when every item carries the same
+/// `element_name_of`. Inline / Skip items (`None`) break the
+/// homogeneous case — fall back to a wrapper element so the field
+/// boundary is preserved.
+fn is_homogeneous<T: WalkerTree>(items: &[&T]) -> bool {
+    let mut name: Option<&str> = None;
+    for item in items {
+        match item.element_name_of() {
+            Some(n) => match name {
+                Some(existing) if existing != n => return false,
+                Some(_) => {}
+                None => name = Some(n),
+            },
+            None => return false,
+        }
+    }
+    name.is_some()
 }
 
 fn emit_text(xot: &mut Xot, parent: XotNode, text: &str) -> Result<(), xot::Error> {
@@ -378,6 +572,10 @@ fn render_json<T: WalkerTree>(
     };
     let display = T::display_name_for(tag, context).to_string();
 
+    if tree.use_field_projection() {
+        return render_json_via_fields(tree, source, context, strip_type, &display);
+    }
+
     let flags = tree.flags_of();
     let children = tree.children_of();
 
@@ -428,6 +626,51 @@ fn render_json<T: WalkerTree>(
         obj.insert(KEY_CHILDREN.to_string(), Value::Array(existing));
     }
 
+    Value::Object(obj)
+}
+
+/// Field-projection JSON emitter. Used when the variant opts in via
+/// `@field_projection`. Walks [`WalkerTree::fields_of`] and emits each
+/// field under its Rust-struct name — `Single` → `{name: child}`,
+/// `Many` → `{name: [items]}`, `Flag` → `{name: true}`. JSON keys come
+/// from Rust field names, *not* element names — the inverse of the
+/// variant-blind path's element-name grouping.
+///
+/// Child `$type` is preserved (unlike the grouped path which strips
+/// it): the field name carries the *role* (`left`, `condition`, ...),
+/// not the type, so consumers still need `$type` to know what variant
+/// the child is.
+fn render_json_via_fields<T: WalkerTree>(
+    tree: &T,
+    source: &str,
+    context: Option<&str>,
+    strip_type: bool,
+    display: &str,
+) -> Value {
+    let mut obj: Map<String, Value> = Map::new();
+    if !strip_type {
+        obj.insert(KEY_TYPE.to_string(), Value::String(display.to_string()));
+    }
+    for f in tree.fields_of() {
+        match f {
+            TreeField::Flag { name, .. } => {
+                obj.insert(name.to_string(), Value::Bool(true));
+            }
+            TreeField::Single { name, value } => {
+                obj.insert(
+                    name.to_string(),
+                    render_json(value, source, context, /*strip_type=*/ false),
+                );
+            }
+            TreeField::Many { name, items } => {
+                let arr: Vec<Value> = items
+                    .iter()
+                    .map(|i| render_json(*i, source, context, /*strip_type=*/ false))
+                    .collect();
+                obj.insert(name.to_string(), Value::Array(arr));
+            }
+        }
+    }
     Value::Object(obj)
 }
 

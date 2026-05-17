@@ -14,6 +14,8 @@
 use super::types::{DataTree, element_name_for_data_element};
 #[allow(unused_imports)]
 use crate::tree::types::{ByteRange, Flag, Marker, Span};
+#[allow(unused_imports)]
+use crate::tree::walker::TreeField;
 
 /// The XML element name for this tree node, or `None` if the
 /// node renders no wrapper (`Inline`, `Skip`).
@@ -183,6 +185,74 @@ pub fn children_of(tree: &DataTree) -> Vec<&DataTree> {
     }
     v.sort_by_key(|c| range_of(c).start);
     v
+}
+
+/// Field-projection view of this node — one [`TreeField`] per
+/// projected struct field. Only consulted when [`use_field_projection`]
+/// returns true. See the walker for projection semantics.
+pub fn fields_of(tree: &DataTree) -> Vec<TreeField<'_, DataTree>> {
+    let mut out: Vec<TreeField<'_, DataTree>> = Vec::new();
+    match tree {
+        DataTree::Document { children, .. } => {
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        DataTree::Mapping { pairs, .. } => {
+            out.push(TreeField::Many { name: "pairs", items: pairs.iter().collect() });
+        }
+        DataTree::Sequence { items, .. } => {
+            out.push(TreeField::Many { name: "items", items: items.iter().collect() });
+        }
+        DataTree::Pair { key, value, .. } => {
+            out.push(TreeField::Single { name: "key", value: key });
+            out.push(TreeField::Single { name: "value", value: value });
+        }
+        DataTree::Section { name, children, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        DataTree::String { .. } => {}
+        DataTree::Number { .. } => {}
+        DataTree::Bool { .. } => {}
+        DataTree::Null { .. } => {}
+        DataTree::Comment { leading, trailing, .. } => {
+            if let Flag::On { range: frange, span: fspan } = leading {
+                out.push(TreeField::Flag {
+                    name: "leading",
+                    marker: Marker { name: "leading", range: *frange, span: *fspan },
+                });
+            }
+            if let Flag::On { range: frange, span: fspan } = trailing {
+                out.push(TreeField::Flag {
+                    name: "trailing",
+                    marker: Marker { name: "trailing", range: *frange, span: *fspan },
+                });
+            }
+        }
+        DataTree::Directive { extra_markers, children, .. } => {
+            for m in extra_markers { out.push(TreeField::Flag { name: m.name, marker: *m }); }
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        DataTree::Element { markers, children, span, .. } => {
+            for m in markers {
+                out.push(TreeField::Flag {
+                    name: m,
+                    marker: Marker { name: m, range: ByteRange::synthetic_empty(), span: *span },
+                });
+            }
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        DataTree::Unknown { .. } => {}
+    }
+    out
+}
+
+/// Per-variant opt-in flag for the field-projection walker
+/// path. Returns true for variants whose doc comments carry
+/// `@field_projection`; false otherwise.
+pub fn use_field_projection(tree: &DataTree) -> bool {
+    match tree {
+        _ => false,
+    }
 }
 
 /// Mutable access to the source-location span. Used by

@@ -13,6 +13,8 @@
 use super::types::SqlTree;
 #[allow(unused_imports)]
 use crate::tree::types::{ByteRange, Marker, Span};
+#[allow(unused_imports)]
+use crate::tree::walker::TreeField;
 
 /// The XML element name for this tree node, or `None` if the
 /// node renders no wrapper (`Inline`, `Skip`).
@@ -513,6 +515,223 @@ pub fn children_of(tree: &SqlTree) -> Vec<&SqlTree> {
     }
     v.sort_by_key(|c| range_of(c).start);
     v
+}
+
+/// Field-projection view of this node — one [`TreeField`] per
+/// projected struct field. Only consulted when [`use_field_projection`]
+/// returns true. See the walker for projection semantics.
+pub fn fields_of(tree: &SqlTree) -> Vec<TreeField<'_, SqlTree>> {
+    let mut out: Vec<TreeField<'_, SqlTree>> = Vec::new();
+    match tree {
+        SqlTree::File { statements, .. } => {
+            out.push(TreeField::Many { name: "statements", items: statements.iter().collect() });
+        }
+        SqlTree::Statement { inner, .. } => {
+            out.push(TreeField::Single { name: "inner", value: inner });
+        }
+        SqlTree::Go { .. } => {}
+        SqlTree::Exec { target, .. } => {
+            out.push(TreeField::Single { name: "target", value: target });
+        }
+        SqlTree::Set { target, value, .. } => {
+            out.push(TreeField::Single { name: "target", value: target });
+            out.push(TreeField::Single { name: "value", value: value });
+        }
+        SqlTree::Select { ctes, columns, into, from, where_, group_by, having, order_by, .. } => {
+            out.push(TreeField::Many { name: "ctes", items: ctes.iter().collect() });
+            out.push(TreeField::Many { name: "columns", items: columns.iter().collect() });
+            if let Some(__t) = into { out.push(TreeField::Single { name: "into", value: __t }); }
+            if let Some(__t) = from { out.push(TreeField::Single { name: "from", value: __t }); }
+            if let Some(__t) = where_ { out.push(TreeField::Single { name: "where_", value: __t }); }
+            if let Some(__t) = group_by { out.push(TreeField::Single { name: "group_by", value: __t }); }
+            if let Some(__t) = having { out.push(TreeField::Single { name: "having", value: __t }); }
+            if let Some(__t) = order_by { out.push(TreeField::Single { name: "order_by", value: __t }); }
+        }
+        SqlTree::Insert { table, columns, values, .. } => {
+            out.push(TreeField::Single { name: "table", value: table });
+            out.push(TreeField::Many { name: "columns", items: columns.iter().collect() });
+            out.push(TreeField::Many { name: "values", items: values.iter().collect() });
+        }
+        SqlTree::Update { table, assignments, where_, .. } => {
+            out.push(TreeField::Single { name: "table", value: table });
+            out.push(TreeField::Many { name: "assignments", items: assignments.iter().collect() });
+            if let Some(__t) = where_ { out.push(TreeField::Single { name: "where_", value: __t }); }
+        }
+        SqlTree::Delete { from, where_, .. } => {
+            if let Some(__t) = from { out.push(TreeField::Single { name: "from", value: __t }); }
+            if let Some(__t) = where_ { out.push(TreeField::Single { name: "where_", value: __t }); }
+        }
+        SqlTree::Merge { target, source, on, whens, .. } => {
+            out.push(TreeField::Single { name: "target", value: target });
+            out.push(TreeField::Single { name: "source", value: source });
+            out.push(TreeField::Single { name: "on", value: on });
+            out.push(TreeField::Many { name: "whens", items: whens.iter().collect() });
+        }
+        SqlTree::MergeWhen { action, .. } => {
+            out.push(TreeField::Single { name: "action", value: action });
+        }
+        SqlTree::Transaction { statements, .. } => {
+            out.push(TreeField::Many { name: "statements", items: statements.iter().collect() });
+        }
+        SqlTree::From { relations, .. } => {
+            out.push(TreeField::Many { name: "relations", items: relations.iter().collect() });
+        }
+        SqlTree::Where { condition, .. } => {
+            out.push(TreeField::Single { name: "condition", value: condition });
+        }
+        SqlTree::GroupBy { keys, .. } => {
+            out.push(TreeField::Many { name: "keys", items: keys.iter().collect() });
+        }
+        SqlTree::Having { condition, .. } => {
+            out.push(TreeField::Single { name: "condition", value: condition });
+        }
+        SqlTree::OrderBy { targets, .. } => {
+            out.push(TreeField::Many { name: "targets", items: targets.iter().collect() });
+        }
+        SqlTree::OrderTarget { expression, extra_markers, .. } => {
+            out.push(TreeField::Single { name: "expression", value: expression });
+            for m in extra_markers { out.push(TreeField::Flag { name: m.name, marker: *m }); }
+        }
+        SqlTree::PartitionBy { keys, .. } => {
+            out.push(TreeField::Many { name: "keys", items: keys.iter().collect() });
+        }
+        SqlTree::Join { relation, on, extra_markers, .. } => {
+            out.push(TreeField::Single { name: "relation", value: relation });
+            if let Some(__t) = on { out.push(TreeField::Single { name: "on", value: __t }); }
+            for m in extra_markers { out.push(TreeField::Flag { name: m.name, marker: *m }); }
+        }
+        SqlTree::Relation { schema, name, alias, .. } => {
+            if let Some(__t) = schema { out.push(TreeField::Single { name: "schema", value: __t }); }
+            out.push(TreeField::Single { name: "name", value: name });
+            if let Some(__t) = alias { out.push(TreeField::Single { name: "alias", value: __t }); }
+        }
+        SqlTree::Column { expression, alias, .. } => {
+            out.push(TreeField::Single { name: "expression", value: expression });
+            if let Some(__t) = alias { out.push(TreeField::Single { name: "alias", value: __t }); }
+        }
+        SqlTree::Star { qualifier, .. } => {
+            if let Some(__t) = qualifier { out.push(TreeField::Single { name: "qualifier", value: __t }); }
+        }
+        SqlTree::Reference { parts, .. } => {
+            out.push(TreeField::Many { name: "parts", items: parts.iter().collect() });
+        }
+        SqlTree::Compare { left, right, .. } => {
+            out.push(TreeField::Single { name: "left", value: left });
+            out.push(TreeField::Single { name: "right", value: right });
+        }
+        SqlTree::Binary { left, right, .. } => {
+            out.push(TreeField::Single { name: "left", value: left });
+            out.push(TreeField::Single { name: "right", value: right });
+        }
+        SqlTree::Unary { operand, .. } => {
+            out.push(TreeField::Single { name: "operand", value: operand });
+        }
+        SqlTree::Assign { target, value, .. } => {
+            out.push(TreeField::Single { name: "target", value: target });
+            out.push(TreeField::Single { name: "value", value: value });
+        }
+        SqlTree::Between { value, low, high, .. } => {
+            out.push(TreeField::Single { name: "value", value: value });
+            out.push(TreeField::Single { name: "low", value: low });
+            out.push(TreeField::Single { name: "high", value: high });
+        }
+        SqlTree::Exists { subquery, .. } => {
+            out.push(TreeField::Single { name: "subquery", value: subquery });
+        }
+        SqlTree::Case { whens, else_, .. } => {
+            out.push(TreeField::Many { name: "whens", items: whens.iter().collect() });
+            if let Some(__t) = else_ { out.push(TreeField::Single { name: "else_", value: __t }); }
+        }
+        SqlTree::When { condition, value, .. } => {
+            out.push(TreeField::Single { name: "condition", value: condition });
+            out.push(TreeField::Single { name: "value", value: value });
+        }
+        SqlTree::Cast { value, type_, .. } => {
+            out.push(TreeField::Single { name: "value", value: value });
+            out.push(TreeField::Single { name: "type_", value: type_ });
+        }
+        SqlTree::Call { callee, arguments, .. } => {
+            out.push(TreeField::Single { name: "callee", value: callee });
+            out.push(TreeField::Many { name: "arguments", items: arguments.iter().collect() });
+        }
+        SqlTree::Window { call, over, .. } => {
+            out.push(TreeField::Single { name: "call", value: call });
+            out.push(TreeField::Single { name: "over", value: over });
+        }
+        SqlTree::Over { partition_by, order_by, .. } => {
+            if let Some(__t) = partition_by { out.push(TreeField::Single { name: "partition_by", value: __t }); }
+            if let Some(__t) = order_by { out.push(TreeField::Single { name: "order_by", value: __t }); }
+        }
+        SqlTree::Subquery { select, .. } => {
+            out.push(TreeField::Single { name: "select", value: select });
+        }
+        SqlTree::Union { selects, .. } => {
+            out.push(TreeField::Many { name: "selects", items: selects.iter().collect() });
+        }
+        SqlTree::Cte { name, query, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Single { name: "query", value: query });
+        }
+        SqlTree::Tuple { items, .. } => {
+            out.push(TreeField::Many { name: "items", items: items.iter().collect() });
+        }
+        SqlTree::Create { name, body, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "body", items: body.iter().collect() });
+        }
+        SqlTree::Drop { name, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+        }
+        SqlTree::Alter { name, operation, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Single { name: "operation", value: operation });
+        }
+        SqlTree::ColumnDef { name, type_, constraints, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Single { name: "type_", value: type_ });
+            out.push(TreeField::Many { name: "constraints", items: constraints.iter().collect() });
+        }
+        SqlTree::Constraint { name, body, .. } => {
+            if let Some(__t) = name { out.push(TreeField::Single { name: "name", value: __t }); }
+            out.push(TreeField::Many { name: "body", items: body.iter().collect() });
+        }
+        SqlTree::AddColumn { column, .. } => {
+            out.push(TreeField::Single { name: "column", value: column });
+        }
+        SqlTree::AddConstraint { constraint, .. } => {
+            out.push(TreeField::Single { name: "constraint", value: constraint });
+        }
+        SqlTree::Function { schema, name, parameters, return_type, body, .. } => {
+            if let Some(__t) = schema { out.push(TreeField::Single { name: "schema", value: __t }); }
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "parameters", items: parameters.iter().collect() });
+            if let Some(__t) = return_type { out.push(TreeField::Single { name: "return_type", value: __t }); }
+            out.push(TreeField::Single { name: "body", value: body });
+        }
+        SqlTree::DataType { length, .. } => {
+            if let Some(__t) = length { out.push(TreeField::Single { name: "length", value: __t }); }
+        }
+        SqlTree::Identifier { .. } => {}
+        SqlTree::Schema { .. } => {}
+        SqlTree::Alias { .. } => {}
+        SqlTree::Temp { name, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+        }
+        SqlTree::Variable { .. } => {}
+        SqlTree::Literal { .. } => {}
+        SqlTree::Comment { .. } => {}
+        SqlTree::Unknown { .. } => {}
+    }
+    out
+}
+
+/// Per-variant opt-in flag for the field-projection walker
+/// path. Returns true for variants whose doc comments carry
+/// `@field_projection`; false otherwise.
+pub fn use_field_projection(tree: &SqlTree) -> bool {
+    match tree {
+        _ => false,
+    }
 }
 
 /// Mutable access to the source-location span. Used by

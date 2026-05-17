@@ -17,6 +17,9 @@ use super::types::{
 };
 
 #[allow(unused_imports)]
+use crate::tree::walker::TreeField;
+
+#[allow(unused_imports)]
 use serde_json::Value;
 
 // Per-variant element-name overrides declared via
@@ -933,6 +936,530 @@ pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
     }
     v.sort_by_key(|c| range_of(c).start);
     v
+}
+
+/// Field-projection view of this node — one [`TreeField`] per
+/// projected struct field. Only consulted when [`use_field_projection`]
+/// returns true. See the walker for projection semantics.
+pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
+    let mut out: Vec<TreeField<'_, SyntaxTree>> = Vec::new();
+    match tree {
+        SyntaxTree::Module { children, .. } => {
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        SyntaxTree::Expression { inner, marker, span, .. } => {
+            out.push(TreeField::Single { name: "inner", value: inner });
+            if let Some(name) = marker {
+                out.push(TreeField::Flag {
+                    name,
+                    marker: Marker { name, range: ByteRange::synthetic_empty(), span: *span },
+                });
+            }
+        }
+        SyntaxTree::Slot { children, .. } => {
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        SyntaxTree::ObjectAccess { receiver, .. } => {
+            if let AccessReceiver::Instance(__t) = receiver { out.push(TreeField::Single { name: "receiver", value: __t }); }
+        }
+        SyntaxTree::Binary { left, right, .. } => {
+            out.push(TreeField::Single { name: "left", value: left });
+            out.push(TreeField::Single { name: "right", value: right });
+        }
+        SyntaxTree::Logical { left, right, .. } => {
+            out.push(TreeField::Single { name: "left", value: left });
+            out.push(TreeField::Single { name: "right", value: right });
+        }
+        SyntaxTree::Unary { operand, extra_markers, .. } => {
+            out.push(TreeField::Single { name: "operand", value: operand });
+            for m in extra_markers { out.push(TreeField::Flag { name: m.name, marker: *m }); }
+        }
+        SyntaxTree::Tuple { children, .. } => {
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        SyntaxTree::List { children, .. } => {
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        SyntaxTree::Set { children, .. } => {
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        SyntaxTree::Dictionary { pairs, .. } => {
+            out.push(TreeField::Many { name: "pairs", items: pairs.iter().collect() });
+        }
+        SyntaxTree::Pair { key, value, .. } => {
+            out.push(TreeField::Single { name: "key", value: key });
+            out.push(TreeField::Single { name: "value", value: value });
+        }
+        SyntaxTree::GenericType { name, params, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "params", items: params.iter().collect() });
+        }
+        SyntaxTree::Comparison { left, right, .. } => {
+            out.push(TreeField::Single { name: "left", value: left });
+            out.push(TreeField::Single { name: "right", value: right });
+        }
+        SyntaxTree::If { condition, body, else_branch, .. } => {
+            out.push(TreeField::Single { name: "condition", value: condition });
+            out.push(TreeField::Single { name: "body", value: body });
+            if let Some(__t) = else_branch { out.push(TreeField::Single { name: "else_branch", value: __t }); }
+        }
+        SyntaxTree::ElseIf { condition, body, else_branch, .. } => {
+            out.push(TreeField::Single { name: "condition", value: condition });
+            out.push(TreeField::Single { name: "body", value: body });
+            if let Some(__t) = else_branch { out.push(TreeField::Single { name: "else_branch", value: __t }); }
+        }
+        SyntaxTree::Else { body, .. } => {
+            out.push(TreeField::Single { name: "body", value: body });
+        }
+        SyntaxTree::For { targets, iterables, body, else_body, .. } => {
+            out.push(TreeField::Many { name: "targets", items: targets.iter().collect() });
+            out.push(TreeField::Many { name: "iterables", items: iterables.iter().collect() });
+            out.push(TreeField::Single { name: "body", value: body });
+            if let Some(__t) = else_body { out.push(TreeField::Single { name: "else_body", value: __t }); }
+        }
+        SyntaxTree::While { condition, body, else_body, .. } => {
+            out.push(TreeField::Single { name: "condition", value: condition });
+            out.push(TreeField::Single { name: "body", value: body });
+            if let Some(__t) = else_body { out.push(TreeField::Single { name: "else_body", value: __t }); }
+        }
+        SyntaxTree::Foreach { type_ann, target, iterable, body, .. } => {
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            out.push(TreeField::Single { name: "target", value: target });
+            out.push(TreeField::Single { name: "iterable", value: iterable });
+            out.push(TreeField::Single { name: "body", value: body });
+        }
+        SyntaxTree::CFor { initializer, condition, updates, body, .. } => {
+            if let Some(__t) = initializer { out.push(TreeField::Single { name: "initializer", value: __t }); }
+            if let Some(__t) = condition { out.push(TreeField::Single { name: "condition", value: __t }); }
+            out.push(TreeField::Many { name: "updates", items: updates.iter().collect() });
+            out.push(TreeField::Single { name: "body", value: body });
+        }
+        SyntaxTree::DoWhile { body, condition, .. } => {
+            out.push(TreeField::Single { name: "body", value: body });
+            out.push(TreeField::Single { name: "condition", value: condition });
+        }
+        SyntaxTree::Break { .. } => {}
+        SyntaxTree::Continue { .. } => {}
+        SyntaxTree::FieldWrap { inner, .. } => {
+            out.push(TreeField::Single { name: "inner", value: inner });
+        }
+        SyntaxTree::SimpleStatement { modifiers, extra_markers, children, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            for m in extra_markers { out.push(TreeField::Flag { name: m.name, marker: *m }); }
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        SyntaxTree::Try { try_body, handlers, else_body, finally_body, .. } => {
+            out.push(TreeField::Single { name: "try_body", value: try_body });
+            out.push(TreeField::Many { name: "handlers", items: handlers.iter().collect() });
+            if let Some(__t) = else_body { out.push(TreeField::Single { name: "else_body", value: __t }); }
+            if let Some(__t) = finally_body { out.push(TreeField::Single { name: "finally_body", value: __t }); }
+        }
+        SyntaxTree::Except { type_target, binding, filter, body, .. } => {
+            if let Some(__t) = type_target { out.push(TreeField::Single { name: "type_target", value: __t }); }
+            if let Some(__t) = binding { out.push(TreeField::Single { name: "binding", value: __t }); }
+            if let Some(__t) = filter { out.push(TreeField::Single { name: "filter", value: __t }); }
+            out.push(TreeField::Single { name: "body", value: body });
+        }
+        SyntaxTree::Catch { type_target, binding, filter, body, .. } => {
+            if let Some(__t) = type_target { out.push(TreeField::Single { name: "type_target", value: __t }); }
+            if let Some(__t) = binding { out.push(TreeField::Single { name: "binding", value: __t }); }
+            if let Some(__t) = filter { out.push(TreeField::Single { name: "filter", value: __t }); }
+            out.push(TreeField::Single { name: "body", value: body });
+        }
+        SyntaxTree::TypeAlias { name, type_params, value, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+            if let Some(__t) = type_params { out.push(TreeField::Single { name: "type_params", value: __t }); }
+            out.push(TreeField::Single { name: "value", value: value });
+        }
+        SyntaxTree::KeywordArgument { name, value, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Single { name: "value", value: value });
+        }
+        SyntaxTree::ListSplat { inner, .. } => {
+            out.push(TreeField::Single { name: "inner", value: inner });
+        }
+        SyntaxTree::DictSplat { inner, .. } => {
+            out.push(TreeField::Single { name: "inner", value: inner });
+        }
+        SyntaxTree::Ternary { condition, if_true, if_false, .. } => {
+            out.push(TreeField::Single { name: "condition", value: condition });
+            out.push(TreeField::Single { name: "if_true", value: if_true });
+            out.push(TreeField::Single { name: "if_false", value: if_false });
+        }
+        SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {
+            if let Some(__t) = type_target { out.push(TreeField::Single { name: "type_target", value: __t }); }
+            out.push(TreeField::Many { name: "arguments", items: arguments.iter().collect() });
+            if let Some(__t) = initializer { out.push(TreeField::Single { name: "initializer", value: __t }); }
+        }
+        SyntaxTree::Lambda { modifiers, parameters, body, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "parameters", items: parameters.iter().collect() });
+            out.push(TreeField::Single { name: "body", value: body.inner() });
+        }
+        SyntaxTree::Function { modifiers, decorators, name, generics, parameters, returns, throws, body, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "generics", items: generics.iter().collect() });
+            out.push(TreeField::Many { name: "parameters", items: parameters.iter().collect() });
+            if let Some(__t) = returns { out.push(TreeField::Single { name: "returns", value: __t }); }
+            out.push(TreeField::Many { name: "throws", items: throws.iter().collect() });
+            if let Some(__t) = body { out.push(TreeField::Single { name: "body", value: __t }); }
+        }
+        SyntaxTree::Method { modifiers, decorators, name, generics, parameters, returns, throws, body, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "generics", items: generics.iter().collect() });
+            out.push(TreeField::Many { name: "parameters", items: parameters.iter().collect() });
+            if let Some(__t) = returns { out.push(TreeField::Single { name: "returns", value: __t }); }
+            out.push(TreeField::Many { name: "throws", items: throws.iter().collect() });
+            if let Some(__t) = body { out.push(TreeField::Single { name: "body", value: __t }); }
+        }
+        SyntaxTree::Class { modifiers, decorators, name, generics, bases, where_clauses, body, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "generics", items: generics.iter().collect() });
+            out.push(TreeField::Many { name: "bases", items: bases.iter().collect() });
+            out.push(TreeField::Many { name: "where_clauses", items: where_clauses.iter().collect() });
+            out.push(TreeField::Single { name: "body", value: body });
+        }
+        SyntaxTree::Struct { modifiers, decorators, name, generics, bases, where_clauses, body, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "generics", items: generics.iter().collect() });
+            out.push(TreeField::Many { name: "bases", items: bases.iter().collect() });
+            out.push(TreeField::Many { name: "where_clauses", items: where_clauses.iter().collect() });
+            out.push(TreeField::Single { name: "body", value: body });
+        }
+        SyntaxTree::Interface { modifiers, decorators, name, generics, bases, where_clauses, body, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "generics", items: generics.iter().collect() });
+            out.push(TreeField::Many { name: "bases", items: bases.iter().collect() });
+            out.push(TreeField::Many { name: "where_clauses", items: where_clauses.iter().collect() });
+            out.push(TreeField::Single { name: "body", value: body });
+        }
+        SyntaxTree::Record { modifiers, decorators, name, generics, bases, where_clauses, body, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "generics", items: generics.iter().collect() });
+            out.push(TreeField::Many { name: "bases", items: bases.iter().collect() });
+            out.push(TreeField::Many { name: "where_clauses", items: where_clauses.iter().collect() });
+            out.push(TreeField::Single { name: "body", value: body });
+        }
+        SyntaxTree::Body { children, .. } => {
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        SyntaxTree::Parameter { extra_markers, modifiers, name, type_ann, default, span, .. } => {
+            for m in extra_markers { out.push(TreeField::Flag { name: m.name, marker: *m }); }
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Single { name: "name", value: name });
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            if let Some(__t) = default { out.push(TreeField::Single { name: "default", value: __t }); }
+        }
+        SyntaxTree::Skip { .. } => {}
+        SyntaxTree::PositionalSeparator { .. } => {}
+        SyntaxTree::KeywordSeparator { .. } => {}
+        SyntaxTree::Decorator { inner, .. } => {
+            out.push(TreeField::Single { name: "inner", value: inner });
+        }
+        SyntaxTree::Returns { type_ann, .. } => {
+            out.push(TreeField::Single { name: "type_ann", value: type_ann });
+        }
+        SyntaxTree::Generic { items, .. } => {
+            out.push(TreeField::Many { name: "items", items: items.iter().collect() });
+        }
+        SyntaxTree::TypeParameter { name, constraint, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+            if let Some(__t) = constraint { out.push(TreeField::Single { name: "constraint", value: __t }); }
+        }
+        SyntaxTree::Return { value, .. } => {
+            if let Some(__t) = value { out.push(TreeField::Single { name: "value", value: __t }); }
+        }
+        SyntaxTree::Comment { leading, trailing, .. } => {
+            if let Flag::On { range: frange, span: fspan } = leading {
+                out.push(TreeField::Flag {
+                    name: "leading",
+                    marker: Marker { name: "leading", range: *frange, span: *fspan },
+                });
+            }
+            if let Flag::On { range: frange, span: fspan } = trailing {
+                out.push(TreeField::Flag {
+                    name: "trailing",
+                    marker: Marker { name: "trailing", range: *frange, span: *fspan },
+                });
+            }
+        }
+        SyntaxTree::Assign { targets, type_annotation, values, .. } => {
+            out.push(TreeField::Many { name: "targets", items: targets.iter().collect() });
+            if let Some(__t) = type_annotation { out.push(TreeField::Single { name: "type_annotation", value: __t }); }
+            out.push(TreeField::Many { name: "values", items: values.iter().collect() });
+        }
+        SyntaxTree::Import { children, .. } => {
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        SyntaxTree::From { path, imports, .. } => {
+            if let Some(__t) = path { out.push(TreeField::Single { name: "path", value: __t }); }
+            out.push(TreeField::Many { name: "imports", items: imports.iter().collect() });
+        }
+        SyntaxTree::FromImport { name, alias, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+            if let Some(__t) = alias { out.push(TreeField::Single { name: "alias", value: __t }); }
+        }
+        SyntaxTree::Path { segments, .. } => {
+            out.push(TreeField::Many { name: "segments", items: segments.iter().collect() });
+        }
+        SyntaxTree::Aliased { inner, .. } => {
+            out.push(TreeField::Single { name: "inner", value: inner });
+        }
+        SyntaxTree::Call { callee, arguments, .. } => {
+            out.push(TreeField::Single { name: "callee", value: callee });
+            out.push(TreeField::Many { name: "arguments", items: arguments.iter().collect() });
+        }
+        SyntaxTree::Name { .. } => {}
+        SyntaxTree::Int { .. } => {}
+        SyntaxTree::Float { .. } => {}
+        SyntaxTree::String { .. } => {}
+        SyntaxTree::True { .. } => {}
+        SyntaxTree::False { .. } => {}
+        SyntaxTree::None { .. } => {}
+        SyntaxTree::Atom { .. } => {}
+        SyntaxTree::Enum { modifiers, decorators, name, underlying_type, members, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            out.push(TreeField::Single { name: "name", value: name });
+            if let Some(__t) = underlying_type { out.push(TreeField::Single { name: "underlying_type", value: __t }); }
+            out.push(TreeField::Many { name: "members", items: members.iter().collect() });
+        }
+        SyntaxTree::EnumMember { decorators, name, value, .. } => {
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            out.push(TreeField::Single { name: "name", value: name });
+            if let Some(__t) = value { out.push(TreeField::Single { name: "value", value: __t }); }
+        }
+        SyntaxTree::Property { modifiers, decorators, type_ann, name, accessors, value, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "accessors", items: accessors.iter().collect() });
+            if let Some(__t) = value { out.push(TreeField::Single { name: "value", value: __t }); }
+        }
+        SyntaxTree::Accessor { modifiers, body, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            if let Some(__t) = body { out.push(TreeField::Single { name: "body", value: __t }); }
+        }
+        SyntaxTree::Constructor { modifiers, decorators, name, parameters, body, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "parameters", items: parameters.iter().collect() });
+            out.push(TreeField::Single { name: "body", value: body });
+        }
+        SyntaxTree::Using { alias, path, .. } => {
+            if let Some(__t) = alias { out.push(TreeField::Single { name: "alias", value: __t }); }
+            out.push(TreeField::Single { name: "path", value: path });
+        }
+        SyntaxTree::Namespace { name, children, .. } => {
+            out.push(TreeField::Single { name: "name", value: name });
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        SyntaxTree::Variable { modifiers, decorators, type_ann, name, value, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            out.push(TreeField::Single { name: "name", value: name });
+            if let Some(__e) = value { out.push(TreeField::Single { name: "value", value: &__e.inner }); }
+        }
+        SyntaxTree::Field { modifiers, decorators, type_ann, name, value, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            out.push(TreeField::Single { name: "name", value: name });
+            if let Some(__e) = value { out.push(TreeField::Single { name: "value", value: &__e.inner }); }
+        }
+        SyntaxTree::Event { modifiers, decorators, type_ann, name, value, span, .. } => {
+            for (mname, mspan) in modifiers.markers_with_spans() {
+                out.push(TreeField::Flag {
+                    name: mname,
+                    marker: Marker {
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    },
+                });
+            }
+            out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            out.push(TreeField::Single { name: "name", value: name });
+            if let Some(__e) = value { out.push(TreeField::Single { name: "value", value: &__e.inner }); }
+        }
+        SyntaxTree::Is { value, type_target, .. } => {
+            out.push(TreeField::Single { name: "value", value: value });
+            out.push(TreeField::Single { name: "type_target", value: type_target });
+        }
+        SyntaxTree::Cast { type_ann, value, .. } => {
+            out.push(TreeField::Single { name: "type_ann", value: type_ann });
+            out.push(TreeField::Single { name: "value", value: value });
+        }
+        SyntaxTree::Null { .. } => {}
+        SyntaxTree::Inline { children, .. } => {
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+        SyntaxTree::Unknown { .. } => {}
+        SyntaxTree::Raw { children, .. } => {
+            out.push(TreeField::Many { name: "children", items: children.iter().collect() });
+        }
+    }
+    out
+}
+
+/// Per-variant opt-in flag for the field-projection walker
+/// path. Returns true for variants whose doc comments carry
+/// `@field_projection`; false otherwise.
+pub fn use_field_projection(tree: &SyntaxTree) -> bool {
+    match tree {
+        _ => false,
+    }
 }
 
 /// Mutable access to the source-location span. Used by

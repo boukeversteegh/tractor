@@ -119,6 +119,10 @@ fn generate_for_tree(spec: &TreeSpec) {
     out.push_str(&render_scalar_text_of(enum_item, tree));
     out.push('\n');
     out.push_str(&render_children_of(enum_item, tree));
+    out.push('\n');
+    out.push_str(&render_fields_of(enum_item, tree));
+    out.push('\n');
+    out.push_str(&render_use_field_projection(enum_item, tree));
     if spec.generate_mut {
         out.push('\n');
         out.push_str(&render_span_mut_of(enum_item, tree));
@@ -153,6 +157,9 @@ use super::types::{
 };
 
 #[allow(unused_imports)]
+use crate::tree::walker::TreeField;
+
+#[allow(unused_imports)]
 use serde_json::Value;
 
 // Per-variant element-name overrides declared via
@@ -185,6 +192,8 @@ const DATA_HEADER: &str = "\
 use super::types::{DataTree, element_name_for_data_element};
 #[allow(unused_imports)]
 use crate::tree::types::{ByteRange, Flag, Marker, Span};
+#[allow(unused_imports)]
+use crate::tree::walker::TreeField;
 
 ";
 
@@ -204,6 +213,8 @@ const SQL_HEADER: &str = "\
 use super::types::SqlTree;
 #[allow(unused_imports)]
 use crate::tree::types::{ByteRange, Marker, Span};
+#[allow(unused_imports)]
+use crate::tree::walker::TreeField;
 
 ";
 
@@ -689,6 +700,246 @@ fn children_arm(v: &Variant, tree: &str) -> String {
 {body}        }}
 "
     )
+}
+
+/// Generate `fields_of`: walks each variant's fields and produces a
+/// `Vec<TreeField>` projecting the struct fields directly. Consumed
+/// by the walker when [`use_field_projection`] returns true.
+///
+/// Field-type rules (mirror `children_of` + `flags_of`):
+///  - `Box<SyntaxTree>`              → `TreeField::Single`
+///  - `Option<Box<SyntaxTree>>`      → `Single` if Some, else skipped
+///  - `Vec<SyntaxTree>`              → `TreeField::Many`
+///  - `Expression`                   → `Single` (`.inner`)
+///  - `Option<Expression>`           → `Single` if Some, else skipped
+///  - `LambdaBody`                   → `Single` (`.inner()`)
+///  - `AccessReceiver`               → `Single` when `Instance`
+///  - `Flag` (On)                    → `TreeField::Flag`
+///  - `Modifiers`                    → one `Flag` per `markers_with_spans()` entry
+///  - `Vec<Marker>`                  → one `Flag` per marker
+///  - `Vec<&'static str>` `markers`  → one `Flag` per marker name
+///  - `Option<&'static str>` `marker`→ `Flag` if Some
+///
+/// Other field types (range, span, scalar strings, kind discriminators)
+/// are ignored — they're shape metadata, not projected children.
+fn render_fields_of(en: &ItemEnum, tree: &str) -> String {
+    let mut out = String::new();
+    out.push_str(&format!(
+        "/// Field-projection view of this node — one [`TreeField`] per
+/// projected struct field. Only consulted when [`use_field_projection`]
+/// returns true. See the walker for projection semantics.
+pub fn fields_of(tree: &{tree}) -> Vec<TreeField<'_, {tree}>> {{
+    let mut out: Vec<TreeField<'_, {tree}>> = Vec::new();
+    match tree {{
+",
+        tree = tree,
+    ));
+    for variant in &en.variants {
+        out.push_str(&fields_arm(variant, tree));
+    }
+    out.push_str(
+        "    }
+    out
+}
+",
+    );
+    out
+}
+
+fn fields_arm(v: &Variant, tree: &str) -> String {
+    let name = v.ident.to_string();
+    let mut bindings: Vec<String> = Vec::new();
+    let mut body = String::new();
+    let mut needs_span = false;
+    let box_t = format!("Box<{}>", tree);
+    let opt_box_t = format!("Option<Box<{}>>", tree);
+    let vec_t = format!("Vec<{}>", tree);
+
+    if let Fields::Named(named) = &v.fields {
+        for field in &named.named {
+            let Some(ident) = &field.ident else { continue };
+            let fname = ident.to_string();
+            let ty = type_str(&field.ty);
+            if ty == box_t {
+                bindings.push(fname.clone());
+                body.push_str(&format!(
+                    "            out.push(TreeField::Single {{ name: {fname:?}, value: {fname} }});\n",
+                ));
+            } else if ty == opt_box_t {
+                bindings.push(fname.clone());
+                body.push_str(&format!(
+                    "            if let Some(__t) = {fname} {{ out.push(TreeField::Single {{ name: {fname:?}, value: __t }}); }}\n",
+                ));
+            } else if ty == vec_t {
+                bindings.push(fname.clone());
+                body.push_str(&format!(
+                    "            out.push(TreeField::Many {{ name: {fname:?}, items: {fname}.iter().collect() }});\n",
+                ));
+            } else {
+                match ty.as_str() {
+                    "Expression" => {
+                        bindings.push(fname.clone());
+                        body.push_str(&format!(
+                            "            out.push(TreeField::Single {{ name: {fname:?}, value: &{fname}.inner }});\n",
+                        ));
+                    }
+                    "Option<Expression>" => {
+                        bindings.push(fname.clone());
+                        body.push_str(&format!(
+                            "            if let Some(__e) = {fname} {{ out.push(TreeField::Single {{ name: {fname:?}, value: &__e.inner }}); }}\n",
+                        ));
+                    }
+                    "LambdaBody" => {
+                        bindings.push(fname.clone());
+                        body.push_str(&format!(
+                            "            out.push(TreeField::Single {{ name: {fname:?}, value: {fname}.inner() }});\n",
+                        ));
+                    }
+                    "AccessReceiver" => {
+                        bindings.push(fname.clone());
+                        body.push_str(&format!(
+                            "            if let AccessReceiver::Instance(__t) = {fname} {{ out.push(TreeField::Single {{ name: {fname:?}, value: __t }}); }}\n",
+                        ));
+                    }
+                    "Modifiers" => {
+                        bindings.push(fname.clone());
+                        needs_span = true;
+                        body.push_str(&format!(
+                            "            for (mname, mspan) in {fname}.markers_with_spans() {{
+                out.push(TreeField::Flag {{
+                    name: mname,
+                    marker: Marker {{
+                        name: mname,
+                        range: ByteRange::synthetic_empty(),
+                        span: mspan.unwrap_or(*span),
+                    }},
+                }});
+            }}
+",
+                        ));
+                    }
+                    "Flag" => {
+                        bindings.push(fname.clone());
+                        let marker_name = strip_trailing_underscore(&fname);
+                        body.push_str(&format!(
+                            "            if let Flag::On {{ range: frange, span: fspan }} = {fname} {{
+                out.push(TreeField::Flag {{
+                    name: {marker_name:?},
+                    marker: Marker {{ name: {marker_name:?}, range: *frange, span: *fspan }},
+                }});
+            }}
+",
+                        ));
+                    }
+                    "Vec<Marker>" => {
+                        bindings.push(fname.clone());
+                        body.push_str(&format!(
+                            "            for m in {fname} {{ out.push(TreeField::Flag {{ name: m.name, marker: *m }}); }}\n",
+                        ));
+                    }
+                    "Vec<&'staticstr>" if fname == "markers" => {
+                        bindings.push(fname.clone());
+                        needs_span = true;
+                        body.push_str(&format!(
+                            "            for m in {fname} {{
+                out.push(TreeField::Flag {{
+                    name: m,
+                    marker: Marker {{ name: m, range: ByteRange::synthetic_empty(), span: *span }},
+                }});
+            }}
+",
+                        ));
+                    }
+                    "Option<&'staticstr>" if fname == "marker" => {
+                        bindings.push(fname.clone());
+                        needs_span = true;
+                        body.push_str(&format!(
+                            "            if let Some(name) = {fname} {{
+                out.push(TreeField::Flag {{
+                    name,
+                    marker: Marker {{ name, range: ByteRange::synthetic_empty(), span: *span }},
+                }});
+            }}
+",
+                        ));
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    if bindings.is_empty() {
+        return format!("        {tree}::{name} {{ .. }} => {{}}\n");
+    }
+
+    if needs_span && !bindings.iter().any(|b| b == "span") {
+        bindings.push("span".to_string());
+    }
+
+    let binding_list = bindings.join(", ");
+    format!(
+        "        {tree}::{name} {{ {binding_list}, .. }} => {{
+{body}        }}
+"
+    )
+}
+
+/// Generate `use_field_projection`: per-variant opt-in flag for the
+/// field-projection walker path. Variants without the
+/// `@field_projection` annotation default to `false` (legacy
+/// variant-blind path).
+fn render_use_field_projection(en: &ItemEnum, tree: &str) -> String {
+    let mut out = String::new();
+    out.push_str(&format!(
+        "/// Per-variant opt-in flag for the field-projection walker
+/// path. Returns true for variants whose doc comments carry
+/// `@field_projection`; false otherwise.
+pub fn use_field_projection(tree: &{tree}) -> bool {{
+    match tree {{
+",
+        tree = tree,
+    ));
+    let mut any_true = false;
+    for v in &en.variants {
+        if has_field_projection_annotation(v) {
+            any_true = true;
+            out.push_str(&format!(
+                "        {tree}::{name} {{ .. }} => true,\n",
+                name = v.ident,
+            ));
+        }
+    }
+    if any_true {
+        out.push_str("        _ => false,\n");
+    } else {
+        out.push_str("        _ => false,\n");
+    }
+    out.push_str(
+        "    }
+}
+",
+    );
+    out
+}
+
+/// Scan a variant's doc comments for a bare `@field_projection` line.
+/// Marks the variant as participating in the field-projection walker
+/// path (per-variant opt-in during Phase C migration).
+fn has_field_projection_annotation(v: &Variant) -> bool {
+    for attr in &v.attrs {
+        if !attr.path().is_ident("doc") {
+            continue;
+        }
+        let syn::Meta::NameValue(nv) = &attr.meta else { continue };
+        let syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(s), .. }) = &nv.value else { continue };
+        let line = s.value();
+        let trimmed = line.trim();
+        if trimmed == "@field_projection" || trimmed.starts_with("@field_projection ") {
+            return true;
+        }
+    }
+    false
 }
 
 fn render_span_mut_of(en: &ItemEnum, tree: &str) -> String {
