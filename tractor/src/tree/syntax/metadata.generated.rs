@@ -1406,7 +1406,7 @@ fn strip_plural(s: &str) -> &str {
             if suffix == "ies" {
                 // Heuristic — return the stripped form; caller still
                 // owns the lookup-fallback chain so a miss here just
-                // means we drain from __kids.
+                // means we drain from unclaimed_children.
                 return stripped;
             }
             return stripped;
@@ -1549,7 +1549,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
     match tag {
         "module" => {
             let claimed: &[&str] = &["children", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -1573,7 +1573,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -1586,7 +1586,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "expression" => {
             let claimed: &[&str] = &["inner", "marker", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -1600,8 +1600,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("inner") { "inner" } else { alt_key };
                 if let Some(v) = map.get("inner").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -1622,7 +1622,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "slot" => {
             let claimed: &[&str] = &["kind", "children", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -1660,7 +1660,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -1674,7 +1674,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "object_access" => {
             let claimed: &[&str] = &["receiver", "segments", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -1686,8 +1686,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             let receiver = {
                 let inner = if let Some(v) = map.get("receiver") {
                     tree_from_json_with_type_hint(v, Some("receiver"))
-                } else if !__kids.is_empty() {
-                    __kids.remove(0)
+                } else if !unclaimed_children.is_empty() {
+                    unclaimed_children.remove(0)
                 } else {
                     SyntaxTree::Unknown {
                         kind: "from_json:missing_receiver".into(),
@@ -1697,7 +1697,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 };
                 AccessReceiver::from_tree(inner, &["this", "self", "super", "base"])
             };
-            let segments = { let _ = &mut __kids; Vec::new() };
+            let segments = { let _ = &mut unclaimed_children; Vec::new() };
             let range = ByteRange::synthetic_empty();
             let span = Span::point(0, 0);
             SyntaxTree::ObjectAccess {
@@ -1709,7 +1709,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "binary" => {
             let claimed: &[&str] = &["op_text", "op_marker", "op_range", "left", "right", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -1726,8 +1726,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("left") { "left" } else { alt_key };
                 if let Some(v) = map.get("left").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -1741,8 +1741,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("right") { "right" } else { alt_key };
                 if let Some(v) = map.get("right").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -1765,7 +1765,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "logical" => {
             let claimed: &[&str] = &["op_text", "op_marker", "op_range", "left", "right", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -1782,8 +1782,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("left") { "left" } else { alt_key };
                 if let Some(v) = map.get("left").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -1797,8 +1797,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("right") { "right" } else { alt_key };
                 if let Some(v) = map.get("right").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -1821,7 +1821,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "unary" => {
             let claimed: &[&str] = &["op_text", "op_marker", "op_range", "operand", "extra_markers", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -1838,8 +1838,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("operand") { "operand" } else { alt_key };
                 if let Some(v) = map.get("operand").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -1863,7 +1863,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "tuple" => {
             let claimed: &[&str] = &["children", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -1887,7 +1887,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -1900,7 +1900,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "list" => {
             let claimed: &[&str] = &["children", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -1924,7 +1924,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -1937,7 +1937,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "set" => {
             let claimed: &[&str] = &["children", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -1961,7 +1961,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -1974,7 +1974,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "dictionary" => {
             let claimed: &[&str] = &["pairs", "pair", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -1998,7 +1998,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -2011,7 +2011,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "pair" => {
             let claimed: &[&str] = &["key", "value", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2025,8 +2025,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("key") { "key" } else { alt_key };
                 if let Some(v) = map.get("key").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2040,8 +2040,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("value") { "value" } else { alt_key };
                 if let Some(v) = map.get("value").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2061,7 +2061,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "generic_type" => {
             let claimed: &[&str] = &["name", "params", "param", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2075,8 +2075,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2100,7 +2100,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -2114,7 +2114,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "comparison" => {
             let claimed: &[&str] = &["left", "op_text", "op_marker", "op_range", "right", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2128,8 +2128,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("left") { "left" } else { alt_key };
                 if let Some(v) = map.get("left").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2146,8 +2146,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("right") { "right" } else { alt_key };
                 if let Some(v) = map.get("right").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2170,7 +2170,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "if" => {
             let claimed: &[&str] = &["condition", "body", "else_branch", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2184,8 +2184,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("condition") { "condition" } else { alt_key };
                 if let Some(v) = map.get("condition").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2199,8 +2199,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2214,8 +2214,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("else_branch") { "else_branch" } else { alt_key };
                 if let Some(v) = map.get("else_branch").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -2230,7 +2230,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "else_if" => {
             let claimed: &[&str] = &["condition", "body", "else_branch", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2244,8 +2244,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("condition") { "condition" } else { alt_key };
                 if let Some(v) = map.get("condition").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2259,8 +2259,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2274,8 +2274,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("else_branch") { "else_branch" } else { alt_key };
                 if let Some(v) = map.get("else_branch").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -2290,7 +2290,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "else" => {
             let claimed: &[&str] = &["body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2304,8 +2304,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2324,7 +2324,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "for" => {
             let claimed: &[&str] = &["is_async", "targets", "target", "iterables", "iterabl", "body", "else_body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2349,7 +2349,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let iterables = {
@@ -2367,7 +2367,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let body = {
@@ -2375,8 +2375,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2390,8 +2390,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("else_body") { "else_body" } else { alt_key };
                 if let Some(v) = map.get("else_body").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -2408,7 +2408,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "while" => {
             let claimed: &[&str] = &["condition", "body", "else_body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2422,8 +2422,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("condition") { "condition" } else { alt_key };
                 if let Some(v) = map.get("condition").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2437,8 +2437,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2452,8 +2452,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("else_body") { "else_body" } else { alt_key };
                 if let Some(v) = map.get("else_body").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -2468,7 +2468,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "foreach" => {
             let claimed: &[&str] = &["type_ann", "type", "target", "iterable", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2482,8 +2482,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_ann") { "type_ann" } else { alt_key };
                 if let Some(v) = map.get("type_ann").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let target = {
@@ -2491,8 +2491,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("target") { "target" } else { alt_key };
                 if let Some(v) = map.get("target").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2506,8 +2506,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("iterable") { "iterable" } else { alt_key };
                 if let Some(v) = map.get("iterable").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2521,8 +2521,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2544,7 +2544,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "c_for" => {
             let claimed: &[&str] = &["initializer", "condition", "updates", "updat", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2558,8 +2558,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("initializer") { "initializer" } else { alt_key };
                 if let Some(v) = map.get("initializer").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let condition = {
@@ -2567,8 +2567,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("condition") { "condition" } else { alt_key };
                 if let Some(v) = map.get("condition").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let updates = {
@@ -2586,7 +2586,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let body = {
@@ -2594,8 +2594,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2617,7 +2617,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "do_while" => {
             let claimed: &[&str] = &["body", "condition", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2631,8 +2631,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2646,8 +2646,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("condition") { "condition" } else { alt_key };
                 if let Some(v) = map.get("condition").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2667,7 +2667,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "break" => {
             let claimed: &[&str] = &["range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2685,7 +2685,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "continue" => {
             let claimed: &[&str] = &["range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2703,7 +2703,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "field_wrap" => {
             let claimed: &[&str] = &["wrapper", "inner", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2718,8 +2718,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("inner") { "inner" } else { alt_key };
                 if let Some(v) = map.get("inner").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2739,7 +2739,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "simple_statement" => {
             let claimed: &[&str] = &["element_name", "modifiers", "extra_markers", "children", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2766,7 +2766,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -2782,7 +2782,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "try" => {
             let claimed: &[&str] = &["try_body", "handlers", "handler", "else_body", "finally_body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2796,8 +2796,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("try_body") { "try_body" } else { alt_key };
                 if let Some(v) = map.get("try_body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2821,7 +2821,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let else_body = {
@@ -2829,8 +2829,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("else_body") { "else_body" } else { alt_key };
                 if let Some(v) = map.get("else_body").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let finally_body = {
@@ -2838,8 +2838,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("finally_body") { "finally_body" } else { alt_key };
                 if let Some(v) = map.get("finally_body").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -2855,7 +2855,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "except" => {
             let claimed: &[&str] = &["type_target", "type", "binding", "filter", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2869,8 +2869,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_target") { "type_target" } else { alt_key };
                 if let Some(v) = map.get("type_target").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let binding = {
@@ -2878,8 +2878,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("binding") { "binding" } else { alt_key };
                 if let Some(v) = map.get("binding").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let filter = {
@@ -2887,8 +2887,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("filter") { "filter" } else { alt_key };
                 if let Some(v) = map.get("filter").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let body = {
@@ -2896,8 +2896,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2919,7 +2919,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "catch" => {
             let claimed: &[&str] = &["type_target", "type", "binding", "filter", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2933,8 +2933,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_target") { "type_target" } else { alt_key };
                 if let Some(v) = map.get("type_target").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let binding = {
@@ -2942,8 +2942,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("binding") { "binding" } else { alt_key };
                 if let Some(v) = map.get("binding").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let filter = {
@@ -2951,8 +2951,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("filter") { "filter" } else { alt_key };
                 if let Some(v) = map.get("filter").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let body = {
@@ -2960,8 +2960,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -2983,7 +2983,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "type_alias" => {
             let claimed: &[&str] = &["name", "type_params", "value", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -2997,8 +2997,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3012,8 +3012,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_params") { "type_params" } else { alt_key };
                 if let Some(v) = map.get("type_params").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let value = {
@@ -3021,8 +3021,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("value") { "value" } else { alt_key };
                 if let Some(v) = map.get("value").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3043,7 +3043,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "keyword_argument" => {
             let claimed: &[&str] = &["name", "value", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -3057,8 +3057,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3072,8 +3072,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("value") { "value" } else { alt_key };
                 if let Some(v) = map.get("value").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3093,7 +3093,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "list_splat" => {
             let claimed: &[&str] = &["inner", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -3107,8 +3107,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("inner") { "inner" } else { alt_key };
                 if let Some(v) = map.get("inner").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3127,7 +3127,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "dict_splat" => {
             let claimed: &[&str] = &["inner", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -3141,8 +3141,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("inner") { "inner" } else { alt_key };
                 if let Some(v) = map.get("inner").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3161,7 +3161,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "ternary" => {
             let claimed: &[&str] = &["condition", "if_true", "if_false", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -3175,8 +3175,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("condition") { "condition" } else { alt_key };
                 if let Some(v) = map.get("condition").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3190,8 +3190,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("if_true") { "if_true" } else { alt_key };
                 if let Some(v) = map.get("if_true").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3205,8 +3205,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("if_false") { "if_false" } else { alt_key };
                 if let Some(v) = map.get("if_false").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3227,7 +3227,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "object_creation" => {
             let claimed: &[&str] = &["type_target", "type", "arguments", "argument", "initializer", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -3241,8 +3241,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_target") { "type_target" } else { alt_key };
                 if let Some(v) = map.get("type_target").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let arguments = {
@@ -3260,7 +3260,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let initializer = {
@@ -3268,8 +3268,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("initializer") { "initializer" } else { alt_key };
                 if let Some(v) = map.get("initializer").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -3284,7 +3284,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "lambda" => {
             let claimed: &[&str] = &["modifiers", "parameters", "parameter", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -3309,14 +3309,14 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let body = {
                 let inner = if let Some(v) = map.get("body").or_else(|| map.get("body")) {
                     tree_from_json_with_type_hint(v, Some("body"))
-                } else if !__kids.is_empty() {
-                    __kids.remove(0)
+                } else if !unclaimed_children.is_empty() {
+                    unclaimed_children.remove(0)
                 } else {
                     SyntaxTree::Body {
                         children: Vec::new(),
@@ -3340,7 +3340,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "function" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "name", "generics", "generic", "parameters", "parameter", "returns", "throws", "throw", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -3365,7 +3365,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let name = {
@@ -3373,8 +3373,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3398,7 +3398,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let parameters = {
@@ -3416,7 +3416,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let returns = {
@@ -3424,8 +3424,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("returns") { "returns" } else { alt_key };
                 if let Some(v) = map.get("returns").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let throws = {
@@ -3443,7 +3443,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let body = {
@@ -3451,8 +3451,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -3472,7 +3472,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "method" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "name", "generics", "generic", "parameters", "parameter", "returns", "throws", "throw", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -3497,7 +3497,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let name = {
@@ -3505,8 +3505,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3530,7 +3530,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let parameters = {
@@ -3548,7 +3548,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let returns = {
@@ -3556,8 +3556,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("returns") { "returns" } else { alt_key };
                 if let Some(v) = map.get("returns").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let throws = {
@@ -3575,7 +3575,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let body = {
@@ -3583,8 +3583,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -3604,7 +3604,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "class" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "name", "generics", "generic", "bases", "bas", "where_clauses", "where", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -3629,7 +3629,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let name = {
@@ -3637,8 +3637,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3662,7 +3662,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let bases = {
@@ -3680,7 +3680,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let where_clauses = {
@@ -3698,7 +3698,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let body = {
@@ -3706,8 +3706,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3732,7 +3732,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "struct" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "name", "generics", "generic", "bases", "bas", "where_clauses", "where", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -3757,7 +3757,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let name = {
@@ -3765,8 +3765,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3790,7 +3790,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let bases = {
@@ -3808,7 +3808,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let where_clauses = {
@@ -3826,7 +3826,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let body = {
@@ -3834,8 +3834,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3860,7 +3860,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "interface" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "name", "generics", "generic", "bases", "bas", "where_clauses", "where", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -3885,7 +3885,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let name = {
@@ -3893,8 +3893,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3918,7 +3918,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let bases = {
@@ -3936,7 +3936,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let where_clauses = {
@@ -3954,7 +3954,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let body = {
@@ -3962,8 +3962,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -3988,7 +3988,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "record" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "name", "generics", "generic", "bases", "bas", "where_clauses", "where", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4013,7 +4013,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let name = {
@@ -4021,8 +4021,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -4046,7 +4046,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let bases = {
@@ -4064,7 +4064,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let where_clauses = {
@@ -4082,7 +4082,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let body = {
@@ -4090,8 +4090,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -4116,7 +4116,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "body" => {
             let claimed: &[&str] = &["children", "pass_only", "block_wrap", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4140,7 +4140,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let pass_only = map.get("pass_only").and_then(|v| v.as_bool()).unwrap_or(false);
@@ -4157,7 +4157,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "parameter" => {
             let claimed: &[&str] = &["kind", "extra_markers", "modifiers", "name", "type_ann", "type", "default", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4182,8 +4182,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -4197,8 +4197,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_ann") { "type_ann" } else { alt_key };
                 if let Some(v) = map.get("type_ann").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let default = {
@@ -4206,8 +4206,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("default") { "default" } else { alt_key };
                 if let Some(v) = map.get("default").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -4225,7 +4225,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "positional_separator" => {
             let claimed: &[&str] = &["range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4243,7 +4243,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "keyword_separator" => {
             let claimed: &[&str] = &["range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4261,7 +4261,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "decorator" => {
             let claimed: &[&str] = &["inner", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4275,8 +4275,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("inner") { "inner" } else { alt_key };
                 if let Some(v) = map.get("inner").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -4295,7 +4295,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "returns" => {
             let claimed: &[&str] = &["type_ann", "type", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4309,8 +4309,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_ann") { "type_ann" } else { alt_key };
                 if let Some(v) = map.get("type_ann").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -4329,7 +4329,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "generic" => {
             let claimed: &[&str] = &["items", "item", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4353,7 +4353,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -4366,7 +4366,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "type_parameter" => {
             let claimed: &[&str] = &["name", "constraint", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4380,8 +4380,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -4395,8 +4395,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("constraint") { "constraint" } else { alt_key };
                 if let Some(v) = map.get("constraint").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -4410,7 +4410,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "return" => {
             let claimed: &[&str] = &["value", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4424,8 +4424,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("value") { "value" } else { alt_key };
                 if let Some(v) = map.get("value").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -4438,7 +4438,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "comment" => {
             let claimed: &[&str] = &["leading", "trailing", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4464,7 +4464,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "assign" => {
             let claimed: &[&str] = &["targets", "target", "type_annotation", "op_text", "op_range", "op_markers", "values", "valu", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4488,7 +4488,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let type_annotation = {
@@ -4496,8 +4496,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_annotation") { "type_annotation" } else { alt_key };
                 if let Some(v) = map.get("type_annotation").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let op_text = map.get("op_text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
@@ -4518,7 +4518,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -4536,7 +4536,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "import" => {
             let claimed: &[&str] = &["has_alias", "children", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4561,7 +4561,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -4575,7 +4575,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "from" => {
             let claimed: &[&str] = &["relative", "path", "imports", "import", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4590,8 +4590,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("path") { "path" } else { alt_key };
                 if let Some(v) = map.get("path").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let imports = {
@@ -4609,7 +4609,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -4624,7 +4624,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "from_import" => {
             let claimed: &[&str] = &["has_alias", "name", "alias", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4639,8 +4639,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -4654,8 +4654,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("alias") { "alias" } else { alt_key };
                 if let Some(v) = map.get("alias").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -4670,7 +4670,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "path" => {
             let claimed: &[&str] = &["segments", "segment", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4694,7 +4694,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -4707,7 +4707,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "aliased" => {
             let claimed: &[&str] = &["inner", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4721,8 +4721,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("inner") { "inner" } else { alt_key };
                 if let Some(v) = map.get("inner").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -4741,7 +4741,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "call" => {
             let claimed: &[&str] = &["callee", "arguments", "argument", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4755,8 +4755,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("callee") { "callee" } else { alt_key };
                 if let Some(v) = map.get("callee").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -4780,7 +4780,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -4794,7 +4794,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "name" => {
             let claimed: &[&str] = &["text", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4814,7 +4814,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "int" => {
             let claimed: &[&str] = &["text", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4834,7 +4834,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "float" => {
             let claimed: &[&str] = &["text", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4854,7 +4854,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "string" => {
             let claimed: &[&str] = &["text", "quote_style", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4876,7 +4876,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "true" => {
             let claimed: &[&str] = &["text", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4896,7 +4896,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "false" => {
             let claimed: &[&str] = &["text", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4916,7 +4916,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "none" => {
             let claimed: &[&str] = &["text", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4936,7 +4936,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "atom" => {
             let claimed: &[&str] = &["element_name", "text", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4958,7 +4958,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "enum" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "name", "underlying_type", "members", "member", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -4983,7 +4983,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let name = {
@@ -4991,8 +4991,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5006,8 +5006,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("underlying_type") { "underlying_type" } else { alt_key };
                 if let Some(v) = map.get("underlying_type").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let members = {
@@ -5025,7 +5025,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();
@@ -5042,7 +5042,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "enum_member" => {
             let claimed: &[&str] = &["decorators", "decorator", "name", "value", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5066,7 +5066,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let name = {
@@ -5074,8 +5074,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5089,8 +5089,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("value") { "value" } else { alt_key };
                 if let Some(v) = map.get("value").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -5105,7 +5105,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "property" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "type_ann", "type", "name", "accessors", "accessor", "value", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5130,7 +5130,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let type_ann = {
@@ -5138,8 +5138,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_ann") { "type_ann" } else { alt_key };
                 if let Some(v) = map.get("type_ann").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let name = {
@@ -5147,8 +5147,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5172,7 +5172,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let value = {
@@ -5180,8 +5180,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("value") { "value" } else { alt_key };
                 if let Some(v) = map.get("value").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -5199,7 +5199,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "accessor" => {
             let claimed: &[&str] = &["modifiers", "kind", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5222,8 +5222,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -5238,7 +5238,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "constructor" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "name", "parameters", "parameter", "body", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5263,7 +5263,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let name = {
@@ -5271,8 +5271,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5296,7 +5296,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let body = {
@@ -5304,8 +5304,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("body") { "body" } else { alt_key };
                 if let Some(v) = map.get("body").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5328,7 +5328,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "using" => {
             let claimed: &[&str] = &["is_static", "alias", "path", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5343,8 +5343,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("alias") { "alias" } else { alt_key };
                 if let Some(v) = map.get("alias").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let path = {
@@ -5352,8 +5352,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("path") { "path" } else { alt_key };
                 if let Some(v) = map.get("path").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5374,7 +5374,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "namespace" => {
             let claimed: &[&str] = &["name", "children", "file_scoped", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5388,8 +5388,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5413,7 +5413,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let file_scoped = map.get("file_scoped").and_then(|v| v.as_bool()).unwrap_or(false);
@@ -5429,7 +5429,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "variable" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "type_ann", "type", "name", "value", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5454,7 +5454,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let type_ann = {
@@ -5462,8 +5462,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_ann") { "type_ann" } else { alt_key };
                 if let Some(v) = map.get("type_ann").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let name = {
@@ -5471,8 +5471,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5484,8 +5484,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             let value = {
                 if let Some(v) = map.get("value").or_else(|| map.get("expression")) {
                     Some(Expression::wrap(tree_from_json_with_type_hint(v, Some("expression"))))
-                } else if !__kids.is_empty() {
-                    Some(Expression::wrap(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Expression::wrap(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -5502,7 +5502,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "field" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "type_ann", "type", "name", "value", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5527,7 +5527,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let type_ann = {
@@ -5535,8 +5535,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_ann") { "type_ann" } else { alt_key };
                 if let Some(v) = map.get("type_ann").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let name = {
@@ -5544,8 +5544,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5557,8 +5557,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             let value = {
                 if let Some(v) = map.get("value").or_else(|| map.get("expression")) {
                     Some(Expression::wrap(tree_from_json_with_type_hint(v, Some("expression"))))
-                } else if !__kids.is_empty() {
-                    Some(Expression::wrap(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Expression::wrap(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -5575,7 +5575,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "event" => {
             let claimed: &[&str] = &["modifiers", "decorators", "decorator", "type_ann", "type", "name", "value", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5600,7 +5600,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let type_ann = {
@@ -5608,8 +5608,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_ann") { "type_ann" } else { alt_key };
                 if let Some(v) = map.get("type_ann").or_else(|| map.get(alt_key)) {
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                } else if !__kids.is_empty() {
-                    Some(Box::new(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Box::new(unclaimed_children.remove(0)))
                 } else { None }
             };
             let name = {
@@ -5617,8 +5617,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("name") { "name" } else { alt_key };
                 if let Some(v) = map.get("name").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5630,8 +5630,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             let value = {
                 if let Some(v) = map.get("value").or_else(|| map.get("expression")) {
                     Some(Expression::wrap(tree_from_json_with_type_hint(v, Some("expression"))))
-                } else if !__kids.is_empty() {
-                    Some(Expression::wrap(__kids.remove(0)))
+                } else if !unclaimed_children.is_empty() {
+                    Some(Expression::wrap(unclaimed_children.remove(0)))
                 } else { None }
             };
             let range = ByteRange::synthetic_empty();
@@ -5648,7 +5648,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "is" => {
             let claimed: &[&str] = &["value", "type_target", "type", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5662,8 +5662,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("value") { "value" } else { alt_key };
                 if let Some(v) = map.get("value").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5677,8 +5677,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_target") { "type_target" } else { alt_key };
                 if let Some(v) = map.get("type_target").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5698,7 +5698,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "cast" => {
             let claimed: &[&str] = &["type_ann", "type", "value", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5712,8 +5712,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("type_ann") { "type_ann" } else { alt_key };
                 if let Some(v) = map.get("type_ann").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5727,8 +5727,8 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 let hint = if map.contains_key("value") { "value" } else { alt_key };
                 if let Some(v) = map.get("value").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                } else if !__kids.is_empty() {
-                    Box::new(__kids.remove(0))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
                 } else {
                     Box::new(SyntaxTree::Unknown {
                         kind: "from_json:missing_child".into(),
@@ -5748,7 +5748,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "null" => {
             let claimed: &[&str] = &["text", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5768,7 +5768,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "unknown" => {
             let claimed: &[&str] = &["kind", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5788,7 +5788,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
         }
         "raw" => {
             let claimed: &[&str] = &["kind", "is_named", "children", "range", "span"];
-            let mut __kids: Vec<SyntaxTree> = map.iter()
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
                     Value::Bool(_) => Vec::new(),
@@ -5814,7 +5814,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }
                 } else {
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }
             };
             let range = ByteRange::synthetic_empty();

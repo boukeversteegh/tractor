@@ -1024,7 +1024,7 @@ fn strip_plural(s: &str) -> &str {
             if suffix == \"ies\" {
                 // Heuristic — return the stripped form; caller still
                 // owns the lookup-fallback chain so a miss here just
-                // means we drain from __kids.
+                // means we drain from unclaimed_children.
                 return stripped;
             }
             return stripped;
@@ -1136,12 +1136,12 @@ fn from_json_object_with_hint(
 /// Build one `$type` arm: pop children positionally into typed slots,
 /// fill scalars from JSON keys, default everything else.
 ///
-/// `__kids` is the **overflow** list — map values whose JSON key
+/// `unclaimed_children` is the **overflow** list — map values whose JSON key
 /// doesn't match any of this variant's fields (counting both the
 /// raw Rust field name and the canonical JSON-key form from
 /// [`field_name_to_json_key`]). Fields that find their value via
-/// keyed lookup don't double-consume from `__kids`; fields that miss
-/// fall back to draining `__kids` positionally.
+/// keyed lookup don't double-consume from `unclaimed_children`; fields that miss
+/// fall back to draining `unclaimed_children` positionally.
 fn from_json_arm(v: &Variant, tag: &str) -> String {
     let name = v.ident.to_string();
     let mut field_pops = String::new();
@@ -1171,7 +1171,7 @@ fn from_json_arm(v: &Variant, tag: &str) -> String {
         }
     }
 
-    // Rebuild __kids by walking the map once more and including only
+    // Rebuild unclaimed_children by walking the map once more and including only
     // entries whose key is NOT in the claimed set. The global
     // `children` (built by `dispatch_from_json_object`) is kept for
     // the SimpleStatement fallback path but isn't used per-arm.
@@ -1179,7 +1179,7 @@ fn from_json_arm(v: &Variant, tag: &str) -> String {
     let claimed_arr = claimed_lits.join(", ");
     field_pops.push_str(&format!(
         "            let claimed: &[&str] = &[{claimed_arr}];\n\
-         \x20           let mut __kids: Vec<SyntaxTree> = map.iter()\n\
+         \x20           let mut unclaimed_children: Vec<SyntaxTree> = map.iter()\n\
          \x20               .filter(|(k, _)| k.as_str() != \"$type\" && k.as_str() != \"$children\" && !claimed.contains(&k.as_str()))\n\
          \x20               .flat_map(|(k, v)| match v {{\n\
          \x20                   Value::Bool(_) => Vec::new(),\n\
@@ -1224,14 +1224,14 @@ fn from_json_arm(v: &Variant, tag: &str) -> String {
 }
 
 /// Per-field-type expression that produces the field value from the
-/// in-scope `__kids: Vec<SyntaxTree>`, `marker_strs: Vec<&str>`,
+/// in-scope `unclaimed_children: Vec<SyntaxTree>`, `marker_strs: Vec<&str>`,
 /// `leaf_text: String`, `map: &serde_json::Map<...>`, `static_tag`.
 ///
 /// For tree-child fields, the lookup is two-tier: first try
 /// `map.get(field_name)` (works when the JSON key matches the
 /// field's typical inner element name — most slot-wrapper shapes:
 /// `Binary.left/right`, `If.condition`, `Class.body`, etc.); fall
-/// back to draining from `__kids` positionally. `__kids` is the
+/// back to draining from `unclaimed_children` positionally. `unclaimed_children` is the
 /// flattened list of all non-meta JSON values in stable key order,
 /// so positional drain handles variants whose JSON keys don't match
 /// field names (e.g. `Class.bases` lives under `type` in JSON).
@@ -1253,8 +1253,8 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
                 let hint = if map.contains_key({fname:?}) {{ {fname:?} }} else {{ alt_key }};
                 if let Some(v) = map.get({fname:?}).or_else(|| map.get(alt_key)) {{
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
-                }} else if !__kids.is_empty() {{
-                    Box::new(__kids.remove(0))
+                }} else if !unclaimed_children.is_empty() {{
+                    Box::new(unclaimed_children.remove(0))
                 }} else {{
                     Box::new(SyntaxTree::Unknown {{
                         kind: \"from_json:missing_child\".into(),
@@ -1278,8 +1278,8 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
                 let hint = if map.contains_key({fname:?}) {{ {fname:?} }} else {{ alt_key }};
                 if let Some(v) = map.get({fname:?}).or_else(|| map.get(alt_key)) {{
                     Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
-                }} else if !__kids.is_empty() {{
-                    Some(Box::new(__kids.remove(0)))
+                }} else if !unclaimed_children.is_empty() {{
+                    Some(Box::new(unclaimed_children.remove(0)))
                 }} else {{ None }}
             }}",
                     fname = fname,
@@ -1311,7 +1311,7 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
                         _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }}
                 }} else {{
-                    std::mem::take(&mut __kids)
+                    std::mem::take(&mut unclaimed_children)
                 }}
             }}",
                     fname = fname,
@@ -1325,8 +1325,8 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
                 "{{
                 let inner = if let Some(v) = map.get({fname:?}).or_else(|| map.get(\"expression\")) {{
                     tree_from_json_with_type_hint(v, Some(\"expression\"))
-                }} else if !__kids.is_empty() {{
-                    __kids.remove(0)
+                }} else if !unclaimed_children.is_empty() {{
+                    unclaimed_children.remove(0)
                 }} else {{
                     SyntaxTree::Unknown {{
                         kind: \"from_json:missing_expression\".into(),
@@ -1345,8 +1345,8 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
                 "{{
                 if let Some(v) = map.get({fname:?}).or_else(|| map.get(\"expression\")) {{
                     Some(Expression::wrap(tree_from_json_with_type_hint(v, Some(\"expression\"))))
-                }} else if !__kids.is_empty() {{
-                    Some(Expression::wrap(__kids.remove(0)))
+                }} else if !unclaimed_children.is_empty() {{
+                    Some(Expression::wrap(unclaimed_children.remove(0)))
                 }} else {{ None }}
             }}",
                 fname = fname,
@@ -1358,8 +1358,8 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
                 "{{
                 let inner = if let Some(v) = map.get({fname:?}).or_else(|| map.get(\"body\")) {{
                     tree_from_json_with_type_hint(v, Some(\"body\"))
-                }} else if !__kids.is_empty() {{
-                    __kids.remove(0)
+                }} else if !unclaimed_children.is_empty() {{
+                    unclaimed_children.remove(0)
                 }} else {{
                     SyntaxTree::Body {{
                         children: Vec::new(),
@@ -1380,8 +1380,8 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
                 "{{
                 let inner = if let Some(v) = map.get({fname:?}) {{
                     tree_from_json_with_type_hint(v, Some({fname:?}))
-                }} else if !__kids.is_empty() {{
-                    __kids.remove(0)
+                }} else if !unclaimed_children.is_empty() {{
+                    unclaimed_children.remove(0)
                 }} else {{
                     SyntaxTree::Unknown {{
                         kind: \"from_json:missing_receiver\".into(),
@@ -1398,7 +1398,7 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
         "Vec<AccessSegment>" => (
             // Access segments don't have a clean JSON inverse; any
             // remaining children get dropped here. Round-trip is lossy.
-            "{ let _ = &mut __kids; Vec::new() }".into(),
+            "{ let _ = &mut unclaimed_children; Vec::new() }".into(),
             false,
         ),
 
@@ -1543,7 +1543,7 @@ fn strip_plural_str(s: &str) -> &str {
 /// `to_json` emits children grouped by their **element name**, but
 /// `from_json` looks up by **Rust field name**. When the two differ,
 /// the keyed lookup misses and the codegen falls back to positional
-/// `__kids` drain — which is fragile and often wrong.
+/// `unclaimed_children` drain — which is fragile and often wrong.
 ///
 /// This helper returns the form the JSON key would take when the
 /// child element name "naturally" matches the field semantically.
