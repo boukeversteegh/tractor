@@ -421,12 +421,19 @@ fn render_body_via_fields<T: WalkerTree>(
                 set_span_attrs(xot, wrap, value.span_of());
                 // Variant identity as an empty marker — analog of JSON
                 // `$type`, so the type is queryable without nesting.
+                // Elide when the variant tag equals the field name
+                // (rule-based optimization: the wrapper already carries
+                // that information, so the marker is pure duplication —
+                // and a double element with the same name breaks the
+                // natural `//name` XPath idiom).
                 if let Some(variant_tag) = value.element_name_of() {
                     let variant_display = T::display_name_for(variant_tag, context).to_string();
-                    let marker_id = xot.add_name(&variant_display);
-                    let marker = xot.new_element(marker_id);
-                    xot.append(wrap, marker)?;
-                    set_span_attrs(xot, marker, value.span_of());
+                    if variant_display != display {
+                        let marker_id = xot.add_name(&variant_display);
+                        let marker = xot.new_element(marker_id);
+                        xot.append(wrap, marker)?;
+                        set_span_attrs(xot, marker, value.span_of());
+                    }
                 }
                 // Render the value's body inside the field wrapper —
                 // no outer variant wrapper (the marker carries the

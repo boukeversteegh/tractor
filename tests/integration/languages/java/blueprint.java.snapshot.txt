@@ -135,9 +135,9 @@ program/
   │       │   │   └─ name = "xs"
   │       │   └─ body/
   │       │       ├─ variable/
-  │       │       │   ├─ type/name = "int"
+  │       │       │   ├─ type_ann[type]/name = "int"
   │       │       │   ├─ name = "total"
-  │       │       │   └─ expression/int = "0"
+  │       │       │   └─ value[expression]/int = "0"
   │       │       ├─ foreach/
   │       │       │   ├─ type/name = "int"
   │       │       │   ├─ name = "x"
@@ -146,9 +146,9 @@ program/
   │       │       │       ├─ expression/name = "total"
   │       │       │       └─ expression/name = "x"
   │       │       ├─ variable/
-  │       │       │   ├─ type/name = "int"
+  │       │       │   ├─ type_ann[type]/name = "int"
   │       │       │   ├─ name = "i"
-  │       │       │   └─ expression/int = "0"
+  │       │       │   └─ value[expression]/int = "0"
   │       │       ├─ while/
   │       │       │   ├─ condition/expression/binary/
   │       │       │   │   ├─ left[expression]/name = "i"
@@ -274,31 +274,31 @@ program/
           │   ├─ name = "literals"
           │   └─ body/
           │       ├─ variable/
-          │       │   ├─ type[array]/
+          │       │   ├─ type_ann[type and array]/
           │       │   │   ├─ name = "int"
           │       │   │   └─ type = "[]"
           │       │   ├─ name = "arr"
-          │       │   └─ expression/array[literal]/
+          │       │   └─ value[expression]/array[literal]/
           │       │       ├─ int = "1"
           │       │       ├─ int = "2"
           │       │       └─ int = "3"
           │       ├─ variable/
-          │       │   ├─ type/name = "char"
+          │       │   ├─ type_ann[type]/name = "char"
           │       │   ├─ name = "ch"
-          │       │   └─ expression/string = "'A'"
+          │       │   └─ value[expression]/string = "'A'"
           │       ├─ variable/
-          │       │   ├─ type/
+          │       │   ├─ type_ann[type]/
           │       │   │   ├─ name = "Class"
           │       │   │   └─ type = "?"
           │       │   ├─ name = "cls"
-          │       │   └─ expression/type/name = "String"
+          │       │   └─ value[expression]/type/name = "String"
           │       └─ variable/
-          │           ├─ type/
+          │           ├─ type_ann[type]/
           │           │   ├─ name = "java.util.function.Function"
           │           │   ├─ name = "Object"
           │           │   └─ name = "String"
           │           ├─ name = "ref"
-          │           └─ expression/member/
+          │           └─ value[expression]/member/
           │               ├─ name = "String"
           │               └─ name = "valueOf"
           ├─ comment[leading] = "/** Cast, instanceof, assert, break/continue with label. */"
@@ -310,9 +310,9 @@ program/
           │   │   └─ name = "o"
           │   └─ body/
           │       ├─ variable/
-          │       │   ├─ type/name = "int"
+          │       │   ├─ type_ann[type]/name = "int"
           │       │   ├─ name = "n"
-          │       │   └─ expression/cast/
+          │       │   └─ value[expression]/cast/
           │       │       ├─ type/name = "int"
           │       │       └─ int = "0L"
           │       ├─ assert/
@@ -322,18 +322,18 @@ program/
           │       │   │   └─ right[expression]/int = "0"
           │       │   └─ string = "\"non-negative\""
           │       ├─ variable/
-          │       │   ├─ type/name = "boolean"
+          │       │   ├─ type_ann[type]/name = "boolean"
           │       │   ├─ name = "isStr"
-          │       │   └─ expression/is/
+          │       │   └─ value[expression]/is/
           │       │       ├─ name = "o"
           │       │       └─ name = "String"
           │       ├─ label/
           │       │   ├─ name = "outer"
           │       │   └─ c_for/
           │       │       ├─ variable/
-          │       │       │   ├─ type/name = "int"
+          │       │       │   ├─ type_ann[type]/name = "int"
           │       │       │   ├─ name = "i"
-          │       │       │   └─ expression/int = "0"
+          │       │       │   └─ value[expression]/int = "0"
           │       │       ├─ binary/
           │       │       │   ├─ left[expression]/name = "i"
           │       │       │   ├─ op[operator and less] = "<"
@@ -353,9 +353,9 @@ program/
           │       │               │   └─ right[expression]/int = "3"
           │       │               └─ body/name = "outer"
           │       ├─ variable/
-          │       │   ├─ type/name = "int"
+          │       │   ├─ type_ann[type]/name = "int"
           │       │   ├─ name = "k"
-          │       │   └─ expression/int = "0"
+          │       │   └─ value[expression]/int = "0"
           │       └─ do_while/
           │           ├─ body/expression/unary[postfix]/name = "k"
           │           └─ binary/
@@ -393,9 +393,9 @@ program/
               │   └─ name = "o"
               └─ body/
                   ├─ variable/
-                  │   ├─ type/name = "int"
+                  │   ├─ type_ann[type]/name = "int"
                   │   ├─ name = "v"
-                  │   └─ expression/switch/
+                  │   └─ value[expression]/switch/
                   │       ├─ name = "o"
                   │       ├─ arm/
                   │       │   ├─ case/pattern/

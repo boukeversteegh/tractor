@@ -206,11 +206,13 @@
   "declare": [
     {
       "variable": {
+        "decorators": [],
         "const": true,
-        "name": "__DEV__",
-        "type": {
+        "type_ann": {
+          "$type": "type",
           "name": "boolean"
-        }
+        },
+        "name": "__DEV__"
       }
     },
     {
@@ -746,27 +748,27 @@
                   }
                 },
                 "variable": {
+                  "decorators": [],
                   "const": true,
                   "name": "first",
                   "value": {
-                    "expression": {
-                      "binary": {
-                        "left": {
-                          "$type": "expression",
-                          "object": {
-                            "number": "0",
-                            "this": "this"
-                          }
-                        },
-                        "op": {
-                          "$type": "operator",
-                          "text": "??",
-                          "null_coalesce": true
-                        },
-                        "right": {
-                          "$type": "expression",
-                          "string": "\"unnamed\""
+                    "$type": "expression",
+                    "binary": {
+                      "left": {
+                        "$type": "expression",
+                        "object": {
+                          "number": "0",
+                          "this": "this"
                         }
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "??",
+                        "null_coalesce": true
+                      },
+                      "right": {
+                        "$type": "expression",
+                        "string": "\"unnamed\""
                       }
                     }
                   }
@@ -817,12 +819,12 @@
                     "name": "i"
                   },
                   "variable": {
+                    "decorators": [],
                     "let": true,
                     "name": "i",
                     "value": {
-                      "expression": {
-                        "number": "0"
-                      }
+                      "$type": "expression",
+                      "number": "0"
                     }
                   }
                 }
@@ -883,20 +885,20 @@
                       }
                     },
                     "variable": {
+                      "decorators": [],
                       "const": true,
                       "name": "merged",
                       "value": {
-                        "expression": {
-                          "list": {
-                            "list_splat": [
-                              {
-                                "name": "urls"
-                              },
-                              {
-                                "name": "extra"
-                              }
-                            ]
-                          }
+                        "$type": "expression",
+                        "list": {
+                          "list_splat": [
+                            {
+                              "name": "urls"
+                            },
+                            {
+                              "name": "extra"
+                            }
+                          ]
                         }
                       }
                     }
@@ -1233,42 +1235,44 @@
           },
           "variable": [
             {
+              "decorators": [],
               "let": true,
-              "name": "status",
-              "type": {
+              "type_ann": {
+                "$type": "type",
                 "name": "Status"
               },
+              "name": "status",
               "value": {
-                "expression": {
-                  "string": "\"idle\""
-                }
+                "$type": "expression",
+                "string": "\"idle\""
               }
             },
             {
+              "decorators": [],
               "const": true,
-              "name": "obj",
-              "type": {
+              "type_ann": {
+                "$type": "type",
                 "name": [
                   "Record",
                   "string",
                   "number"
                 ]
               },
+              "name": "obj",
               "value": {
-                "expression": {
-                  "object": {
-                    "literal": true,
-                    "pair": [
-                      {
-                        "name": "a",
-                        "number": "1"
-                      },
-                      {
-                        "name": "b",
-                        "number": "2"
-                      }
-                    ]
-                  }
+                "$type": "expression",
+                "object": {
+                  "literal": true,
+                  "pair": [
+                    {
+                      "name": "a",
+                      "number": "1"
+                    },
+                    {
+                      "name": "b",
+                      "number": "2"
+                    }
+                  ]
                 }
               }
             }
@@ -1498,8 +1502,10 @@
         },
         "variable": [
           {
+            "decorators": [],
             "const": true,
-            "pattern": {
+            "name": {
+              "$type": "pattern",
               "array": true,
               "name": "head",
               "rest": {
@@ -1507,81 +1513,80 @@
               }
             },
             "value": {
-              "expression": {
-                "object": {
-                  "call": {
-                    "name": [
-                      "String",
-                      "input"
-                    ]
-                  },
-                  "string": "\"\""
-                }
+              "$type": "expression",
+              "object": {
+                "call": {
+                  "name": [
+                    "String",
+                    "input"
+                  ]
+                },
+                "string": "\"\""
               }
             }
           },
           {
+            "decorators": [],
             "const": true,
             "name": "spread",
             "value": {
-              "expression": {
-                "object": {
-                  "literal": true,
-                  "list_splat": {
-                    "object": {
-                      "literal": true,
-                      "name": "scale"
-                    }
-                  },
-                  "name": [
-                    "label",
-                    "head",
-                    "rest"
-                  ]
-                }
+              "$type": "expression",
+              "object": {
+                "literal": true,
+                "list_splat": {
+                  "object": {
+                    "literal": true,
+                    "name": "scale"
+                  }
+                },
+                "name": [
+                  "label",
+                  "head",
+                  "rest"
+                ]
               }
             }
           },
           {
+            "decorators": [],
             "const": true,
             "name": "msg",
             "value": {
-              "expression": {
-                "as": {
-                  "call": {
-                    "interpolation": [
-                      {
-                        "binary": {
-                          "left": {
-                            "$type": "expression",
-                            "name": "label"
-                          },
-                          "op": {
-                            "$type": "operator",
-                            "text": "??",
-                            "null_coalesce": true
-                          },
-                          "right": {
-                            "$type": "expression",
-                            "string": "\"world\""
-                          }
-                        }
-                      },
-                      {
-                        "object": {
-                          "name": "spread"
+              "$type": "expression",
+              "as": {
+                "call": {
+                  "interpolation": [
+                    {
+                      "binary": {
+                        "left": {
+                          "$type": "expression",
+                          "name": "label"
+                        },
+                        "op": {
+                          "$type": "operator",
+                          "text": "??",
+                          "null_coalesce": true
+                        },
+                        "right": {
+                          "$type": "expression",
+                          "string": "\"world\""
                         }
                       }
-                    ],
-                    "name": "tag",
-                    "string": [
-                      "hello, ",
-                      " (",
-                      ")"
-                    ]
-                  },
-                  "name": "Greeting"
-                }
+                    },
+                    {
+                      "object": {
+                        "name": "spread"
+                      }
+                    }
+                  ],
+                  "name": "tag",
+                  "string": [
+                    "hello, ",
+                    " (",
+                    ")"
+                  ]
+                },
+                "name": "Greeting"
               }
             }
           }
@@ -1929,21 +1934,21 @@
         },
         "variable": [
           {
+            "decorators": [],
             "let": true,
             "name": "total",
             "value": {
-              "expression": {
-                "number": "0"
-              }
+              "$type": "expression",
+              "number": "0"
             }
           },
           {
+            "decorators": [],
             "let": true,
             "name": "n",
             "value": {
-              "expression": {
-                "number": "0"
-              }
+              "$type": "expression",
+              "number": "0"
             }
           }
         ]
@@ -2125,104 +2130,104 @@
   ],
   "variable": [
     {
+      "decorators": [],
       "const": true,
       "name": "tag",
       "value": {
-        "expression": {
-          "arrow": {
-            "parameter": [
-              {
-                "required": true,
-                "name": "parts",
-                "type": {
-                  "name": "TemplateStringsArray"
-                }
-              },
-              {
-                "required": true,
-                "rest": {
-                  "name": "vals"
-                },
-                "type": {
-                  "array": true,
-                  "name": "unknown"
-                }
+        "$type": "expression",
+        "arrow": {
+          "parameter": [
+            {
+              "required": true,
+              "name": "parts",
+              "type": {
+                "name": "TemplateStringsArray"
               }
-            ],
-            "value": {
-              "expression": {
-                "object": {
-                  "arrow": {
-                    "parameter": [
-                      {
-                        "required": true,
-                        "name": "acc"
-                      },
-                      {
-                        "required": true,
-                        "name": "p"
-                      },
-                      {
-                        "required": true,
-                        "name": "i"
-                      }
-                    ],
-                    "value": {
-                      "expression": {
-                        "binary": {
-                          "left": {
-                            "$type": "expression",
-                            "binary": {
-                              "left": {
-                                "$type": "expression",
-                                "name": "acc"
-                              },
-                              "op": {
-                                "$type": "operator",
-                                "text": "+",
-                                "plus": true
-                              },
-                              "right": {
-                                "$type": "expression",
-                                "name": "p"
-                              }
+            },
+            {
+              "required": true,
+              "rest": {
+                "name": "vals"
+              },
+              "type": {
+                "array": true,
+                "name": "unknown"
+              }
+            }
+          ],
+          "value": {
+            "expression": {
+              "object": {
+                "arrow": {
+                  "parameter": [
+                    {
+                      "required": true,
+                      "name": "acc"
+                    },
+                    {
+                      "required": true,
+                      "name": "p"
+                    },
+                    {
+                      "required": true,
+                      "name": "i"
+                    }
+                  ],
+                  "value": {
+                    "expression": {
+                      "binary": {
+                        "left": {
+                          "$type": "expression",
+                          "binary": {
+                            "left": {
+                              "$type": "expression",
+                              "name": "acc"
+                            },
+                            "op": {
+                              "$type": "operator",
+                              "text": "+",
+                              "plus": true
+                            },
+                            "right": {
+                              "$type": "expression",
+                              "name": "p"
                             }
-                          },
-                          "op": {
-                            "$type": "operator",
-                            "text": "+",
-                            "plus": true
-                          },
-                          "right": {
-                            "$type": "expression",
-                            "binary": {
-                              "left": {
-                                "$type": "expression",
-                                "object": {
-                                  "name": [
-                                    "vals",
-                                    "i"
-                                  ]
-                                }
-                              },
-                              "op": {
-                                "$type": "operator",
-                                "text": "??",
-                                "null_coalesce": true
-                              },
-                              "right": {
-                                "$type": "expression",
-                                "string": "\"\""
+                          }
+                        },
+                        "op": {
+                          "$type": "operator",
+                          "text": "+",
+                          "plus": true
+                        },
+                        "right": {
+                          "$type": "expression",
+                          "binary": {
+                            "left": {
+                              "$type": "expression",
+                              "object": {
+                                "name": [
+                                  "vals",
+                                  "i"
+                                ]
                               }
+                            },
+                            "op": {
+                              "$type": "operator",
+                              "text": "??",
+                              "null_coalesce": true
+                            },
+                            "right": {
+                              "$type": "expression",
+                              "string": "\"\""
                             }
                           }
                         }
                       }
                     }
-                  },
-                  "name": "parts",
-                  "string": "\"\""
-                }
+                  }
+                },
+                "name": "parts",
+                "string": "\"\""
               }
             }
           }
@@ -2230,139 +2235,141 @@
       }
     },
     {
+      "decorators": [],
       "const": true,
       "name": "arrow",
       "value": {
-        "expression": {
+        "$type": "expression",
+        "arrow": {
+          "parameter": {
+            "required": true,
+            "name": "xs",
+            "type": {
+              "array": true,
+              "name": "U"
+            }
+          },
+          "returns": {
+            "type": {
+              "union": true,
+              "name": "U",
+              "type": {
+                "literal": true,
+                "name": "undefined"
+              }
+            }
+          },
+          "value": {
+            "expression": {
+              "object": {
+                "name": "xs",
+                "number": "0"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "type_ann": {
+        "$type": "type",
+        "array": true,
+        "name": "number"
+      },
+      "name": "doubled",
+      "value": {
+        "$type": "expression",
+        "object": {
           "arrow": {
             "parameter": {
               "required": true,
-              "name": "xs",
-              "type": {
-                "array": true,
-                "name": "U"
-              }
+              "name": "x"
             },
             "returns": {
               "type": {
-                "union": true,
-                "name": "U",
-                "type": {
-                  "literal": true,
-                  "name": "undefined"
-                }
+                "name": "number"
               }
             },
             "value": {
               "expression": {
-                "object": {
-                  "name": "xs",
-                  "number": "0"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "const": true,
-      "name": "doubled",
-      "type": {
-        "array": true,
-        "name": "number"
-      },
-      "value": {
-        "expression": {
-          "object": {
-            "arrow": {
-              "parameter": {
-                "required": true,
-                "name": "x"
-              },
-              "returns": {
-                "type": {
-                  "name": "number"
-                }
-              },
-              "value": {
-                "expression": {
-                  "binary": {
-                    "left": {
-                      "$type": "expression",
-                      "name": "x"
-                    },
-                    "op": {
-                      "$type": "operator",
-                      "text": "*",
-                      "multiply": true
-                    },
-                    "right": {
-                      "$type": "expression",
-                      "number": "2"
-                    }
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "name": "x"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "*",
+                    "multiply": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "number": "2"
                   }
                 }
               }
-            },
-            "list": {
-              "number": [
-                "1",
-                "2",
-                "3"
-              ]
             }
+          },
+          "list": {
+            "number": [
+              "1",
+              "2",
+              "3"
+            ]
           }
         }
       }
     },
     {
+      "decorators": [],
       "const": true,
       "name": "arrowBlock",
       "value": {
-        "expression": {
-          "arrow": {
-            "body": {
-              "return": {
-                "expression": {
-                  "binary": {
-                    "left": {
-                      "$type": "expression",
-                      "name": "x"
-                    },
-                    "op": {
-                      "$type": "operator",
-                      "text": "*",
-                      "multiply": true
-                    },
-                    "right": {
-                      "$type": "expression",
-                      "number": "2"
-                    }
+        "$type": "expression",
+        "arrow": {
+          "body": {
+            "return": {
+              "expression": {
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "name": "x"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "*",
+                    "multiply": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "number": "2"
                   }
                 }
               }
-            },
-            "parameter": {
-              "required": true,
-              "name": "x",
-              "type": {
-                "name": "number"
-              }
-            },
-            "returns": {
-              "type": {
-                "name": "number"
-              }
+            }
+          },
+          "parameter": {
+            "required": true,
+            "name": "x",
+            "type": {
+              "name": "number"
+            }
+          },
+          "returns": {
+            "type": {
+              "name": "number"
             }
           }
         }
       }
     },
     {
+      "decorators": [],
       "const": true,
-      "name": "maybe",
-      "type": {
+      "type_ann": {
+        "$type": "type",
         "union": true,
         "name": "string",
         "type": {
@@ -2370,50 +2377,50 @@
           "null": "null"
         }
       },
+      "name": "maybe",
       "value": {
-        "expression": {
-          "null": "null"
-        }
+        "$type": "expression",
+        "null": "null"
       }
     },
     {
+      "decorators": [],
       "const": true,
       "name": "fallback",
       "value": {
-        "expression": {
-          "binary": {
-            "left": {
-              "$type": "expression",
-              "name": "maybe"
-            },
-            "op": {
-              "$type": "operator",
-              "text": "??",
-              "null_coalesce": true
-            },
-            "right": {
-              "$type": "expression",
-              "string": "\"default\""
-            }
+        "$type": "expression",
+        "binary": {
+          "left": {
+            "$type": "expression",
+            "name": "maybe"
+          },
+          "op": {
+            "$type": "operator",
+            "text": "??",
+            "null_coalesce": true
+          },
+          "right": {
+            "$type": "expression",
+            "string": "\"default\""
           }
         }
       }
     },
     {
+      "decorators": [],
       "const": true,
       "name": "nonNull",
       "value": {
-        "expression": {
-          "nonnull": {
-            "as": {
-              "name": "maybe",
+        "$type": "expression",
+        "nonnull": {
+          "as": {
+            "name": "maybe",
+            "type": {
+              "union": true,
+              "name": "string",
               "type": {
-                "union": true,
-                "name": "string",
-                "type": {
-                  "literal": true,
-                  "null": "null"
-                }
+                "literal": true,
+                "null": "null"
               }
             }
           }
@@ -2421,78 +2428,78 @@
       }
     },
     {
+      "decorators": [],
       "const": true,
       "name": "asserted",
       "value": {
-        "expression": {
+        "$type": "expression",
+        "as": {
           "as": {
-            "as": {
-              "string": "\"42\"",
-              "type": {
-                "name": "unknown"
-              }
-            },
+            "string": "\"42\"",
             "type": {
-              "name": "number"
+              "name": "unknown"
             }
+          },
+          "type": {
+            "name": "number"
           }
         }
       }
     },
     {
+      "decorators": [],
       "const": true,
       "name": "arrayOf",
       "value": {
-        "expression": {
+        "$type": "expression",
+        "type": {
+          "generic": true,
           "type": {
-            "generic": true,
-            "type": {
-              "name": "number"
-            }
+            "name": "number"
           }
         }
       }
     },
     {
+      "decorators": [],
       "const": true,
       "name": "fixed",
       "value": {
-        "expression": {
-          "call": {
-            "name": "arrayOf"
-          }
+        "$type": "expression",
+        "call": {
+          "name": "arrayOf"
         }
       }
     },
     {
+      "decorators": [],
       "const": true,
       "name": "url",
       "value": {
-        "expression": {
-          "object": {
-            "name": "import.meta"
-          }
+        "$type": "expression",
+        "object": {
+          "name": "import.meta"
         }
       }
     },
     {
+      "decorators": [],
       "const": true,
       "name": "nestedVal",
       "value": {
-        "expression": {
-          "object": {
-            "name": "StaticBlock"
-          }
+        "$type": "expression",
+        "object": {
+          "name": "StaticBlock"
         }
       }
     },
     {
+      "decorators": [],
       "const": true,
       "name": "pattern",
       "value": {
-        "expression": {
-          "string": "/^foo(\\d+)bar$/giu"
-        }
+        "$type": "expression",
+        "string": "/^foo(\\d+)bar$/giu"
       }
     }
   ]

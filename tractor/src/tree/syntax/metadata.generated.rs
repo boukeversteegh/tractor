@@ -355,7 +355,7 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
         }
         SyntaxTree::Using { .. } => {}
         SyntaxTree::Namespace { .. } => {}
-        SyntaxTree::Variable { modifiers, span, .. } => {
+        SyntaxTree::Variable { modifiers, extra_markers, span, .. } => {
             for (mname, mspan) in modifiers.markers_with_spans() {
                 out.push(Marker {
                     name: mname,
@@ -363,6 +363,7 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
                     span: mspan.unwrap_or(*span),
                 });
             }
+            for m in extra_markers { out.push(*m); }
 
         }
         SyntaxTree::Field { modifiers, span, .. } => {
@@ -1421,7 +1422,7 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
             out.push(TreeField::Single { name: "name", value: name });
             out.push(TreeField::Many { name: "children", items: children.iter().collect() });
         }
-        SyntaxTree::Variable { modifiers, decorators, type_ann, name, value, span, .. } => {
+        SyntaxTree::Variable { modifiers, decorators, extra_markers, type_ann, name, value, span, .. } => {
             for (mname, mspan) in modifiers.markers_with_spans() {
                 out.push(TreeField::Flag {
                     name: mname,
@@ -1433,6 +1434,7 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
                 });
             }
             out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
+            for m in extra_markers { out.push(TreeField::Flag { name: m.name, marker: *m }); }
             if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
             out.push(TreeField::Single { name: "name", value: name });
             if let Some(__e) = value { out.push(TreeField::Single { name: "value", value: &__e.inner }); }
@@ -1502,6 +1504,7 @@ pub fn use_field_projection(tree: &SyntaxTree) -> bool {
         SyntaxTree::Binary { .. } => true,
         SyntaxTree::Logical { .. } => true,
         SyntaxTree::Operator { .. } => true,
+        SyntaxTree::Variable { .. } => true,
         _ => false,
     }
 }
@@ -6045,7 +6048,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             }
         }
         "variable" => {
-            let claimed: &[&str] = &["modifiers", "decorators", "decorator", "type_ann", "type", "name", "value", "range", "span"];
+            let claimed: &[&str] = &["modifiers", "decorators", "decorator", "extra_markers", "type_ann", "type", "name", "value", "range", "span"];
             let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
@@ -6074,6 +6077,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                     std::mem::take(&mut unclaimed_children)
                 }
             };
+            let extra_markers = Vec::new();
             let type_ann = {
                 let alt_key = "type";
                 let hint = if map.contains_key("type_ann") { "type_ann" } else { alt_key };
@@ -6110,6 +6114,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             SyntaxTree::Variable {
                 modifiers,
                 decorators,
+                extra_markers,
                 type_ann,
                 name,
                 value,

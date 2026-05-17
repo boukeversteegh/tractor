@@ -1340,9 +1340,15 @@ pub enum SyntaxTree {
     /// `<variable>` — local variable declaration `var x = value;` /
     /// `int x;`. Renders
     /// `<variable>[<type>...</type>]<name>...</name>[value-expr]</variable>`.
+    /// `extra_markers` carries language-specific declaration markers
+    /// like `<let/>` / `<const/>` / `<var/>` (TS) — not modifiers in
+    /// the visibility/static sense, but keyword discriminators that
+    /// the lowering surfaces as flag markers on the element.
+    /// @field_projection
     Variable {
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
+        extra_markers: Vec<Marker>,
         type_ann: Option<Box<SyntaxTree>>,
         name: Box<SyntaxTree>,
         value: Option<Expression>,
@@ -2664,7 +2670,16 @@ impl SyntaxTree {
         match element_name {
             "field" => SyntaxTree::Field { modifiers, decorators, type_ann, name, value, range, span },
             "event" => SyntaxTree::Event { modifiers, decorators, type_ann, name, value, range, span },
-            _ => SyntaxTree::Variable { modifiers, decorators, type_ann, name, value, range, span },
+            _ => SyntaxTree::Variable {
+                modifiers,
+                decorators,
+                extra_markers: Vec::new(),
+                type_ann,
+                name,
+                value,
+                range,
+                span,
+            },
         }
     }
 

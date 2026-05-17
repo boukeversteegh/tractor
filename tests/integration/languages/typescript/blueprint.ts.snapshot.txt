@@ -200,7 +200,7 @@ program/
   │       │   └─ body/
   │       │       ├─ variable[const]/
   │       │       │   ├─ name = "first"
-  │       │       │   └─ value/expression/binary/
+  │       │       │   └─ value[expression]/binary/
   │       │       │       ├─ left[expression]/object/
   │       │       │       │   ├─ this = "this"
   │       │       │       │   └─ number = "0"
@@ -220,7 +220,7 @@ program/
   │       │   └─ body/c_for/
   │       │       ├─ variable[let]/
   │       │       │   ├─ name = "i"
-  │       │       │   └─ value/expression/number = "0"
+  │       │       │   └─ value[expression]/number = "0"
   │       │       ├─ binary/
   │       │       │   ├─ left[expression]/name = "i"
   │       │       │   ├─ op[operator and less] = "<"
@@ -246,7 +246,7 @@ program/
   │               ├─ body/
   │               │   ├─ variable[const]/
   │               │   │   ├─ name = "merged"
-  │               │   │   └─ value/expression/list/
+  │               │   │   └─ value[expression]/list/
   │               │   │       ├─ list_splat/name = "urls"
   │               │   │       └─ list_splat/name = "extra"
   │               │   ├─ for/
@@ -288,7 +288,7 @@ program/
   │           └─ right[expression]/name = "v"
   ├─ variable[const]/
   │   ├─ name = "tag"
-  │   └─ value/expression/arrow/
+  │   └─ value[expression]/arrow/
   │       ├─ parameter[required]/
   │       │   ├─ name = "parts"
   │       │   └─ type/name = "TemplateStringsArray"
@@ -343,10 +343,10 @@ program/
   │   │   └─ name = "Greeting"
   │   └─ body/
   │       ├─ variable[const]/
-  │       │   ├─ pattern[array]/
+  │       │   ├─ name[pattern and array]/
   │       │   │   ├─ name = "head"
   │       │   │   └─ rest/name = "rest"
-  │       │   └─ value/expression/object/
+  │       │   └─ value[expression]/object/
   │       │       ├─ call/
   │       │       │   ├─ name = "String"
   │       │       │   └─ name = "input"
@@ -354,14 +354,14 @@ program/
   │       ├─ comment[trailing] = "// array destructure + rest"
   │       ├─ variable[const]/
   │       │   ├─ name = "spread"
-  │       │   └─ value/expression/object[literal]/
+  │       │   └─ value[expression]/object[literal]/
   │       │       ├─ list_splat/object[literal]/name = "scale"
   │       │       ├─ name = "label"
   │       │       ├─ name = "head"
   │       │       └─ name = "rest"
   │       ├─ variable[const]/
   │       │   ├─ name = "msg"
-  │       │   └─ value/expression/as/
+  │       │   └─ value[expression]/as/
   │       │       ├─ call/
   │       │       │   ├─ name = "tag"
   │       │       │   ├─ string = "hello,"
@@ -386,8 +386,8 @@ program/
   │   └─ body/
   │       ├─ variable[let]/
   │       │   ├─ name = "status"
-  │       │   ├─ type/name = "Status"
-  │       │   └─ value/expression/string = "\"idle\""
+  │       │   ├─ type_ann[type]/name = "Status"
+  │       │   └─ value[expression]/string = "\"idle\""
   │       ├─ if/
   │       │   ├─ condition/expression/binary/
   │       │   │   ├─ left[expression]/name = "n"
@@ -430,11 +430,11 @@ program/
   │       │       └─ break = "break;"
   │       ├─ variable[const]/
   │       │   ├─ name = "obj"
-  │       │   ├─ type/
+  │       │   ├─ type_ann[type]/
   │       │   │   ├─ name = "Record"
   │       │   │   ├─ name = "string"
   │       │   │   └─ name = "number"
-  │       │   └─ value/expression/object[literal]/
+  │       │   └─ value[expression]/object[literal]/
   │       │       ├─ pair/
   │       │       │   ├─ name = "a"
   │       │       │   └─ number = "1"
@@ -467,7 +467,7 @@ program/
   │           └─ else/expression/string = "\"idle\""
   ├─ variable[const]/
   │   ├─ name = "arrow"
-  │   └─ value/expression/arrow/
+  │   └─ value[expression]/arrow/
   │       ├─ parameter[required]/
   │       │   ├─ name = "xs"
   │       │   └─ type[array]/name = "U"
@@ -479,8 +479,8 @@ program/
   │           └─ number = "0"
   ├─ variable[const]/
   │   ├─ name = "doubled"
-  │   ├─ type[array]/name = "number"
-  │   └─ value/expression/object/
+  │   ├─ type_ann[type and array]/name = "number"
+  │   └─ value[expression]/object/
   │       ├─ list/
   │       │   ├─ number = "1"
   │       │   ├─ number = "2"
@@ -494,7 +494,7 @@ program/
   │               └─ right[expression]/number = "2"
   ├─ variable[const]/
   │   ├─ name = "arrowBlock"
-  │   └─ value/expression/arrow/
+  │   └─ value[expression]/arrow/
   │       ├─ parameter[required]/
   │       │   ├─ name = "x"
   │       │   └─ type/name = "number"
@@ -505,19 +505,19 @@ program/
   │           └─ right[expression]/number = "2"
   ├─ variable[const]/
   │   ├─ name = "maybe"
-  │   ├─ type[union]/
+  │   ├─ type_ann[type and union]/
   │   │   ├─ name = "string"
   │   │   └─ type[literal]/null = "null"
-  │   └─ value/expression/null = "null"
+  │   └─ value[expression]/null = "null"
   ├─ variable[const]/
   │   ├─ name = "fallback"
-  │   └─ value/expression/binary/
+  │   └─ value[expression]/binary/
   │       ├─ left[expression]/name = "maybe"
   │       ├─ op[operator and null_coalesce] = "??"
   │       └─ right[expression]/string = "\"default\""
   ├─ variable[const]/
   │   ├─ name = "nonNull"
-  │   └─ value/expression/nonnull/as/
+  │   └─ value[expression]/nonnull/as/
   │       ├─ name = "maybe"
   │       └─ type[union]/
   │           ├─ name = "string"
@@ -533,7 +533,7 @@ program/
   ├─ comment[leading] = "// Ambient `declare` declarations."
   ├─ declare/variable[const]/
   │   ├─ name = "__DEV__"
-  │   └─ type/name = "boolean"
+  │   └─ type_ann[type]/name = "boolean"
   ├─ declare/function/
   │   ├─ name = "externalThing"
   │   ├─ parameter[required]/
@@ -585,7 +585,7 @@ program/
   ├─ comment[leading] = "// Old-style cast (`<T>expr`) — type assertion."
   ├─ variable[const]/
   │   ├─ name = "asserted"
-  │   └─ value/expression/as/
+  │   └─ value[expression]/as/
   │       ├─ type/name = "number"
   │       └─ as/
   │           ├─ type/name = "unknown"
@@ -620,10 +620,10 @@ program/
   ├─ comment[leading] = "// `Foo<T>` instantiation expression."
   ├─ variable[const]/
   │   ├─ name = "arrayOf"
-  │   └─ value/expression/type[generic]/type/name = "number"
+  │   └─ value[expression]/type[generic]/type/name = "number"
   ├─ variable[const]/
   │   ├─ name = "fixed"
-  │   └─ value/expression/call/name = "arrayOf"
+  │   └─ value[expression]/call/name = "arrayOf"
   ├─ comment[leading] = "// Old-style `import x = require(y)` form."
   ├─ import[sideeffect]/
   │   ├─ name = "legacy"
@@ -631,7 +631,7 @@ program/
   ├─ comment[leading] = "// `import.meta` / `new.target` meta-properties."
   ├─ variable[const]/
   │   ├─ name = "url"
-  │   └─ value/expression/object/name = "import.meta"
+  │   └─ value[expression]/object/name = "import.meta"
   ├─ function/
   │   ├─ name = "MetaCtor"
   │   ├─ parameter[required]/
@@ -649,11 +649,11 @@ program/
   │       └─ type[literal]/string = "\"counter\""
   ├─ variable[const]/
   │   ├─ name = "nestedVal"
-  │   └─ value/expression/object/name = "StaticBlock"
+  │   └─ value[expression]/object/name = "StaticBlock"
   ├─ comment[leading] = "// Regex literal + flags."
   ├─ variable[const]/
   │   ├─ name = "pattern"
-  │   └─ value/expression/string = "/^foo(\\d+)bar$/giu"
+  │   └─ value[expression]/string = "/^foo(\\d+)bar$/giu"
   ├─ comment[leading] = "// Labeled / sequence / for-classic / debugger / do-while / with (deprecated)."
   ├─ function/
   │   ├─ name = "controlOdds"
@@ -664,7 +664,7 @@ program/
   │   └─ body/
   │       ├─ variable[let]/
   │       │   ├─ name = "total"
-  │       │   └─ value/expression/number = "0"
+  │       │   └─ value[expression]/number = "0"
   │       ├─ label/
   │       │   ├─ name = "outer"
   │       │   └─ c_for/
@@ -706,7 +706,7 @@ program/
   │       │                       └─ right[expression]/number = "2"
   │       ├─ variable[let]/
   │       │   ├─ name = "n"
-  │       │   └─ value/expression/number = "0"
+  │       │   └─ value[expression]/number = "0"
   │       ├─ do_while/
   │       │   ├─ body/expression/unary[postfix]/name = "n"
   │       │   └─ binary/

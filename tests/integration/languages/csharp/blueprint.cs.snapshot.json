@@ -476,12 +476,15 @@
                     "name": "i"
                   },
                   "variable": {
-                    "expression": {
-                      "int": "0"
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
                     },
                     "name": "i",
-                    "type": {
-                      "name": "var"
+                    "value": {
+                      "$type": "expression",
+                      "int": "0"
                     }
                   }
                 },
@@ -849,7 +852,14 @@
                         }
                       },
                       "variable": {
-                        "expression": {
+                        "decorators": [],
+                        "type_ann": {
+                          "$type": "type",
+                          "name": "var"
+                        },
+                        "name": "inner",
+                        "value": {
+                          "$type": "expression",
                           "object_creation": {
                             "path": {
                               "name": [
@@ -859,10 +869,6 @@
                               ]
                             }
                           }
-                        },
-                        "name": "inner",
-                        "type": {
-                          "name": "var"
                         }
                       }
                     }
@@ -930,7 +936,14 @@
                 },
                 "variable": [
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
+                    },
+                    "name": "widget",
+                    "value": {
+                      "$type": "expression",
                       "binary": {
                         "left": {
                           "$type": "expression",
@@ -950,14 +963,17 @@
                           }
                         }
                       }
-                    },
-                    "name": "widget",
-                    "type": {
-                      "name": "var"
                     }
                   },
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
+                    },
+                    "name": "shouted",
+                    "value": {
+                      "$type": "expression",
                       "binary": {
                         "left": {
                           "$type": "expression",
@@ -975,14 +991,17 @@
                           "string": "\"n/a\""
                         }
                       }
-                    },
-                    "name": "shouted",
-                    "type": {
-                      "name": "var"
                     }
                   },
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
+                    },
+                    "name": "label",
+                    "value": {
+                      "$type": "expression",
                       "ternary": {
                         "condition": {
                           "expression": {
@@ -1016,14 +1035,17 @@
                           }
                         }
                       }
-                    },
-                    "name": "label",
-                    "type": {
-                      "name": "var"
                     }
                   },
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "string"
+                    },
+                    "name": "kind",
+                    "value": {
+                      "$type": "expression",
                       "switch": {
                         "arm": [
                           {
@@ -1079,24 +1101,30 @@
                         ],
                         "name": "widget"
                       }
-                    },
-                    "name": "kind",
-                    "type": {
-                      "name": "string"
                     }
                   },
                   {
-                    "expression": {
-                      "non_null": true,
-                      "name": "widget"
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "object"
                     },
                     "name": "token",
-                    "type": {
-                      "name": "object"
+                    "value": {
+                      "$type": "expression",
+                      "non_null": true,
+                      "name": "widget"
                     }
                   },
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
+                    },
+                    "name": "evens",
+                    "value": {
+                      "$type": "expression",
                       "query": {
                         "from": {
                           "in": true,
@@ -1161,14 +1189,17 @@
                           }
                         }
                       }
-                    },
-                    "name": "evens",
-                    "type": {
-                      "name": "var"
                     }
                   },
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
+                    },
+                    "name": "odds",
+                    "value": {
+                      "$type": "expression",
                       "object": {
                         "lambda": [
                           {
@@ -1228,14 +1259,21 @@
                         ],
                         "name": "numbers"
                       }
-                    },
-                    "name": "odds",
-                    "type": {
-                      "name": "var"
                     }
                   },
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": [
+                        "Func",
+                        "int",
+                        "int"
+                      ]
+                    },
+                    "name": "cube",
+                    "value": {
+                      "$type": "expression",
                       "lambda": {
                         "binary": {
                           "left": {
@@ -1270,18 +1308,21 @@
                           "name": "x"
                         }
                       }
-                    },
-                    "name": "cube",
-                    "type": {
+                    }
+                  },
+                  {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
                       "name": [
                         "Func",
                         "int",
                         "int"
                       ]
-                    }
-                  },
-                  {
-                    "expression": {
+                    },
+                    "name": "blockLambda",
+                    "value": {
+                      "$type": "expression",
                       "lambda": {
                         "body": {
                           "return": {
@@ -1308,18 +1349,20 @@
                           "name": "x"
                         }
                       }
-                    },
-                    "name": "blockLambda",
-                    "type": {
-                      "name": [
-                        "Func",
-                        "int",
-                        "int"
-                      ]
                     }
                   },
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": [
+                        "Action",
+                        "string"
+                      ]
+                    },
+                    "name": "log",
+                    "value": {
+                      "$type": "expression",
                       "lambda": {
                         "object": {
                           "name": [
@@ -1331,35 +1374,41 @@
                           "name": "msg"
                         }
                       }
-                    },
-                    "name": "log",
-                    "type": {
-                      "name": [
-                        "Action",
-                        "string"
-                      ]
                     }
                   },
                   {
-                    "expression": {
-                      "int": "0"
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "int"
                     },
                     "name": "j",
-                    "type": {
-                      "name": "int"
+                    "value": {
+                      "$type": "expression",
+                      "int": "0"
                     }
                   },
                   {
-                    "expression": {
-                      "int": "0"
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "int"
                     },
                     "name": "k",
-                    "type": {
-                      "name": "int"
+                    "value": {
+                      "$type": "expression",
+                      "int": "0"
                     }
                   },
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
+                    },
+                    "name": "scope",
+                    "value": {
+                      "$type": "expression",
                       "object_creation": {
                         "path": {
                           "name": [
@@ -1369,23 +1418,12 @@
                           ]
                         }
                       }
-                    },
-                    "name": "scope",
-                    "type": {
-                      "name": "var"
                     }
                   },
                   {
-                    "expression": {
-                      "tuple": {
-                        "object": {
-                          "name": "odds"
-                        },
-                        "string": "\"odd\""
-                      }
-                    },
-                    "name": "pair",
-                    "type": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
                       "tuple": true,
                       "element": [
                         {
@@ -1401,25 +1439,49 @@
                           }
                         }
                       ]
+                    },
+                    "name": "pair",
+                    "value": {
+                      "$type": "expression",
+                      "tuple": {
+                        "object": {
+                          "name": "odds"
+                        },
+                        "string": "\"odd\""
+                      }
                     }
                   },
                   {
-                    "expression": {
-                      "name": "pair"
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
                     },
-                    "pattern": {
+                    "name": {
+                      "$type": "pattern",
                       "tuple": true,
                       "name": [
                         "cnt",
                         "tg"
                       ]
                     },
-                    "type": {
-                      "name": "var"
+                    "value": {
+                      "$type": "expression",
+                      "name": "pair"
                     }
                   },
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": [
+                        "List",
+                        "int"
+                      ]
+                    },
+                    "name": "list",
+                    "value": {
+                      "$type": "expression",
                       "index": {
                         "int": [
                           "1",
@@ -1430,17 +1492,21 @@
                           "name": "odds"
                         }
                       }
-                    },
-                    "name": "list",
-                    "type": {
-                      "name": [
-                        "List",
-                        "int"
-                      ]
                     }
                   },
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": [
+                        "Dictionary",
+                        "string",
+                        "int"
+                      ]
+                    },
+                    "name": "map",
+                    "value": {
+                      "$type": "expression",
                       "object_creation": {
                         "assign": [
                           {
@@ -1469,36 +1535,41 @@
                           }
                         ]
                       }
-                    },
-                    "name": "map",
-                    "type": {
-                      "name": [
-                        "Dictionary",
-                        "string",
-                        "int"
-                      ]
                     }
                   },
                   {
-                    "expression": {
-                      "string": "\"hello\""
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
                     },
                     "name": "plain",
-                    "type": {
-                      "name": "var"
+                    "value": {
+                      "$type": "expression",
+                      "string": "\"hello\""
                     }
                   },
                   {
-                    "expression": {
-                      "string": "@\"C:\\path\\file.txt\""
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
                     },
                     "name": "verbatim",
-                    "type": {
-                      "name": "var"
+                    "value": {
+                      "$type": "expression",
+                      "string": "@\"C:\\path\\file.txt\""
                     }
                   },
                   {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
+                    },
+                    "name": "interp",
+                    "value": {
+                      "$type": "expression",
                       "string": {
                         "interpolation": [
                           {
@@ -1509,19 +1580,18 @@
                           }
                         ]
                       }
-                    },
-                    "name": "interp",
-                    "type": {
-                      "name": "var"
                     }
                   },
                   {
-                    "expression": {
-                      "string": "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\""
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
                     },
                     "name": "raw",
-                    "type": {
-                      "name": "var"
+                    "value": {
+                      "$type": "expression",
+                      "string": "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\""
                     }
                   }
                 ],
@@ -2385,52 +2455,71 @@
                   },
                   "variable": [
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "int"
+                      },
+                      "name": "n",
+                      "value": {
+                        "$type": "expression",
                         "cast": {
                           "float": "3.14",
                           "type": {
                             "name": "int"
                           }
                         }
-                      },
-                      "name": "n",
-                      "type": {
-                        "name": "int"
                       }
                     },
                     {
-                      "expression": {
-                        "string": "'A'"
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "char"
                       },
                       "name": "ch",
-                      "type": {
-                        "name": "char"
+                      "value": {
+                        "$type": "expression",
+                        "string": "'A'"
                       }
                     },
                     {
-                      "expression": {
-                        "int": "0"
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "int"
                       },
                       "name": "unreachable",
-                      "type": {
-                        "name": "int"
+                      "value": {
+                        "$type": "expression",
+                        "int": "0"
                       }
                     },
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "var"
+                      },
+                      "name": "m",
+                      "value": {
+                        "$type": "expression",
                         "object_creation": {
                           "float": "1.0m",
                           "name": "Money",
                           "string": "\"USD\""
                         }
-                      },
-                      "name": "m",
-                      "type": {
-                        "name": "var"
                       }
                     },
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "var"
+                      },
+                      "name": "m2",
+                      "value": {
+                        "$type": "expression",
                         "with": {
                           "literal": {
                             "name": "Currency",
@@ -2438,14 +2527,17 @@
                           },
                           "name": "m"
                         }
-                      },
-                      "name": "m2",
-                      "type": {
-                        "name": "var"
                       }
                     },
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "var"
+                      },
+                      "name": "anon",
+                      "value": {
+                        "$type": "expression",
                         "new": {
                           "anonymous": true,
                           "int": "42",
@@ -2455,14 +2547,20 @@
                           ],
                           "string": "\"foo\""
                         }
-                      },
-                      "name": "anon",
-                      "type": {
-                        "name": "var"
                       }
                     },
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "array": true,
+                        "type": {
+                          "name": "int"
+                        }
+                      },
+                      "name": "arr",
+                      "value": {
+                        "$type": "expression",
                         "new": {
                           "int": [
                             "1",
@@ -2476,17 +2574,20 @@
                             }
                           }
                         }
-                      },
-                      "name": "arr",
-                      "type": {
+                      }
+                    },
+                    {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
                         "array": true,
                         "type": {
                           "name": "int"
                         }
-                      }
-                    },
-                    {
-                      "expression": {
+                      },
+                      "name": "arr2",
+                      "value": {
+                        "$type": "expression",
                         "new": {
                           "int": [
                             "4",
@@ -2494,65 +2595,77 @@
                             "6"
                           ]
                         }
-                      },
-                      "name": "arr2",
-                      "type": {
-                        "array": true,
-                        "type": {
-                          "name": "int"
-                        }
                       }
                     },
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "Type"
+                      },
+                      "name": "t",
+                      "value": {
+                        "$type": "expression",
                         "typeof": {
                           "type": {
                             "name": "int"
                           }
                         }
-                      },
-                      "name": "t",
-                      "type": {
-                        "name": "Type"
                       }
                     },
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "int"
+                      },
+                      "name": "sz",
+                      "value": {
+                        "$type": "expression",
                         "sizeof": {
                           "type": {
                             "name": "int"
                           }
                         }
-                      },
-                      "name": "sz",
-                      "type": {
-                        "name": "int"
                       }
                     },
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "int"
+                      },
+                      "name": "def",
+                      "value": {
+                        "$type": "expression",
                         "default": {
                           "type": {
                             "name": "int"
                           }
                         }
-                      },
-                      "name": "def",
-                      "type": {
-                        "name": "int"
                       }
                     },
                     {
-                      "expression": {
-                        "null": "null"
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "string"
                       },
                       "name": "s",
-                      "type": {
-                        "name": "string"
+                      "value": {
+                        "$type": "expression",
+                        "null": "null"
                       }
                     },
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "string"
+                      },
+                      "name": "s2",
+                      "value": {
+                        "$type": "expression",
                         "binary": {
                           "left": {
                             "$type": "expression",
@@ -2580,10 +2693,6 @@
                             }
                           }
                         }
-                      },
-                      "name": "s2",
-                      "type": {
-                        "name": "string"
                       }
                     }
                   ]
@@ -2933,7 +3042,14 @@
                   },
                   "variable": [
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "var"
+                      },
+                      "name": "joined",
+                      "value": {
+                        "$type": "expression",
                         "query": {
                           "from": {
                             "in": true,
@@ -2986,23 +3102,29 @@
                             }
                           }
                         }
-                      },
-                      "name": "joined",
-                      "type": {
-                        "name": "var"
                       }
                     },
                     {
-                      "expression": {
-                        "name": "xs"
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "object"
                       },
                       "name": "o",
-                      "type": {
-                        "name": "object"
+                      "value": {
+                        "$type": "expression",
+                        "name": "xs"
                       }
                     },
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "var"
+                      },
+                      "name": "asArr",
+                      "value": {
+                        "$type": "expression",
                         "is": {
                           "left": {
                             "name": "o"
@@ -3016,10 +3138,6 @@
                             }
                           }
                         }
-                      },
-                      "name": "asArr",
-                      "type": {
-                        "name": "var"
                       }
                     }
                   ]
@@ -3174,12 +3292,15 @@
                       "name": "i"
                     },
                     "variable": {
-                      "expression": {
-                        "int": "0"
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "int"
                       },
                       "name": "i",
-                      "type": {
-                        "name": "int"
+                      "value": {
+                        "$type": "expression",
+                        "int": "0"
                       }
                     }
                   },
@@ -3264,15 +3385,18 @@
                       }
                     },
                     "variable": {
-                      "expression": {
-                        "unary": {
-                          "name": "a"
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "type": {
+                          "name": "int"
                         }
                       },
                       "name": "q",
-                      "type": {
-                        "type": {
-                          "name": "int"
+                      "value": {
+                        "$type": "expression",
+                        "unary": {
+                          "name": "a"
                         }
                       }
                     }
@@ -3332,7 +3456,16 @@
                 "body": {
                   "variable": [
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "type": {
+                          "name": "int"
+                        }
+                      },
+                      "name": "buf",
+                      "value": {
+                        "$type": "expression",
                         "new": {
                           "stackalloc": true,
                           "type": {
@@ -3343,16 +3476,20 @@
                             }
                           }
                         }
-                      },
-                      "name": "buf",
-                      "type": {
-                        "type": {
-                          "name": "int"
-                        }
                       }
                     },
                     {
-                      "expression": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": [
+                          "Span",
+                          "int"
+                        ]
+                      },
+                      "name": "span",
+                      "value": {
+                        "$type": "expression",
                         "new": {
                           "stackalloc": true,
                           "int": [
@@ -3368,17 +3505,20 @@
                             }
                           }
                         }
-                      },
-                      "name": "span",
-                      "type": {
+                      }
+                    },
+                    {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
                         "name": [
                           "Span",
                           "int"
                         ]
-                      }
-                    },
-                    {
-                      "expression": {
+                      },
+                      "name": "auto",
+                      "value": {
+                        "$type": "expression",
                         "new": {
                           "stackalloc": true,
                           "int": [
@@ -3387,13 +3527,6 @@
                             "3"
                           ]
                         }
-                      },
-                      "name": "auto",
-                      "type": {
-                        "name": [
-                          "Span",
-                          "int"
-                        ]
                       }
                     }
                   ]
@@ -3510,25 +3643,31 @@
                   },
                   "variable": [
                     {
-                      "expression": {
-                        "int": "0"
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
+                        "name": "int"
                       },
                       "name": "x",
-                      "type": {
-                        "name": "int"
+                      "value": {
+                        "$type": "expression",
+                        "int": "0"
                       }
                     },
                     {
-                      "expression": {
-                        "ref": true,
-                        "name": "x"
-                      },
-                      "name": "r",
-                      "type": {
+                      "decorators": [],
+                      "type_ann": {
+                        "$type": "type",
                         "ref": true,
                         "type": {
                           "name": "int"
                         }
+                      },
+                      "name": "r",
+                      "value": {
+                        "$type": "expression",
+                        "ref": true,
+                        "name": "x"
                       }
                     }
                   ]
@@ -3683,7 +3822,14 @@
                     }
                   },
                   "variable": {
-                    "expression": {
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "var"
+                    },
+                    "name": "q",
+                    "value": {
+                      "$type": "expression",
                       "query": {
                         "from": {
                           "in": true,
@@ -3712,10 +3858,6 @@
                           }
                         }
                       }
-                    },
-                    "name": "q",
-                    "type": {
-                      "name": "var"
                     }
                   }
                 },

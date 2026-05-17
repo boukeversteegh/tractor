@@ -425,36 +425,56 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     span,
                 };
             }
-            // Always emit `<variable[let|const|var]>` with markers
-            // controlled here. Single-declarator inlines its
-            // type/name/value as flat children of `<variable>`;
-            // multi-declarator keeps a `<declarator>` wrapper per
-            // entry. Type comes from individual declarators in TS
-            // (not the parent statement, unlike Java).
-            let mut children: Vec<SyntaxTree> = Vec::new();
+            // Single-declarator: build the typed `SyntaxTree::Variable`
+            // directly so name/type_ann/value become real fields on
+            // the variant (visible to field projection) instead of a
+            // flat `<children>` Vec under SimpleStatement.
+            //
+            // Multi-declarator (`let x = 1, y = 2;`) keeps the
+            // SimpleStatement wrapper for now — no typed
+            // multi-declarator variant exists, and each declarator
+            // still becomes a `<declarator>` SimpleStatement inside.
             if declarators.len() == 1 {
                 let d = declarators[0];
                 let parts = lower_ts_declarator_parts(d, source);
-                children.extend(parts);
+                let name = parts.name.unwrap_or_else(|| {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "variable_declarator(missing name)".to_string(),
+                        range,
+                        span,
+                    })
+                });
+                SyntaxTree::Variable {
+                    modifiers,
+                    decorators: Vec::new(),
+                    extra_markers: kw_marker,
+                    type_ann: parts.type_ann,
+                    name,
+                    value: parts.value,
+                    range,
+                    span,
+                }
             } else {
+                let mut children: Vec<SyntaxTree> = Vec::new();
                 for d in declarators {
+                    let parts = lower_ts_declarator_parts(d, source);
                     children.push(SyntaxTree::SimpleStatement {
                         element_name: "declarator",
                         modifiers: Modifiers::default(),
                         extra_markers: Vec::new(),
-                        children: lower_ts_declarator_parts(d, source),
+                        children: ts_declarator_parts_flat(parts),
                         range: range_of(d),
                         span: span_of(d),
                     });
                 }
-            }
-            SyntaxTree::SimpleStatement {
-                element_name: "variable",
-                modifiers,
-                extra_markers: kw_marker,
-                children,
-                range,
-                span,
+                SyntaxTree::SimpleStatement {
+                    element_name: "variable",
+                    modifiers,
+                    extra_markers: kw_marker,
+                    children,
+                    range,
+                    span,
+                }
             }
         }
 
@@ -1752,49 +1772,72 @@ fn lower_block_like(node: &RawNode, source: &str) -> SyntaxTree {
     }
 }
 
-/// Lower a TS `variable_declarator`'s children into a flat list:
-/// `<type>` (when annotated), `<name>`, and `<value>` (when
-/// initialized). Used for both single- and multi-declarator
-/// statements.
-fn lower_ts_declarator_parts(d: &RawNode, source: &str) -> Vec<SyntaxTree> {
-    let mut parts: Vec<SyntaxTree> = Vec::new();
-    if let Some(t) = d.child_by_field_name("type") {
+/// Structured parts of a TS `variable_declarator`. Lets the
+/// variable-declaration lowering build a typed `SyntaxTree::Variable`
+/// directly (with `type_ann` / `name` / `value` as explicit fields)
+/// instead of stuffing everything under a SimpleStatement's flat
+/// `children` Vec.
+struct TsDeclaratorParts {
+    type_ann: Option<Box<SyntaxTree>>,
+    name: Option<Box<SyntaxTree>>,
+    value: Option<crate::tree::Expression>,
+}
+
+/// Lower a TS `variable_declarator` into structured parts.
+fn lower_ts_declarator_parts(d: &RawNode, source: &str) -> TsDeclaratorParts {
+    let type_ann = d.child_by_field_name("type").map(|t| {
         let inner = t.named_children().next().unwrap_or(t);
         let inner_ir = lower_node(inner, source);
-        let already_typed = matches!(
+        if matches!(
             inner_ir,
-            SyntaxTree::GenericType { .. } | SyntaxTree::SimpleStatement { element_name: "type", .. }
-        );
-        if already_typed {
-            parts.push(inner_ir);
+            SyntaxTree::GenericType { .. }
+                | SyntaxTree::SimpleStatement { element_name: "type", .. }
+        ) {
+            Box::new(inner_ir)
         } else {
-            parts.push(SyntaxTree::SimpleStatement {
+            Box::new(SyntaxTree::SimpleStatement {
                 element_name: "type",
                 modifiers: Modifiers::default(),
                 extra_markers: Vec::new(),
                 children: vec![inner_ir],
                 range: range_of(t),
                 span: span_of(t),
-            });
+            })
         }
+    });
+    let name = d.child_by_field_name("name").map(|n| Box::new(lower_node(n, source)));
+    let value = d
+        .child_by_field_name("value")
+        .map(|v| crate::tree::Expression::wrap(lower_node(v, source)));
+    TsDeclaratorParts { type_ann, name, value }
+}
+
+/// Flatten declarator parts into a `Vec<SyntaxTree>` for the
+/// multi-declarator case (where each declarator becomes a
+/// `<declarator>` SimpleStatement). Uses the legacy
+/// `<type>`/`<name>`/`<value>` SimpleStatement wrappers because
+/// there's no typed multi-declarator variant yet.
+fn ts_declarator_parts_flat(parts: TsDeclaratorParts) -> Vec<SyntaxTree> {
+    let mut out: Vec<SyntaxTree> = Vec::new();
+    if let Some(t) = parts.type_ann {
+        out.push(*t);
     }
-    if let Some(n) = d.child_by_field_name("name") {
-        parts.push(lower_node(n, source));
+    if let Some(n) = parts.name {
+        out.push(*n);
     }
-    if let Some(v) = d.child_by_field_name("value") {
-        // <value><expression>...</expression></value> at lowering time
-        // (replaces wrap_expression_positions on rendered xot).
-        let expr = crate::tree::Expression::wrap(lower_node(v, source));
-        parts.push(SyntaxTree::SimpleStatement {
+    if let Some(v) = parts.value {
+        let range = v.inner.range();
+        let span = v.inner.span();
+        out.push(SyntaxTree::SimpleStatement {
             element_name: "value",
             modifiers: Modifiers::default(),
             extra_markers: Vec::new(),
-            children: vec![*expr.inner],
-            range: range_of(v),
-            span: span_of(v),
+            children: vec![*v.inner],
+            range,
+            span,
         });
     }
-    parts
+    out
 }
 
 fn lower_children(node: &RawNode, source: &str) -> Vec<SyntaxTree> {

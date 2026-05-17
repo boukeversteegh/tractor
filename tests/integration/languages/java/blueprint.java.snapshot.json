@@ -433,21 +433,27 @@
               },
               "variable": [
                 {
-                  "expression": {
-                    "int": "0"
+                  "decorators": [],
+                  "type_ann": {
+                    "$type": "type",
+                    "name": "int"
                   },
                   "name": "total",
-                  "type": {
-                    "name": "int"
+                  "value": {
+                    "$type": "expression",
+                    "int": "0"
                   }
                 },
                 {
-                  "expression": {
-                    "int": "0"
+                  "decorators": [],
+                  "type_ann": {
+                    "$type": "type",
+                    "name": "int"
                   },
                   "name": "i",
-                  "type": {
-                    "name": "int"
+                  "value": {
+                    "$type": "expression",
+                    "int": "0"
                   }
                 }
               ],
@@ -779,7 +785,16 @@
             "body": {
               "variable": [
                 {
-                  "expression": {
+                  "decorators": [],
+                  "type_ann": {
+                    "$type": "type",
+                    "array": true,
+                    "name": "int",
+                    "type": "[]"
+                  },
+                  "name": "arr",
+                  "value": {
+                    "$type": "expression",
                     "array": {
                       "literal": true,
                       "int": [
@@ -788,51 +803,54 @@
                         "3"
                       ]
                     }
-                  },
-                  "name": "arr",
-                  "type": {
-                    "array": true,
-                    "name": "int",
-                    "type": "[]"
                   }
                 },
                 {
-                  "expression": {
-                    "string": "'A'"
+                  "decorators": [],
+                  "type_ann": {
+                    "$type": "type",
+                    "name": "char"
                   },
                   "name": "ch",
-                  "type": {
-                    "name": "char"
+                  "value": {
+                    "$type": "expression",
+                    "string": "'A'"
                   }
                 },
                 {
-                  "expression": {
+                  "decorators": [],
+                  "type_ann": {
+                    "$type": "type",
+                    "name": "Class",
+                    "type": "?"
+                  },
+                  "name": "cls",
+                  "value": {
+                    "$type": "expression",
                     "type": {
                       "name": "String"
                     }
-                  },
-                  "name": "cls",
-                  "type": {
-                    "name": "Class",
-                    "type": "?"
                   }
                 },
                 {
-                  "expression": {
+                  "decorators": [],
+                  "type_ann": {
+                    "$type": "type",
+                    "name": [
+                      "java.util.function.Function",
+                      "Object",
+                      "String"
+                    ]
+                  },
+                  "name": "ref",
+                  "value": {
+                    "$type": "expression",
                     "member": {
                       "name": [
                         "String",
                         "valueOf"
                       ]
                     }
-                  },
-                  "name": "ref",
-                  "type": {
-                    "name": [
-                      "java.util.function.Function",
-                      "Object",
-                      "String"
-                    ]
                   }
                 }
               ]
@@ -965,12 +983,15 @@
                     "name": "i"
                   },
                   "variable": {
-                    "expression": {
-                      "int": "0"
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "int"
                     },
                     "name": "i",
-                    "type": {
-                      "name": "int"
+                    "value": {
+                      "$type": "expression",
+                      "int": "0"
                     }
                   }
                 },
@@ -978,40 +999,49 @@
               },
               "variable": [
                 {
-                  "expression": {
+                  "decorators": [],
+                  "type_ann": {
+                    "$type": "type",
+                    "name": "int"
+                  },
+                  "name": "n",
+                  "value": {
+                    "$type": "expression",
                     "cast": {
                       "int": "0L",
                       "type": {
                         "name": "int"
                       }
                     }
-                  },
-                  "name": "n",
-                  "type": {
-                    "name": "int"
                   }
                 },
                 {
-                  "expression": {
+                  "decorators": [],
+                  "type_ann": {
+                    "$type": "type",
+                    "name": "boolean"
+                  },
+                  "name": "isStr",
+                  "value": {
+                    "$type": "expression",
                     "is": {
                       "name": [
                         "o",
                         "String"
                       ]
                     }
-                  },
-                  "name": "isStr",
-                  "type": {
-                    "name": "boolean"
                   }
                 },
                 {
-                  "expression": {
-                    "int": "0"
+                  "decorators": [],
+                  "type_ann": {
+                    "$type": "type",
+                    "name": "int"
                   },
                   "name": "k",
-                  "type": {
-                    "name": "int"
+                  "value": {
+                    "$type": "expression",
+                    "int": "0"
                   }
                 }
               ]
@@ -1114,7 +1144,14 @@
                 }
               },
               "variable": {
-                "expression": {
+                "decorators": [],
+                "type_ann": {
+                  "$type": "type",
+                  "name": "int"
+                },
+                "name": "v",
+                "value": {
+                  "$type": "expression",
                   "switch": {
                     "arm": [
                       {
@@ -1141,10 +1178,6 @@
                     ],
                     "name": "o"
                   }
-                },
-                "name": "v",
-                "type": {
-                  "name": "int"
                 }
               }
             },

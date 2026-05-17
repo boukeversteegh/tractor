@@ -917,9 +917,13 @@ mod tests {
         ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one name element");
 
+        // The value field now holds the expression as a marker
+        // (`<expression/>`) plus the inner expression directly, instead
+        // of nesting the value inside an `<expression>` wrapper. So the
+        // number sits directly under `<value>` alongside the marker.
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
-            "//value/expression/number", result.source_lines.clone(), "test.ts"
+            "//value/number", result.source_lines.clone(), "test.ts"
         ).unwrap();
         assert_eq!(matches.len(), 1, "Should find number inside value");
     }
