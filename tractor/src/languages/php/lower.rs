@@ -815,13 +815,7 @@ fn wrap_condition(inner: SyntaxTree, range: ByteRange, span: Span) -> SyntaxTree
         element_name: "condition",
         modifiers: Modifiers::default(),
         extra_markers: Vec::new(),
-        children: vec![SyntaxTree::SimpleStatement {
-            element_name: "expression",
-            modifiers: Modifiers::default(),
-            extra_markers: Vec::new(),
-            children: vec![inner],
-            range, span,
-        }],
+        children: vec![inner.wrap_expression()],
         range, span,
     }
 }
@@ -1378,19 +1372,11 @@ fn php_for_statement(node: &RawNode, source: &str) -> SyntaxTree {
             continue;
         }
         if Some(c.id()) == condition_node.map(|cn| cn.id()) {
-            let inner = lower_node(c, source);
             children.push(SyntaxTree::SimpleStatement {
                 element_name: "condition",
                 modifiers: Modifiers::default(),
                 extra_markers: Vec::new(),
-                children: vec![SyntaxTree::SimpleStatement {
-                    element_name: "expression",
-                    modifiers: Modifiers::default(),
-                    extra_markers: Vec::new(),
-                    children: vec![inner],
-                    range: range_of(c),
-                    span: span_of(c),
-                }],
+                children: vec![lower_node(c, source).wrap_expression()],
                 range: range_of(c),
                 span: span_of(c),
             });
@@ -1427,35 +1413,19 @@ fn php_foreach_statement(node: &RawNode, source: &str) -> SyntaxTree {
         // First is iterable → <right>, second is binding → <left>.
         let iter_node = kids[0];
         let bind_node = kids[kids.len() - 1];
-        let iter_inner = lower_node(iter_node, source);
         children.push(SyntaxTree::SimpleStatement {
             element_name: "right",
             modifiers: Modifiers::default(),
             extra_markers: Vec::new(),
-            children: vec![SyntaxTree::SimpleStatement {
-                element_name: "expression",
-                modifiers: Modifiers::default(),
-                extra_markers: Vec::new(),
-                children: vec![iter_inner],
-                range: range_of(iter_node),
-                span: span_of(iter_node),
-            }],
+            children: vec![lower_node(iter_node, source).wrap_expression()],
             range: range_of(iter_node),
             span: span_of(iter_node),
         });
-        let bind_inner = lower_node(bind_node, source);
         children.push(SyntaxTree::SimpleStatement {
             element_name: "left",
             modifiers: Modifiers::default(),
             extra_markers: Vec::new(),
-            children: vec![SyntaxTree::SimpleStatement {
-                element_name: "expression",
-                modifiers: Modifiers::default(),
-                extra_markers: Vec::new(),
-                children: vec![bind_inner],
-                range: range_of(bind_node),
-                span: span_of(bind_node),
-            }],
+            children: vec![lower_node(bind_node, source).wrap_expression()],
             range: range_of(bind_node),
             span: span_of(bind_node),
         });

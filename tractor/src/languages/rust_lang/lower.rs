@@ -550,19 +550,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(name_of(n, source));
             }
             if let Some(v) = value_node {
-                let inner = lower_node(v, source);
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
                     extra_markers: Vec::new(),
-                    children: vec![SyntaxTree::SimpleStatement {
-                        element_name: "expression",
-                        modifiers: Modifiers::default(),
-                        extra_markers: Vec::new(),
-                        children: vec![inner],
-                        range: range_of(v),
-                        span: span_of(v),
-                    }],
+                    children: vec![lower_node(v, source).wrap_expression()],
                     range: range_of(v),
                     span: span_of(v),
                 });
@@ -787,19 +779,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 children.push(wrap_in_type_if_leaf(inner, range_of(t), span_of(t)));
             }
             if let Some(v) = value_node {
-                let inner = lower_node(v, source);
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
                     extra_markers: Vec::new(),
-                    children: vec![SyntaxTree::SimpleStatement {
-                        element_name: "expression",
-                        modifiers: Modifiers::default(),
-                        extra_markers: Vec::new(),
-                        children: vec![inner],
-                        range: range_of(v),
-                        span: span_of(v),
-                    }],
+                    children: vec![lower_node(v, source).wrap_expression()],
                     range: range_of(v),
                     span: span_of(v),
                 });
@@ -846,20 +830,16 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     if i.kind() == "try_expression" {
                         let operand = i.named_children().next();
                         if let Some(o) = operand {
-                            return SyntaxTree::SimpleStatement {
-                                element_name: "expression",
-                                modifiers: Modifiers::default(),
-                                extra_markers: vec![Marker::implicit("try")],
-                                children: vec![lower_node(o, source)],
+                            return SyntaxTree::Expression {
+                                inner: Box::new(lower_node(o, source)),
+                                marker: Some("try"),
                                 range, span,
                             };
                         }
                     }
-                    SyntaxTree::SimpleStatement {
-                        element_name: "expression",
-                        modifiers: Modifiers::default(),
-                        extra_markers: Vec::new(),
-                        children: vec![lower_node(i, source)],
+                    SyntaxTree::Expression {
+                        inner: Box::new(lower_node(i, source)),
+                        marker: None,
                         range, span,
                     }
                 }
@@ -907,19 +887,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let body_node = node.child_by_field_name("body");
             let mut children: Vec<SyntaxTree> = Vec::new();
             if let Some(v) = value_node {
-                let inner = lower_node(v, source);
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
                     extra_markers: Vec::new(),
-                    children: vec![SyntaxTree::SimpleStatement {
-                        element_name: "expression",
-                        modifiers: Modifiers::default(),
-                        extra_markers: Vec::new(),
-                        children: vec![inner],
-                        range: range_of(v),
-                        span: span_of(v),
-                    }],
+                    children: vec![lower_node(v, source).wrap_expression()],
                     range: range_of(v),
                     span: span_of(v),
                 });
@@ -1024,19 +996,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 if !handled {
                     if let Some(v) = value_node {
                         if c.id() == v.id() {
-                            let inner = lower_node(c, source);
                             children.push(SyntaxTree::SimpleStatement {
                                 element_name: "value",
                                 modifiers: Modifiers::default(),
                                 extra_markers: Vec::new(),
-                                children: vec![SyntaxTree::SimpleStatement {
-                                    element_name: "expression",
-                                    modifiers: Modifiers::default(),
-                                    extra_markers: Vec::new(),
-                                    children: vec![inner],
-                                    range: range_of(c),
-                                    span: span_of(c),
-                                }],
+                                children: vec![lower_node(c, source).wrap_expression()],
                                 range: range_of(c),
                                 span: span_of(c),
                             });
@@ -1072,19 +1036,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 let mut handled = false;
                 if let Some(cn) = cond_node {
                     if c.id() == cn.id() {
-                        let inner = lower_node(c, source);
                         children.push(SyntaxTree::SimpleStatement {
                             element_name: "condition",
                             modifiers: Modifiers::default(),
                             extra_markers: Vec::new(),
-                            children: vec![SyntaxTree::SimpleStatement {
-                                element_name: "expression",
-                                modifiers: Modifiers::default(),
-                                extra_markers: Vec::new(),
-                                children: vec![inner],
-                                range: range_of(c),
-                                span: span_of(c),
-                            }],
+                            children: vec![lower_node(c, source).wrap_expression()],
                             range: range_of(c),
                             span: span_of(c),
                         });
@@ -1273,19 +1229,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let type_node = node.child_by_field_name("type");
             let mut children: Vec<SyntaxTree> = Vec::new();
             if let Some(v) = value_node {
-                let inner = lower_node(v, source);
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
                     extra_markers: Vec::new(),
-                    children: vec![SyntaxTree::SimpleStatement {
-                        element_name: "expression",
-                        modifiers: Modifiers::default(),
-                        extra_markers: Vec::new(),
-                        children: vec![inner],
-                        range: range_of(v),
-                        span: span_of(v),
-                    }],
+                    children: vec![lower_node(v, source).wrap_expression()],
                     range: range_of(v),
                     span: span_of(v),
                 });

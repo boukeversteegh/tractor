@@ -1342,16 +1342,7 @@ fn lower_python_raise(node: &RawNode, source: &str) -> SyntaxTree {
         if first {
             // Wrap the raised expression in `<expression>` — same
             // shape `<return>` and `<yield>` use for their operands.
-            let cr = inner.range();
-            let cs = inner.span();
-            children.push(SyntaxTree::SimpleStatement {
-                element_name: "expression",
-                modifiers: Modifiers::default(),
-                extra_markers: Vec::new(),
-                children: vec![inner],
-                range: cr,
-                span: cs,
-            });
+            children.push(inner.wrap_expression());
             first = false;
         } else {
             children.push(inner);

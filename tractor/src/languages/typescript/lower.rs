@@ -332,14 +332,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         element_name: "value",
                         modifiers: Modifiers::default(),
                         extra_markers: Vec::new(),
-                        children: vec![SyntaxTree::SimpleStatement {
-                            element_name: "expression",
-                            modifiers: Modifiers::default(),
-                            extra_markers: Vec::new(),
-                            children: vec![inner],
-                            range: range_of(b),
-                            span: span_of(b),
-                        }],
+                        children: vec![inner.wrap_expression()],
                         range: range_of(b),
                         span: span_of(b),
                     });
@@ -1440,14 +1433,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     element_name: "value",
                     modifiers: Modifiers::default(),
                     extra_markers: Vec::new(),
-                    children: vec![SyntaxTree::SimpleStatement {
-                        element_name: "expression",
-                        modifiers: Modifiers::default(),
-                        extra_markers: Vec::new(),
-                        children: vec![inner],
-                        range: r_range,
-                        span: r_span,
-                    }],
+                    children: vec![inner.wrap_expression()],
                     range: r_range,
                     span: r_span,
                 });

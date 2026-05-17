@@ -358,14 +358,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     element_name: slot,
                     modifiers: Modifiers::default(),
                     extra_markers: Vec::new(),
-                    children: vec![SyntaxTree::SimpleStatement {
-                        element_name: "expression",
-                        modifiers: Modifiers::default(),
-                        extra_markers: Vec::new(),
-                        children: vec![inner],
-                        range: range_of(*c),
-                        span: span_of(*c),
-                    }],
+                    children: vec![inner.wrap_expression()],
                     range: range_of(*c),
                     span: span_of(*c),
                 });
@@ -596,14 +589,7 @@ fn ruby_while_until(node: &RawNode, element_name: &'static str, source: &str) ->
             element_name: "condition",
             modifiers: Modifiers::default(),
             extra_markers: Vec::new(),
-            children: vec![SyntaxTree::SimpleStatement {
-                element_name: "expression",
-                modifiers: Modifiers::default(),
-                extra_markers: Vec::new(),
-                children: vec![inner],
-                range: range_of(c),
-                span: span_of(c),
-            }],
+            children: vec![inner.wrap_expression()],
             range: range_of(c),
             span: span_of(c),
         });
@@ -652,14 +638,7 @@ fn ruby_for(node: &RawNode, source: &str) -> SyntaxTree {
             element_name: "value",
             modifiers: Modifiers::default(),
             extra_markers: Vec::new(),
-            children: vec![SyntaxTree::SimpleStatement {
-                element_name: "expression",
-                modifiers: Modifiers::default(),
-                extra_markers: Vec::new(),
-                children: vec![inner_ir],
-                range: range_of(inner),
-                span: span_of(inner),
-            }],
+            children: vec![inner_ir.wrap_expression()],
             range: range_of(v),
             span: span_of(v),
         });
