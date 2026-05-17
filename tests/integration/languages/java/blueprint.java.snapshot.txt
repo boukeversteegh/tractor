@@ -104,10 +104,10 @@ program/
   │       │       ├─ body/throw/expression/object_creation/
   │       │       │   ├─ name = "IllegalArgumentException"
   │       │       │   └─ string = "\"null\""
-  │       │       └─ else_if/
+  │       │       └─ else_branch[else_if]/
   │       │           ├─ condition/expression/unary/name = "ready"
   │       │           ├─ body/return/expression/null = "null"
-  │       │           └─ else/body/return/expression/name = "input"
+  │       │           └─ else_branch[else]/body/return/expression/name = "input"
   │       ├─ method[public]/
   │       │   ├─ returns/type/name = "String"
   │       │   ├─ name = "describe"
@@ -119,14 +119,14 @@ program/
   │       │       │   ├─ left[expression]/name = "n"
   │       │       │   ├─ op[operator and greater] = ">"
   │       │       │   └─ right[expression]/int = "0"
-  │       │       ├─ then/expression/string = "\"positive\""
-  │       │       └─ else/expression/ternary/
+  │       │       ├─ if_true[then]/expression/string = "\"positive\""
+  │       │       └─ if_false[else]/expression/ternary/
   │       │           ├─ condition/expression/binary/
   │       │           │   ├─ left[expression]/name = "n"
   │       │           │   ├─ op[operator and less] = "<"
   │       │           │   └─ right[expression]/int = "0"
-  │       │           ├─ then/expression/string = "\"negative\""
-  │       │           └─ else/expression/string = "\"zero\""
+  │       │           ├─ if_true[then]/expression/string = "\"negative\""
+  │       │           └─ if_false[else]/expression/string = "\"zero\""
   │       ├─ method[public]/
   │       │   ├─ returns/type/name = "int"
   │       │   ├─ name = "sum"
@@ -330,11 +330,11 @@ program/
           │       ├─ label/
           │       │   ├─ name = "outer"
           │       │   └─ c_for/
-          │       │       ├─ variable/
+          │       │       ├─ initializer[variable]/
           │       │       │   ├─ type_ann[type]/name = "int"
           │       │       │   ├─ name = "i"
           │       │       │   └─ value[expression]/int = "0"
-          │       │       ├─ binary/
+          │       │       ├─ condition[binary]/
           │       │       │   ├─ left[expression]/name = "i"
           │       │       │   ├─ op[operator and less] = "<"
           │       │       │   └─ right[expression]/int = "5"
@@ -358,7 +358,7 @@ program/
           │       │   └─ value[expression]/int = "0"
           │       └─ do_while/
           │           ├─ body/expression/unary[postfix]/name = "k"
-          │           └─ binary/
+          │           └─ condition[binary]/
           │               ├─ left[expression]/name = "k"
           │               ├─ op[operator and less] = "<"
           │               └─ right[expression]/int = "3"
@@ -369,17 +369,17 @@ program/
           │   ├─ throws/type/name = "Exception"
           │   └─ body/
           │       ├─ try/
-          │       │   ├─ body/if/
+          │       │   ├─ try_body[body]/if/
           │       │   │   ├─ condition/expression/binary/
           │       │   │   │   ├─ left[expression]/name = "s"
           │       │   │   │   ├─ op[operator and equal] = "=="
           │       │   │   │   └─ right[expression]/null = "null"
           │       │   │   └─ body/object_creation/name = "java.io.IOException"
           │       │   └─ catch/
-          │       │       ├─ type/
+          │       │       ├─ type_target[type]/
           │       │       │   ├─ name = "java.io.IOException"
           │       │       │   └─ name = "RuntimeException"
-          │       │       ├─ as/expression/name = "e"
+          │       │       ├─ binding[as]/expression/name = "e"
           │       │       └─ body/throw/expression/name = "e"
           │       └─ lock/
           │           ├─ this = "this"

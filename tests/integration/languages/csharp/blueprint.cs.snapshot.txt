@@ -268,8 +268,8 @@ unit/
   │   │       │       │   ├─ left[expression]/name = "id"
   │   │       │       │   ├─ op[operator and equal] = "=="
   │   │       │       │   └─ right[expression]/name = "Id"
-  │   │       │       ├─ then/expression/name = "this"
-  │   │       │       └─ else/expression/null = "null"
+  │   │       │       ├─ if_true[then]/expression/name = "this"
+  │   │       │       └─ if_false[else]/expression/null = "null"
   │   │       ├─ method[public and async]/
   │   │       │   ├─ name = "AllAsync"
   │   │       │   └─ body/
@@ -343,8 +343,8 @@ unit/
   │               │       │   └─ pattern[recursive]/properties/subpattern/
   │               │       │       ├─ object/name = "Name"
   │               │       │       └─ pattern[relational]/int = "0"
-  │               │       ├─ then/expression/string = "\"named\""
-  │               │       └─ else/expression/string = "\"blank\""
+  │               │       ├─ if_true[then]/expression/string = "\"named\""
+  │               │       └─ if_false[else]/expression/string = "\"blank\""
   │               ├─ comment[leading] = "// switch expression + pattern matching"
   │               ├─ variable/
   │               │   ├─ type_ann[type]/name = "string"
@@ -496,11 +496,11 @@ unit/
   │               │           └─ int = "4"
   │               ├─ comment[leading] = "// loops"
   │               ├─ c_for/
-  │               │   ├─ variable/
+  │               │   ├─ initializer[variable]/
   │               │   │   ├─ type_ann[type]/name = "var"
   │               │   │   ├─ name = "i"
   │               │   │   └─ value[expression]/int = "0"
-  │               │   ├─ binary/
+  │               │   ├─ condition[binary]/
   │               │   │   ├─ left[expression]/name = "i"
   │               │   │   ├─ op[operator and less] = "<"
   │               │   │   └─ right[expression]/int = "2"
@@ -522,14 +522,14 @@ unit/
   │               │   └─ value[expression]/int = "0"
   │               ├─ do_while/
   │               │   ├─ body/expression/unary[postfix]/name = "k"
-  │               │   └─ binary/
+  │               │   └─ condition[binary]/
   │               │       ├─ left[expression]/name = "k"
   │               │       ├─ op[operator and less] = "<"
   │               │       └─ right[expression]/int = "2"
   │               ├─ foreach/
-  │               │   ├─ type/name = "var"
-  │               │   ├─ left/expression/name = "n"
-  │               │   ├─ right/expression/name = "odds"
+  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ target[left]/expression/name = "n"
+  │               │   ├─ iterable[right]/expression/name = "odds"
   │               │   └─ body/expression/call/
   │               │       ├─ name = "log"
   │               │       └─ object/name = "n"
@@ -542,7 +542,7 @@ unit/
   │               │       ├─ name = "IO"
   │               │       └─ name = "MemoryStream"
   │               ├─ try/
-  │               │   ├─ body/
+  │               │   ├─ try_body[body]/
   │               │   │   ├─ using/
   │               │   │   │   ├─ variable/
   │               │   │   │   │   ├─ type_ann[type]/name = "var"
@@ -558,8 +558,8 @@ unit/
   │               │   │       ├─ name = "InvalidOperationException"
   │               │   │       └─ string = "\"boom\""
   │               │   ├─ catch/
-  │               │   │   ├─ type/name = "InvalidOperationException"
-  │               │   │   ├─ as/expression/name = "ex"
+  │               │   │   ├─ type_target[type]/name = "InvalidOperationException"
+  │               │   │   ├─ binding[as]/expression/name = "ex"
   │               │   │   ├─ filter/expression/binary/
   │               │   │   │   ├─ left[expression]/object/name = "ex"
   │               │   │   │   ├─ op[operator and greater] = ">"
@@ -568,9 +568,9 @@ unit/
   │               │   │       ├─ name = "log"
   │               │   │       └─ object/name = "ex"
   │               │   ├─ catch/
-  │               │   │   ├─ type/name = "Exception"
+  │               │   │   ├─ type_target[type]/name = "Exception"
   │               │   │   └─ body/throw = "throw;"
-  │               │   └─ finally/body/expression/object/name = "scope"
+  │               │   └─ finally_body[finally]/body/expression/object/name = "scope"
   │               ├─ comment[leading] = "// tuples + deconstruction + target-typed new + collection expression"
   │               ├─ variable/
   │               │   ├─ type_ann[type and tuple]/
@@ -656,8 +656,8 @@ unit/
   │                   │       │   ├─ left[expression]/name = "label"
   │                   │       │   ├─ op[operator and equal] = "=="
   │                   │       │   └─ right[expression]/name = "kind"
-  │                   │       ├─ then/expression/int = "0"
-  │                   │       └─ else/expression/int = "1"
+  │                   │       ├─ if_true[then]/expression/int = "0"
+  │                   │       └─ if_false[else]/expression/int = "1"
   │                   ├─ op[operator and plus] = "+"
   │                   └─ right[expression]/object/name = "shouted"
   └─ namespace/
@@ -1054,11 +1054,11 @@ unit/
       │       │   ├─ name = "Trivial"
       │       │   └─ body/
       │       │       ├─ c_for/
-      │       │       │   ├─ variable/
+      │       │       │   ├─ initializer[variable]/
       │       │       │   │   ├─ type_ann[type]/name = "int"
       │       │       │   │   ├─ name = "i"
       │       │       │   │   └─ value[expression]/int = "0"
-      │       │       │   ├─ binary/
+      │       │       │   ├─ condition[binary]/
       │       │       │   │   ├─ left[expression]/name = "i"
       │       │       │   │   ├─ op[operator and less] = "<"
       │       │       │   │   └─ right[expression]/int = "3"

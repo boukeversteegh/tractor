@@ -636,6 +636,7 @@ pub enum SyntaxTree {
     // ----- Control flow ---------------------------------------------------
 
     /// `<if>` — `if cond: ... [elif ...] [else ...]`.
+    /// @field_projection
     If {
         condition: Box<SyntaxTree>,
         body: Box<SyntaxTree>,             // SyntaxTree::Body
@@ -646,6 +647,7 @@ pub enum SyntaxTree {
 
     /// `<else_if>` — `elif cond: body`. Used inside If's else_branch
     /// to keep elif chains flat.
+    /// @field_projection
     ElseIf {
         condition: Box<SyntaxTree>,
         body: Box<SyntaxTree>,
@@ -655,10 +657,12 @@ pub enum SyntaxTree {
     },
 
     /// `<else>` — `else: body`.
+    /// @field_projection
     Else { body: Box<SyntaxTree>, range: ByteRange, span: Span },
 
     /// `<for>` — `for target in iter: body [else: body]`.
     /// `<for[async]>` adds an `<async/>` marker.
+    /// @field_projection
     For {
         is_async: bool,
         targets: Vec<SyntaxTree>,
@@ -670,6 +674,7 @@ pub enum SyntaxTree {
     },
 
     /// `<while>` — `while cond: body [else: body]`.
+    /// @field_projection
     While {
         condition: Box<SyntaxTree>,
         body: Box<SyntaxTree>,
@@ -685,6 +690,7 @@ pub enum SyntaxTree {
     /// for parity with the existing pipeline; cross-language element
     /// naming asymmetry is allowed (Principle #5 scope is intra-
     /// language).
+    /// @field_projection
     Foreach {
         type_ann: Option<Box<SyntaxTree>>,
         target: Box<SyntaxTree>,
@@ -698,6 +704,7 @@ pub enum SyntaxTree {
     /// JS, …). All three header parts are optional. `updates` is a
     /// vec because C-style `for` allows comma-separated updates
     /// (`for(int i=0,j=10; i<j; i++,j--)`).
+    /// @field_projection
     CFor {
         initializer: Option<Box<SyntaxTree>>,
         condition: Option<Box<SyntaxTree>>,
@@ -709,6 +716,7 @@ pub enum SyntaxTree {
 
     /// `<do>` — `do body while(cond);`. Renders the keyword as gap
     /// text; body and condition are the only tree children.
+    /// @field_projection
     DoWhile {
         body: Box<SyntaxTree>,
         condition: Box<SyntaxTree>,
@@ -771,6 +779,7 @@ pub enum SyntaxTree {
     /// (Python). Shared cross-language. `try_body` is the protected
     /// block; `handlers` are catch/except clauses; `else_body` runs
     /// when no exception (Python only); `finally_body` always runs.
+    /// @field_projection
     Try {
         try_body: Box<SyntaxTree>,
         handlers: Vec<SyntaxTree>,
@@ -785,6 +794,7 @@ pub enum SyntaxTree {
     /// (`as e` / `Exception ex`); `filter` is C#'s `when (cond)`;
     /// `body` is the handler block.
     /// `<except>` (Python) — single Python-style exception handler.
+    /// @field_projection
     Except {
         type_target: Option<Box<SyntaxTree>>,
         binding: Option<Box<SyntaxTree>>,
@@ -796,6 +806,7 @@ pub enum SyntaxTree {
 
     /// `<catch>` (C# / Java / JS) — single catch clause. Same shape
     /// as [`SyntaxTree::Except`]; sibling variant.
+    /// @field_projection
     Catch {
         type_target: Option<Box<SyntaxTree>>,
         binding: Option<Box<SyntaxTree>>,
@@ -846,6 +857,7 @@ pub enum SyntaxTree {
     /// `a if cond else b` (Python). Renders with logical slots
     /// regardless of source order; the renderer sorts children by
     /// `range().start` to weave gap text correctly.
+    /// @field_projection
     Ternary {
         condition: Box<SyntaxTree>,
         if_true: Box<SyntaxTree>,

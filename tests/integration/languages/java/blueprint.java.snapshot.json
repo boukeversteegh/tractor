@@ -242,17 +242,8 @@
             },
             "body": {
               "if": {
-                "body": {
-                  "throw": {
-                    "expression": {
-                      "object_creation": {
-                        "name": "IllegalArgumentException",
-                        "string": "\"null\""
-                      }
-                    }
-                  }
-                },
                 "condition": {
+                  "$type": "condition",
                   "expression": {
                     "binary": {
                       "left": {
@@ -271,23 +262,39 @@
                     }
                   }
                 },
-                "else_if": {
-                  "body": {
-                    "return": {
-                      "expression": {
-                        "null": "null"
+                "body": {
+                  "$type": "body",
+                  "throw": {
+                    "expression": {
+                      "object_creation": {
+                        "name": "IllegalArgumentException",
+                        "string": "\"null\""
                       }
                     }
-                  },
+                  }
+                },
+                "else_branch": {
+                  "$type": "else_if",
                   "condition": {
+                    "$type": "condition",
                     "expression": {
                       "unary": {
                         "name": "ready"
                       }
                     }
                   },
-                  "else": {
+                  "body": {
+                    "$type": "body",
+                    "return": {
+                      "expression": {
+                        "null": "null"
+                      }
+                    }
+                  },
+                  "else_branch": {
+                    "$type": "else",
                     "body": {
+                      "$type": "body",
                       "return": {
                         "expression": {
                           "name": "input"
@@ -323,6 +330,7 @@
                 "expression": {
                   "ternary": {
                     "condition": {
+                      "$type": "condition",
                       "expression": {
                         "binary": {
                           "left": {
@@ -341,10 +349,18 @@
                         }
                       }
                     },
-                    "else": {
+                    "if_true": {
+                      "$type": "then",
+                      "expression": {
+                        "string": "\"positive\""
+                      }
+                    },
+                    "if_false": {
+                      "$type": "else",
                       "expression": {
                         "ternary": {
                           "condition": {
+                            "$type": "condition",
                             "expression": {
                               "binary": {
                                 "left": {
@@ -363,22 +379,19 @@
                               }
                             }
                           },
-                          "else": {
-                            "expression": {
-                              "string": "\"zero\""
-                            }
-                          },
-                          "then": {
+                          "if_true": {
+                            "$type": "then",
                             "expression": {
                               "string": "\"negative\""
                             }
+                          },
+                          "if_false": {
+                            "$type": "else",
+                            "expression": {
+                              "string": "\"zero\""
+                            }
                           }
                         }
-                      }
-                    },
-                    "then": {
-                      "expression": {
-                        "string": "\"positive\""
                       }
                     }
                   }
@@ -458,7 +471,28 @@
                 }
               ],
               "while": {
+                "condition": {
+                  "$type": "condition",
+                  "expression": {
+                    "binary": {
+                      "left": {
+                        "$type": "expression",
+                        "name": "i"
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "<",
+                        "less": true
+                      },
+                      "right": {
+                        "$type": "expression",
+                        "int": "3"
+                      }
+                    }
+                  }
+                },
                 "body": {
+                  "$type": "body",
                   "expression": {
                     "assign": {
                       "expression": [
@@ -483,25 +517,6 @@
                           }
                         }
                       ]
-                    }
-                  }
-                },
-                "condition": {
-                  "expression": {
-                    "binary": {
-                      "left": {
-                        "$type": "expression",
-                        "name": "i"
-                      },
-                      "op": {
-                        "$type": "operator",
-                        "text": "<",
-                        "less": true
-                      },
-                      "right": {
-                        "$type": "expression",
-                        "int": "3"
-                      }
                     }
                   }
                 }
@@ -622,12 +637,8 @@
               "public": true,
               "body": {
                 "if": {
-                  "body": {
-                    "object_creation": {
-                      "name": "IllegalArgumentException"
-                    }
-                  },
                   "condition": {
+                    "$type": "condition",
                     "expression": {
                       "logical": {
                         "left": {
@@ -672,6 +683,12 @@
                           }
                         }
                       }
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "object_creation": {
+                      "name": "IllegalArgumentException"
                     }
                   }
                 }
@@ -885,7 +902,17 @@
                 "string": "\"non-negative\""
               },
               "do_while": {
-                "binary": {
+                "body": {
+                  "$type": "body",
+                  "expression": {
+                    "unary": {
+                      "postfix": true,
+                      "name": "k"
+                    }
+                  }
+                },
+                "condition": {
+                  "$type": "binary",
                   "left": {
                     "$type": "expression",
                     "name": "k"
@@ -899,19 +926,25 @@
                     "$type": "expression",
                     "int": "3"
                   }
-                },
-                "body": {
-                  "expression": {
-                    "unary": {
-                      "postfix": true,
-                      "name": "k"
-                    }
-                  }
                 }
               },
               "label": {
                 "c_for": {
-                  "binary": {
+                  "initializer": {
+                    "$type": "variable",
+                    "decorators": [],
+                    "type_ann": {
+                      "$type": "type",
+                      "name": "int"
+                    },
+                    "name": "i",
+                    "value": {
+                      "$type": "expression",
+                      "int": "0"
+                    }
+                  },
+                  "condition": {
+                    "$type": "binary",
                     "left": {
                       "$type": "expression",
                       "name": "i"
@@ -926,13 +959,19 @@
                       "int": "5"
                     }
                   },
+                  "updates": [
+                    {
+                      "$type": "unary",
+                      "postfix": true,
+                      "name": "i"
+                    }
+                  ],
                   "body": {
+                    "$type": "body",
                     "if": [
                       {
-                        "body": {
-                          "name": "outer"
-                        },
                         "condition": {
+                          "$type": "condition",
                           "expression": {
                             "binary": {
                               "left": {
@@ -950,13 +989,15 @@
                               }
                             }
                           }
+                        },
+                        "body": {
+                          "$type": "body",
+                          "name": "outer"
                         }
                       },
                       {
-                        "body": {
-                          "name": "outer"
-                        },
                         "condition": {
+                          "$type": "condition",
                           "expression": {
                             "binary": {
                               "left": {
@@ -974,25 +1015,13 @@
                               }
                             }
                           }
+                        },
+                        "body": {
+                          "$type": "body",
+                          "name": "outer"
                         }
                       }
                     ]
-                  },
-                  "unary": {
-                    "postfix": true,
-                    "name": "i"
-                  },
-                  "variable": {
-                    "decorators": [],
-                    "type_ann": {
-                      "$type": "type",
-                      "name": "int"
-                    },
-                    "name": "i",
-                    "value": {
-                      "$type": "expression",
-                      "int": "0"
-                    }
                   }
                 },
                 "name": "outer"
@@ -1072,14 +1101,11 @@
                 "this": "this"
               },
               "try": {
-                "body": {
+                "try_body": {
+                  "$type": "body",
                   "if": {
-                    "body": {
-                      "object_creation": {
-                        "name": "java.io.IOException"
-                      }
-                    },
                     "condition": {
+                      "$type": "condition",
                       "expression": {
                         "binary": {
                           "left": {
@@ -1097,29 +1123,41 @@
                           }
                         }
                       }
+                    },
+                    "body": {
+                      "$type": "body",
+                      "object_creation": {
+                        "name": "java.io.IOException"
+                      }
                     }
                   }
                 },
-                "catch": {
-                  "as": {
-                    "expression": {
-                      "name": "e"
-                    }
-                  },
-                  "body": {
-                    "throw": {
+                "handlers": [
+                  {
+                    "$type": "catch",
+                    "type_target": {
+                      "$type": "type",
+                      "name": [
+                        "java.io.IOException",
+                        "RuntimeException"
+                      ]
+                    },
+                    "binding": {
+                      "$type": "as",
                       "expression": {
                         "name": "e"
                       }
+                    },
+                    "body": {
+                      "$type": "body",
+                      "throw": {
+                        "expression": {
+                          "name": "e"
+                        }
+                      }
                     }
-                  },
-                  "type": {
-                    "name": [
-                      "java.io.IOException",
-                      "RuntimeException"
-                    ]
                   }
-                }
+                ]
               }
             },
             "name": "resources",

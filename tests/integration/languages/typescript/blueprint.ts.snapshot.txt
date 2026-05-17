@@ -218,10 +218,10 @@ program/
   │       │   │       ├─ type/name = "number"
   │       │   │       └─ type/name = "T"
   │       │   └─ body/c_for/
-  │       │       ├─ variable[let]/
+  │       │       ├─ initializer[variable and let]/
   │       │       │   ├─ name = "i"
   │       │       │   └─ value[expression]/number = "0"
-  │       │       ├─ binary/
+  │       │       ├─ condition[binary]/
   │       │       │   ├─ left[expression]/name = "i"
   │       │       │   ├─ op[operator and less] = "<"
   │       │       │   └─ right[expression]/object/this = "this"
@@ -396,7 +396,7 @@ program/
   │       │   ├─ body/assign/
   │       │   │   ├─ expression/name = "status"
   │       │   │   └─ expression/string = "\"error\""
-  │       │   └─ else_if/
+  │       │   └─ else_branch[else_if]/
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left[expression]/name = "n"
   │       │       │   ├─ op[operator and equal] = "==="
@@ -404,7 +404,7 @@ program/
   │       │       ├─ body/assign/
   │       │       │   ├─ expression/name = "status"
   │       │       │   └─ expression/string = "\"idle\""
-  │       │       └─ else_if/
+  │       │       └─ else_branch[else_if]/
   │       │           ├─ condition/expression/binary/
   │       │           │   ├─ left[expression]/name = "n"
   │       │           │   ├─ op[operator and less] = "<"
@@ -412,7 +412,7 @@ program/
   │       │           ├─ body/assign/
   │       │           │   ├─ expression/name = "status"
   │       │           │   └─ expression/string = "\"loading\""
-  │       │           └─ else/body/assign/
+  │       │           └─ else_branch[else]/body/assign/
   │       │               ├─ expression/name = "status"
   │       │               └─ expression/string = "\"ready\""
   │       ├─ switch/
@@ -463,8 +463,8 @@ program/
   │           │   ├─ left[expression]/name = "n"
   │           │   ├─ op[operator and greater] = ">"
   │           │   └─ right[expression]/number = "0"
-  │           ├─ then/expression/name = "status"
-  │           └─ else/expression/string = "\"idle\""
+  │           ├─ if_true[then]/expression/name = "status"
+  │           └─ if_false[else]/expression/string = "\"idle\""
   ├─ variable[const]/
   │   ├─ name = "arrow"
   │   └─ value[expression]/arrow/
@@ -668,14 +668,14 @@ program/
   │       ├─ label/
   │       │   ├─ name = "outer"
   │       │   └─ c_for/
-  │       │       ├─ variable[let]/
+  │       │       ├─ initializer[variable and let]/
   │       │       │   ├─ declarator/
   │       │       │   │   ├─ name = "i"
   │       │       │   │   └─ value/expression/number = "0"
   │       │       │   └─ declarator/
   │       │       │       ├─ name = "j"
   │       │       │       └─ value/expression/number = "100"
-  │       │       ├─ binary/
+  │       │       ├─ condition[binary]/
   │       │       │   ├─ left[expression]/name = "i"
   │       │       │   ├─ op[operator and less] = "<"
   │       │       │   └─ right[expression]/number = "5"
@@ -709,7 +709,7 @@ program/
   │       │   └─ value[expression]/number = "0"
   │       ├─ do_while/
   │       │   ├─ body/expression/unary[postfix]/name = "n"
-  │       │   └─ binary/
+  │       │   └─ condition[binary]/
   │       │       ├─ left[expression]/name = "n"
   │       │       ├─ op[operator and less] = "<"
   │       │       └─ right[expression]/number = "3"

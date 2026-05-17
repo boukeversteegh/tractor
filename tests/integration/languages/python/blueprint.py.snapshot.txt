@@ -150,9 +150,9 @@ module/
   │       │   ├─ expression/name = "matrix"
   │       │   └─ expression/name = "matrix"
   │       └─ return/expression/ternary/
-  │           ├─ then/expression/name = "result"
+  │           ├─ if_true[then]/expression/name = "result"
   │           ├─ condition/expression/name = "result"
-  │           └─ else/expression/none = "None"
+  │           └─ if_false[else]/expression/none = "None"
   ├─ function[async]/
   │   ├─ name = "async_work"
   │   ├─ parameter/
@@ -304,15 +304,15 @@ module/
   │       │   │   │   ├─ name = "v"
   │       │   │   │   └─ int = "0"
   │       │   │   ├─ body/continue = "continue"
-  │       │   │   └─ else_if/
+  │       │   │   └─ else_branch[else_if]/
   │       │   │       ├─ condition/expression/comparison/
   │       │   │       │   ├─ name = "v"
   │       │   │       │   └─ int = "0"
   │       │   │       ├─ body/break = "break"
-  │       │   │       └─ else/body/assign/
+  │       │   │       └─ else_branch[else]/body/assign/
   │       │   │           ├─ expression/name = "total"
   │       │   │           └─ expression/name = "v"
-  │       │   └─ else/body/assign/
+  │       │   └─ else_body[else]/body/assign/
   │       │       ├─ expression/name = "total"
   │       │       └─ expression/int = "1"
   │       ├─ assign/
@@ -325,26 +325,26 @@ module/
   │       │   ├─ body/assign/
   │       │   │   ├─ expression/name = "n"
   │       │   │   └─ expression/int = "1"
-  │       │   └─ else/body = "pass"
+  │       │   └─ else_body[else]/body = "pass"
   │       ├─ try/
-  │       │   ├─ body/expression/call/name = "risky"
+  │       │   ├─ try_body[body]/expression/call/name = "risky"
   │       │   ├─ except/
-  │       │   │   ├─ type/tuple/
+  │       │   │   ├─ type_target[type]/tuple/
   │       │   │   │   ├─ name = "ValueError"
   │       │   │   │   └─ name = "TypeError"
-  │       │   │   ├─ as/expression/name = "e"
+  │       │   │   ├─ binding[as]/expression/name = "e"
   │       │   │   └─ body/raise/
   │       │   │       ├─ expression/call/
   │       │   │       │   ├─ name = "RuntimeError"
   │       │   │       │   └─ string = "\"bad\""
   │       │   │       └─ name = "e"
   │       │   ├─ except/
-  │       │   │   ├─ type/name = "Exception"
+  │       │   │   ├─ type_target[type]/name = "Exception"
   │       │   │   └─ body = "pass"
-  │       │   ├─ else/body/assign/
+  │       │   ├─ else_body[else]/body/assign/
   │       │   │   ├─ expression/name = "total"
   │       │   │   └─ expression/int = "1"
-  │       │   └─ finally/body/expression/call/name = "cleanup"
+  │       │   └─ finally_body[finally]/body/expression/call/name = "cleanup"
   │       ├─ with/
   │       │   ├─ as/
   │       │   │   ├─ call/
@@ -479,11 +479,11 @@ module/
   │       ├─ assign/
   │       │   ├─ expression/name = "first"
   │       │   └─ expression/ternary/
-  │       │       ├─ then/expression/object/
+  │       │       ├─ if_true[then]/expression/object/
   │       │       │   ├─ name = "items"
   │       │       │   └─ int = "0"
   │       │       ├─ condition/expression/name = "items"
-  │       │       └─ else/expression/none = "None"
+  │       │       └─ if_false[else]/expression/none = "None"
   │       ├─ if/
   │       │   ├─ condition/expression/comparison/
   │       │   │   ├─ assign/
@@ -638,13 +638,13 @@ module/
           │           ├─ expression/name = "matched"
           │           └─ expression/int = "0"
           ├─ try/
-          │   ├─ body/assign/
+          │   ├─ try_body[body]/assign/
           │   │   ├─ expression/name = "result"
           │   │   └─ expression/call/
           │   │       ├─ name = "list"
           │   │       └─ name = "items"
           │   └─ except/
-          │       ├─ type/tuple/
+          │       ├─ type_target[type]/tuple/
           │       │   ├─ name = "ValueError"
           │       │   └─ name = "TypeError"
           │       └─ body/assign/

@@ -551,18 +551,21 @@
           "expression": {
             "ternary": {
               "condition": {
+                "$type": "condition",
                 "expression": {
                   "name": "result"
                 }
               },
-              "else": {
+              "if_true": {
+                "$type": "then",
+                "expression": {
+                  "name": "result"
+                }
+              },
+              "if_false": {
+                "$type": "else",
                 "expression": {
                   "none": "None"
-                }
-              },
-              "then": {
-                "expression": {
-                  "name": "result"
                 }
               }
             }
@@ -641,21 +644,26 @@
               ]
             },
             "for": {
+              "targets": [
+                {
+                  "$type": "expression",
+                  "name": "chunk"
+                }
+              ],
+              "iterables": [
+                {
+                  "$type": "expression",
+                  "name": "conn"
+                }
+              ],
               "body": {
+                "$type": "body",
                 "yield": {
                   "expression": {
                     "name": "chunk"
                   }
                 }
-              },
-              "expression": [
-                {
-                  "name": "chunk"
-                },
-                {
-                  "name": "conn"
-                }
-              ]
+              }
             },
             "return": {
               "expression": {
@@ -681,18 +689,15 @@
     {
       "body": {
         "for": {
-          "body": {
-            "yield": {
-              "expression": {
-                "name": "i"
-              }
-            }
-          },
-          "expression": [
+          "targets": [
             {
+              "$type": "expression",
               "name": "i"
-            },
+            }
+          ],
+          "iterables": [
             {
+              "$type": "expression",
               "call": {
                 "name": [
                   "range",
@@ -700,7 +705,15 @@
                 ]
               }
             }
-          ]
+          ],
+          "body": {
+            "$type": "body",
+            "yield": {
+              "expression": {
+                "name": "i"
+              }
+            }
+          }
         },
         "yield": {
           "from": true,
@@ -741,7 +754,25 @@
             "function": {
               "body": {
                 "for": {
+                  "targets": [
+                    {
+                      "$type": "expression",
+                      "name": "_"
+                    }
+                  ],
+                  "iterables": [
+                    {
+                      "$type": "expression",
+                      "call": {
+                        "name": [
+                          "range",
+                          "times"
+                        ]
+                      }
+                    }
+                  ],
                   "body": {
+                    "$type": "body",
                     "expression": {
                       "call": {
                         "dict_splat": {
@@ -753,20 +784,7 @@
                         "name": "fn"
                       }
                     }
-                  },
-                  "expression": [
-                    {
-                      "name": "_"
-                    },
-                    {
-                      "call": {
-                        "name": [
-                          "range",
-                          "times"
-                        ]
-                      }
-                    }
-                  ]
+                  }
                 }
               },
               "name": "wrapper",
@@ -841,12 +859,32 @@
           }
         ],
         "for": {
+          "targets": [
+            {
+              "$type": "expression",
+              "name": "i"
+            },
+            {
+              "$type": "expression",
+              "name": "v"
+            }
+          ],
+          "iterables": [
+            {
+              "$type": "expression",
+              "call": {
+                "name": [
+                  "enumerate",
+                  "items"
+                ]
+              }
+            }
+          ],
           "body": {
+            "$type": "body",
             "if": {
-              "body": {
-                "continue": "continue"
-              },
               "condition": {
+                "$type": "condition",
                 "expression": {
                   "comparison": {
                     "int": "0",
@@ -854,11 +892,14 @@
                   }
                 }
               },
-              "else_if": {
-                "body": {
-                  "break": "break"
-                },
+              "body": {
+                "$type": "body",
+                "continue": "continue"
+              },
+              "else_branch": {
+                "$type": "else_if",
                 "condition": {
+                  "$type": "condition",
                   "expression": {
                     "comparison": {
                       "int": "0",
@@ -866,8 +907,14 @@
                     }
                   }
                 },
-                "else": {
+                "body": {
+                  "$type": "body",
+                  "break": "break"
+                },
+                "else_branch": {
+                  "$type": "else",
                   "body": {
+                    "$type": "body",
                     "assign": {
                       "expression": [
                         {
@@ -883,7 +930,8 @@
               }
             }
           },
-          "else": {
+          "else_body": {
+            "$type": "else",
             "body": {
               "assign": {
                 "expression": [
@@ -896,23 +944,7 @@
                 ]
               }
             }
-          },
-          "expression": [
-            {
-              "name": "i"
-            },
-            {
-              "name": "v"
-            },
-            {
-              "call": {
-                "name": [
-                  "enumerate",
-                  "items"
-                ]
-              }
-            }
-          ]
+          }
         },
         "return": {
           "expression": {
@@ -920,35 +952,34 @@
           }
         },
         "try": {
-          "body": {
+          "try_body": {
+            "$type": "body",
             "expression": {
               "call": {
                 "name": "risky"
               }
             }
           },
-          "else": {
-            "body": {
-              "assign": {
-                "expression": [
-                  {
-                    "name": "total"
-                  },
-                  {
-                    "int": "1"
-                  }
-                ]
-              }
-            }
-          },
-          "except": [
+          "handlers": [
             {
-              "as": {
+              "$type": "except",
+              "type_target": {
+                "$type": "type",
+                "tuple": {
+                  "name": [
+                    "ValueError",
+                    "TypeError"
+                  ]
+                }
+              },
+              "binding": {
+                "$type": "as",
                 "expression": {
                   "name": "e"
                 }
               },
               "body": {
+                "$type": "body",
                 "raise": {
                   "expression": {
                     "call": {
@@ -958,24 +989,34 @@
                   },
                   "name": "e"
                 }
-              },
-              "type": {
-                "tuple": {
-                  "name": [
-                    "ValueError",
-                    "TypeError"
-                  ]
-                }
               }
             },
             {
-              "body": "pass",
-              "type": {
+              "$type": "except",
+              "type_target": {
+                "$type": "type",
                 "name": "Exception"
-              }
+              },
+              "body": "pass"
             }
           ],
-          "finally": {
+          "else_body": {
+            "$type": "else",
+            "body": {
+              "assign": {
+                "expression": [
+                  {
+                    "name": "total"
+                  },
+                  {
+                    "int": "1"
+                  }
+                ]
+              }
+            }
+          },
+          "finally_body": {
+            "$type": "finally",
             "body": {
               "expression": {
                 "call": {
@@ -986,7 +1027,17 @@
           }
         },
         "while": {
+          "condition": {
+            "$type": "condition",
+            "expression": {
+              "comparison": {
+                "int": "10",
+                "name": "n"
+              }
+            }
+          },
           "body": {
+            "$type": "body",
             "assign": {
               "expression": [
                 {
@@ -998,15 +1049,8 @@
               ]
             }
           },
-          "condition": {
-            "expression": {
-              "comparison": {
-                "int": "10",
-                "name": "n"
-              }
-            }
-          },
-          "else": {
+          "else_body": {
+            "$type": "else",
             "body": "pass"
           }
         },
@@ -1361,21 +1405,24 @@
               {
                 "ternary": {
                   "condition": {
+                    "$type": "condition",
                     "expression": {
                       "name": "items"
                     }
                   },
-                  "else": {
-                    "expression": {
-                      "none": "None"
-                    }
-                  },
-                  "then": {
+                  "if_true": {
+                    "$type": "then",
                     "expression": {
                       "object": {
                         "int": "0",
                         "name": "items"
                       }
+                    }
+                  },
+                  "if_false": {
+                    "$type": "else",
+                    "expression": {
+                      "none": "None"
                     }
                   }
                 }
@@ -1539,19 +1586,8 @@
           "name": "GLOBAL_FLAG"
         },
         "if": {
-          "body": {
-            "expression": {
-              "call": {
-                "name": "print",
-                "string": {
-                  "interpolation": {
-                    "name": "n"
-                  }
-                }
-              }
-            }
-          },
           "condition": {
+            "$type": "condition",
             "expression": {
               "comparison": {
                 "assign": {
@@ -1564,6 +1600,19 @@
                   "name": "n"
                 },
                 "int": "3"
+              }
+            }
+          },
+          "body": {
+            "$type": "body",
+            "expression": {
+              "call": {
+                "name": "print",
+                "string": {
+                  "interpolation": {
+                    "name": "n"
+                  }
+                }
               }
             }
           }
@@ -1829,7 +1878,8 @@
           ]
         },
         "try": {
-          "body": {
+          "try_body": {
+            "$type": "body",
             "assign": {
               "expression": [
                 {
@@ -1846,28 +1896,33 @@
               ]
             }
           },
-          "except": {
-            "body": {
-              "assign": {
-                "expression": [
-                  {
-                    "name": "result"
-                  },
-                  {
-                    "list": "[]"
-                  }
-                ]
-              }
-            },
-            "type": {
-              "tuple": {
-                "name": [
-                  "ValueError",
-                  "TypeError"
-                ]
+          "handlers": [
+            {
+              "$type": "except",
+              "type_target": {
+                "$type": "type",
+                "tuple": {
+                  "name": [
+                    "ValueError",
+                    "TypeError"
+                  ]
+                }
+              },
+              "body": {
+                "$type": "body",
+                "assign": {
+                  "expression": [
+                    {
+                      "name": "result"
+                    },
+                    {
+                      "list": "[]"
+                    }
+                  ]
+                }
               }
             }
-          }
+          ]
         }
       },
       "name": "patterns_and_misc",
