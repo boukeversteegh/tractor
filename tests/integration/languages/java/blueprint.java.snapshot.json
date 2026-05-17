@@ -74,9 +74,7 @@
               "parameters": [],
               "returns": {
                 "$type": "returns",
-                "type": {
-                  "name": "int"
-                }
+                "type": "int"
               },
               "throws": [],
               "body": {
@@ -162,10 +160,7 @@
             "name": "Demo",
             "parameter": {
               "name": "name",
-              "type": {
-                "$type": "type",
-                "name": "String"
-              }
+              "type": "String"
             }
           }
         ],
@@ -175,10 +170,7 @@
             "static": true,
             "final": true,
             "decorators": [],
-            "type": {
-              "$type": "type",
-              "name": "int"
-            },
+            "type": "int",
             "name": "MAX",
             "value": {
               "$type": "expression",
@@ -188,10 +180,7 @@
           {
             "private": true,
             "decorators": [],
-            "type": {
-              "$type": "type",
-              "name": "String"
-            },
+            "type": "String",
             "name": "name"
           },
           {
@@ -213,10 +202,7 @@
           {
             "package": true,
             "decorators": [],
-            "type": {
-              "$type": "type",
-              "name": "int"
-            },
+            "type": "int",
             "name": "pkg"
           },
           {
@@ -224,10 +210,7 @@
             "volatile": true,
             "transient": true,
             "decorators": [],
-            "type": {
-              "$type": "type",
-              "name": "boolean"
-            },
+            "type": "boolean",
             "name": "ready"
           }
         ],
@@ -254,17 +237,12 @@
                 {
                   "$type": "parameter",
                   "name": "input",
-                  "type": {
-                    "$type": "type",
-                    "name": "U"
-                  }
+                  "type": "U"
                 }
               ],
               "returns": {
                 "$type": "returns",
-                "type": {
-                  "name": "U"
-                }
+                "type": "U"
               },
               "throws": [
                 {
@@ -305,9 +283,7 @@
             ],
             "returns": {
               "$type": "returns",
-              "type": {
-                "name": "R"
-              }
+              "type": "R"
             },
             "throws": [],
             "body": {
@@ -337,17 +313,12 @@
               {
                 "$type": "parameter",
                 "name": "input",
-                "type": {
-                  "$type": "type",
-                  "name": "T"
-                }
+                "type": "T"
               }
             ],
             "returns": {
               "$type": "returns",
-              "type": {
-                "name": "T"
-              }
+              "type": "T"
             },
             "throws": [
               {
@@ -429,17 +400,12 @@
               {
                 "$type": "parameter",
                 "name": "n",
-                "type": {
-                  "$type": "type",
-                  "name": "int"
-                }
+                "type": "int"
               }
             ],
             "returns": {
               "$type": "returns",
-              "type": {
-                "name": "String"
-              }
+              "type": "String"
             },
             "throws": [],
             "body": {
@@ -515,17 +481,12 @@
                 "$type": "parameter",
                 "variadic": true,
                 "name": "xs",
-                "type": {
-                  "$type": "type",
-                  "name": "int"
-                }
+                "type": "int"
               }
             ],
             "returns": {
               "$type": "returns",
-              "type": {
-                "name": "int"
-              }
+              "type": "int"
             },
             "throws": [],
             "body": {
@@ -563,10 +524,7 @@
               "variable": [
                 {
                   "decorators": [],
-                  "type": {
-                    "$type": "type",
-                    "name": "int"
-                  },
+                  "type": "int",
                   "name": "total",
                   "value": {
                     "$type": "expression",
@@ -575,10 +533,7 @@
                 },
                 {
                   "decorators": [],
-                  "type": {
-                    "$type": "type",
-                    "name": "int"
-                  },
+                  "type": "int",
                   "name": "i",
                   "value": {
                     "$type": "expression",
@@ -646,17 +601,12 @@
               {
                 "$type": "parameter",
                 "name": "o",
-                "type": {
-                  "$type": "type",
-                  "name": "Object"
-                }
+                "type": "Object"
               }
             ],
             "returns": {
               "$type": "returns",
-              "type": {
-                "name": "String"
-              }
+              "type": "String"
             },
             "throws": [],
             "body": {
@@ -830,9 +780,7 @@
           "parameters": [],
           "returns": {
             "$type": "returns",
-            "type": {
-              "name": "String"
-            }
+            "type": "String"
           },
           "throws": [],
           "body": {
@@ -897,10 +845,7 @@
           "static": true,
           "final": true,
           "decorators": [],
-          "type": {
-            "$type": "type",
-            "name": "int"
-          },
+          "type": "int",
           "name": "SEED"
         },
         "method": [
@@ -913,6 +858,7 @@
             "returns": {
               "$type": "returns",
               "type": {
+                "$type": "type",
                 "void": true,
                 "name": "void"
               }
@@ -944,10 +890,7 @@
                 },
                 {
                   "decorators": [],
-                  "type": {
-                    "$type": "type",
-                    "name": "char"
-                  },
+                  "type": "char",
                   "name": "ch",
                   "value": {
                     "$type": "expression",
@@ -1002,15 +945,13 @@
               {
                 "$type": "parameter",
                 "name": "o",
-                "type": {
-                  "$type": "type",
-                  "name": "Object"
-                }
+                "type": "Object"
               }
             ],
             "returns": {
               "$type": "returns",
               "type": {
+                "$type": "type",
                 "void": true,
                 "name": "void"
               }
@@ -1068,10 +1009,7 @@
                   "initializer": {
                     "$type": "variable",
                     "decorators": [],
-                    "type": {
-                      "$type": "type",
-                      "name": "int"
-                    },
+                    "type": "int",
                     "name": "i",
                     "value": {
                       "$type": "expression",
@@ -1160,27 +1098,19 @@
               "variable": [
                 {
                   "decorators": [],
-                  "type": {
-                    "$type": "type",
-                    "name": "int"
-                  },
+                  "type": "int",
                   "name": "n",
                   "value": {
                     "$type": "expression",
                     "cast": {
                       "int": "0L",
-                      "type": {
-                        "name": "int"
-                      }
+                      "name": "int"
                     }
                   }
                 },
                 {
                   "decorators": [],
-                  "type": {
-                    "$type": "type",
-                    "name": "boolean"
-                  },
+                  "type": "boolean",
                   "name": "isStr",
                   "value": {
                     "$type": "expression",
@@ -1194,10 +1124,7 @@
                 },
                 {
                   "decorators": [],
-                  "type": {
-                    "$type": "type",
-                    "name": "int"
-                  },
+                  "type": "int",
                   "name": "k",
                   "value": {
                     "$type": "expression",
@@ -1216,6 +1143,7 @@
             "returns": {
               "$type": "returns",
               "type": {
+                "$type": "type",
                 "void": true,
                 "name": "void"
               }
@@ -1271,13 +1199,10 @@
                 "handlers": [
                   {
                     "$type": "catch",
-                    "type": {
-                      "$type": "type",
-                      "name": [
-                        "java.io.IOException",
-                        "RuntimeException"
-                      ]
-                    },
+                    "type": [
+                      "java.io.IOException",
+                      "RuntimeException"
+                    ],
                     "binding": {
                       "$type": "expression",
                       "name": "e"
@@ -1304,17 +1229,12 @@
               {
                 "$type": "parameter",
                 "name": "o",
-                "type": {
-                  "$type": "type",
-                  "name": "Object"
-                }
+                "type": "Object"
               }
             ],
             "returns": {
               "$type": "returns",
-              "type": {
-                "name": "int"
-              }
+              "type": "int"
             },
             "throws": [],
             "body": {
@@ -1326,10 +1246,7 @@
               },
               "variable": {
                 "decorators": [],
-                "type": {
-                  "$type": "type",
-                  "name": "int"
-                },
+                "type": "int",
                 "name": "v",
                 "value": {
                   "$type": "expression",

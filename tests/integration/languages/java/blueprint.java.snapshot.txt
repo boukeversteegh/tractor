@@ -42,11 +42,11 @@ program/
   │       ├─ comment = "// Line comment before a field"
   │       ├─ comment[leading] = "/* block comment */"
   │       ├─ field[public and static and final]/
-  │       │   ├─ type/name = "int"
+  │       │   ├─ type[name] = "int"
   │       │   ├─ name = "MAX"
   │       │   └─ value[expression]/int = "100"
   │       ├─ field[private]/
-  │       │   ├─ type/name = "String"
+  │       │   ├─ type[name] = "String"
   │       │   └─ name = "name"
   │       ├─ field[protected]/
   │       │   ├─ type/
@@ -57,11 +57,11 @@ program/
   │       │   │       └─ name = "T"
   │       │   └─ name = "items"
   │       ├─ field[package]/
-  │       │   ├─ type/name = "int"
+  │       │   ├─ type[name] = "int"
   │       │   └─ name = "pkg"
   │       ├─ comment[trailing] = "// trailing line comment"
   │       ├─ field[package and volatile and transient]/
-  │       │   ├─ type/name = "boolean"
+  │       │   ├─ type[name] = "boolean"
   │       │   └─ name = "ready"
   │       ├─ constructor[public]/
   │       │   ├─ name = "Demo"
@@ -69,7 +69,7 @@ program/
   │       ├─ constructor[public]/
   │       │   ├─ name = "Demo"
   │       │   ├─ parameter/
-  │       │   │   ├─ type/name = "String"
+  │       │   │   ├─ type[name] = "String"
   │       │   │   └─ name = "name"
   │       │   └─ body/
   │       │       ├─ call[super] = "();"
@@ -78,7 +78,7 @@ program/
   │       │           └─ expression/name = "name"
   │       ├─ method[public and static]/
   │       │   ├─ generic/name = "R"
-  │       │   ├─ returns/type/name = "R"
+  │       │   ├─ returns/type[name] = "R"
   │       │   ├─ name = "factory"
   │       │   ├─ parameter/
   │       │   │   ├─ type/
@@ -91,10 +91,10 @@ program/
   │       │       └─ string = "\"hello\""
   │       ├─ method[public and synchronized]/
   │       │   ├─ annotation/name = "Override"
-  │       │   ├─ returns/type/name = "T"
+  │       │   ├─ returns/type[name] = "T"
   │       │   ├─ name = "process"
   │       │   ├─ parameter/
-  │       │   │   ├─ type/name = "T"
+  │       │   │   ├─ type[name] = "T"
   │       │   │   └─ name = "input"
   │       │   ├─ throws/type/name = "IllegalArgumentException"
   │       │   └─ body/if/
@@ -110,10 +110,10 @@ program/
   │       │           ├─ body/return/expression/null = "null"
   │       │           └─ else_branch[else]/body/return/expression/name = "input"
   │       ├─ method[public]/
-  │       │   ├─ returns/type/name = "String"
+  │       │   ├─ returns/type[name] = "String"
   │       │   ├─ name = "describe"
   │       │   ├─ parameter/
-  │       │   │   ├─ type/name = "int"
+  │       │   │   ├─ type[name] = "int"
   │       │   │   └─ name = "n"
   │       │   └─ body/return/expression/ternary/
   │       │       ├─ condition[expression]/binary/
@@ -129,14 +129,14 @@ program/
   │       │           ├─ if_true[expression]/string = "\"negative\""
   │       │           └─ if_false[expression]/string = "\"zero\""
   │       ├─ method[public]/
-  │       │   ├─ returns/type/name = "int"
+  │       │   ├─ returns/type[name] = "int"
   │       │   ├─ name = "sum"
   │       │   ├─ parameter[variadic]/
-  │       │   │   ├─ type/name = "int"
+  │       │   │   ├─ type[name] = "int"
   │       │   │   └─ name = "xs"
   │       │   └─ body/
   │       │       ├─ variable/
-  │       │       │   ├─ type/name = "int"
+  │       │       │   ├─ type[name] = "int"
   │       │       │   ├─ name = "total"
   │       │       │   └─ value[expression]/int = "0"
   │       │       ├─ foreach/
@@ -147,7 +147,7 @@ program/
   │       │       │       ├─ expression/name = "total"
   │       │       │       └─ expression/name = "x"
   │       │       ├─ variable/
-  │       │       │   ├─ type/name = "int"
+  │       │       │   ├─ type[name] = "int"
   │       │       │   ├─ name = "i"
   │       │       │   └─ value[expression]/int = "0"
   │       │       ├─ while/
@@ -163,10 +163,10 @@ program/
   │       │       │           └─ right[expression]/int = "1"
   │       │       └─ return/expression/name = "total"
   │       ├─ method[public]/
-  │       │   ├─ returns/type/name = "String"
+  │       │   ├─ returns/type[name] = "String"
   │       │   ├─ name = "match"
   │       │   ├─ parameter/
-  │       │   │   ├─ type/name = "Object"
+  │       │   │   ├─ type[name] = "Object"
   │       │   │   └─ name = "o"
   │       │   └─ body/return/expression/switch/
   │       │       ├─ name = "o"
@@ -195,10 +195,10 @@ program/
   │       │   ├─ name = "Handler"
   │       │   ├─ generic/name = "U"
   │       │   └─ body/method[public]/
-  │       │       ├─ returns/type/name = "U"
+  │       │       ├─ returns/type[name] = "U"
   │       │       ├─ name = "process"
   │       │       ├─ parameter/
-  │       │       │   ├─ type/name = "U"
+  │       │       │   ├─ type[name] = "U"
   │       │       │   └─ name = "input"
   │       │       └─ throws/type/name = "IllegalArgumentException"
   │       ├─ class[public]/
@@ -208,7 +208,7 @@ program/
   │       │       ├─ constant/name = "GREEN"
   │       │       ├─ constant/name = "BLUE"
   │       │       └─ method[public]/
-  │       │           ├─ returns/type/name = "int"
+  │       │           ├─ returns/type[name] = "int"
   │       │           ├─ name = "rgb"
   │       │           └─ body/return/expression/switch/
   │       │               ├─ this = "this"
@@ -240,7 +240,7 @@ program/
   ├─ class[package]/
   │   ├─ name = "Base"
   │   └─ body/method[package]/
-  │       ├─ returns/type/name = "String"
+  │       ├─ returns/type[name] = "String"
   │       ├─ name = "greet"
   │       └─ body/return/expression/object/
   │           ├─ name = "String"
@@ -264,7 +264,7 @@ program/
       ├─ name = "Extras"
       └─ body/
           ├─ field[package and static and final]/
-          │   ├─ type/name = "int"
+          │   ├─ type[name] = "int"
           │   └─ name = "SEED"
           ├─ block[static]/expression/assign/
           │   ├─ expression/name = "SEED"
@@ -284,7 +284,7 @@ program/
           │       │       ├─ int = "2"
           │       │       └─ int = "3"
           │       ├─ variable/
-          │       │   ├─ type/name = "char"
+          │       │   ├─ type[name] = "char"
           │       │   ├─ name = "ch"
           │       │   └─ value[expression]/string = "'A'"
           │       ├─ variable/
@@ -307,14 +307,14 @@ program/
           │   ├─ returns/type[void]/name = "void"
           │   ├─ name = "controlFlow"
           │   ├─ parameter/
-          │   │   ├─ type/name = "Object"
+          │   │   ├─ type[name] = "Object"
           │   │   └─ name = "o"
           │   └─ body/
           │       ├─ variable/
-          │       │   ├─ type/name = "int"
+          │       │   ├─ type[name] = "int"
           │       │   ├─ name = "n"
           │       │   └─ value[expression]/cast/
-          │       │       ├─ type/name = "int"
+          │       │       ├─ name = "int"
           │       │       └─ int = "0L"
           │       ├─ assert/
           │       │   ├─ binary/
@@ -323,7 +323,7 @@ program/
           │       │   │   └─ right[expression]/int = "0"
           │       │   └─ string = "\"non-negative\""
           │       ├─ variable/
-          │       │   ├─ type/name = "boolean"
+          │       │   ├─ type[name] = "boolean"
           │       │   ├─ name = "isStr"
           │       │   └─ value[expression]/is/
           │       │       ├─ name = "o"
@@ -332,7 +332,7 @@ program/
           │       │   ├─ name = "outer"
           │       │   └─ c_for/
           │       │       ├─ initializer[variable]/
-          │       │       │   ├─ type/name = "int"
+          │       │       │   ├─ type[name] = "int"
           │       │       │   ├─ name = "i"
           │       │       │   └─ value[expression]/int = "0"
           │       │       ├─ condition[binary]/
@@ -354,7 +354,7 @@ program/
           │       │               │   └─ right[expression]/int = "3"
           │       │               └─ body/name = "outer"
           │       ├─ variable/
-          │       │   ├─ type/name = "int"
+          │       │   ├─ type[name] = "int"
           │       │   ├─ name = "k"
           │       │   └─ value[expression]/int = "0"
           │       └─ do_while/
@@ -387,14 +387,14 @@ program/
           │           └─ body/expression/name = "SEED"
           ├─ comment[leading] = "/** Yield in block-switch + switch with underscore/record pattern. */"
           └─ method[package]/
-              ├─ returns/type/name = "int"
+              ├─ returns/type[name] = "int"
               ├─ name = "yieldDemo"
               ├─ parameter/
-              │   ├─ type/name = "Object"
+              │   ├─ type[name] = "Object"
               │   └─ name = "o"
               └─ body/
                   ├─ variable/
-                  │   ├─ type/name = "int"
+                  │   ├─ type[name] = "int"
                   │   ├─ name = "v"
                   │   └─ value[expression]/switch/
                   │       ├─ name = "o"

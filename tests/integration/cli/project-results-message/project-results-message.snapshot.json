@@ -36,13 +36,15 @@
               {
                 "name": "a",
                 "type": {
-                  "name": "int"
+                  "text": "int",
+                  "name": true
                 }
               },
               {
                 "name": "b",
                 "type": {
-                  "name": "int"
+                  "text": "int",
+                  "name": true
                 }
               }
             ]
@@ -75,13 +77,15 @@
               {
                 "name": "a",
                 "type": {
-                  "name": "int"
+                  "text": "int",
+                  "name": true
                 }
               },
               {
                 "name": "b",
                 "type": {
-                  "name": "int"
+                  "text": "int",
+                  "name": true
                 }
               }
             ]
@@ -114,13 +118,15 @@
               {
                 "name": "a",
                 "type": {
-                  "name": "int"
+                  "text": "int",
+                  "name": true
                 }
               },
               {
                 "name": "b",
                 "type": {
-                  "name": "int"
+                  "text": "int",
+                  "name": true
                 }
               }
             ]
@@ -166,7 +172,8 @@
             "parameter": {
               "name": "name",
               "type": {
-                "name": "string"
+                "text": "string",
+                "name": true
               }
             }
           },
@@ -197,7 +204,8 @@
             "parameter": {
               "name": "name",
               "type": {
-                "name": "string"
+                "text": "string",
+                "name": true
               }
             }
           },

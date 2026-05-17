@@ -46,8 +46,8 @@ program/
   │           ├─ name = "describe"
   │           ├─ parameter[required]/
   │           │   ├─ name = "prefix"
-  │           │   └─ type/name = "string"
-  │           └─ returns/type/name = "string"
+  │           │   └─ type[name] = "string"
+  │           └─ returns/type[name] = "string"
   ├─ export/alias/
   │   ├─ name = "Point"
   │   └─ type[object]/
@@ -77,7 +77,7 @@ program/
   │   └─ type[function]/
   │       ├─ parameter[required]/
   │       │   ├─ name = "input"
-  │       │   └─ type/name = "T"
+  │       │   └─ type[name] = "T"
   │       └─ returns/type/name = "T"
   ├─ export/alias/
   │   ├─ name = "Partialized"
@@ -115,11 +115,11 @@ program/
   │   └─ body/
   │       ├─ field[public and static]/
   │       │   ├─ name = "kind"
-  │       │   ├─ type/name = "string"
+  │       │   ├─ type[name] = "string"
   │       │   └─ value[expression]/string = "\"base\""
   │       ├─ field[protected and readonly]/
   │       │   ├─ name = "createdAt"
-  │       │   ├─ type/name = "number"
+  │       │   ├─ type[name] = "number"
   │       │   └─ value[expression]/object/name = "Date"
   │       ├─ field[private]/
   │       │   ├─ name = "_cache"
@@ -132,23 +132,23 @@ program/
   │       │   ├─ name = "constructor"
   │       │   ├─ parameter[required and public]/
   │       │   │   ├─ name = "name"
-  │       │   │   └─ type/name = "string"
+  │       │   │   └─ type[name] = "string"
   │       │   ├─ parameter[optional and private and readonly]/
   │       │   │   ├─ name = "seed"
-  │       │   │   └─ type/name = "number"
+  │       │   │   └─ type[name] = "number"
   │       │   └─ body = "{}"
   │       ├─ method[public and abstract]/
   │       │   ├─ name = "render"
-  │       │   └─ returns/type/name = "string"
+  │       │   └─ returns/type[name] = "string"
   │       ├─ method[public and get]/
   │       │   ├─ name = "cacheSize"
-  │       │   ├─ returns/type/name = "number"
+  │       │   ├─ returns/type[name] = "number"
   │       │   └─ body/return/expression/object/this = "this"
   │       ├─ method[public and set]/
   │       │   ├─ name = "primary"
   │       │   ├─ parameter[required]/
   │       │   │   ├─ name = "value"
-  │       │   │   └─ type/name = "T"
+  │       │   │   └─ type[name] = "T"
   │       │   └─ body/expression/object/
   │       │       ├─ this = "this"
   │       │       ├─ string = "\"primary\""
@@ -157,11 +157,11 @@ program/
   │           ├─ name = "store"
   │           ├─ parameter[required]/
   │           │   ├─ name = "key"
-  │           │   └─ type/name = "string"
+  │           │   └─ type[name] = "string"
   │           ├─ parameter[required]/
   │           │   ├─ name = "value"
-  │           │   └─ type/name = "T"
-  │           ├─ returns/type/name = "void"
+  │           │   └─ type[name] = "T"
+  │           ├─ returns/type[name] = "void"
   │           └─ body/expression/object/
   │               ├─ this = "this"
   │               ├─ name = "key"
@@ -184,7 +184,7 @@ program/
   │       │   ├─ name = "constructor"
   │       │   ├─ parameter[required]/
   │       │   │   ├─ name = "name"
-  │       │   │   └─ type/name = "string"
+  │       │   │   └─ type[name] = "string"
   │       │   ├─ parameter[required and private]/
   │       │   │   ├─ name = "items"
   │       │   │   ├─ type[array]/name = "T"
@@ -196,7 +196,7 @@ program/
   │       │       └─ expression/unary[postfix]/object/name = "Widget"
   │       ├─ method[public and override]/
   │       │   ├─ name = "render"
-  │       │   ├─ returns/type/name = "string"
+  │       │   ├─ returns/type[name] = "string"
   │       │   └─ body/
   │       │       ├─ variable[const]/
   │       │       │   ├─ name = "first"
@@ -266,8 +266,8 @@ program/
   │   ├─ name = "isShape"
   │   ├─ parameter[required]/
   │   │   ├─ name = "v"
-  │   │   └─ type/name = "unknown"
-  │   ├─ returns/predicate/
+  │   │   └─ type[name] = "unknown"
+  │   ├─ returns/type[predicate]/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "Shape"
   │   └─ body/return/expression/logical/
@@ -291,7 +291,7 @@ program/
   │   └─ value[expression]/arrow/
   │       ├─ parameter[required]/
   │       │   ├─ name = "parts"
-  │       │   └─ type/name = "TemplateStringsArray"
+  │       │   └─ type[name] = "TemplateStringsArray"
   │       ├─ parameter[required]/
   │       │   ├─ name[rest]/name = "vals"
   │       │   └─ type[array]/name = "unknown"
@@ -323,7 +323,7 @@ program/
   │   │       └─ name = "string"
   │   ├─ parameter[required]/
   │   │   ├─ name = "input"
-  │   │   └─ type/name = "T"
+  │   │   └─ type[name] = "T"
   │   ├─ parameter[required]/
   │   │   ├─ name[pattern and object]/
   │   │   │   ├─ pair/
@@ -381,8 +381,8 @@ program/
   │   ├─ name = "controlFlow"
   │   ├─ parameter[required]/
   │   │   ├─ name = "n"
-  │   │   └─ type/name = "number"
-  │   ├─ returns/type/name = "Status"
+  │   │   └─ type[name] = "number"
+  │   ├─ returns/type[name] = "Status"
   │   └─ body/
   │       ├─ variable[let]/
   │       │   ├─ name = "status"
@@ -487,7 +487,7 @@ program/
   │       │   └─ number = "3"
   │       └─ arrow/
   │           ├─ parameter[required]/name = "x"
-  │           ├─ returns/type/name = "number"
+  │           ├─ returns/type[name] = "number"
   │           └─ value/expression/binary/
   │               ├─ left[expression]/name = "x"
   │               ├─ op[operator and multiply] = "*"
@@ -497,8 +497,8 @@ program/
   │   └─ value[expression]/arrow/
   │       ├─ parameter[required]/
   │       │   ├─ name = "x"
-  │       │   └─ type/name = "number"
-  │       ├─ returns/type/name = "number"
+  │       │   └─ type[name] = "number"
+  │       ├─ returns/type[name] = "number"
   │       └─ body/return/expression/binary/
   │           ├─ left[expression]/name = "x"
   │           ├─ op[operator and multiply] = "*"
@@ -538,20 +538,20 @@ program/
   │   ├─ name = "externalThing"
   │   ├─ parameter[required]/
   │   │   ├─ name = "name"
-  │   │   └─ type/name = "string"
-  │   └─ returns/type/name = "void"
+  │   │   └─ type[name] = "string"
+  │   └─ returns/type[name] = "void"
   ├─ declare/namespace/
   │   ├─ name = "SideEffect"
   │   └─ body/function/
   │       ├─ name = "init"
-  │       └─ returns/type/name = "void"
+  │       └─ returns/type[name] = "void"
   ├─ comment[leading] = "// Constructor / typeof / this / rest / optional-tuple / template-type shapes."
   ├─ alias/
   │   ├─ name = "Builder"
   │   └─ type[constructor]/
   │       ├─ parameter[required]/
   │       │   ├─ name = "input"
-  │       │   └─ type/name = "string"
+  │       │   └─ type[name] = "string"
   │       └─ name = "Status"
   ├─ alias/
   │   ├─ name = "Identity"
@@ -565,7 +565,7 @@ program/
   │   ├─ name = "Reflective"
   │   └─ type[object]/method[public]/
   │       ├─ name = "copy"
-  │       └─ returns/type/name = "this"
+  │       └─ returns/type[name] = "this"
   ├─ comment[leading] = "// Rest in tuple — anonymous form keeps the rest_type at the outer level\n// so `//type[rest]` matches without a `<name>` field wrapper."
   ├─ alias/
   │   ├─ name = "RestArgs"
@@ -578,10 +578,10 @@ program/
   │   └─ type[tuple]/
   │       ├─ type/parameter[required]/
   │       │   ├─ name = "head"
-  │       │   └─ type/name = "number"
+  │       │   └─ type[name] = "number"
   │       └─ type/parameter[optional]/
   │           ├─ name = "tail"
-  │           └─ type/name = "string"
+  │           └─ type[name] = "string"
   ├─ comment[leading] = "// Old-style cast (`<T>expr`) — type assertion."
   ├─ variable[const]/
   │   ├─ name = "asserted"
@@ -605,8 +605,8 @@ program/
   │   ├─ name = "isNumber"
   │   ├─ parameter[required]/
   │   │   ├─ name = "x"
-  │   │   └─ type/name = "unknown"
-  │   ├─ returns/predicate[asserts]/
+  │   │   └─ type[name] = "unknown"
+  │   ├─ returns/type[predicate and asserts]/
   │   │   ├─ name = "x"
   │   │   └─ type/name = "number"
   │   └─ body/if/
@@ -636,7 +636,7 @@ program/
   │   ├─ name = "MetaCtor"
   │   ├─ parameter[required]/
   │   │   ├─ name[this] = "this"
-  │   │   └─ type/name = "unknown"
+  │   │   └─ type[name] = "unknown"
   │   └─ body/return/expression/binary/
   │       ├─ left[expression]/object/name = "new.target"
   │       ├─ op[operator and null_coalesce] = "??"
@@ -659,8 +659,8 @@ program/
   │   ├─ name = "controlOdds"
   │   ├─ parameter[required]/
   │   │   ├─ name = "value"
-  │   │   └─ type/name = "number"
-  │   ├─ returns/type/name = "number"
+  │   │   └─ type[name] = "number"
+  │   ├─ returns/type[name] = "number"
   │   └─ body/
   │       ├─ variable[let]/
   │       │   ├─ name = "total"
@@ -745,7 +745,7 @@ program/
   │   │   │   ├─ value/expression/number = "0"
   │   │   │   └─ rest/name = "rest"
   │   │   └─ type[array]/name = "number"
-  │   ├─ returns/type/name = "number"
+  │   ├─ returns/type[name] = "number"
   │   └─ body/return/expression/binary/
   │       ├─ left[expression]/binary/
   │       │   ├─ left[expression]/binary/

@@ -233,7 +233,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         range, span,
                     },
                 }),
-                type_ann: type_node.map(|t| Box::new(lower_node(t, source).wrap_type())),
+                type_ann: type_node.map(|t| Box::new(lower_node(t, source))),
                 default: default_node.and_then(|d| {
                     let inner = d.named_children().next();
                     inner.map(|n| Box::new(lower_node(n, source)))
@@ -450,7 +450,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             SyntaxTree::Property {
                 modifiers,
                 decorators,
-                type_ann: type_node.map(|t| Box::new(lower_node(t, source).wrap_type())),
+                type_ann: type_node.map(|t| Box::new(lower_node(t, source))),
                 name: Box::new(match name_node {
                     Some(n) => name_of(n, source),
                     None => SyntaxTree::Unknown { kind: "property(missing name)".to_string(), range, span },
@@ -765,7 +765,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let body_node = node.child_by_field_name("body");
             match (left_node, right_node, body_node) {
                 (Some(l), Some(r), Some(b)) => SyntaxTree::Foreach {
-                    type_ann: type_node.map(|t| Box::new(lower_node(t, source).wrap_type())),
+                    type_ann: type_node.map(|t| Box::new(lower_node(t, source))),
                     target: Box::new(lower_node(l, source).wrap_expression()),
                     iterable: Box::new(lower_node(r, source).wrap_expression()),
                     body: Box::new(lower_csharp_consequence(b, source)),
@@ -1893,7 +1893,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let kids: Vec<&RawNode> = node.named_children().collect();
             if kids.len() == 2 {
                 SyntaxTree::Cast {
-                    type_ann: Box::new(lower_node(kids[0], source).wrap_type()),
+                    type_ann: Box::new(lower_node(kids[0], source)),
                     value: Box::new(lower_node(kids[1], source)),
                     range,
                     span,
@@ -2284,7 +2284,7 @@ fn lower_event_field_declaration(node: &RawNode, source: &str) -> SyntaxTree {
                 _ => {
                     // First non-declarator child is the type.
                     if type_ir.is_none() {
-                        type_ir = Some(Box::new(lower_node(sub, source).wrap_type()));
+                        type_ir = Some(Box::new(lower_node(sub, source)));
                     }
                 }
             }
@@ -2522,7 +2522,7 @@ fn lower_csharp_catch_clause(node: &RawNode, source: &str) -> SyntaxTree {
                 let t = c.child_by_field_name("type");
                 let n = c.child_by_field_name("name");
                 if let Some(t) = t {
-                    type_target = Some(Box::new(lower_node(t, source).wrap_type()));
+                    type_target = Some(Box::new(lower_node(t, source)));
                 }
                 if let Some(n) = n {
                     binding = Some(Box::new(name_of(n, source).wrap_expression()));
@@ -2741,7 +2741,7 @@ fn lower_variable_declarator(
                 let value_ir = value_node
                     .filter(|v| v.id() != p.id())
                     .map(|v| crate::tree::Expression::wrap(lower_node(v, source)));
-                let type_ir = type_node.map(|t| Box::new(lower_node(t, source).wrap_type()));
+                let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
                 return SyntaxTree::variable_or_field(
                     element_name,
                     modifiers,
@@ -2772,7 +2772,7 @@ fn lower_variable_declarator(
     }
 
     let name_ir = name_of(n, source);
-    let type_ir = type_node.map(|t| Box::new(lower_node(t, source).wrap_type()));
+    let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
     let value_ir = value_node.map(|v| crate::tree::Expression::wrap(lower_node(v, source)));
     SyntaxTree::variable_or_field(
         element_name,

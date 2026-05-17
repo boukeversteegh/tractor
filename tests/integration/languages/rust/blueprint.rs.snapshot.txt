@@ -163,7 +163,7 @@ file/
   │       └─ function[private]/
   │           ├─ name = "name"
   │           ├─ parameter[self]/name = "self"
-  │           ├─ returns/type/name = "String"
+  │           ├─ returns/type[name] = "String"
   │           └─ body/call/
   │               ├─ path/
   │               │   ├─ name = "String"
@@ -201,7 +201,7 @@ file/
   │       │   │   └─ type[borrowed]/
   │       │   │       ├─ lifetime/name = "a"
   │       │   │       └─ type/name = "str"
-  │       │   ├─ returns/type/name = "Self"
+  │       │   ├─ returns/type[name] = "Self"
   │       │   └─ body/literal/
   │       │       ├─ name = "Self"
   │       │       └─ body/
@@ -211,18 +211,18 @@ file/
   │       ├─ function[pub]/
   │       │   ├─ name = "async_clone"
   │       │   ├─ parameter[self]/name = "self"
-  │       │   ├─ returns/type/name = "Self"
+  │       │   ├─ returns/type[name] = "Self"
   │       │   └─ body/object = "self.clone()"
   │       ├─ function[pub]/
   │       │   ├─ name = "const_fn"
-  │       │   ├─ returns/type/name = "u32"
+  │       │   ├─ returns/type[name] = "u32"
   │       │   └─ body/int = "42"
   │       └─ function[pub]/
   │           ├─ name = "unsafe_read"
   │           ├─ parameter/
   │           │   ├─ name = "ptr"
   │           │   └─ type[pointer]/name = "T"
-  │           ├─ returns/type/name = "T"
+  │           ├─ returns/type[name] = "T"
   │           └─ body/object/unary/name = "ptr"
   ├─ impl/
   │   ├─ lifetime/name = "a"
@@ -426,7 +426,7 @@ file/
   │   ├─ parameter/
   │   │   ├─ name = "s"
   │   │   └─ type/name = "Shape"
-  │   ├─ returns/type/name = "i32"
+  │   ├─ returns/type[name] = "i32"
   │   └─ body/
   │       ├─ let/
   │       │   ├─ name = "p"
@@ -569,7 +569,7 @@ file/
   │       └─ name = "result"
   ├─ function[pub]/
   │   ├─ name = "loops_and_flow"
-  │   ├─ returns/type/name = "i32"
+  │   ├─ returns/type[name] = "i32"
   │   └─ body/
   │       ├─ for/
   │       │   ├─ name = "'outer"
@@ -661,7 +661,7 @@ file/
   │       └─ string = "\"never returns\""
   ├─ function[pub]/
   │   ├─ name = "async_demo"
-  │   ├─ returns/type/name = "u32"
+  │   ├─ returns/type[name] = "u32"
   │   └─ body/
   │       ├─ let/
   │       │   ├─ name = "block"
@@ -785,7 +785,7 @@ file/
   │   │           ├─ name = "Point"
   │   │           ├─ lifetime/name = "_"
   │   │           └─ type/name = "i32"
-  │   ├─ returns/type/name = "i32"
+  │   ├─ returns/type[name] = "i32"
   │   └─ body/
   │       ├─ comment[leading] = "// remaining_field_pattern — `..`."
   │       ├─ let/

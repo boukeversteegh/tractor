@@ -10,9 +10,7 @@
           "true": "True"
         }
       ],
-      "type": {
-        "name": "bool"
-      }
+      "name": "bool"
     },
     {
       "expression": [
@@ -23,9 +21,7 @@
           "float": "3.14159"
         }
       ],
-      "type": {
-        "name": "float"
-      }
+      "name": "float"
     },
     {
       "expression": [
@@ -93,9 +89,7 @@
                 "int": "0"
               }
             ],
-            "type": {
-              "name": "int"
-            }
+            "name": "int"
           },
           {
             "expression": [
@@ -106,9 +100,7 @@
                 "int": "0"
               }
             ],
-            "type": {
-              "name": "int"
-            }
+            "name": "int"
           },
           {
             "expression": [
@@ -226,10 +218,7 @@
               {
                 "$type": "parameter",
                 "name": "name",
-                "type": {
-                  "$type": "type",
-                  "name": "str"
-                }
+                "type": "str"
               }
             ],
             "throws": [],
@@ -523,17 +512,12 @@
         {
           "$type": "parameter",
           "name": "v",
-          "type": {
-            "$type": "type",
-            "name": "T"
-          }
+          "type": "T"
         }
       ],
       "returns": {
         "$type": "returns",
-        "type": {
-          "name": "T"
-        }
+        "type": "T"
       },
       "throws": [],
       "body": {
@@ -553,10 +537,7 @@
         {
           "$type": "parameter",
           "name": "x",
-          "type": {
-            "$type": "type",
-            "name": "int"
-          }
+          "type": "int"
         },
         {
           "$type": "parameter",
@@ -590,6 +571,7 @@
       "returns": {
         "$type": "returns",
         "type": {
+          "$type": "type",
           "name": [
             "Union",
             "int"
@@ -617,9 +599,7 @@
                 "name": "x"
               }
             ],
-            "type": {
-              "name": "int"
-            }
+            "name": "int"
           },
           {
             "expression": [
@@ -706,17 +686,12 @@
         {
           "$type": "parameter",
           "name": "url",
-          "type": {
-            "$type": "type",
-            "name": "str"
-          }
+          "type": "str"
         }
       ],
       "returns": {
         "$type": "returns",
-        "type": {
-          "name": "bytes"
-        }
+        "type": "bytes"
       },
       "throws": [],
       "body": {
@@ -1872,9 +1847,7 @@
             "expression": {
               "name": "matched"
             },
-            "type": {
-              "name": "int"
-            }
+            "name": "int"
           },
           {
             "expression": [

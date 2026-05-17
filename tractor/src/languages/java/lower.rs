@@ -276,7 +276,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             };
             let returns = returns_node.map(|t| {
                 Box::new(SyntaxTree::Returns {
-                    type_ann: Box::new(lower_node(t, source).wrap_type()),
+                    type_ann: Box::new(lower_node(t, source)),
                     range: range_of(t),
                     span: span_of(t),
                 })
@@ -385,7 +385,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         span,
                     },
                 }),
-                type_ann: type_node.map(|t| Box::new(lower_node(t, source).wrap_type())),
+                type_ann: type_node.map(|t| Box::new(lower_node(t, source))),
                 default: None,
                 range,
                 span,
@@ -1094,7 +1094,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let value_node = node.child_by_field_name("value");
             match (type_node, value_node) {
                 (Some(t), Some(v)) => SyntaxTree::Cast {
-                    type_ann: Box::new(lower_node(t, source).wrap_type()),
+                    type_ann: Box::new(lower_node(t, source)),
                     value: Box::new(lower_node(v, source)),
                     range,
                     span,
@@ -1541,7 +1541,7 @@ fn lower_java_catch_clause(node: &RawNode, source: &str) -> SyntaxTree {
                 for inner in c.named_children() {
                     match inner.kind() {
                         "catch_type" | "type" | "type_identifier" | "scoped_type_identifier" => {
-                            type_target = Some(Box::new(lower_node(inner, source).wrap_type()));
+                            type_target = Some(Box::new(lower_node(inner, source)));
                         }
                         "identifier" => {
                             binding = Some(Box::new(name_of(inner, source).wrap_expression()));
@@ -1751,7 +1751,7 @@ fn lower_variable_declarator(
         };
     };
     let name_ir = name_of(n, source);
-    let type_ir = type_node.map(|t| Box::new(lower_node(t, source).wrap_type()));
+    let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
     // Wrap the value in a `<value>` SimpleStatement so the post-pass'
     // `wrap_expression_positions` finds it (it scans for `<value>`,
     // `<condition>` etc. and adds the `<expression>` host inside).

@@ -1064,6 +1064,7 @@ pub enum SyntaxTree {
     },
 
     /// `<returns>` — return-type annotation slot. Wraps a `<type>`.
+    /// @field_projection
     Returns {
         type_ann: Box<SyntaxTree>,
         range: ByteRange,

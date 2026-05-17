@@ -189,6 +189,7 @@
       "name": "numeric_zoo",
       "returns": {
         "type": {
+          "$type": "type",
           "tuple": true,
           "name": [
             "u32",
@@ -931,9 +932,7 @@
         }
       },
       "returns": {
-        "type": {
-          "name": "i32"
-        }
+        "type": "i32"
       }
     },
     {
@@ -1080,9 +1079,7 @@
       },
       "name": "loops_and_flow",
       "returns": {
-        "type": {
-          "name": "i32"
-        }
+        "type": "i32"
       }
     },
     {
@@ -1141,6 +1138,7 @@
       "name": "try_and_cast",
       "returns": {
         "type": {
+          "$type": "type",
           "generic": true,
           "name": "Result",
           "path": {
@@ -1203,6 +1201,7 @@
       },
       "returns": {
         "type": {
+          "$type": "type",
           "bounded": true,
           "lifetime": {
             "name": "a"
@@ -1225,6 +1224,7 @@
       "name": "diverges",
       "returns": {
         "type": {
+          "$type": "type",
           "never": true
         }
       }
@@ -1263,9 +1263,7 @@
       },
       "name": "async_demo",
       "returns": {
-        "type": {
-          "name": "u32"
-        }
+        "type": "u32"
       }
     },
     {
@@ -1964,9 +1962,7 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "i32"
-        }
+        "type": "i32"
       }
     },
     {
@@ -2164,9 +2160,7 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "Self"
-              }
+              "type": "Self"
             }
           },
           {
@@ -2180,9 +2174,7 @@
               "name": "self"
             },
             "returns": {
-              "type": {
-                "name": "Self"
-              }
+              "type": "Self"
             }
           },
           {
@@ -2192,9 +2184,7 @@
             },
             "name": "const_fn",
             "returns": {
-              "type": {
-                "name": "u32"
-              }
+              "type": "u32"
             }
           },
           {
@@ -2215,9 +2205,7 @@
               }
             },
             "returns": {
-              "type": {
-                "name": "T"
-              }
+              "type": "T"
             }
           }
         ]
@@ -2601,9 +2589,7 @@
             "name": "self"
           },
           "returns": {
-            "type": {
-              "name": "String"
-            }
+            "type": "String"
           }
         }
       ],

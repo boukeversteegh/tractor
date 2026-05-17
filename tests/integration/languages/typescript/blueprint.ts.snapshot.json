@@ -9,10 +9,7 @@
         "parameter": {
           "required": true,
           "name": "input",
-          "type": {
-            "$type": "type",
-            "name": "string"
-          }
+          "type": "string"
         }
       }
     },
@@ -58,9 +55,7 @@
           "parameters": [],
           "returns": {
             "$type": "returns",
-            "type": {
-              "name": "this"
-            }
+            "type": "this"
           },
           "throws": []
         }
@@ -93,20 +88,14 @@
             "parameter": {
               "required": true,
               "name": "head",
-              "type": {
-                "$type": "type",
-                "name": "number"
-              }
+              "type": "number"
             }
           },
           {
             "parameter": {
               "optional": true,
               "name": "tail",
-              "type": {
-                "$type": "type",
-                "name": "string"
-              }
+              "type": "string"
             }
           }
         ]
@@ -240,17 +229,12 @@
             "$type": "parameter",
             "required": true,
             "name": "name",
-            "type": {
-              "$type": "type",
-              "name": "string"
-            }
+            "type": "string"
           }
         ],
         "returns": {
           "$type": "returns",
-          "type": {
-            "name": "void"
-          }
+          "type": "void"
         },
         "throws": []
       }
@@ -265,9 +249,7 @@
             "parameters": [],
             "returns": {
               "$type": "returns",
-              "type": {
-                "name": "void"
-              }
+              "type": "void"
             },
             "throws": []
           }
@@ -348,17 +330,12 @@
                 "$type": "parameter",
                 "required": true,
                 "name": "prefix",
-                "type": {
-                  "$type": "type",
-                  "name": "string"
-                }
+                "type": "string"
               }
             ],
             "returns": {
               "$type": "returns",
-              "type": {
-                "name": "string"
-              }
+              "type": "string"
             },
             "throws": []
           },
@@ -472,10 +449,7 @@
           "parameter": {
             "required": true,
             "name": "input",
-            "type": {
-              "$type": "type",
-              "name": "T"
-            }
+            "type": "T"
           },
           "returns": {
             "type": {
@@ -574,10 +548,7 @@
               "public": true,
               "static": true,
               "decorators": [],
-              "type": {
-                "$type": "type",
-                "name": "string"
-              },
+              "type": "string",
               "name": "kind",
               "value": {
                 "$type": "expression",
@@ -588,10 +559,7 @@
               "protected": true,
               "readonly": true,
               "decorators": [],
-              "type": {
-                "$type": "type",
-                "name": "number"
-              },
+              "type": "number",
               "name": "createdAt",
               "value": {
                 "$type": "expression",
@@ -632,10 +600,7 @@
                   "required": true,
                   "public": true,
                   "name": "name",
-                  "type": {
-                    "$type": "type",
-                    "name": "string"
-                  }
+                  "type": "string"
                 },
                 {
                   "$type": "parameter",
@@ -643,10 +608,7 @@
                   "private": true,
                   "readonly": true,
                   "name": "seed",
-                  "type": {
-                    "$type": "type",
-                    "name": "number"
-                  }
+                  "type": "number"
                 }
               ],
               "throws": [],
@@ -661,9 +623,7 @@
               "parameters": [],
               "returns": {
                 "$type": "returns",
-                "type": {
-                  "name": "string"
-                }
+                "type": "string"
               },
               "throws": []
             },
@@ -676,9 +636,7 @@
               "parameters": [],
               "returns": {
                 "$type": "returns",
-                "type": {
-                  "name": "number"
-                }
+                "type": "number"
               },
               "throws": [],
               "body": {
@@ -703,10 +661,7 @@
                   "$type": "parameter",
                   "required": true,
                   "name": "value",
-                  "type": {
-                    "$type": "type",
-                    "name": "T"
-                  }
+                  "type": "T"
                 }
               ],
               "throws": [],
@@ -731,26 +686,18 @@
                   "$type": "parameter",
                   "required": true,
                   "name": "key",
-                  "type": {
-                    "$type": "type",
-                    "name": "string"
-                  }
+                  "type": "string"
                 },
                 {
                   "$type": "parameter",
                   "required": true,
                   "name": "value",
-                  "type": {
-                    "$type": "type",
-                    "name": "T"
-                  }
+                  "type": "T"
                 }
               ],
               "returns": {
                 "$type": "returns",
-                "type": {
-                  "name": "void"
-                }
+                "type": "void"
               },
               "throws": [],
               "body": {
@@ -834,10 +781,7 @@
                   "$type": "parameter",
                   "required": true,
                   "name": "name",
-                  "type": {
-                    "$type": "type",
-                    "name": "string"
-                  }
+                  "type": "string"
                 },
                 {
                   "$type": "parameter",
@@ -882,9 +826,7 @@
               "parameters": [],
               "returns": {
                 "$type": "returns",
-                "type": {
-                  "name": "string"
-                }
+                "type": "string"
               },
               "throws": [],
               "body": {
@@ -942,6 +884,7 @@
               "returns": {
                 "$type": "returns",
                 "type": {
+                  "$type": "type",
                   "name": "Generator",
                   "type": {
                     "tuple": true,
@@ -1044,6 +987,7 @@
               "returns": {
                 "$type": "returns",
                 "type": {
+                  "$type": "type",
                   "name": "Promise",
                   "type": {
                     "array": true,
@@ -1147,17 +1091,12 @@
             "$type": "parameter",
             "required": true,
             "name": "n",
-            "type": {
-              "$type": "type",
-              "name": "number"
-            }
+            "type": "number"
           }
         ],
         "returns": {
           "$type": "returns",
-          "type": {
-            "name": "Status"
-          }
+          "type": "Status"
         },
         "throws": [],
         "body": {
@@ -1547,15 +1486,13 @@
           "$type": "parameter",
           "required": true,
           "name": "v",
-          "type": {
-            "$type": "type",
-            "name": "unknown"
-          }
+          "type": "unknown"
         }
       ],
       "returns": {
         "$type": "returns",
-        "predicate": {
+        "type": {
+          "$type": "predicate",
           "name": "v",
           "type": {
             "name": "Shape"
@@ -1668,10 +1605,7 @@
           "$type": "parameter",
           "required": true,
           "name": "input",
-          "type": {
-            "$type": "type",
-            "name": "T"
-          }
+          "type": "T"
         },
         {
           "$type": "parameter",
@@ -1714,6 +1648,7 @@
       "returns": {
         "$type": "returns",
         "type": {
+          "$type": "type",
           "name": [
             "Promise",
             "Greeting"
@@ -1838,15 +1773,13 @@
           "$type": "parameter",
           "required": true,
           "name": "x",
-          "type": {
-            "$type": "type",
-            "name": "unknown"
-          }
+          "type": "unknown"
         }
       ],
       "returns": {
         "$type": "returns",
-        "predicate": {
+        "type": {
+          "$type": "predicate",
           "asserts": true,
           "name": "x",
           "type": {
@@ -1897,10 +1830,7 @@
           "$type": "parameter",
           "required": true,
           "name": "this",
-          "type": {
-            "$type": "type",
-            "name": "unknown"
-          }
+          "type": "unknown"
         }
       ],
       "throws": [],
@@ -1938,17 +1868,12 @@
           "$type": "parameter",
           "required": true,
           "name": "value",
-          "type": {
-            "$type": "type",
-            "name": "number"
-          }
+          "type": "number"
         }
       ],
       "returns": {
         "$type": "returns",
-        "type": {
-          "name": "number"
-        }
+        "type": "number"
       },
       "throws": [],
       "body": {
@@ -2248,9 +2173,7 @@
       ],
       "returns": {
         "$type": "returns",
-        "type": {
-          "name": "number"
-        }
+        "type": "number"
       },
       "throws": [],
       "body": {
@@ -2356,10 +2279,7 @@
             {
               "required": true,
               "name": "parts",
-              "type": {
-                "$type": "type",
-                "name": "TemplateStringsArray"
-              }
+              "type": "TemplateStringsArray"
             },
             {
               "required": true,
@@ -2471,6 +2391,7 @@
           },
           "returns": {
             "type": {
+              "$type": "type",
               "union": true,
               "name": "U",
               "type": {
@@ -2508,9 +2429,7 @@
               "name": "x"
             },
             "returns": {
-              "type": {
-                "name": "number"
-              }
+              "type": "number"
             },
             "value": {
               "expression": {
@@ -2573,15 +2492,10 @@
           "parameter": {
             "required": true,
             "name": "x",
-            "type": {
-              "$type": "type",
-              "name": "number"
-            }
+            "type": "number"
           },
           "returns": {
-            "type": {
-              "name": "number"
-            }
+            "type": "number"
           }
         }
       }

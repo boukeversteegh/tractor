@@ -1661,6 +1661,7 @@
         "name": "String",
         "returns": {
           "type": {
+            "$type": "type",
             "name": "string"
           }
         }
@@ -1690,6 +1691,7 @@
         "name": "Close",
         "returns": {
           "type": {
+            "$type": "type",
             "name": "error"
           }
         }

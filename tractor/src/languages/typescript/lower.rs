@@ -248,7 +248,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 // return_type wraps an inner type.
                 let inner = t.named_children().next().unwrap_or(t);
                 Box::new(SyntaxTree::Returns {
-                    type_ann: Box::new(lower_node(inner, source).wrap_type()),
+                    type_ann: Box::new(lower_node(inner, source)),
                     range: range_of(t),
                     span: span_of(t),
                 })
@@ -317,7 +317,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             if let Some(rt) = return_type_node {
                 let inner = rt.named_children().next().unwrap_or(rt);
                 children.push(SyntaxTree::Returns {
-                    type_ann: Box::new(lower_node(inner, source).wrap_type()),
+                    type_ann: Box::new(lower_node(inner, source)),
                     range: range_of(rt),
                     span: span_of(rt),
                 });
@@ -391,7 +391,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 }),
                 type_ann: type_node.map(|t| {
                     let inner = t.named_children().next().unwrap_or(t);
-                    Box::new(lower_node(inner, source).wrap_type())
+                    Box::new(lower_node(inner, source))
                 }),
                 default: value_node.map(|v| Box::new(lower_node(v, source))),
                 range,
@@ -491,7 +491,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 decorators: extract_ts_decorators(node, source),
                 type_ann: type_node.map(|t| {
                     let inner = t.named_children().next().unwrap_or(t);
-                    Box::new(lower_node(inner, source).wrap_type())
+                    Box::new(lower_node(inner, source))
                 }),
                 name: Box::new(match name_node {
                     Some(n) => name_of(n, source),

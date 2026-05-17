@@ -2065,8 +2065,7 @@ fn lower_type_slot(node: &RawNode, source: &str) -> SyntaxTree {
             }
         }
     }
-    lower_node(inner_node, source).wrap_type()
-}
+    lower_node(inner_node, source)}
 
 /// Locate the `=` token inside a plain `assignment` CST node. tree-sitter
 /// Python doesn't surface this as a named child, so we scan the source

@@ -1524,6 +1524,7 @@ pub fn use_field_projection(tree: &SyntaxTree) -> bool {
         SyntaxTree::Interface { .. } => true,
         SyntaxTree::Record { .. } => true,
         SyntaxTree::Parameter { .. } => true,
+        SyntaxTree::Returns { .. } => true,
         SyntaxTree::Variable { .. } => true,
         SyntaxTree::Field { .. } => true,
         SyntaxTree::Event { .. } => true,
