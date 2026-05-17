@@ -534,6 +534,22 @@ pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax
                 write_ir(c, out, indent, sx);
             }
         }
+        SyntaxTree::Variable { name, type_ann, value, .. }
+        | SyntaxTree::Field { name, type_ann, value, .. }
+        | SyntaxTree::Event { name, type_ann, value, .. } => {
+            // Cross-language canonical form: `name[: type][ = value]`.
+            // Per-language render_source can override later if a
+            // specific keyword (let / const / var) is needed.
+            write_ir(name, out, indent, sx);
+            if let Some(t) = type_ann {
+                out.push_str(": ");
+                write_ir(t, out, indent, sx);
+            }
+            if let Some(v) = value {
+                out.push_str(" = ");
+                write_ir(&v.inner, out, indent, sx);
+            }
+        }
         _ => out.push_str("«?»"),
     }
 }
