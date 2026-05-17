@@ -104,13 +104,18 @@ fn generate_for_tree(spec: &TreeSpec) {
     let enum_item = find_enum(&file, spec.tree_name).unwrap_or_else(|| {
         panic!("{} enum not found in {}", spec.tree_name, spec.input_path)
     });
+    // Catalogue every closed-enum projection pattern (SingleMarker /
+    // MultiMarker / Identity) declared in this file's impl blocks.
+    // Codegen reads this to apply one generic rule per pattern —
+    // never names a specific enum.
+    let enum_kinds = collect_enum_kinds(&file);
 
     let tree = spec.tree_name;
     let mut out = String::new();
     out.push_str(spec.header);
     out.push_str(&render_element_name_of(enum_item, tree));
     out.push('\n');
-    out.push_str(&render_flags_of(enum_item, tree));
+    out.push_str(&render_flags_of(enum_item, tree, &enum_kinds));
     out.push('\n');
     out.push_str(&render_range_of(enum_item, tree));
     out.push('\n');
@@ -120,7 +125,7 @@ fn generate_for_tree(spec: &TreeSpec) {
     out.push('\n');
     out.push_str(&render_children_of(enum_item, tree));
     out.push('\n');
-    out.push_str(&render_fields_of(enum_item, tree));
+    out.push_str(&render_fields_of(enum_item, tree, &enum_kinds));
     out.push('\n');
     out.push_str(&render_use_field_projection(enum_item, tree));
     if spec.generate_mut {
@@ -131,7 +136,7 @@ fn generate_for_tree(spec: &TreeSpec) {
     }
     if spec.generate_from_json {
         out.push('\n');
-        out.push_str(&render_from_json(enum_item));
+        out.push_str(&render_from_json(enum_item, &enum_kinds));
     }
 
     write_if_changed(spec.output_path, &out);
@@ -223,6 +228,84 @@ fn find_enum<'a>(file: &'a syn::File, name: &str) -> Option<&'a ItemEnum> {
         Item::Enum(e) if e.ident == name => Some(e),
         _ => None,
     })
+}
+
+/// How a closed enum's value projects to XML / JSON: derived
+/// mechanically from which methods its impl block declares. Each
+/// pattern has a generic codegen treatment — the codegen never names
+/// a specific enum.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EnumKind {
+    /// Has `fn marker_name(self) -> &'static str` (+ optionally
+    /// `fn from_marker_name(&str) -> Option<Self>`). Projects as one
+    /// boolean-keyed marker. Examples: `OperatorKind`, `ExpressionMarker`,
+    /// `ParamKind`.
+    SingleMarker,
+    /// Has `fn marker_names(self) -> ...` (+ optionally
+    /// `fn from_marker_names(...)`). Projects as one-or-more boolean
+    /// markers. Example: `Access` (`protected internal` emits two).
+    MultiMarker,
+    /// Has `fn as_element_name(self) -> &'static str`. Drives its host
+    /// variant's element name — does NOT project as a marker. Examples:
+    /// `SlotKind`, `AccessorKind`.
+    Identity,
+}
+
+/// Catalogue every closed (all-unit) enum in `file`, paired with the
+/// projection pattern its impl block declares. The codegen reads this
+/// to apply one generic rule per kind — no per-type match arms.
+fn collect_enum_kinds(file: &syn::File) -> std::collections::HashMap<String, EnumKind> {
+    use std::collections::HashMap;
+    let mut all_unit: HashMap<String, ()> = HashMap::new();
+    for item in &file.items {
+        if let Item::Enum(e) = item {
+            if e.variants.iter().all(|v| matches!(v.fields, Fields::Unit)) {
+                all_unit.insert(e.ident.to_string(), ());
+            }
+        }
+    }
+    let mut method_names: HashMap<String, std::collections::HashSet<String>> = HashMap::new();
+    for item in &file.items {
+        if let Item::Impl(im) = item {
+            // Only `impl X { ... }` (no trait, no generics).
+            if im.trait_.is_some() {
+                continue;
+            }
+            let self_ident = match im.self_ty.as_ref() {
+                syn::Type::Path(p) => p.path.segments.last().map(|s| s.ident.to_string()),
+                _ => None,
+            };
+            let Some(name) = self_ident else { continue };
+            if !all_unit.contains_key(&name) {
+                continue;
+            }
+            let entry = method_names.entry(name).or_default();
+            for it in &im.items {
+                if let syn::ImplItem::Fn(f) = it {
+                    entry.insert(f.sig.ident.to_string());
+                }
+            }
+        }
+    }
+    let mut out: HashMap<String, EnumKind> = HashMap::new();
+    for name in all_unit.keys() {
+        let m = method_names.get(name);
+        let has = |n: &str| m.is_some_and(|s| s.contains(n));
+        let kind = if has("marker_name") {
+            EnumKind::SingleMarker
+        } else if has("marker_names") {
+            EnumKind::MultiMarker
+        } else if has("as_element_name") {
+            EnumKind::Identity
+        } else {
+            // No declared projection convention — skip. Codegen will
+            // fall through to the default Default::default() for any
+            // field of this type.
+            continue;
+        };
+        out.insert(name.clone(), kind);
+    }
+    out
 }
 
 /// Stringify a `syn::Type` with no whitespace, for pattern matching.
@@ -339,7 +422,7 @@ fn element_name_annotation(v: &Variant) -> Option<String> {
     None
 }
 
-fn render_flags_of(en: &ItemEnum, tree: &str) -> String {
+fn render_flags_of(en: &ItemEnum, tree: &str, enum_kinds: &std::collections::HashMap<String, EnumKind>) -> String {
     let mut out = String::new();
     out.push_str(&format!(
         "/// Empty-element marker children for this tree node. Drawn from
@@ -357,7 +440,7 @@ pub fn flags_of(tree: &{tree}) -> Vec<Marker> {{
         tree = tree,
     ));
     for v in &en.variants {
-        out.push_str(&flags_arm(v, tree));
+        out.push_str(&flags_arm(v, tree, enum_kinds));
     }
     out.push_str(
         "    }
@@ -368,7 +451,7 @@ pub fn flags_of(tree: &{tree}) -> Vec<Marker> {{
     out
 }
 
-fn flags_arm(v: &Variant, tree: &str) -> String {
+fn flags_arm(v: &Variant, tree: &str, enum_kinds: &std::collections::HashMap<String, EnumKind>) -> String {
     let name = v.ident.to_string();
     let mut bindings: Vec<String> = Vec::new();
     let mut body = String::new();
@@ -722,7 +805,7 @@ fn children_arm(v: &Variant, tree: &str) -> String {
 ///
 /// Other field types (range, span, scalar strings, kind discriminators)
 /// are ignored — they're shape metadata, not projected children.
-fn render_fields_of(en: &ItemEnum, tree: &str) -> String {
+fn render_fields_of(en: &ItemEnum, tree: &str, enum_kinds: &std::collections::HashMap<String, EnumKind>) -> String {
     let mut out = String::new();
     out.push_str(&format!(
         "/// Field-projection view of this node — one [`TreeField`] per
@@ -735,7 +818,7 @@ pub fn fields_of(tree: &{tree}) -> Vec<TreeField<'_, {tree}>> {{
         tree = tree,
     ));
     for variant in &en.variants {
-        out.push_str(&fields_arm(variant, tree));
+        out.push_str(&fields_arm(variant, tree, enum_kinds));
     }
     out.push_str(
         "    }
@@ -746,7 +829,7 @@ pub fn fields_of(tree: &{tree}) -> Vec<TreeField<'_, {tree}>> {{
     out
 }
 
-fn fields_arm(v: &Variant, tree: &str) -> String {
+fn fields_arm(v: &Variant, tree: &str, enum_kinds: &std::collections::HashMap<String, EnumKind>) -> String {
     let name = v.ident.to_string();
     let mut bindings: Vec<String> = Vec::new();
     let mut body = String::new();
@@ -1160,7 +1243,7 @@ fn children_mut_arm(v: &Variant, tree: &str) -> String {
 ///   a sensible default.
 /// - `ByteRange` / `Span` → synthetic (no source coordinates after
 ///   the JSON hop).
-fn render_from_json(en: &ItemEnum) -> String {
+fn render_from_json(en: &ItemEnum, enum_kinds: &std::collections::HashMap<String, EnumKind>) -> String {
     let mut out = String::new();
     out.push_str(FROM_JSON_PREAMBLE);
 
@@ -1214,7 +1297,7 @@ fn render_from_json(en: &ItemEnum) -> String {
     );
 
     for (v, tag) in &variants {
-        out.push_str(&from_json_arm(v, tag));
+        out.push_str(&from_json_arm(v, tag, enum_kinds));
     }
 
     // Unknown $type fallback:
@@ -1426,7 +1509,7 @@ fn from_json_object_with_hint(
 /// [`field_name_to_json_key`]). Fields that find their value via
 /// keyed lookup don't double-consume from `unclaimed_children`; fields that miss
 /// fall back to draining `unclaimed_children` positionally.
-fn from_json_arm(v: &Variant, tag: &str) -> String {
+fn from_json_arm(v: &Variant, tag: &str, enum_kinds: &std::collections::HashMap<String, EnumKind>) -> String {
     let name = v.ident.to_string();
     let mut field_pops = String::new();
     let mut struct_fields: Vec<String> = Vec::new();
@@ -1479,7 +1562,7 @@ fn from_json_arm(v: &Variant, tag: &str) -> String {
             let Some(ident) = &field.ident else { continue };
             let fname = ident.to_string();
             let ty = type_str(&field.ty);
-            let (build_expr, _) = from_json_field_expr(&fname, &ty);
+            let (build_expr, _) = from_json_field_expr(&fname, &ty, enum_kinds);
             field_pops.push_str(&format!(
                 "            let {fname} = {build_expr};\n",
                 fname = fname,
@@ -1522,7 +1605,28 @@ fn from_json_arm(v: &Variant, tag: &str) -> String {
 ///
 /// Returns `(expr, consumes_kid)`; second component is informational
 /// only.
-fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
+fn from_json_field_expr(fname: &str, ty: &str, enum_kinds: &std::collections::HashMap<String, EnumKind>) -> (String, bool) {
+    // Generic marker-enum rule: any field whose type is a SingleMarker
+    // enum (T or Option<T>) reconstructs from the marker_strs list
+    // already collected from boolean keys. No per-type match arms.
+    if let Some(inner) = ty.strip_prefix("Option<").and_then(|s| s.strip_suffix(">")) {
+        if matches!(enum_kinds.get(inner), Some(EnumKind::SingleMarker)) {
+            return (
+                format!("marker_strs.iter().find_map(|s| {inner}::from_marker_name(s))"),
+                false,
+            );
+        }
+    }
+    if matches!(enum_kinds.get(ty), Some(EnumKind::SingleMarker)) {
+        return (
+            format!(
+                "marker_strs.iter()
+                .find_map(|s| {ty}::from_marker_name(s))
+                .unwrap_or_default()"
+            ),
+            false,
+        );
+    }
     match ty {
         // ----- Tree-child fields (lookup → drain fallback) ------------
         // Every keyed lookup passes the field name as the type hint so
@@ -1737,23 +1841,6 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
         "Option<&'staticstr>" => ("None".into(), false),
         "Option<ByteRange>" => ("None".into(), false),
         "Option<Span>" => ("None".into(), false),
-        "Option<ExpressionMarker>" => (
-            // Reuse the marker list the outer scope already built
-            // from boolean-true keys (same source `Modifiers` uses).
-            // ExpressionMarker is a closed enum, so from_marker_name
-            // is the only step needed — no separate map scan.
-            "marker_strs.iter().find_map(|s| ExpressionMarker::from_marker_name(s))".into(),
-            false,
-        ),
-        "OperatorKind" => (
-            // Same pattern: the marker_strs list (boolean-true keys)
-            // is the source. OperatorKind is required (not Option), so
-            // fall back to a default if no recognised name appears.
-            "marker_strs.iter()
-                .find_map(|s| OperatorKind::from_marker_name(s))
-                .unwrap_or(OperatorKind::Plus)".into(),
-            false,
-        ),
         "AccessorKind" => (
             "{
                 map.get(\"kind\").and_then(|v| v.as_str()).map(|s| match s {

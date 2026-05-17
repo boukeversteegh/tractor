@@ -2455,7 +2455,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
             let kind = marker_strs.iter()
                 .find_map(|s| OperatorKind::from_marker_name(s))
-                .unwrap_or(OperatorKind::Plus);
+                .unwrap_or_default();
             let range = ByteRange::synthetic_empty();
             let span = Span::point(0, 0);
             SyntaxTree::Operator {
