@@ -12,8 +12,8 @@
 #[allow(unused_imports)]
 use super::types::{
     Access, AccessReceiver, AccessorKind, AccessSegment, ByteRange,
-    Expression, Flag, LambdaBody, Marker, Modifiers, ParamKind, QuoteStyle,
-    SlotKind, Span, SyntaxTree,
+    Expression, Flag, LambdaBody, Marker, Modifiers, OperatorKind, ParamKind,
+    QuoteStyle, SlotKind, Span, SyntaxTree,
 };
 
 #[allow(unused_imports)]
@@ -47,6 +47,7 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&str> {
         SyntaxTree::ObjectAccess { .. } => Some(element_name_for_object_access(tree)),
         SyntaxTree::Binary { .. } => Some("binary"),
         SyntaxTree::Logical { .. } => Some("logical"),
+        SyntaxTree::Operator { .. } => Some("operator"),
         SyntaxTree::Unary { .. } => Some("unary"),
         SyntaxTree::Tuple { .. } => Some("tuple"),
         SyntaxTree::List { .. } => Some("list"),
@@ -154,6 +155,7 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
         SyntaxTree::ObjectAccess { .. } => {}
         SyntaxTree::Binary { .. } => {}
         SyntaxTree::Logical { .. } => {}
+        SyntaxTree::Operator { .. } => {}
         SyntaxTree::Unary { extra_markers, .. } => {
             for m in extra_markers { out.push(*m); }
 
@@ -404,6 +406,7 @@ pub fn range_of(tree: &SyntaxTree) -> ByteRange {
         SyntaxTree::ObjectAccess { range, .. } => *range,
         SyntaxTree::Binary { range, .. } => *range,
         SyntaxTree::Logical { range, .. } => *range,
+        SyntaxTree::Operator { range, .. } => *range,
         SyntaxTree::Unary { range, .. } => *range,
         SyntaxTree::Tuple { range, .. } => *range,
         SyntaxTree::List { range, .. } => *range,
@@ -496,6 +499,7 @@ pub fn span_of(tree: &SyntaxTree) -> Span {
         SyntaxTree::ObjectAccess { span, .. } => *span,
         SyntaxTree::Binary { span, .. } => *span,
         SyntaxTree::Logical { span, .. } => *span,
+        SyntaxTree::Operator { span, .. } => *span,
         SyntaxTree::Unary { span, .. } => *span,
         SyntaxTree::Tuple { span, .. } => *span,
         SyntaxTree::List { span, .. } => *span,
@@ -583,6 +587,7 @@ pub fn span_of(tree: &SyntaxTree) -> Span {
 /// leaf literals without consulting the source string (S13-Z1).
 pub fn scalar_text_of(tree: &SyntaxTree) -> Option<&str> {
     match tree {
+        SyntaxTree::Operator { text, .. } => Some(text.as_str()),
         SyntaxTree::Name { text, .. } => Some(text.as_str()),
         SyntaxTree::Int { text, .. } => Some(text.as_str()),
         SyntaxTree::Float { text, .. } => Some(text.as_str()),
@@ -622,14 +627,17 @@ pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
                 }
             }
         }
-        SyntaxTree::Binary { left, right, .. } => {
+        SyntaxTree::Binary { left, op, right, .. } => {
             v.push(left);
+            v.push(op);
             v.push(right);
         }
-        SyntaxTree::Logical { left, right, .. } => {
+        SyntaxTree::Logical { left, op, right, .. } => {
             v.push(left);
+            v.push(op);
             v.push(right);
         }
+        SyntaxTree::Operator { .. } => {}
         SyntaxTree::Unary { operand, .. } => {
             v.push(operand);
         }
@@ -962,15 +970,25 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
         SyntaxTree::ObjectAccess { receiver, .. } => {
             if let AccessReceiver::Instance(__t) = receiver { out.push(TreeField::Single { name: "receiver", value: __t }); }
         }
-        SyntaxTree::Binary { left, right, .. } => {
+        SyntaxTree::Binary { left, op, right, .. } => {
             out.push(TreeField::Single { name: "left", value: left });
+            out.push(TreeField::Single { name: "op", value: op });
             out.push(TreeField::Single { name: "right", value: right });
         }
-        SyntaxTree::Logical { left, right, .. } => {
+        SyntaxTree::Logical { left, op, right, .. } => {
             out.push(TreeField::Single { name: "left", value: left });
+            out.push(TreeField::Single { name: "op", value: op });
             out.push(TreeField::Single { name: "right", value: right });
         }
-        SyntaxTree::Unary { operand, extra_markers, .. } => {
+        SyntaxTree::Operator { text, kind, span, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+            out.push(TreeField::Flag {
+                name: kind.marker_name(),
+                marker: Marker { name: kind.marker_name(), range: ByteRange::synthetic_empty(), span: *span },
+            });
+        }
+        SyntaxTree::Unary { op_text, operand, extra_markers, .. } => {
+            out.push(TreeField::Scalar { name: "op_text", value: op_text.as_str() });
             out.push(TreeField::Single { name: "operand", value: operand });
             for m in extra_markers { out.push(TreeField::Flag { name: m.name, marker: *m }); }
         }
@@ -994,8 +1012,9 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
             out.push(TreeField::Single { name: "name", value: name });
             out.push(TreeField::Many { name: "params", items: params.iter().collect() });
         }
-        SyntaxTree::Comparison { left, right, .. } => {
+        SyntaxTree::Comparison { left, op_text, right, .. } => {
             out.push(TreeField::Single { name: "left", value: left });
+            out.push(TreeField::Scalar { name: "op_text", value: op_text.as_str() });
             out.push(TreeField::Single { name: "right", value: right });
         }
         SyntaxTree::If { condition, body, else_branch, .. } => {
@@ -1276,9 +1295,10 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
                 });
             }
         }
-        SyntaxTree::Assign { targets, type_annotation, values, .. } => {
+        SyntaxTree::Assign { targets, type_annotation, op_text, values, .. } => {
             out.push(TreeField::Many { name: "targets", items: targets.iter().collect() });
             if let Some(__t) = type_annotation { out.push(TreeField::Single { name: "type_annotation", value: __t }); }
+            out.push(TreeField::Scalar { name: "op_text", value: op_text.as_str() });
             out.push(TreeField::Many { name: "values", items: values.iter().collect() });
         }
         SyntaxTree::Import { children, .. } => {
@@ -1302,14 +1322,30 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
             out.push(TreeField::Single { name: "callee", value: callee });
             out.push(TreeField::Many { name: "arguments", items: arguments.iter().collect() });
         }
-        SyntaxTree::Name { .. } => {}
-        SyntaxTree::Int { .. } => {}
-        SyntaxTree::Float { .. } => {}
-        SyntaxTree::String { .. } => {}
-        SyntaxTree::True { .. } => {}
-        SyntaxTree::False { .. } => {}
-        SyntaxTree::None { .. } => {}
-        SyntaxTree::Atom { .. } => {}
+        SyntaxTree::Name { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        SyntaxTree::Int { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        SyntaxTree::Float { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        SyntaxTree::String { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        SyntaxTree::True { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        SyntaxTree::False { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        SyntaxTree::None { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        SyntaxTree::Atom { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
         SyntaxTree::Enum { modifiers, decorators, name, underlying_type, members, span, .. } => {
             for (mname, mspan) in modifiers.markers_with_spans() {
                 out.push(TreeField::Flag {
@@ -1441,12 +1477,17 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
             out.push(TreeField::Single { name: "type_ann", value: type_ann });
             out.push(TreeField::Single { name: "value", value: value });
         }
-        SyntaxTree::Null { .. } => {}
+        SyntaxTree::Null { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
         SyntaxTree::Inline { children, .. } => {
             out.push(TreeField::Many { name: "children", items: children.iter().collect() });
         }
-        SyntaxTree::Unknown { .. } => {}
-        SyntaxTree::Raw { children, .. } => {
+        SyntaxTree::Unknown { kind, .. } => {
+            out.push(TreeField::Scalar { name: "kind", value: kind.as_str() });
+        }
+        SyntaxTree::Raw { kind, children, .. } => {
+            out.push(TreeField::Scalar { name: "kind", value: kind.as_str() });
             out.push(TreeField::Many { name: "children", items: children.iter().collect() });
         }
     }
@@ -1458,6 +1499,9 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
 /// `@field_projection`; false otherwise.
 pub fn use_field_projection(tree: &SyntaxTree) -> bool {
     match tree {
+        SyntaxTree::Binary { .. } => true,
+        SyntaxTree::Logical { .. } => true,
+        SyntaxTree::Operator { .. } => true,
         _ => false,
     }
 }
@@ -1473,6 +1517,7 @@ pub fn span_mut_of(tree: &mut SyntaxTree) -> &mut Span {
         SyntaxTree::ObjectAccess { span, .. } => span,
         SyntaxTree::Binary { span, .. } => span,
         SyntaxTree::Logical { span, .. } => span,
+        SyntaxTree::Operator { span, .. } => span,
         SyntaxTree::Unary { span, .. } => span,
         SyntaxTree::Tuple { span, .. } => span,
         SyntaxTree::List { span, .. } => span,
@@ -1578,14 +1623,17 @@ pub fn children_mut_of(tree: &mut SyntaxTree) -> Vec<&mut SyntaxTree> {
                 }
             }
         }
-        SyntaxTree::Binary { left, right, .. } => {
+        SyntaxTree::Binary { left, op, right, .. } => {
             v.push(left.as_mut());
+            v.push(op.as_mut());
             v.push(right.as_mut());
         }
-        SyntaxTree::Logical { left, right, .. } => {
+        SyntaxTree::Logical { left, op, right, .. } => {
             v.push(left.as_mut());
+            v.push(op.as_mut());
             v.push(right.as_mut());
         }
+        SyntaxTree::Operator { .. } => {}
         SyntaxTree::Unary { operand, .. } => {
             v.push(operand.as_mut());
         }
@@ -2235,7 +2283,7 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             }
         }
         "binary" => {
-            let claimed: &[&str] = &["op_text", "op_marker", "op_range", "left", "right", "range", "span"];
+            let claimed: &[&str] = &["left", "op", "right", "range", "span"];
             let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
@@ -2245,13 +2293,25 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 })
                 .collect();
             let _ = &children;
-            let op_text = map.get("op_text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
-            let op_marker = static_tag;
-            let op_range = ByteRange::synthetic_empty();
             let left = {
                 let alt_key = "left";
                 let hint = if map.contains_key("left") { "left" } else { alt_key };
                 if let Some(v) = map.get("left").or_else(|| map.get(alt_key)) {
+                    Box::new(tree_from_json_with_type_hint(v, Some(hint)))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let op = {
+                let alt_key = "op";
+                let hint = if map.contains_key("op") { "op" } else { alt_key };
+                if let Some(v) = map.get("op").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
                 } else if !unclaimed_children.is_empty() {
                     Box::new(unclaimed_children.remove(0))
@@ -2281,17 +2341,15 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             let range = ByteRange::synthetic_empty();
             let span = Span::point(0, 0);
             SyntaxTree::Binary {
-                op_text,
-                op_marker,
-                op_range,
                 left,
+                op,
                 right,
                 range,
                 span,
             }
         }
         "logical" => {
-            let claimed: &[&str] = &["op_text", "op_marker", "op_range", "left", "right", "range", "span"];
+            let claimed: &[&str] = &["left", "op", "right", "range", "span"];
             let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
                 .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
                 .flat_map(|(k, v)| match v {
@@ -2301,13 +2359,25 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                 })
                 .collect();
             let _ = &children;
-            let op_text = map.get("op_text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
-            let op_marker = static_tag;
-            let op_range = ByteRange::synthetic_empty();
             let left = {
                 let alt_key = "left";
                 let hint = if map.contains_key("left") { "left" } else { alt_key };
                 if let Some(v) = map.get("left").or_else(|| map.get(alt_key)) {
+                    Box::new(tree_from_json_with_type_hint(v, Some(hint)))
+                } else if !unclaimed_children.is_empty() {
+                    Box::new(unclaimed_children.remove(0))
+                } else {
+                    Box::new(SyntaxTree::Unknown {
+                        kind: "from_json:missing_child".into(),
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(0, 0),
+                    })
+                }
+            };
+            let op = {
+                let alt_key = "op";
+                let hint = if map.contains_key("op") { "op" } else { alt_key };
+                if let Some(v) = map.get("op").or_else(|| map.get(alt_key)) {
                     Box::new(tree_from_json_with_type_hint(v, Some(hint)))
                 } else if !unclaimed_children.is_empty() {
                     Box::new(unclaimed_children.remove(0))
@@ -2337,11 +2407,31 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
             let range = ByteRange::synthetic_empty();
             let span = Span::point(0, 0);
             SyntaxTree::Logical {
-                op_text,
-                op_marker,
-                op_range,
                 left,
+                op,
                 right,
+                range,
+                span,
+            }
+        }
+        "operator" => {
+            let claimed: &[&str] = &["text", "kind", "range", "span"];
+            let mut unclaimed_children: Vec<SyntaxTree> = map.iter()
+                .filter(|(k, _)| k.as_str() != "$type" && k.as_str() != "$children" && !claimed.contains(&k.as_str()))
+                .flat_map(|(k, v)| match v {
+                    Value::Bool(_) => Vec::new(),
+                    Value::Array(arr) => arr.iter().map(|c| tree_from_json_with_type_hint(c, Some(k.as_str()))).collect(),
+                    _ => vec![tree_from_json_with_type_hint(v, Some(k.as_str()))],
+                })
+                .collect();
+            let _ = &children;
+            let text = map.get("text").and_then(|v| v.as_str()).map(str::to_string).unwrap_or_default();
+            let kind = Default::default() /* TODO: from_json for kind: OperatorKind */;
+            let range = ByteRange::synthetic_empty();
+            let span = Span::point(0, 0);
+            SyntaxTree::Operator {
+                text,
+                kind,
                 range,
                 span,
             }

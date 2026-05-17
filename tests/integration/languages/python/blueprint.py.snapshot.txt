@@ -53,7 +53,9 @@ module/
   │       └─ return/expression/binary/
   │           ├─ left/expression/binary/
   │           │   ├─ left/expression/name = "a"
+  │           │   ├─ op/operator[plus] = "+"
   │           │   └─ right/expression/name = "b"
+  │           ├─ op/operator[plus] = "+"
   │           └─ right/expression/name = "kw_only"
   ├─ function/
   │   ├─ name = "pos_only"
@@ -187,6 +189,7 @@ module/
   │           ├─ name = "n"
   │           └─ binary/
   │               ├─ left/expression/name = "n"
+  │               ├─ op/operator[multiply] = "*"
   │               └─ right/expression/int = "2"
   ├─ function/
   │   ├─ name = "repeat"
@@ -279,6 +282,7 @@ module/
   │               │   ├─ name = "isinstance"
   │               │   ├─ name = "other"
   │               │   └─ name = "Derived"
+  │               ├─ op/operator[and] = "and"
   │               └─ right/expression/comparison/
   │                   ├─ object = "self.name"
   │                   └─ object/name = "other"
@@ -404,6 +408,7 @@ module/
   │       │   └─ expression/list[comprehension]/
   │       │       ├─ binary/
   │       │       │   ├─ left/expression/name = "x"
+  │       │       │   ├─ op/operator[multiply] = "*"
   │       │       │   └─ right/expression/name = "x"
   │       │       ├─ for/
   │       │       │   ├─ name = "x"
@@ -513,6 +518,7 @@ module/
   │       │           │   ├─ parameter/name = "v"
   │       │           │   └─ binary/
   │       │           │       ├─ left/expression/name = "v"
+  │       │           │       ├─ op/operator[multiply] = "*"
   │       │           │       └─ right/expression/int = "2"
   │       │           └─ name = "items"
   │       ├─ assign/
@@ -576,6 +582,7 @@ module/
   │   ├─ name = "IntOrStr"
   │   └─ binary/
   │       ├─ left/expression/name = "int"
+  │       ├─ op/operator[bitwise_or] = "|"
   │       └─ right/expression/name = "str"
   ├─ type_alias/
   │   ├─ type/
@@ -618,6 +625,7 @@ module/
           │       │       ├─ expression/name = "matched"
           │       │       └─ expression/binary/
           │       │           ├─ left/expression/name = "a"
+          │       │           ├─ op/operator[plus] = "+"
           │       │           └─ right/expression/name = "b"
           │       ├─ arm/
           │       │   ├─ pattern/

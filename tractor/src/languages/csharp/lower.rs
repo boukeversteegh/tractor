@@ -24,7 +24,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     float_of, int_of, name_of, null_of, range_of, span_of, string_of, text_of,
 };
-use crate::tree::types::{Access, AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, ParamKind, Span};
+use crate::tree::types::{Access, AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, OperatorKind, ParamKind, Span};
 
 // Parent-map context. `RawNode` is a parent-less tree (the tree-sitter
 // `Node::parent()` API does not map cleanly to an owned, borrowed-
@@ -1792,21 +1792,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             // C# `&&`/`||` are also handled by binary_expression
             // (no separate boolean_operator kind). Use logical
             // element name when the operator is short-circuit.
-            let element_name = match op_text.as_str() {
-                "&&" | "||" => "logical",
-                _ => "binary",
-            };
-            match (left, right, op_marker(&op_text)) {
-                (Some(l), Some(r), Some(marker)) => SyntaxTree::binary_or_logical(
-                    element_name,
-                    op_text,
-                    marker,
-                    op_range,
-                    Box::new(l.wrap_slot("left")),
-                    Box::new(r.wrap_slot("right")),
-                    range,
-                    span,
-                ),
+            match (left, right, op_kind(&op_text)) {
+                (Some(l), Some(r), Some(kind)) => {
+                    kind.build_binary(l, r, op_text, op_range, range, span)
+                }
                 _ => SyntaxTree::Unknown {
                     kind: "binary_expression(missing/unknown op)".to_string(),
                     range,
@@ -2964,6 +2953,34 @@ fn op_marker(op: &str) -> Option<&'static str> {
         "++" => "increment",
         "--" => "decrement",
         "??" => "null_coalesce",
+        _ => return None,
+    })
+}
+
+/// C# binary / logical operators → typed [`OperatorKind`]. Unary-only
+/// (`!`, `~`, `++`, `--`) handled by the Unary lowering path.
+fn op_kind(op: &str) -> Option<OperatorKind> {
+    Some(match op {
+        "+" => OperatorKind::Plus,
+        "-" => OperatorKind::Minus,
+        "*" => OperatorKind::Multiply,
+        "/" => OperatorKind::Divide,
+        "%" => OperatorKind::Modulo,
+        "==" => OperatorKind::Equal,
+        "!=" => OperatorKind::NotEqual,
+        "<" => OperatorKind::Less,
+        "<=" => OperatorKind::LessOrEqual,
+        ">" => OperatorKind::Greater,
+        ">=" => OperatorKind::GreaterOrEqual,
+        "&&" => OperatorKind::And,
+        "||" => OperatorKind::Or,
+        "&" => OperatorKind::BitwiseAnd,
+        "|" => OperatorKind::BitwiseOr,
+        "^" => OperatorKind::BitwiseXor,
+        "<<" => OperatorKind::ShiftLeft,
+        ">>" => OperatorKind::ShiftRight,
+        ">>>" => OperatorKind::ShiftRightUnsigned,
+        "??" => OperatorKind::NullCoalesce,
         _ => return None,
     })
 }

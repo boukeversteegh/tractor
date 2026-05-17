@@ -8,7 +8,7 @@
         "public": true,
         "name": "Calculator",
         "body": {
-          "$truncated": 63
+          "$truncated": 72
         }
       },
       "message": "tests/integration/sample.cs:2"
@@ -21,7 +21,7 @@
         "public": true,
         "name": "Greeter",
         "body": {
-          "$truncated": 38
+          "$truncated": 44
         }
       },
       "message": "tests/integration/sample.cs:9"

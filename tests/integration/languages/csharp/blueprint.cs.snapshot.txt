@@ -87,9 +87,11 @@ unit/
   │   │       │   └─ body/object_creation/
   │   │       │       ├─ binary/
   │   │       │       │   ├─ left/expression/object/name = "a"
+  │   │       │       │   ├─ op/operator[plus] = "+"
   │   │       │       │   └─ right/expression/object/name = "b"
   │   │       │       └─ binary/
   │   │       │           ├─ left/expression/object/name = "a"
+  │   │       │           ├─ op/operator[plus] = "+"
   │   │       │           └─ right/expression/object/name = "b"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "bool"
@@ -102,9 +104,12 @@ unit/
   │   │       │   └─ body/logical/
   │   │       │       ├─ left/expression/binary/
   │   │       │       │   ├─ left/expression/object/name = "a"
+  │   │       │       │   ├─ op/operator[equal] = "=="
   │   │       │       │   └─ right/expression/object/name = "b"
+  │   │       │       ├─ op/operator[and] = "&&"
   │   │       │       └─ right/expression/binary/
   │   │       │           ├─ left/expression/object/name = "a"
+  │   │       │           ├─ op/operator[equal] = "=="
   │   │       │           └─ right/expression/object/name = "b"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "bool"
@@ -116,6 +121,7 @@ unit/
   │   │       │   │   └─ name = "b"
   │   │       │   └─ body/unary/binary/
   │   │       │       ├─ left/expression/name = "a"
+  │   │       │       ├─ op/operator[equal] = "=="
   │   │       │       └─ right/expression/name = "b"
   │   │       ├─ method[public and override]/
   │   │       │   ├─ name = "Equals"
@@ -128,8 +134,10 @@ unit/
   │   │       │       │   └─ pattern[declaration]/
   │   │       │       │       ├─ type/name = "Point"
   │   │       │       │       └─ name = "p"
+  │   │       │       ├─ op/operator[and] = "&&"
   │   │       │       └─ right/expression/binary/
   │   │       │           ├─ left/expression/name = "p"
+  │   │       │           ├─ op/operator[equal] = "=="
   │   │       │           └─ right/expression/name = "this"
   │   │       └─ method[public and override]/
   │   │           ├─ name = "GetHashCode"
@@ -258,6 +266,7 @@ unit/
   │   │       │   └─ body/ternary/
   │   │       │       ├─ condition/expression/binary/
   │   │       │       │   ├─ left/expression/name = "id"
+  │   │       │       │   ├─ op/operator[equal] = "=="
   │   │       │       │   └─ right/expression/name = "Id"
   │   │       │       ├─ then/expression/name = "this"
   │   │       │       └─ else/expression/null = "null"
@@ -293,6 +302,7 @@ unit/
   │   │       │   └─ name = "w"
   │   │       └─ body/binary/
   │   │           ├─ left/expression/object/name = "w"
+  │   │           ├─ op/operator[plus] = "+"
   │   │           └─ right/expression/string = "\"!\""
   │   └─ class[internal and static]/
   │       ├─ name = "Demo"
@@ -312,6 +322,7 @@ unit/
   │               │   ├─ name = "widget"
   │               │   └─ expression/binary/
   │               │       ├─ left/expression/name = "maybe"
+  │               │       ├─ op/operator[null_coalesce] = "??"
   │               │       └─ right/expression/object_creation/
   │               │           ├─ name = "Widget"
   │               │           ├─ int = "1"
@@ -321,6 +332,7 @@ unit/
   │               │   ├─ name = "shouted"
   │               │   └─ expression/binary/
   │               │       ├─ left/expression/object/name = "widget"
+  │               │       ├─ op/operator[null_coalesce] = "??"
   │               │       └─ right/expression/string = "\"n/a\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
@@ -350,6 +362,7 @@ unit/
   │               │       │   │   └─ name = "w"
   │               │       │   ├─ when/binary/
   │               │       │   │   ├─ left/expression/object/name = "w"
+  │               │       │   │   ├─ op/operator[greater] = ">"
   │               │       │   │   └─ right/expression/int = "100"
   │               │       │   └─ string = "\"big\""
   │               │       └─ arm/
@@ -395,11 +408,14 @@ unit/
   │               │       ├─ where/binary/
   │               │       │   ├─ left/expression/binary/
   │               │       │   │   ├─ left/expression/name = "n"
+  │               │       │   │   ├─ op/operator[modulo] = "%"
   │               │       │   │   └─ right/expression/int = "2"
+  │               │       │   ├─ op/operator[equal] = "=="
   │               │       │   └─ right/expression/int = "0"
   │               │       ├─ order/name = "n"
   │               │       └─ select/binary/
   │               │           ├─ left/expression/name = "n"
+  │               │           ├─ op/operator[multiply] = "*"
   │               │           └─ right/expression/name = "n"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
@@ -411,12 +427,15 @@ unit/
   │               │       │   └─ binary/
   │               │       │       ├─ left/expression/binary/
   │               │       │       │   ├─ left/expression/name = "n"
+  │               │       │       │   ├─ op/operator[modulo] = "%"
   │               │       │       │   └─ right/expression/int = "2"
+  │               │       │       ├─ op/operator[not_equal] = "!="
   │               │       │       └─ right/expression/int = "0"
   │               │       └─ lambda/
   │               │           ├─ parameter/name = "n"
   │               │           └─ binary/
   │               │               ├─ left/expression/name = "n"
+  │               │               ├─ op/operator[plus] = "+"
   │               │               └─ right/expression/int = "1"
   │               ├─ comment[leading] = "// local function + lambda"
   │               ├─ method/
@@ -426,6 +445,7 @@ unit/
   │               │   │   └─ name = "x"
   │               │   └─ body/binary/
   │               │       ├─ left/expression/name = "x"
+  │               │       ├─ op/operator[multiply] = "*"
   │               │       └─ right/expression/name = "x"
   │               ├─ variable/
   │               │   ├─ type/
@@ -438,7 +458,9 @@ unit/
   │               │       └─ binary/
   │               │           ├─ left/expression/binary/
   │               │           │   ├─ left/expression/name = "x"
+  │               │           │   ├─ op/operator[multiply] = "*"
   │               │           │   └─ right/expression/name = "x"
+  │               │           ├─ op/operator[multiply] = "*"
   │               │           └─ right/expression/name = "x"
   │               ├─ variable/
   │               │   ├─ type/
@@ -450,6 +472,7 @@ unit/
   │               │       ├─ parameter/name = "x"
   │               │       └─ body/return/expression/binary/
   │               │           ├─ left/expression/name = "x"
+  │               │           ├─ op/operator[plus] = "+"
   │               │           └─ right/expression/int = "1"
   │               ├─ variable/
   │               │   ├─ type/
@@ -479,6 +502,7 @@ unit/
   │               │   │   └─ expression/int = "0"
   │               │   ├─ binary/
   │               │   │   ├─ left/expression/name = "i"
+  │               │   │   ├─ op/operator[less] = "<"
   │               │   │   └─ right/expression/int = "2"
   │               │   ├─ unary[postfix]/name = "i"
   │               │   └─ body/comment = "/* for */"
@@ -489,6 +513,7 @@ unit/
   │               ├─ while/
   │               │   ├─ condition/expression/binary/
   │               │   │   ├─ left/expression/unary[postfix]/name = "j"
+  │               │   │   ├─ op/operator[less] = "<"
   │               │   │   └─ right/expression/int = "2"
   │               │   └─ body = "{ }"
   │               ├─ variable/
@@ -499,6 +524,7 @@ unit/
   │               │   ├─ body/expression/unary[postfix]/name = "k"
   │               │   └─ binary/
   │               │       ├─ left/expression/name = "k"
+  │               │       ├─ op/operator[less] = "<"
   │               │       └─ right/expression/int = "2"
   │               ├─ foreach/
   │               │   ├─ type/name = "var"
@@ -536,6 +562,7 @@ unit/
   │               │   │   ├─ as/expression/name = "ex"
   │               │   │   ├─ filter/expression/binary/
   │               │   │   │   ├─ left/expression/object/name = "ex"
+  │               │   │   │   ├─ op/operator[greater] = ">"
   │               │   │   │   └─ right/expression/int = "0"
   │               │   │   └─ body/expression/call/
   │               │   │       ├─ name = "log"
@@ -613,17 +640,25 @@ unit/
   │                   │   │   │   │   ├─ left/expression/binary/
   │                   │   │   │   │   │   ├─ left/expression/binary/
   │                   │   │   │   │   │   │   ├─ left/expression/object/name = "list"
+  │                   │   │   │   │   │   │   ├─ op/operator[plus] = "+"
   │                   │   │   │   │   │   │   └─ right/expression/object/name = "map"
+  │                   │   │   │   │   │   ├─ op/operator[plus] = "+"
   │                   │   │   │   │   │   └─ right/expression/object/name = "plain"
+  │                   │   │   │   │   ├─ op/operator[plus] = "+"
   │                   │   │   │   │   └─ right/expression/object/name = "verbatim"
+  │                   │   │   │   ├─ op/operator[plus] = "+"
   │                   │   │   │   └─ right/expression/object/name = "interp"
+  │                   │   │   ├─ op/operator[plus] = "+"
   │                   │   │   └─ right/expression/object/name = "raw"
+  │                   │   ├─ op/operator[plus] = "+"
   │                   │   └─ right/expression/ternary/
   │                   │       ├─ condition/expression/binary/
   │                   │       │   ├─ left/expression/name = "label"
+  │                   │       │   ├─ op/operator[equal] = "=="
   │                   │       │   └─ right/expression/name = "kind"
   │                   │       ├─ then/expression/int = "0"
   │                   │       └─ else/expression/int = "1"
+  │                   ├─ op/operator[plus] = "+"
   │                   └─ right/expression/object/name = "shouted"
   └─ namespace/
       ├─ name = "Tractor.Fixtures.FileScoped"
@@ -667,6 +702,7 @@ unit/
       │       │       │   ├─ expression/name = "n"
       │       │       │   └─ expression/binary/
       │       │       │       ├─ left/expression/name = "n"
+      │       │       │       ├─ op/operator[plus] = "+"
       │       │       │       └─ right/expression/int = "1"
       │       │       ├─ comment[leading] = "// fixed + unsafe handled in unsafe context (pointer omitted for clarity)\n        // goto + labeled statement"
       │       │       ├─ goto/name = "skip"
@@ -748,6 +784,7 @@ unit/
       │       │           ├─ name = "s2"
       │       │           └─ expression/binary/
       │       │               ├─ left/expression/name = "s"
+      │       │               ├─ op/operator[null_coalesce] = "??"
       │       │               └─ right/expression/throw/expression/object_creation/
       │       │                   ├─ name = "ArgumentNullException"
       │       │                   └─ call/
@@ -956,6 +993,7 @@ unit/
       │       │       │       │   ├─ name = "xx"
       │       │       │       │   └─ binary/
       │       │       │       │       ├─ left/expression/name = "x"
+      │       │       │       │       ├─ op/operator[multiply] = "*"
       │       │       │       │       └─ right/expression/name = "x"
       │       │       │       ├─ join[in]/
       │       │       │       │   ├─ name = "y"
@@ -986,8 +1024,10 @@ unit/
       │       │       │       └─ right/type[array]/type/name = "int"
       │       │       └─ return/expression/binary/
       │       │           ├─ left/expression/object/name = "joined"
+      │       │           ├─ op/operator[plus] = "+"
       │       │           └─ right/expression/binary/
       │       │               ├─ left/expression/object/name = "asArr"
+      │       │               ├─ op/operator[null_coalesce] = "??"
       │       │               └─ right/expression/int = "0"
       │       ├─ comment[leading] = "// List patterns (C# 11). Slice patterns omitted because the\n    // pinned tree-sitter-c-sharp grammar emits ERROR for `..` in\n    // list patterns; the IR pipeline handles them when the grammar\n    // is regenerated."
       │       ├─ method[public and static]/
@@ -1020,17 +1060,20 @@ unit/
       │       │       │   │   └─ expression/int = "0"
       │       │       │   ├─ binary/
       │       │       │   │   ├─ left/expression/name = "i"
+      │       │       │   │   ├─ op/operator[less] = "<"
       │       │       │   │   └─ right/expression/int = "3"
       │       │       │   ├─ unary[postfix]/name = "i"
       │       │       │   └─ body/
       │       │       │       ├─ if/
       │       │       │       │   ├─ condition/expression/binary/
       │       │       │       │   │   ├─ left/expression/name = "i"
+      │       │       │       │   │   ├─ op/operator[equal] = "=="
       │       │       │       │   │   └─ right/expression/int = "1"
       │       │       │       │   └─ body/continue = "continue;"
       │       │       │       └─ if/
       │       │       │           ├─ condition/expression/binary/
       │       │       │           │   ├─ left/expression/name = "i"
+      │       │       │           │   ├─ op/operator[equal] = "=="
       │       │       │           │   └─ right/expression/int = "2"
       │       │       │           └─ body/break = "break;"
       │       │       └─ return/expression/int = "0"
@@ -1054,6 +1097,7 @@ unit/
       │       │   │   └─ name = "b"
       │       │   └─ body/checked/binary/
       │       │       ├─ left/expression/name = "a"
+      │       │       ├─ op/operator[plus] = "+"
       │       │       └─ right/expression/name = "b"
       │       ├─ method[public and static and unsafe]/
       │       │   ├─ name = "Pointer"
@@ -1124,6 +1168,7 @@ unit/
       │       │       │   └─ name = "x"
       │       │       └─ body/return/expression/binary/
       │       │           ├─ left/expression/name = "x"
+      │       │           ├─ op/operator[plus] = "+"
       │       │           └─ right/expression/int = "1"
       │       ├─ comment[leading] = "// Simple is-expression (type test, no pattern binding)."
       │       ├─ method[public and static]/
@@ -1276,6 +1321,7 @@ unit/
       │               ├─ name = "X"
       │               └─ binary/
       │                   ├─ left/expression/object/name = "p"
+      │                   ├─ op/operator[plus] = "+"
       │                   └─ right/expression/name = "dx"
       ├─ comment = "// Global / assembly-level attribute (file scope)."
       ├─ attribute/

@@ -57,6 +57,12 @@ pub enum TreeField<'a, T> {
     /// or `Vec<Marker>` member. Same emission as the variant-blind
     /// `flags_of` path: `<name/>` in XML, `"name": true` in JSON.
     Flag { name: &'static str, marker: Marker },
+    /// Scalar string field — `text` / `kind` / etc. carried inline.
+    /// XML: omitted (the parent's gap-text path covers source-anchored
+    /// emission). JSON: `"name": "value"`. Used by variants like
+    /// `Operator` to carry their source literal into the JSON object
+    /// projection.
+    Scalar { name: &'static str, value: &'a str },
 }
 
 /// Tree contract consumed by the generic walker. Implemented by each
@@ -380,6 +386,10 @@ fn render_body_via_fields<T: WalkerTree>(
                     items.push(FieldRenderItem::Wrapped { wrapper: name, children: vs });
                 }
             }
+            // Scalar fields don't render to XML directly — the parent's
+            // gap-text mechanism covers the source literal in anchored
+            // mode. JSON-only field.
+            TreeField::Scalar { .. } => {}
         }
     }
     items.sort_by_key(|i| i.sort_key());
@@ -668,6 +678,9 @@ fn render_json_via_fields<T: WalkerTree>(
                     .map(|i| render_json(*i, source, context, /*strip_type=*/ false))
                     .collect();
                 obj.insert(name.to_string(), Value::Array(arr));
+            }
+            TreeField::Scalar { name, value } => {
+                obj.insert(name.to_string(), Value::String(value.to_string()));
             }
         }
     }

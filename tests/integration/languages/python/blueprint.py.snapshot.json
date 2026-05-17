@@ -195,26 +195,29 @@
                 "expression": {
                   "logical": {
                     "left": {
-                      "expression": {
-                        "call": {
-                          "name": [
-                            "isinstance",
-                            "other",
-                            "Derived"
-                          ]
-                        }
+                      "$type": "expression",
+                      "call": {
+                        "name": [
+                          "isinstance",
+                          "other",
+                          "Derived"
+                        ]
                       }
                     },
+                    "op": {
+                      "$type": "operator",
+                      "text": "and",
+                      "and": true
+                    },
                     "right": {
-                      "expression": {
-                        "comparison": {
-                          "object": [
-                            "self.name",
-                            {
-                              "name": "other"
-                            }
-                          ]
-                        }
+                      "$type": "expression",
+                      "comparison": {
+                        "object": [
+                          "self.name",
+                          {
+                            "name": "other"
+                          }
+                        ]
                       }
                     }
                   }
@@ -343,25 +346,31 @@
           "expression": {
             "binary": {
               "left": {
-                "expression": {
-                  "binary": {
-                    "left": {
-                      "expression": {
-                        "name": "a"
-                      }
-                    },
-                    "right": {
-                      "expression": {
-                        "name": "b"
-                      }
-                    }
+                "$type": "expression",
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "name": "a"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "+",
+                    "plus": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "name": "b"
                   }
                 }
               },
+              "op": {
+                "$type": "operator",
+                "text": "+",
+                "plus": true
+              },
               "right": {
-                "expression": {
-                  "name": "kw_only"
-                }
+                "$type": "expression",
+                "name": "kw_only"
               }
             }
           }
@@ -699,14 +708,17 @@
             "call": {
               "binary": {
                 "left": {
-                  "expression": {
-                    "name": "n"
-                  }
+                  "$type": "expression",
+                  "name": "n"
+                },
+                "op": {
+                  "$type": "operator",
+                  "text": "*",
+                  "multiply": true
                 },
                 "right": {
-                  "expression": {
-                    "int": "2"
-                  }
+                  "$type": "expression",
+                  "int": "2"
                 }
               },
               "name": [
@@ -1168,14 +1180,17 @@
                   "comprehension": true,
                   "binary": {
                     "left": {
-                      "expression": {
-                        "name": "x"
-                      }
+                      "$type": "expression",
+                      "name": "x"
+                    },
+                    "op": {
+                      "$type": "operator",
+                      "text": "*",
+                      "multiply": true
                     },
                     "right": {
-                      "expression": {
-                        "name": "x"
-                      }
+                      "$type": "expression",
+                      "name": "x"
                     }
                   },
                   "comparison": {
@@ -1416,14 +1431,17 @@
                     "lambda": {
                       "binary": {
                         "left": {
-                          "expression": {
-                            "name": "v"
-                          }
+                          "$type": "expression",
+                          "name": "v"
+                        },
+                        "op": {
+                          "$type": "operator",
+                          "text": "*",
+                          "multiply": true
                         },
                         "right": {
-                          "expression": {
-                            "int": "2"
-                          }
+                          "$type": "expression",
+                          "int": "2"
                         }
                       },
                       "parameter": {
@@ -1719,14 +1737,17 @@
                       {
                         "binary": {
                           "left": {
-                            "expression": {
-                              "name": "a"
-                            }
+                            "$type": "expression",
+                            "name": "a"
+                          },
+                          "op": {
+                            "$type": "operator",
+                            "text": "+",
+                            "plus": true
                           },
                           "right": {
-                            "expression": {
-                              "name": "b"
-                            }
+                            "$type": "expression",
+                            "name": "b"
                           }
                         }
                       }
@@ -1903,14 +1924,17 @@
     {
       "binary": {
         "left": {
-          "expression": {
-            "name": "int"
-          }
+          "$type": "expression",
+          "name": "int"
+        },
+        "op": {
+          "$type": "operator",
+          "text": "|",
+          "bitwise_or": true
         },
         "right": {
-          "expression": {
-            "name": "str"
-          }
+          "$type": "expression",
+          "name": "str"
         }
       },
       "name": "IntOrStr"

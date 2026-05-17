@@ -22,6 +22,12 @@
                       "expression": {
                         "name": "a"
                       }
+                    },
+                    "op": {
+                      "operator": {
+                        "text": "+",
+                        "plus": true
+                      }
                     }
                   }
                 }
@@ -58,6 +64,12 @@
                       "expression": {
                         "name": "a"
                       }
+                    },
+                    "op": {
+                      "operator": {
+                        "text": "-",
+                        "minus": true
+                      }
                     }
                   }
                 }
@@ -93,6 +105,12 @@
                     "left": {
                       "expression": {
                         "name": "a"
+                      }
+                    },
+                    "op": {
+                      "operator": {
+                        "text": "*",
+                        "multiply": true
                       }
                     }
                   }
@@ -144,6 +162,12 @@
                       "expression": {
                         "string": "\"Hello, \""
                       }
+                    },
+                    "op": {
+                      "operator": {
+                        "text": "+",
+                        "plus": true
+                      }
                     }
                   }
                 }
@@ -171,6 +195,12 @@
                     "left": {
                       "expression": {
                         "string": "\"Goodbye, \""
+                      }
+                    },
+                    "op": {
+                      "operator": {
+                        "text": "+",
+                        "plus": true
                       }
                     }
                   }

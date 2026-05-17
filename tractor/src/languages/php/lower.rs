@@ -11,7 +11,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     float_of, int_of, name_of, null_of, range_of, span_of, string_of, text_of,
 };
-use crate::tree::types::{Access, AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, Span};
+use crate::tree::types::{Access, AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, OperatorKind, Span};
 
 pub fn lower_php_root(root: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(root);
@@ -853,16 +853,10 @@ fn php_binary_expression(node: &RawNode, source: &str) -> SyntaxTree {
     let op_node = node.child_by_field_name("operator");
     let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
     let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
-    match (left, right, php_op_marker(&op_text)) {
-        (Some(l), Some(r), Some(marker)) => SyntaxTree::binary_or_logical(
-            if matches!(op_text.as_str(), "&&" | "||" | "and" | "or" | "xor") { "logical" } else { "binary" },
-            op_text,
-            marker,
-            op_range,
-            Box::new(l.wrap_slot("left")),
-            Box::new(r.wrap_slot("right")),
-            range, span,
-        ),
+    match (left, right, php_op_kind(&op_text)) {
+        (Some(l), Some(r), Some(kind)) => {
+            kind.build_binary(l, r, op_text, op_range, range, span)
+        }
         _ => simple_statement(node, "binary", source),
     }
 }
@@ -895,6 +889,41 @@ fn php_op_marker(op: &str) -> Option<&'static str> {
         ">>" => "shift_right",
         "??" => "null_coalesce",
         "instanceof" => "instanceof",
+        _ => return None,
+    })
+}
+
+/// PHP binary / logical operators → typed [`OperatorKind`]. Mirrors
+/// `php_op_marker` with the language-specific identical / spaceship
+/// distinctions preserved.
+fn php_op_kind(op: &str) -> Option<OperatorKind> {
+    Some(match op {
+        "+" => OperatorKind::Plus,
+        "-" => OperatorKind::Minus,
+        "*" => OperatorKind::Multiply,
+        "/" => OperatorKind::Divide,
+        "%" => OperatorKind::Modulo,
+        "**" => OperatorKind::Power,
+        "." => OperatorKind::Concat,
+        "==" => OperatorKind::Equal,
+        "!=" | "<>" => OperatorKind::NotEqual,
+        "===" => OperatorKind::Identical,
+        "!==" => OperatorKind::NotIdentical,
+        "<" => OperatorKind::Less,
+        "<=" => OperatorKind::LessOrEqual,
+        ">" => OperatorKind::Greater,
+        ">=" => OperatorKind::GreaterOrEqual,
+        "<=>" => OperatorKind::Spaceship,
+        "&&" | "and" => OperatorKind::And,
+        "||" | "or" => OperatorKind::Or,
+        "xor" => OperatorKind::Xor,
+        "&" => OperatorKind::BitwiseAnd,
+        "|" => OperatorKind::BitwiseOr,
+        "^" => OperatorKind::BitwiseXor,
+        "<<" => OperatorKind::ShiftLeft,
+        ">>" => OperatorKind::ShiftRight,
+        "??" => OperatorKind::NullCoalesce,
+        "instanceof" => OperatorKind::Instanceof,
         _ => return None,
     })
 }

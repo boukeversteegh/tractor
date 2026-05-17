@@ -49,6 +49,7 @@ program/
   │       │       │           ├─ expression/name = "@id"
   │       │       │           └─ expression/logical/
   │       │       │               ├─ left/expression/name = "id"
+  │       │       │               ├─ op/operator[or] = "||"
   │       │       │               └─ right/expression/int = "0"
   │       │       └─ method/
   │       │           ├─ name = "=="
@@ -57,8 +58,10 @@ program/
   │       │               ├─ left/expression/object/
   │       │               │   ├─ name = "other"
   │       │               │   └─ name = "Base"
+  │       │               ├─ op/operator[and] = "&&"
   │       │               └─ right/expression/binary/
   │       │                   ├─ left/expression/object/name = "other"
+  │       │                   ├─ op/operator[equal] = "=="
   │       │                   └─ right/expression/name = "@name"
   │       └─ class/
   │           ├─ name = "User"
@@ -155,6 +158,7 @@ program/
   │               │   ├─ parameter[kwsplat]/name = "meta"
   │               │   └─ body/binary/
   │               │       ├─ left/expression/object/name = "items"
+  │               │       ├─ op/operator[plus] = "+"
   │               │       └─ right/expression/object/name = "meta"
   │               ├─ name = "private"
   │               ├─ method/
@@ -251,6 +255,7 @@ program/
   │       ├─ while/
   │       │   ├─ condition/expression/binary/
   │       │   │   ├─ left/expression/name = "i"
+  │       │   │   ├─ op/operator[less] = "<"
   │       │   │   └─ right/expression/int = "3"
   │       │   └─ body/assign/
   │       │       ├─ expression/name = "i"
@@ -258,6 +263,7 @@ program/
   │       ├─ until/
   │       │   ├─ condition/expression/binary/
   │       │   │   ├─ left/expression/name = "i"
+  │       │   │   ├─ op/operator[greater_or_equal] = ">="
   │       │   │   └─ right/expression/int = "6"
   │       │   └─ body/assign/
   │       │       ├─ expression/name = "i"
@@ -295,6 +301,7 @@ program/
   │       │           ├─ object/name = "items"
   │       │           └─ logical/
   │       │               ├─ left/expression/unary/name = "items"
+  │       │               ├─ op/operator[and] = "&&"
   │       │               └─ right/expression/false = "false"
   │       ├─ assign/
   │       │   ├─ expression/name = "adder"
@@ -303,6 +310,7 @@ program/
   │       │       ├─ parameter/name = "b"
   │       │       └─ block/binary/
   │       │           ├─ left/expression/name = "a"
+  │       │           ├─ op/operator[plus] = "+"
   │       │           └─ right/expression/name = "b"
   │       ├─ assign/
   │       │   ├─ expression/name = "doubler"
@@ -312,6 +320,7 @@ program/
   │       │           ├─ parameter/name = "n"
   │       │           └─ binary/
   │       │               ├─ left/expression/name = "n"
+  │       │               ├─ op/operator[multiply] = "*"
   │       │               └─ right/expression/int = "2"
   │       ├─ assign/
   │       │   ├─ expression/name = "multi_stmt"
@@ -324,6 +333,7 @@ program/
   │       │           │   └─ name = "n"
   │       │           └─ binary/
   │       │               ├─ left/expression/name = "n"
+  │       │               ├─ op/operator[plus] = "+"
   │       │               └─ right/expression/int = "1"
   │       ├─ assign/
   │       │   ├─ expression/name = "multi_lambda"
@@ -335,6 +345,7 @@ program/
   │       │           │   └─ name = "n"
   │       │           └─ binary/
   │       │               ├─ left/expression/name = "n"
+  │       │               ├─ op/operator[plus] = "+"
   │       │               └─ right/expression/int = "1"
   │       ├─ assign/
   │       │   ├─ expression/name = "ternary"
@@ -349,6 +360,7 @@ program/
   │       │   ├─ expression/name = "total"
   │       │   └─ expression/binary/
   │       │       ├─ left/expression/name = "total"
+  │       │       ├─ op/operator[plus] = "+"
   │       │       └─ right/expression/int = "1"
   │       ├─ assign/
   │       │   ├─ expression/
@@ -364,18 +376,22 @@ program/
   │       │   ├─ left/expression/assign/
   │       │   │   ├─ expression/name = "flag"
   │       │   │   └─ expression/true = "true"
+  │       │   ├─ op/operator[and] = "and"
   │       │   └─ right/expression/false = "false"
   │       ├─ logical/
   │       │   ├─ left/expression/assign/
   │       │   │   ├─ expression/name = "flag"
   │       │   │   └─ expression/true = "true"
+  │       │   ├─ op/operator[or] = "or"
   │       │   └─ right/expression/false = "false"
   │       ├─ assign/
   │       │   ├─ expression/name = "flag"
   │       │   └─ expression/logical/
   │       │       ├─ left/expression/logical/
   │       │       │   ├─ left/expression/unary/name = "flag"
+  │       │       │   ├─ op/operator[and] = "&&"
   │       │       │   └─ right/expression/name = "flag"
+  │       │       ├─ op/operator[or] = "||"
   │       │       └─ right/expression/unary/name = "flag"
   │       └─ array/
   │           ├─ name = "result"
@@ -418,6 +434,7 @@ program/
   │       │       │   │   └─ name = "Integer"
   │       │       │   └─ then/binary/
   │       │       │       ├─ left/expression/name = "head"
+  │       │       │       ├─ op/operator[plus] = "+"
   │       │       │       └─ right/expression/object/name = "tail"
   │       │       ├─ in/
   │       │       │   ├─ pattern[array]/
@@ -426,6 +443,7 @@ program/
   │       │       │   │   └─ name = "last"
   │       │       │   ├─ unless/binary/
   │       │       │   │   ├─ left/expression/name = "first"
+  │       │       │   │   ├─ op/operator[equal] = "=="
   │       │       │   │   └─ right/expression/name = "last"
   │       │       │   └─ then/symbol = ":find_pattern"
   │       │       ├─ in/

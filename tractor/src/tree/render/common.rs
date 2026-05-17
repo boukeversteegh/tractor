@@ -403,12 +403,15 @@ pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax
         }
         SyntaxTree::Break { .. } => out.push_str(sx.break_keyword),
         SyntaxTree::Continue { .. } => out.push_str(sx.continue_keyword),
-        SyntaxTree::Binary { op_text, left, right, .. }
-        | SyntaxTree::Logical { op_text, left, right, .. } => {
-            write_ir(left, out, indent, sx); out.push(' ');
-            out.push_str(op_text); out.push(' ');
+        SyntaxTree::Binary { left, op, right, .. }
+        | SyntaxTree::Logical { left, op, right, .. } => {
+            write_ir(left, out, indent, sx);
+            out.push(' ');
+            write_ir(op, out, indent, sx);
+            out.push(' ');
             write_ir(right, out, indent, sx);
         }
+        SyntaxTree::Operator { text, .. } => out.push_str(text),
         SyntaxTree::Unary { op_text, operand, .. } => {
             out.push_str(op_text); write_ir(operand, out, indent, sx);
         }

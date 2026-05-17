@@ -152,8 +152,8 @@ const SYNTAX_HEADER: &str = "\
 #[allow(unused_imports)]
 use super::types::{
     Access, AccessReceiver, AccessorKind, AccessSegment, ByteRange,
-    Expression, Flag, LambdaBody, Marker, Modifiers, ParamKind, QuoteStyle,
-    SlotKind, Span, SyntaxTree,
+    Expression, Flag, LambdaBody, Marker, Modifiers, OperatorKind, ParamKind,
+    QuoteStyle, SlotKind, Span, SyntaxTree,
 };
 
 #[allow(unused_imports)]
@@ -861,6 +861,33 @@ fn fields_arm(v: &Variant, tree: &str) -> String {
                 }});
             }}
 ",
+                        ));
+                    }
+                    "OperatorKind" => {
+                        // Closed-enum kind discriminator: project as
+                        // a Flag whose name comes from the enum's
+                        // marker_name() method. Source range is
+                        // synthetic; span derives from the host.
+                        bindings.push(fname.clone());
+                        needs_span = true;
+                        body.push_str(&format!(
+                            "            out.push(TreeField::Flag {{
+                name: {fname}.marker_name(),
+                marker: Marker {{ name: {fname}.marker_name(), range: ByteRange::synthetic_empty(), span: *span }},
+            }});
+",
+                        ));
+                    }
+                    "String" => {
+                        // Inline scalar text — emit as Scalar (JSON
+                        // only; XML gap-text covers source-anchored
+                        // mode). Limited to variants opting in via
+                        // @field_projection; non-opted variants emit
+                        // text via the variant-blind scalar_text_of
+                        // path instead.
+                        bindings.push(fname.clone());
+                        body.push_str(&format!(
+                            "            out.push(TreeField::Scalar {{ name: {fname:?}, value: {fname}.as_str() }});\n",
                         ));
                     }
                     _ => {}

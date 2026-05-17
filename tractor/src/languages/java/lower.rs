@@ -19,7 +19,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     false_of, float_of, int_of, name_of, null_of, range_of, span_of, string_of, text_of, true_of,
 };
-use crate::tree::types::{Access, AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, ParamKind, Span};
+use crate::tree::types::{Access, AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, OperatorKind, ParamKind, Span};
 
 // Parent-map context (see csharp's lower.rs for the rationale).
 thread_local! {
@@ -730,16 +730,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let op_node = node.child_by_field_name("operator");
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
-            match (left, right, op_marker(&op_text)) {
-                (Some(l), Some(r), Some(marker)) => SyntaxTree::Binary {
-                    op_text,
-                    op_marker: marker,
-                    op_range,
-                    left: Box::new(l.wrap_slot("left")),
-                    right: Box::new(r.wrap_slot("right")),
-                    range,
-                    span,
-                },
+            match (left, right, op_kind(&op_text)) {
+                (Some(l), Some(r), Some(kind)) => {
+                    kind.build_binary(l, r, op_text, op_range, range, span)
+                }
                 _ => SyntaxTree::Unknown {
                     kind: "binary_expression(missing)".to_string(),
                     range,
@@ -2031,6 +2025,36 @@ fn op_marker(op: &str) -> Option<&'static str> {
         "++" => "increment",
         "--" => "decrement",
         "instanceof" => "instanceof",
+        _ => return None,
+    })
+}
+
+/// Java binary / logical operators → typed [`OperatorKind`].
+/// Unary-only (`!`, `~`, `++`, `--`) handled by the Unary lowering
+/// path. Comparison ops still flow through Binary lowering until
+/// `Comparison` is restructured.
+fn op_kind(op: &str) -> Option<OperatorKind> {
+    Some(match op {
+        "+" => OperatorKind::Plus,
+        "-" => OperatorKind::Minus,
+        "*" => OperatorKind::Multiply,
+        "/" => OperatorKind::Divide,
+        "%" => OperatorKind::Modulo,
+        "==" => OperatorKind::Equal,
+        "!=" => OperatorKind::NotEqual,
+        "<" => OperatorKind::Less,
+        "<=" => OperatorKind::LessOrEqual,
+        ">" => OperatorKind::Greater,
+        ">=" => OperatorKind::GreaterOrEqual,
+        "&&" => OperatorKind::And,
+        "||" => OperatorKind::Or,
+        "&" => OperatorKind::BitwiseAnd,
+        "|" => OperatorKind::BitwiseOr,
+        "^" => OperatorKind::BitwiseXor,
+        "<<" => OperatorKind::ShiftLeft,
+        ">>" => OperatorKind::ShiftRight,
+        ">>>" => OperatorKind::ShiftRightUnsigned,
+        "instanceof" => OperatorKind::Instanceof,
         _ => return None,
     })
 }

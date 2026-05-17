@@ -19,7 +19,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     false_of, float_of, int_of, name_of, none_of, range_of, span_of, string_of, text_of, true_of,
 };
-use crate::tree::types::{Access, AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, ParamKind};
+use crate::tree::types::{Access, AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, OperatorKind, ParamKind};
 
 /// Lower a Python tree-sitter root node to [`SyntaxTree`].
 ///
@@ -283,16 +283,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let op_node = node.child_by_field_name("operator");
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
-            match (left, right, op_marker(&op_text)) {
-                (Some(l), Some(r), Some(marker)) => SyntaxTree::Binary {
-                    op_text,
-                    op_marker: marker,
-                    op_range,
-                    left: Box::new(l.wrap_slot("left")),
-                    right: Box::new(r.wrap_slot("right")),
-                    range,
-                    span,
-                },
+            match (left, right, op_kind(&op_text)) {
+                (Some(l), Some(r), Some(kind)) => {
+                    kind.build_binary(l, r, op_text, op_range, range, span)
+                }
                 _ => SyntaxTree::Unknown {
                     kind: "binary_operator(missing)".to_string(),
                     range,
@@ -546,21 +540,11 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let op_node = node.child_by_field_name("operator");
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
-            let marker = match op_text.as_str() {
-                "and" => "and",
-                "or"  => "or",
-                _     => "and",  // fallback
-            };
+            let kind = op_kind(&op_text).unwrap_or(OperatorKind::And);
             match (left, right) {
-                (Some(l), Some(r)) => SyntaxTree::Logical {
-                    op_text,
-                    op_marker: marker,
-                    op_range,
-                    left: Box::new(l.wrap_slot("left")),
-                    right: Box::new(r.wrap_slot("right")),
-                    range,
-                    span,
-                },
+                (Some(l), Some(r)) => {
+                    kind.build_binary(l, r, op_text, op_range, range, span)
+                }
                 _ => SyntaxTree::Unknown {
                     kind: "boolean_operator(missing)".to_string(),
                     range, span,
@@ -2257,6 +2241,31 @@ fn op_marker(op: &str) -> Option<&'static str> {
         "^" => "bitwise_xor",
         "<<" => "shift_left",
         ">>" => "shift_right",
+        _ => return None,
+    })
+}
+
+/// Map a Python binary / logical operator's source text to the typed
+/// [`OperatorKind`]. Consumed by Binary / Logical lowering to drive
+/// `OperatorKind::build_binary`. Unary-only operators (`not`) are
+/// handled by the separate Unary path; not included here.
+fn op_kind(op: &str) -> Option<OperatorKind> {
+    Some(match op {
+        "+" => OperatorKind::Plus,
+        "-" => OperatorKind::Minus,
+        "*" => OperatorKind::Multiply,
+        "/" => OperatorKind::Divide,
+        "//" => OperatorKind::FloorDivide,
+        "%" => OperatorKind::Modulo,
+        "**" => OperatorKind::Power,
+        "@" => OperatorKind::MatrixMultiply,
+        "&" => OperatorKind::BitwiseAnd,
+        "|" => OperatorKind::BitwiseOr,
+        "^" => OperatorKind::BitwiseXor,
+        "<<" => OperatorKind::ShiftLeft,
+        ">>" => OperatorKind::ShiftRight,
+        "and" => OperatorKind::And,
+        "or" => OperatorKind::Or,
         _ => return None,
     })
 }

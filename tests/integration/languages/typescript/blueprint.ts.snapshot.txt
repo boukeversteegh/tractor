@@ -204,6 +204,7 @@ program/
   │       │       │       ├─ left/expression/object/
   │       │       │       │   ├─ this = "this"
   │       │       │       │   └─ number = "0"
+  │       │       │       ├─ op/operator[null_coalesce] = "??"
   │       │       │       └─ right/expression/string = "\"unnamed\""
   │       │       └─ return/expression/template/
   │       │           ├─ string = "Widget<"
@@ -222,6 +223,7 @@ program/
   │       │       │   └─ value/expression/number = "0"
   │       │       ├─ binary/
   │       │       │   ├─ left/expression/name = "i"
+  │       │       │   ├─ op/operator[less] = "<"
   │       │       │   └─ right/expression/object/this = "this"
   │       │       ├─ unary[postfix]/name = "i"
   │       │       └─ body/yield/list/
@@ -268,16 +270,21 @@ program/
   │   ├─ returns/predicate/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "Shape"
-  │   └─ body/return/expression/binary/
-  │       ├─ left/expression/binary/
+  │   └─ body/return/expression/logical/
+  │       ├─ left/expression/logical/
   │       │   ├─ left/expression/binary/
   │       │   │   ├─ left/expression/unary/name = "v"
+  │       │   │   ├─ op/operator[equal] = "==="
   │       │   │   └─ right/expression/string = "\"object\""
+  │       │   ├─ op/operator[and] = "&&"
   │       │   └─ right/expression/binary/
   │       │       ├─ left/expression/name = "v"
+  │       │       ├─ op/operator[not_equal] = "!=="
   │       │       └─ right/expression/null = "null"
+  │       ├─ op/operator[and] = "&&"
   │       └─ right/expression/binary/
   │           ├─ left/expression/string = "\"id\""
+  │           ├─ op/operator[in] = "in"
   │           └─ right/expression/name = "v"
   ├─ variable[const]/
   │   ├─ name = "tag"
@@ -297,11 +304,14 @@ program/
   │           │   └─ value/expression/binary/
   │           │       ├─ left/expression/binary/
   │           │       │   ├─ left/expression/name = "acc"
+  │           │       │   ├─ op/operator[plus] = "+"
   │           │       │   └─ right/expression/name = "p"
+  │           │       ├─ op/operator[plus] = "+"
   │           │       └─ right/expression/binary/
   │           │           ├─ left/expression/object/
   │           │           │   ├─ name = "vals"
   │           │           │   └─ name = "i"
+  │           │           ├─ op/operator[null_coalesce] = "??"
   │           │           └─ right/expression/string = "\"\""
   │           └─ string = "\"\""
   ├─ function[async]/
@@ -357,6 +367,7 @@ program/
   │       │       │   ├─ string = "hello,"
   │       │       │   ├─ interpolation/binary/
   │       │       │   │   ├─ left/expression/name = "label"
+  │       │       │   │   ├─ op/operator[null_coalesce] = "??"
   │       │       │   │   └─ right/expression/string = "\"world\""
   │       │       │   ├─ string = "("
   │       │       │   ├─ interpolation/object/name = "spread"
@@ -380,6 +391,7 @@ program/
   │       ├─ if/
   │       │   ├─ condition/expression/binary/
   │       │   │   ├─ left/expression/name = "n"
+  │       │   │   ├─ op/operator[less] = "<"
   │       │   │   └─ right/expression/number = "0"
   │       │   ├─ body/assign/
   │       │   │   ├─ expression/name = "status"
@@ -387,6 +399,7 @@ program/
   │       │   └─ else_if/
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/name = "n"
+  │       │       │   ├─ op/operator[equal] = "==="
   │       │       │   └─ right/expression/number = "0"
   │       │       ├─ body/assign/
   │       │       │   ├─ expression/name = "status"
@@ -394,6 +407,7 @@ program/
   │       │       └─ else_if/
   │       │           ├─ condition/expression/binary/
   │       │           │   ├─ left/expression/name = "n"
+  │       │           │   ├─ op/operator[less] = "<"
   │       │           │   └─ right/expression/number = "10"
   │       │           ├─ body/assign/
   │       │           │   ├─ expression/name = "status"
@@ -447,6 +461,7 @@ program/
   │       └─ return/expression/ternary/
   │           ├─ condition/expression/binary/
   │           │   ├─ left/expression/name = "n"
+  │           │   ├─ op/operator[greater] = ">"
   │           │   └─ right/expression/number = "0"
   │           ├─ then/expression/name = "status"
   │           └─ else/expression/string = "\"idle\""
@@ -475,6 +490,7 @@ program/
   │           ├─ returns/type/name = "number"
   │           └─ value/expression/binary/
   │               ├─ left/expression/name = "x"
+  │               ├─ op/operator[multiply] = "*"
   │               └─ right/expression/number = "2"
   ├─ variable[const]/
   │   ├─ name = "arrowBlock"
@@ -485,6 +501,7 @@ program/
   │       ├─ returns/type/name = "number"
   │       └─ body/return/expression/binary/
   │           ├─ left/expression/name = "x"
+  │           ├─ op/operator[multiply] = "*"
   │           └─ right/expression/number = "2"
   ├─ variable[const]/
   │   ├─ name = "maybe"
@@ -496,6 +513,7 @@ program/
   │   ├─ name = "fallback"
   │   └─ value/expression/binary/
   │       ├─ left/expression/name = "maybe"
+  │       ├─ op/operator[null_coalesce] = "??"
   │       └─ right/expression/string = "\"default\""
   ├─ variable[const]/
   │   ├─ name = "nonNull"
@@ -594,6 +612,7 @@ program/
   │   └─ body/if/
   │       ├─ condition/expression/binary/
   │       │   ├─ left/expression/unary/name = "x"
+  │       │   ├─ op/operator[not_equal] = "!=="
   │       │   └─ right/expression/string = "\"number\""
   │       └─ body/object_creation/
   │           ├─ name = "Error"
@@ -620,6 +639,7 @@ program/
   │   │   └─ type/name = "unknown"
   │   └─ body/return/expression/binary/
   │       ├─ left/expression/object/name = "new.target"
+  │       ├─ op/operator[null_coalesce] = "??"
   │       └─ right/expression/string = "\"\""
   ├─ comment[leading] = "// Nested type / value identifiers."
   ├─ alias/
@@ -657,6 +677,7 @@ program/
   │       │       │       └─ value/expression/number = "100"
   │       │       ├─ binary/
   │       │       │   ├─ left/expression/name = "i"
+  │       │       │   ├─ op/operator[less] = "<"
   │       │       │   └─ right/expression/number = "5"
   │       │       ├─ unary[postfix]/name = "i"
   │       │       ├─ unary[postfix]/name = "j"
@@ -664,11 +685,13 @@ program/
   │       │           ├─ if/
   │       │           │   ├─ condition/expression/binary/
   │       │           │   │   ├─ left/expression/name = "i"
+  │       │           │   │   ├─ op/operator[equal] = "==="
   │       │           │   │   └─ right/expression/number = "2"
   │       │           │   └─ body/name = "outer"
   │       │           ├─ if/
   │       │           │   ├─ condition/expression/binary/
   │       │           │   │   ├─ left/expression/name = "i"
+  │       │           │   │   ├─ op/operator[equal] = "==="
   │       │           │   │   └─ right/expression/number = "4"
   │       │           │   └─ body/name = "outer"
   │       │           └─ expression/assign/
@@ -679,6 +702,7 @@ program/
   │       │                   │   └─ expression/name = "i"
   │       │                   └─ binary/
   │       │                       ├─ left/expression/name = "total"
+  │       │                       ├─ op/operator[multiply] = "*"
   │       │                       └─ right/expression/number = "2"
   │       ├─ variable[let]/
   │       │   ├─ name = "n"
@@ -687,12 +711,14 @@ program/
   │       │   ├─ body/expression/unary[postfix]/name = "n"
   │       │   └─ binary/
   │       │       ├─ left/expression/name = "n"
+  │       │       ├─ op/operator[less] = "<"
   │       │       └─ right/expression/number = "3"
   │       ├─ if/
   │       │   ├─ condition/expression/false = "false"
   │       │   └─ body = "debugger;"
   │       └─ return/expression/binary/
   │           ├─ left/expression/name = "total"
+  │           ├─ op/operator[plus] = "+"
   │           └─ right/expression/name = "n"
   ├─ comment[leading] = "// Pair pattern + assignment pattern in destructure with defaults."
   ├─ function/
@@ -724,8 +750,11 @@ program/
   │       ├─ left/expression/binary/
   │       │   ├─ left/expression/binary/
   │       │   │   ├─ left/expression/name = "aa"
+  │       │   │   ├─ op/operator[plus] = "+"
   │       │   │   └─ right/expression/name = "bb"
+  │       │   ├─ op/operator[plus] = "+"
   │       │   └─ right/expression/name = "c"
+  │       ├─ op/operator[plus] = "+"
   │       └─ right/expression/object/name = "rest"
   ├─ expression/unary/name = "controlOdds"
   ├─ expression/unary/name = "destructure"

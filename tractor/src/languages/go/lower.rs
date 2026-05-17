@@ -15,7 +15,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     false_of, float_of, int_of, name_of, range_of, span_of, string_of, text_of, true_of,
 };
-use crate::tree::types::{AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, Span};
+use crate::tree::types::{AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, OperatorKind, Span};
 
 pub fn lower_go_root(root: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(root);
@@ -454,16 +454,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let op_node = node.child_by_field_name("operator");
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
-            match (left, right, op_marker(&op_text)) {
-                (Some(l), Some(r), Some(marker)) => SyntaxTree::binary_or_logical(
-                    if matches!(op_text.as_str(), "&&" | "||") { "logical" } else { "binary" },
-                    op_text,
-                    marker,
-                    op_range,
-                    Box::new(l.wrap_slot("left")),
-                    Box::new(r.wrap_slot("right")),
-                    range, span,
-                ),
+            match (left, right, op_kind(&op_text)) {
+                (Some(l), Some(r), Some(kind)) => {
+                    kind.build_binary(l, r, op_text, op_range, range, span)
+                }
                 _ => SyntaxTree::Unknown {
                     kind: "binary_expression(missing)".to_string(),
                     range, span,
@@ -1680,6 +1674,33 @@ fn op_marker(op: &str) -> Option<&'static str> {
         ">>" => "shift_right",
         "&^" => "bitwise_clear",
         "<-" => "channel_receive",
+        _ => return None,
+    })
+}
+
+/// Go binary / logical operators → typed [`OperatorKind`].
+fn op_kind(op: &str) -> Option<OperatorKind> {
+    Some(match op {
+        "+" => OperatorKind::Plus,
+        "-" => OperatorKind::Minus,
+        "*" => OperatorKind::Multiply,
+        "/" => OperatorKind::Divide,
+        "%" => OperatorKind::Modulo,
+        "==" => OperatorKind::Equal,
+        "!=" => OperatorKind::NotEqual,
+        "<" => OperatorKind::Less,
+        "<=" => OperatorKind::LessOrEqual,
+        ">" => OperatorKind::Greater,
+        ">=" => OperatorKind::GreaterOrEqual,
+        "&&" => OperatorKind::And,
+        "||" => OperatorKind::Or,
+        "&" => OperatorKind::BitwiseAnd,
+        "|" => OperatorKind::BitwiseOr,
+        "^" => OperatorKind::BitwiseXor,
+        "<<" => OperatorKind::ShiftLeft,
+        ">>" => OperatorKind::ShiftRight,
+        "&^" => OperatorKind::BitwiseClear,
+        "<-" => OperatorKind::ChannelReceive,
         _ => return None,
     })
 }

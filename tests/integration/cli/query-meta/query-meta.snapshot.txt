@@ -4,12 +4,12 @@ class[@line="2" and @column="1" and @end_line="7" and @end_column="2" and @id="3
   ├─ "public class"
   ├─ name[@line="2" and @column="14" and @end_line="2" and @end_column="24" and @id="4"] = "Calculator"
   └─ body[@line="3" and @column="1" and @end_line="7" and @end_column="2" and @id="5"]/
-      └─ ... (63 children)
+      └─ ... (72 children)
 
 tests/integration/sample.cs:9
-class[@line="9" and @column="1" and @end_line="14" and @end_column="2" and @id="66"]/
-  ├─ public[@line="9" and @column="1" and @end_line="14" and @end_column="2" and @id="66"]
+class[@line="9" and @column="1" and @end_line="14" and @end_column="2" and @id="63"]/
+  ├─ public[@line="9" and @column="1" and @end_line="14" and @end_column="2" and @id="63"]
   ├─ "public class"
-  ├─ name[@line="9" and @column="14" and @end_line="9" and @end_column="21" and @id="67"] = "Greeter"
-  └─ body[@line="10" and @column="1" and @end_line="14" and @end_column="2" and @id="68"]/
-      └─ ... (38 children)
+  ├─ name[@line="9" and @column="14" and @end_line="9" and @end_column="21" and @id="64"] = "Greeter"
+  └─ body[@line="10" and @column="1" and @end_line="14" and @end_column="2" and @id="65"]/
+      └─ ... (44 children)

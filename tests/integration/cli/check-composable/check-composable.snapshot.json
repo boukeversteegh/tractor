@@ -18,7 +18,7 @@
             "public": true,
             "name": "Calculator",
             "body": {
-              "$truncated": 63
+              "$truncated": 72
             }
           },
           "reason": "class found",
@@ -30,7 +30,7 @@
             "public": true,
             "name": "Greeter",
             "body": {
-              "$truncated": 38
+              "$truncated": 44
             }
           },
           "reason": "class found",

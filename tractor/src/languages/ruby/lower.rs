@@ -11,7 +11,7 @@ use crate::raw::RawNode;
 use crate::tree::lower_helpers::{
     false_of, float_of, int_of, name_of, range_of, span_of, string_of, text_of, true_of,
 };
-use crate::tree::types::{AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker};
+use crate::tree::types::{AccessSegment, ByteRange, Flag, SyntaxTree, Modifiers, Marker, OperatorKind};
 
 pub fn lower_ruby_root(root: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(root);
@@ -256,40 +256,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let op_node = node.child_by_field_name("operator");
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
-            let marker = match op_text.as_str() {
-                "+" => "plus",
-                "-" => "minus",
-                "*" => "multiply",
-                "/" => "divide",
-                "%" => "modulo",
-                "**" => "power",
-                "==" => "equal",
-                "!=" => "not_equal",
-                "<" => "less",
-                "<=" => "less_or_equal",
-                ">" => "greater",
-                ">=" => "greater_or_equal",
-                "<=>" => "spaceship",
-                "&&" | "and" => "and",
-                "||" | "or" => "or",
-                "&" => "bitwise_and",
-                "|" => "bitwise_or",
-                "^" => "bitwise_xor",
-                "<<" => "shift_left",
-                ">>" => "shift_right",
-                "===" => "case_equal",
-                _ => "",
-            };
-            match (left, right) {
-                (Some(l), Some(r)) if !marker.is_empty() => SyntaxTree::binary_or_logical(
-                    if matches!(op_text.as_str(), "&&" | "||" | "and" | "or") { "logical" } else { "binary" },
-                    op_text,
-                    marker,
-                    op_range,
-                    Box::new(l.wrap_slot("left")),
-                    Box::new(r.wrap_slot("right")),
-                    range, span,
-                ),
+            match (left, right, ruby_op_kind(&op_text)) {
+                (Some(l), Some(r), Some(kind)) => {
+                    kind.build_binary(l, r, op_text, op_range, range, span)
+                }
                 _ => simple_statement(node, "binary", source),
             }
         }
@@ -767,6 +737,36 @@ fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) ->
         range: range_of(node),
         span: span_of(node),
     }
+}
+
+/// Ruby binary / logical operators → typed [`OperatorKind`]. `===` is
+/// Ruby's case-equality (not PHP's strict identity); maps to
+/// `CaseEqual`.
+fn ruby_op_kind(op: &str) -> Option<OperatorKind> {
+    Some(match op {
+        "+" => OperatorKind::Plus,
+        "-" => OperatorKind::Minus,
+        "*" => OperatorKind::Multiply,
+        "/" => OperatorKind::Divide,
+        "%" => OperatorKind::Modulo,
+        "**" => OperatorKind::Power,
+        "==" => OperatorKind::Equal,
+        "!=" => OperatorKind::NotEqual,
+        "===" => OperatorKind::CaseEqual,
+        "<" => OperatorKind::Less,
+        "<=" => OperatorKind::LessOrEqual,
+        ">" => OperatorKind::Greater,
+        ">=" => OperatorKind::GreaterOrEqual,
+        "<=>" => OperatorKind::Spaceship,
+        "&&" | "and" => OperatorKind::And,
+        "||" | "or" => OperatorKind::Or,
+        "&" => OperatorKind::BitwiseAnd,
+        "|" => OperatorKind::BitwiseOr,
+        "^" => OperatorKind::BitwiseXor,
+        "<<" => OperatorKind::ShiftLeft,
+        ">>" => OperatorKind::ShiftRight,
+        _ => return None,
+    })
 }
 
 /// Lower Ruby `class Foo < Bar` superclass clause into

@@ -320,9 +320,11 @@ file/
   │       │       │   ├─ left/expression/name = "x"
   │       │       │   └─ right/expression/binary/
   │       │       │       ├─ left/expression/name = "n"
+  │       │       │       ├─ op/operator[plus] = "+"
   │       │       │       └─ right/expression/int = "1"
   │       │       └─ return/expression/binary/
   │       │           ├─ left/expression/name = "x"
+  │       │           ├─ op/operator[multiply] = "*"
   │       │           └─ right/expression/int = "2"
   │       ├─ assign/
   │       │   ├─ expression/name = "_"
@@ -440,6 +442,7 @@ file/
   │       │   ├─ type/name = "string"
   │       │   └─ return/expression/binary/
   │       │       ├─ left/expression/string = "\"string:\""
+  │       │       ├─ op/operator[plus] = "+"
   │       │       └─ right/expression/name = "v"
   │       ├─ case/
   │       │   ├─ type/name = "Stringer"
@@ -478,6 +481,7 @@ file/
           │   │   └─ right/expression/object/name = "io"
           │   ├─ condition/expression/binary/
           │   │   ├─ left/expression/name = "err"
+          │   │   ├─ op/operator[not_equal] = "!="
           │   │   └─ right/expression/nil = "nil"
           │   ├─ then/body/return/expression/call/
           │   │   ├─ name = "wrap"
@@ -491,11 +495,13 @@ file/
           │   │   └─ right/expression/int = "0"
           │   ├─ condition/expression/binary/
           │   │   ├─ left/expression/name = "i"
+          │   │   ├─ op/operator[less] = "<"
           │   │   └─ right/expression/int = "10"
           │   ├─ unary[postfix]/name = "i"
           │   └─ body/if/
           │       ├─ condition/expression/binary/
           │       │   ├─ left/expression/name = "i"
+          │       │   ├─ op/operator[equal] = "=="
           │       │   └─ right/expression/int = "5"
           │       └─ then/body/continue = "continue"
           ├─ for/
@@ -533,6 +539,7 @@ file/
           ├─ for/
           │   ├─ condition/expression/binary/
           │   │   ├─ left/expression/name = "n"
+          │   │   ├─ op/operator[less] = "<"
           │   │   └─ right/expression/int = "3"
           │   └─ body/unary[postfix]/name = "n"
           ├─ go/call/closure/expression/object/
@@ -643,6 +650,7 @@ file/
           │   │   │   ├─ name = "errors"
           │   │   │   ├─ name = "err"
           │   │   │   └─ unary/name = "target"
+          │   │   ├─ op/operator[or] = "||"
           │   │   └─ right/expression/object/
           │   │       ├─ name = "errors"
           │   │       ├─ name = "err"

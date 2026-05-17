@@ -529,14 +529,17 @@
                   "expression": {
                     "binary": {
                       "left": {
-                        "expression": {
-                          "name": "x"
-                        }
+                        "$type": "expression",
+                        "name": "x"
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "*",
+                        "multiply": true
                       },
                       "right": {
-                        "expression": {
-                          "int": "2"
-                        }
+                        "$type": "expression",
+                        "int": "2"
                       }
                     }
                   }
@@ -552,14 +555,17 @@
                     "expression": {
                       "binary": {
                         "left": {
-                          "expression": {
-                            "name": "n"
-                          }
+                          "$type": "expression",
+                          "name": "n"
+                        },
+                        "op": {
+                          "$type": "operator",
+                          "text": "+",
+                          "plus": true
                         },
                         "right": {
-                          "expression": {
-                            "int": "1"
-                          }
+                          "$type": "expression",
+                          "int": "1"
                         }
                       }
                     }
@@ -836,14 +842,17 @@
                 "expression": {
                   "binary": {
                     "left": {
-                      "expression": {
-                        "string": "\"string:\""
-                      }
+                      "$type": "expression",
+                      "string": "\"string:\""
+                    },
+                    "op": {
+                      "$type": "operator",
+                      "text": "+",
+                      "plus": true
                     },
                     "right": {
-                      "expression": {
-                        "name": "v"
-                      }
+                      "$type": "expression",
+                      "name": "v"
                     }
                   }
                 }
@@ -943,14 +952,17 @@
                   "expression": {
                     "binary": {
                       "left": {
-                        "expression": {
-                          "name": "i"
-                        }
+                        "$type": "expression",
+                        "name": "i"
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "==",
+                        "equal": true
                       },
                       "right": {
-                        "expression": {
-                          "int": "5"
-                        }
+                        "$type": "expression",
+                        "int": "5"
                       }
                     }
                   }
@@ -966,14 +978,17 @@
               "expression": {
                 "binary": {
                   "left": {
-                    "expression": {
-                      "name": "i"
-                    }
+                    "$type": "expression",
+                    "name": "i"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "<",
+                    "less": true
                   },
                   "right": {
-                    "expression": {
-                      "int": "10"
-                    }
+                    "$type": "expression",
+                    "int": "10"
                   }
                 }
               }
@@ -1091,14 +1106,17 @@
               "expression": {
                 "binary": {
                   "left": {
-                    "expression": {
-                      "name": "n"
-                    }
+                    "$type": "expression",
+                    "name": "n"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "<",
+                    "less": true
                   },
                   "right": {
-                    "expression": {
-                      "int": "3"
-                    }
+                    "$type": "expression",
+                    "int": "3"
                   }
                 }
               }
@@ -1123,14 +1141,17 @@
               "expression": {
                 "binary": {
                   "left": {
-                    "expression": {
-                      "name": "err"
-                    }
+                    "$type": "expression",
+                    "name": "err"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "!=",
+                    "not_equal": true
                   },
                   "right": {
-                    "expression": {
-                      "nil": "nil"
-                    }
+                    "$type": "expression",
+                    "nil": "nil"
                   }
                 }
               }
@@ -1229,27 +1250,30 @@
               "expression": {
                 "logical": {
                   "left": {
-                    "expression": {
-                      "object": {
-                        "name": [
-                          "errors",
-                          "err"
-                        ],
-                        "unary": {
-                          "name": "target"
-                        }
+                    "$type": "expression",
+                    "object": {
+                      "name": [
+                        "errors",
+                        "err"
+                      ],
+                      "unary": {
+                        "name": "target"
                       }
                     }
                   },
+                  "op": {
+                    "$type": "operator",
+                    "text": "||",
+                    "or": true
+                  },
                   "right": {
-                    "expression": {
-                      "object": {
-                        "name": [
-                          "errors",
-                          "err",
-                          "ErrNotFound"
-                        ]
-                      }
+                    "$type": "expression",
+                    "object": {
+                      "name": [
+                        "errors",
+                        "err",
+                        "ErrNotFound"
+                      ]
                     }
                   }
                 }

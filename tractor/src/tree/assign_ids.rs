@@ -120,13 +120,16 @@ mod tests {
         let mut t = SyntaxTree::Module {
             children: vec![
                 SyntaxTree::Binary {
-                    op_text: "+".to_string(),
-                    op_marker: "add",
-                    op_range: ByteRange::synthetic_empty(),
                     left: Box::new(SyntaxTree::Name {
                         text: "a".to_string(),
                         range: ByteRange::synthetic_empty(),
                         span: Span::point(1, 1),
+                    }),
+                    op: Box::new(SyntaxTree::Operator {
+                        text: "+".to_string(),
+                        kind: crate::tree::types::OperatorKind::Plus,
+                        range: ByteRange::synthetic_empty(),
+                        span: Span::point(1, 3),
                     }),
                     right: Box::new(SyntaxTree::Name {
                         text: "b".to_string(),

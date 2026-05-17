@@ -510,15 +510,21 @@ pub enum SyntaxTree {
 
     /// `<binary>` operator expression `a op b`. Renders as
     /// `<binary><left><expression>{left}</expression></left>
-    /// {gap}<op>{op_text}<{op_marker}/></op>{gap}
+    /// {gap}<operator>{op_text}<{op_marker}/></operator>{gap}
     /// <right><expression>{right}</expression></right></binary>`.
-    /// The two `{gap}`s are whitespace between `left`/`op`/`right` in
-    /// the source, derived from `op_range` and the operands' ranges.
+    /// The two `{gap}`s are whitespace between `left`/`op`/`right`
+    /// in the source.
+    ///
+    /// `<left>` / `<right>` come from the Rust field names via the
+    /// field-projection walker — the operand is wrapped in
+    /// `<expression>` at lowering, the outer wrapper is synthesised
+    /// by the projection layer. The operator collapses to a single
+    /// typed [`SyntaxTree::Operator`] sub-tree, which owns the
+    /// source text + kind marker + range.
+    /// @field_projection
     Binary {
-        op_text: String,
-        op_marker: &'static str,
-        op_range: ByteRange,
         left: Box<SyntaxTree>,
+        op: Box<SyntaxTree>,
         right: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
@@ -527,12 +533,30 @@ pub enum SyntaxTree {
     /// `<logical>` short-circuit boolean expression (`a and b`, `a || b`).
     /// Same shape as [`SyntaxTree::Binary`]; sibling variant so the
     /// element name follows the variant tag mechanically.
+    /// @field_projection
     Logical {
-        op_text: String,
-        op_marker: &'static str,
-        op_range: ByteRange,
         left: Box<SyntaxTree>,
+        op: Box<SyntaxTree>,
         right: Box<SyntaxTree>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<operator>` — typed sub-tree representing the operator token
+    /// inside a `<binary>` / `<logical>` (later: `<comparison>` /
+    /// `<unary>`) expression. Carries the source literal `text`
+    /// (`"+"` / `"&&"` / ...), the closed-enum `kind` discriminator
+    /// (single source of truth for the `<plus/>` / `<and/>` marker),
+    /// and its own source range.
+    ///
+    /// Rendered as `<operator>{text}<{kind.marker_name}/></operator>`
+    /// in XML (the marker child is emitted from `kind`), and as
+    /// `{"$type": "operator", "text": "+", "<marker>": true}` in JSON
+    /// via field projection.
+    /// @field_projection
+    Operator {
+        text: String,
+        kind: OperatorKind,
         range: ByteRange,
         span: Span,
     },
@@ -1845,6 +1869,195 @@ impl AccessorKind {
     }
 }
 
+/// Closed taxonomy of binary / logical operators across all
+/// languages. The operator is the source of truth for which
+/// variant (`Binary` vs `Logical`) a `left op right` expression
+/// becomes, and for the marker name (`<plus/>` / `<and/>` / ...)
+/// that decorates the rendered `<operator>` element.
+///
+/// Replaces the per-variant scalar triple
+/// `op_text` / `op_marker` / `op_range` with a typed `Operator`
+/// sub-tree.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum OperatorKind {
+    // ----- Arithmetic ---------------------------------------------
+    #[default]
+    Plus,            // +
+    Minus,           // -
+    Multiply,        // *
+    Divide,          // /
+    Modulo,          // %
+    Power,           // **
+    FloorDivide,     // //   (Python)
+    MatrixMultiply,  // @    (Python)
+    Concat,          // .    (PHP string concat)
+
+    // ----- Bitwise ------------------------------------------------
+    BitwiseAnd,         // &
+    BitwiseOr,          // |
+    BitwiseXor,         // ^
+    ShiftLeft,          // <<
+    ShiftRight,         // >>
+    ShiftRightUnsigned, // >>>  (Java / C# / TS / JS)
+    BitwiseClear,       // &^   (Go-specific bit clear)
+
+    // ----- Logical (build_binary returns Logical variant) ---------
+    And,             // && / `and`
+    Or,              // || / `or`
+    Xor,             // xor (PHP keyword)
+
+    // ----- Comparison ---------------------------------------------
+    // Languages that have a dedicated `Comparison` variant route via
+    // that path instead; the kinds here cover languages where
+    // comparison ops still flow through Binary lowering today.
+    Equal,           // ==   (or === in TS where it folds to Equal)
+    NotEqual,        // != / <> / !==-in-TS
+    Identical,       // === (PHP only — value+type identity)
+    NotIdentical,    // !== (PHP)
+    CaseEqual,       // === (Ruby — case-equality for case/when matching)
+    Less,            // <
+    LessOrEqual,     // <=
+    Greater,         // >
+    GreaterOrEqual,  // >=
+    Spaceship,       // <=>  (PHP)
+
+    // ----- Keyword binary ----------------------------------------
+    Instanceof,      // instanceof  (Java / PHP / TS)
+    In,              // in  (TS membership operator)
+    ChannelReceive,  // <-  (Go channel ops)
+
+    // ----- Null / coalesce ---------------------------------------
+    NullCoalesce,    // ??  (TS / PHP / C#)
+}
+
+/// Coarse family grouping for [`OperatorKind`]. Today only the
+/// `Logical` case affects which `SyntaxTree` variant gets built
+/// (Logical vs Binary); the other families exist for future use
+/// and to keep the taxonomy explicit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OperatorFamily {
+    Arithmetic,
+    Bitwise,
+    Logical,
+    Comparison,
+    Keyword,
+    Channel,
+    NullCoalesce,
+}
+
+impl OperatorKind {
+    /// Snake_case marker name, projected as the empty-element inside
+    /// `<operator>`: `<operator>+<plus/></operator>`. Single source of
+    /// truth — every per-language `op_kind` function maps source text
+    /// to a kind and the marker name is derived once here.
+    pub const fn marker_name(self) -> &'static str {
+        match self {
+            OperatorKind::Plus => "plus",
+            OperatorKind::Minus => "minus",
+            OperatorKind::Multiply => "multiply",
+            OperatorKind::Divide => "divide",
+            OperatorKind::Modulo => "modulo",
+            OperatorKind::Power => "power",
+            OperatorKind::FloorDivide => "floor_divide",
+            OperatorKind::MatrixMultiply => "matrix_multiply",
+            OperatorKind::Concat => "concat",
+            OperatorKind::BitwiseAnd => "bitwise_and",
+            OperatorKind::BitwiseOr => "bitwise_or",
+            OperatorKind::BitwiseXor => "bitwise_xor",
+            OperatorKind::ShiftLeft => "shift_left",
+            OperatorKind::ShiftRight => "shift_right",
+            OperatorKind::ShiftRightUnsigned => "shift_right_unsigned",
+            OperatorKind::BitwiseClear => "bitwise_clear",
+            OperatorKind::And => "and",
+            OperatorKind::Or => "or",
+            OperatorKind::Xor => "xor",
+            OperatorKind::Equal => "equal",
+            OperatorKind::NotEqual => "not_equal",
+            OperatorKind::Identical => "identical",
+            OperatorKind::NotIdentical => "not_identical",
+            OperatorKind::CaseEqual => "case_equal",
+            OperatorKind::Less => "less",
+            OperatorKind::LessOrEqual => "less_or_equal",
+            OperatorKind::Greater => "greater",
+            OperatorKind::GreaterOrEqual => "greater_or_equal",
+            OperatorKind::Spaceship => "spaceship",
+            OperatorKind::Instanceof => "instanceof",
+            OperatorKind::In => "in",
+            OperatorKind::ChannelReceive => "channel_receive",
+            OperatorKind::NullCoalesce => "null_coalesce",
+        }
+    }
+
+    pub const fn family(self) -> OperatorFamily {
+        match self {
+            OperatorKind::Plus
+            | OperatorKind::Minus
+            | OperatorKind::Multiply
+            | OperatorKind::Divide
+            | OperatorKind::Modulo
+            | OperatorKind::Power
+            | OperatorKind::FloorDivide
+            | OperatorKind::MatrixMultiply
+            | OperatorKind::Concat => OperatorFamily::Arithmetic,
+
+            OperatorKind::BitwiseAnd
+            | OperatorKind::BitwiseOr
+            | OperatorKind::BitwiseXor
+            | OperatorKind::ShiftLeft
+            | OperatorKind::ShiftRight
+            | OperatorKind::ShiftRightUnsigned
+            | OperatorKind::BitwiseClear => OperatorFamily::Bitwise,
+
+            OperatorKind::And | OperatorKind::Or | OperatorKind::Xor => OperatorFamily::Logical,
+
+            OperatorKind::Equal
+            | OperatorKind::NotEqual
+            | OperatorKind::Identical
+            | OperatorKind::NotIdentical
+            | OperatorKind::CaseEqual
+            | OperatorKind::Less
+            | OperatorKind::LessOrEqual
+            | OperatorKind::Greater
+            | OperatorKind::GreaterOrEqual
+            | OperatorKind::Spaceship => OperatorFamily::Comparison,
+
+            OperatorKind::Instanceof | OperatorKind::In => OperatorFamily::Keyword,
+            OperatorKind::ChannelReceive => OperatorFamily::Channel,
+            OperatorKind::NullCoalesce => OperatorFamily::NullCoalesce,
+        }
+    }
+
+    /// Build the binary-or-logical variant for two operands. Owns the
+    /// whole construction — wraps operands in `Expression`, boxes
+    /// them, builds the inner `Operator` sub-tree, and dispatches to
+    /// `Binary` vs `Logical` via [`family`](Self::family). Call sites
+    /// drop the wrap/box/variant-pick boilerplate.
+    pub fn build_binary(
+        self,
+        left: SyntaxTree,
+        right: SyntaxTree,
+        text: String,
+        op_range: ByteRange,
+        range: ByteRange,
+        span: Span,
+    ) -> SyntaxTree {
+        let op = Box::new(SyntaxTree::Operator {
+            text,
+            kind: self,
+            range: op_range,
+            span,
+        });
+        let left = Box::new(left.wrap_expression());
+        let right = Box::new(right.wrap_expression());
+        match self.family() {
+            OperatorFamily::Logical => {
+                SyntaxTree::Logical { left, op, right, range, span }
+            }
+            _ => SyntaxTree::Binary { left, op, right, range, span },
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Per-variant `element_name_for_*` overrides (C5). The metadata
 // codegen looks for `@element_name = <fn_ident>` on a variant's doc
@@ -2413,27 +2626,6 @@ impl SyntaxTree {
 }
 
 impl SyntaxTree {
-    /// Construct a `Binary` or `Logical` variant from a discriminator
-    /// string. Transitional helper for lowering sites that still pick
-    /// the variant via the legacy `"binary"` / `"logical"`
-    /// `element_name` value.
-    #[inline]
-    pub fn binary_or_logical(
-        element_name: &'static str,
-        op_text: String,
-        op_marker: &'static str,
-        op_range: ByteRange,
-        left: Box<SyntaxTree>,
-        right: Box<SyntaxTree>,
-        range: ByteRange,
-        span: Span,
-    ) -> SyntaxTree {
-        match element_name {
-            "logical" => SyntaxTree::Logical { op_text, op_marker, op_range, left, right, range, span },
-            _ => SyntaxTree::Binary { op_text, op_marker, op_range, left, right, range, span },
-        }
-    }
-
     /// Construct a `Function` or `Method` variant. Transitional
     /// helper used by lowering sites that still pick the variant via
     /// the legacy `"function"` / `"method"` `element_name` value.
