@@ -684,7 +684,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             // SyntaxTree::ElseIf / SyntaxTree::Else so the renderer can flatten back
             // into `<else_if>`/`<else>` sibling output.
             let cond = node.child_by_field_name("condition")
-                .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
+                .map(|n| Box::new(lower_node(n, source).wrap_expression()));
             let body = node.child_by_field_name("consequence")
                 .map(|n| Box::new(lower_block(n, source)));
             // Collect all alternative children in source order.
@@ -876,9 +876,9 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let kids: Vec<&RawNode> = node.named_children().collect();
             if kids.len() == 3 {
                 SyntaxTree::Ternary {
-                    if_true: Box::new(lower_node(kids[0], source).wrap_slot("then")),
-                    condition: Box::new(lower_node(kids[1], source).wrap_slot("condition")),
-                    if_false: Box::new(lower_node(kids[2], source).wrap_slot("else")),
+                    if_true: Box::new(lower_node(kids[0], source).wrap_expression()),
+                    condition: Box::new(lower_node(kids[1], source).wrap_expression()),
+                    if_false: Box::new(lower_node(kids[2], source).wrap_expression()),
                     range, span,
                 }
             } else {
@@ -890,7 +890,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         }
 
         "while_statement" => {
-            let cond = node.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
+            let cond = node.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source).wrap_expression()));
             let body = node.child_by_field_name("body").map(|n| Box::new(lower_block(n, source)));
             let alt = node.child_by_field_name("alternative");
             let else_body = alt.map(|a| {
@@ -1459,7 +1459,7 @@ fn lower_python_except_clause(node: &RawNode, source: &str) -> SyntaxTree {
                         let n = last.named_children().next();
                         n.unwrap_or(last)
                     } else { last };
-                    binding = Some(Box::new(name_of(inner, source).wrap_slot("as")));
+                    binding = Some(Box::new(name_of(inner, source).wrap_expression()));
                 }
             }
             _ if type_target.is_none() && body.is_none() => {
@@ -1490,7 +1490,7 @@ fn lower_else_chain_with_tail(
     let range = range_of(node);
     match node.kind() {
         "elif_clause" => {
-            let cond = node.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
+            let cond = node.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source).wrap_expression()));
             let body = node.child_by_field_name("consequence").map(|n| Box::new(lower_block(n, source)));
             match (cond, body) {
                 (Some(c), Some(b)) => SyntaxTree::ElseIf {

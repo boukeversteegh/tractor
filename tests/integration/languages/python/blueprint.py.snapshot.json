@@ -681,22 +681,16 @@
           "expression": {
             "ternary": {
               "condition": {
-                "$type": "condition",
-                "expression": {
-                  "name": "result"
-                }
+                "$type": "expression",
+                "name": "result"
               },
               "if_true": {
-                "$type": "then",
-                "expression": {
-                  "name": "result"
-                }
+                "$type": "expression",
+                "name": "result"
               },
               "if_false": {
-                "$type": "else",
-                "expression": {
-                  "none": "None"
-                }
+                "$type": "expression",
+                "none": "None"
               }
             }
           }
@@ -1024,12 +1018,10 @@
             "$type": "body",
             "if": {
               "condition": {
-                "$type": "condition",
-                "expression": {
-                  "comparison": {
-                    "int": "0",
-                    "name": "v"
-                  }
+                "$type": "expression",
+                "comparison": {
+                  "int": "0",
+                  "name": "v"
                 }
               },
               "body": {
@@ -1039,12 +1031,10 @@
               "else_branch": {
                 "$type": "else_if",
                 "condition": {
-                  "$type": "condition",
-                  "expression": {
-                    "comparison": {
-                      "int": "0",
-                      "name": "v"
-                    }
+                  "$type": "expression",
+                  "comparison": {
+                    "int": "0",
+                    "name": "v"
                   }
                 },
                 "body": {
@@ -1113,10 +1103,8 @@
                 }
               },
               "binding": {
-                "$type": "as",
-                "expression": {
-                  "name": "e"
-                }
+                "$type": "expression",
+                "name": "e"
               },
               "body": {
                 "$type": "body",
@@ -1168,12 +1156,10 @@
         },
         "while": {
           "condition": {
-            "$type": "condition",
-            "expression": {
-              "comparison": {
-                "int": "10",
-                "name": "n"
-              }
+            "$type": "expression",
+            "comparison": {
+              "int": "10",
+              "name": "n"
             }
           },
           "body": {
@@ -1566,25 +1552,19 @@
               {
                 "ternary": {
                   "condition": {
-                    "$type": "condition",
-                    "expression": {
+                    "$type": "expression",
+                    "name": "items"
+                  },
+                  "if_true": {
+                    "$type": "expression",
+                    "object": {
+                      "int": "0",
                       "name": "items"
                     }
                   },
-                  "if_true": {
-                    "$type": "then",
-                    "expression": {
-                      "object": {
-                        "int": "0",
-                        "name": "items"
-                      }
-                    }
-                  },
                   "if_false": {
-                    "$type": "else",
-                    "expression": {
-                      "none": "None"
-                    }
+                    "$type": "expression",
+                    "none": "None"
                   }
                 }
               }
@@ -1752,20 +1732,18 @@
         },
         "if": {
           "condition": {
-            "$type": "condition",
-            "expression": {
-              "comparison": {
-                "assign": {
-                  "call": {
-                    "name": [
-                      "len",
-                      "items"
-                    ]
-                  },
-                  "name": "n"
+            "$type": "expression",
+            "comparison": {
+              "assign": {
+                "call": {
+                  "name": [
+                    "len",
+                    "items"
+                  ]
                 },
-                "int": "3"
-              }
+                "name": "n"
+              },
+              "int": "3"
             }
           },
           "body": {

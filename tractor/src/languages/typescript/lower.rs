@@ -541,7 +541,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "if_statement" => {
             let cond = node
                 .child_by_field_name("condition")
-                .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
+                .map(|n| Box::new(lower_node(n, source).wrap_expression()));
             let body = node
                 .child_by_field_name("consequence")
                 .map(|n| Box::new(lower_block_like(n, source)));
@@ -566,7 +566,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         "while_statement" => {
             let cond = node
                 .child_by_field_name("condition")
-                .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
+                .map(|n| Box::new(lower_node(n, source).wrap_expression()));
             let body = node
                 .child_by_field_name("body")
                 .map(|n| Box::new(lower_block_like(n, source)));
@@ -1590,9 +1590,9 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let if_false = node.child_by_field_name("alternative").map(|n| lower_node(n, source));
             match (cond, if_true, if_false) {
                 (Some(c), Some(t), Some(f)) => SyntaxTree::Ternary {
-                    condition: Box::new(c.wrap_slot("condition")),
-                    if_true: Box::new(t.wrap_slot("then")),
-                    if_false: Box::new(f.wrap_slot("else")),
+                    condition: Box::new(c.wrap_expression()),
+                    if_true: Box::new(t.wrap_expression()),
+                    if_false: Box::new(f.wrap_expression()),
                     range,
                     span,
                 },
@@ -1716,7 +1716,7 @@ fn lower_ts_else_chain(node: &RawNode, source: &str) -> SyntaxTree {
         let inner = node.named_children().next();
         match inner {
             Some(i) if i.kind() == "if_statement" => {
-                let cond = i.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
+                let cond = i.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source).wrap_expression()));
                 let body = i.child_by_field_name("consequence").map(|n| Box::new(lower_block_like(n, source)));
                 let alt = i.child_by_field_name("alternative");
                 let else_branch = alt.map(|a| Box::new(lower_ts_else_chain(a, source)));
@@ -1739,7 +1739,7 @@ fn lower_ts_else_chain(node: &RawNode, source: &str) -> SyntaxTree {
             None => SyntaxTree::Unknown { kind: "else_clause(empty)".to_string(), range, span },
         }
     } else if node.kind() == "if_statement" {
-        let cond = node.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
+        let cond = node.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source).wrap_expression()));
         let body = node.child_by_field_name("consequence").map(|n| Box::new(lower_block_like(n, source)));
         let alt = node.child_by_field_name("alternative");
         let else_branch = alt.map(|a| Box::new(lower_ts_else_chain(a, source)));

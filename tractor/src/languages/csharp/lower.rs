@@ -719,7 +719,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
         // shared rendering arms (which expect Body) work uniformly.
         "if_statement" => {
             let cond = node.child_by_field_name("condition")
-                .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
+                .map(|n| Box::new(lower_node(n, source).wrap_expression()));
             let body = node.child_by_field_name("consequence")
                 .map(|n| Box::new(lower_csharp_consequence(n, source)));
             // The `else` part is exposed either as a child kind
@@ -743,7 +743,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
 
         "while_statement" => {
             let cond = node.child_by_field_name("condition")
-                .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
+                .map(|n| Box::new(lower_node(n, source).wrap_expression()));
             let body = node.child_by_field_name("body")
                 .map(|n| Box::new(lower_csharp_consequence(n, source)));
             match (cond, body) {
@@ -766,8 +766,8 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             match (left_node, right_node, body_node) {
                 (Some(l), Some(r), Some(b)) => SyntaxTree::Foreach {
                     type_ann: type_node.map(|t| Box::new(lower_node(t, source).wrap_type())),
-                    target: Box::new(lower_node(l, source).wrap_slot("left")),
-                    iterable: Box::new(lower_node(r, source).wrap_slot("right")),
+                    target: Box::new(lower_node(l, source).wrap_expression()),
+                    iterable: Box::new(lower_node(r, source).wrap_expression()),
                     body: Box::new(lower_csharp_consequence(b, source)),
                     range, span,
                 },
@@ -1235,9 +1235,9 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let alt = node.child_by_field_name("alternative");
             match (cond, cons, alt) {
                 (Some(c), Some(t), Some(f)) => SyntaxTree::Ternary {
-                    condition: Box::new(lower_node(c, source).wrap_slot("condition")),
-                    if_true: Box::new(lower_node(t, source).wrap_slot("then")),
-                    if_false: Box::new(lower_node(f, source).wrap_slot("else")),
+                    condition: Box::new(lower_node(c, source).wrap_expression()),
+                    if_true: Box::new(lower_node(t, source).wrap_expression()),
+                    if_false: Box::new(lower_node(f, source).wrap_expression()),
                     range, span,
                 },
                 _ => SyntaxTree::Unknown {
@@ -2143,7 +2143,7 @@ fn lower_csharp_else_chain(node: &RawNode, source: &str) -> SyntaxTree {
     };
     if inner_node.kind() == "if_statement" {
         let cond = inner_node.child_by_field_name("condition")
-            .map(|n| Box::new(lower_node(n, source).wrap_slot("condition")));
+            .map(|n| Box::new(lower_node(n, source).wrap_expression()));
         let body = inner_node.child_by_field_name("consequence")
             .map(|n| Box::new(lower_csharp_consequence(n, source)));
         let else_node = inner_node.child_by_field_name("alternative").or_else(|| {
@@ -2525,14 +2525,14 @@ fn lower_csharp_catch_clause(node: &RawNode, source: &str) -> SyntaxTree {
                     type_target = Some(Box::new(lower_node(t, source).wrap_type()));
                 }
                 if let Some(n) = n {
-                    binding = Some(Box::new(name_of(n, source).wrap_slot("as")));
+                    binding = Some(Box::new(name_of(n, source).wrap_expression()));
                 }
             }
             "catch_filter_clause" => {
                 // First named child is the filter expression.
                 let inner = c.named_children().next();
                 if let Some(i) = inner {
-                    filter = Some(Box::new(lower_node(i, source).wrap_slot("filter")));
+                    filter = Some(Box::new(lower_node(i, source).wrap_expression()));
                 }
             }
             "block" if body.is_none() => {

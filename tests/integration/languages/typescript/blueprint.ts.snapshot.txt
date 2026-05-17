@@ -389,7 +389,7 @@ program/
   │       │   ├─ type/name = "Status"
   │       │   └─ value[expression]/string = "\"idle\""
   │       ├─ if/
-  │       │   ├─ condition/expression/binary/
+  │       │   ├─ condition[expression]/binary/
   │       │   │   ├─ left[expression]/name = "n"
   │       │   │   ├─ op[operator and less] = "<"
   │       │   │   └─ right[expression]/number = "0"
@@ -397,7 +397,7 @@ program/
   │       │   │   ├─ expression/name = "status"
   │       │   │   └─ expression/string = "\"error\""
   │       │   └─ else_branch[else_if]/
-  │       │       ├─ condition/expression/binary/
+  │       │       ├─ condition[expression]/binary/
   │       │       │   ├─ left[expression]/name = "n"
   │       │       │   ├─ op[operator and equal] = "==="
   │       │       │   └─ right[expression]/number = "0"
@@ -405,7 +405,7 @@ program/
   │       │       │   ├─ expression/name = "status"
   │       │       │   └─ expression/string = "\"idle\""
   │       │       └─ else_branch[else_if]/
-  │       │           ├─ condition/expression/binary/
+  │       │           ├─ condition[expression]/binary/
   │       │           │   ├─ left[expression]/name = "n"
   │       │           │   ├─ op[operator and less] = "<"
   │       │           │   └─ right[expression]/number = "10"
@@ -456,15 +456,15 @@ program/
   │       │   │   └─ name = "obj"
   │       │   └─ body/expression/unary/name = "v"
   │       ├─ while/
-  │       │   ├─ condition/expression/false = "false"
+  │       │   ├─ condition[expression]/false = "false"
   │       │   └─ body/comment = "/* never */"
   │       └─ return/expression/ternary/
-  │           ├─ condition/expression/binary/
+  │           ├─ condition[expression]/binary/
   │           │   ├─ left[expression]/name = "n"
   │           │   ├─ op[operator and greater] = ">"
   │           │   └─ right[expression]/number = "0"
-  │           ├─ if_true[then]/expression/name = "status"
-  │           └─ if_false[else]/expression/string = "\"idle\""
+  │           ├─ if_true[expression]/name = "status"
+  │           └─ if_false[expression]/string = "\"idle\""
   ├─ variable[const]/
   │   ├─ name = "arrow"
   │   └─ value[expression]/arrow/
@@ -610,7 +610,7 @@ program/
   │   │   ├─ name = "x"
   │   │   └─ type/name = "number"
   │   └─ body/if/
-  │       ├─ condition/expression/binary/
+  │       ├─ condition[expression]/binary/
   │       │   ├─ left[expression]/unary/name = "x"
   │       │   ├─ op[operator and not_equal] = "!=="
   │       │   └─ right[expression]/string = "\"number\""
@@ -683,13 +683,13 @@ program/
   │       │       ├─ unary[postfix]/name = "j"
   │       │       └─ body/
   │       │           ├─ if/
-  │       │           │   ├─ condition/expression/binary/
+  │       │           │   ├─ condition[expression]/binary/
   │       │           │   │   ├─ left[expression]/name = "i"
   │       │           │   │   ├─ op[operator and equal] = "==="
   │       │           │   │   └─ right[expression]/number = "2"
   │       │           │   └─ body/name = "outer"
   │       │           ├─ if/
-  │       │           │   ├─ condition/expression/binary/
+  │       │           │   ├─ condition[expression]/binary/
   │       │           │   │   ├─ left[expression]/name = "i"
   │       │           │   │   ├─ op[operator and equal] = "==="
   │       │           │   │   └─ right[expression]/number = "4"
@@ -714,7 +714,7 @@ program/
   │       │       ├─ op[operator and less] = "<"
   │       │       └─ right[expression]/number = "3"
   │       ├─ if/
-  │       │   ├─ condition/expression/false = "false"
+  │       │   ├─ condition[expression]/false = "false"
   │       │   └─ body = "debugger;"
   │       └─ return/expression/binary/
   │           ├─ left[expression]/name = "total"

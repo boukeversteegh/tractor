@@ -151,9 +151,9 @@ module/
   │       │   ├─ expression/name = "matrix"
   │       │   └─ expression/name = "matrix"
   │       └─ return/expression/ternary/
-  │           ├─ if_true[then]/expression/name = "result"
-  │           ├─ condition/expression/name = "result"
-  │           └─ if_false[else]/expression/none = "None"
+  │           ├─ if_true[expression]/name = "result"
+  │           ├─ condition[expression]/name = "result"
+  │           └─ if_false[expression]/none = "None"
   ├─ function[async]/
   │   ├─ name = "async_work"
   │   ├─ parameter/
@@ -301,12 +301,12 @@ module/
   │       │   │   ├─ name = "enumerate"
   │       │   │   └─ name = "items"
   │       │   ├─ body/if/
-  │       │   │   ├─ condition/expression/comparison/
+  │       │   │   ├─ condition[expression]/comparison/
   │       │   │   │   ├─ name = "v"
   │       │   │   │   └─ int = "0"
   │       │   │   ├─ body/continue = "continue"
   │       │   │   └─ else_branch[else_if]/
-  │       │   │       ├─ condition/expression/comparison/
+  │       │   │       ├─ condition[expression]/comparison/
   │       │   │       │   ├─ name = "v"
   │       │   │       │   └─ int = "0"
   │       │   │       ├─ body/break = "break"
@@ -320,7 +320,7 @@ module/
   │       │   ├─ expression/name = "n"
   │       │   └─ expression/int = "0"
   │       ├─ while/
-  │       │   ├─ condition/expression/comparison/
+  │       │   ├─ condition[expression]/comparison/
   │       │   │   ├─ name = "n"
   │       │   │   └─ int = "10"
   │       │   ├─ body/assign/
@@ -333,7 +333,7 @@ module/
   │       │   │   ├─ type/tuple/
   │       │   │   │   ├─ name = "ValueError"
   │       │   │   │   └─ name = "TypeError"
-  │       │   │   ├─ binding[as]/expression/name = "e"
+  │       │   │   ├─ binding[expression]/name = "e"
   │       │   │   └─ body/raise/
   │       │   │       ├─ expression/call/
   │       │   │       │   ├─ name = "RuntimeError"
@@ -480,13 +480,13 @@ module/
   │       ├─ assign/
   │       │   ├─ expression/name = "first"
   │       │   └─ expression/ternary/
-  │       │       ├─ if_true[then]/expression/object/
+  │       │       ├─ if_true[expression]/object/
   │       │       │   ├─ name = "items"
   │       │       │   └─ int = "0"
-  │       │       ├─ condition/expression/name = "items"
-  │       │       └─ if_false[else]/expression/none = "None"
+  │       │       ├─ condition[expression]/name = "items"
+  │       │       └─ if_false[expression]/none = "None"
   │       ├─ if/
-  │       │   ├─ condition/expression/comparison/
+  │       │   ├─ condition[expression]/comparison/
   │       │   │   ├─ assign/
   │       │   │   │   ├─ name = "n"
   │       │   │   │   └─ call/

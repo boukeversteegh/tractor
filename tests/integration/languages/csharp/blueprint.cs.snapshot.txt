@@ -264,12 +264,12 @@ unit/
   │   │       │   │   ├─ type/name = "int"
   │   │       │   │   └─ name = "id"
   │   │       │   └─ body/ternary/
-  │   │       │       ├─ condition/expression/binary/
+  │   │       │       ├─ condition[expression]/binary/
   │   │       │       │   ├─ left[expression]/name = "id"
   │   │       │       │   ├─ op[operator and equal] = "=="
   │   │       │       │   └─ right[expression]/name = "Id"
-  │   │       │       ├─ if_true[then]/expression/name = "this"
-  │   │       │       └─ if_false[else]/expression/null = "null"
+  │   │       │       ├─ if_true[expression]/name = "this"
+  │   │       │       └─ if_false[expression]/null = "null"
   │   │       ├─ method[public and async]/
   │   │       │   ├─ name = "AllAsync"
   │   │       │   └─ body/
@@ -338,13 +338,13 @@ unit/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "label"
   │               │   └─ value[expression]/ternary/
-  │               │       ├─ condition/expression/is/
+  │               │       ├─ condition[expression]/is/
   │               │       │   ├─ name = "widget"
   │               │       │   └─ pattern[recursive]/properties/subpattern/
   │               │       │       ├─ object/name = "Name"
   │               │       │       └─ pattern[relational]/int = "0"
-  │               │       ├─ if_true[then]/expression/string = "\"named\""
-  │               │       └─ if_false[else]/expression/string = "\"blank\""
+  │               │       ├─ if_true[expression]/string = "\"named\""
+  │               │       └─ if_false[expression]/string = "\"blank\""
   │               ├─ comment[leading] = "// switch expression + pattern matching"
   │               ├─ variable/
   │               │   ├─ type/name = "string"
@@ -389,7 +389,7 @@ unit/
   │               │       │   └─ throw/expression/object_creation/name = "InvalidOperationException"
   │               │       └─ arm/break = "break;"
   │               ├─ if/
-  │               │   ├─ condition/expression/is/
+  │               │   ├─ condition[expression]/is/
   │               │   │   ├─ name = "token"
   │               │   │   └─ pattern[declaration]/
   │               │   │       ├─ type/name = "Widget"
@@ -511,7 +511,7 @@ unit/
   │               │   ├─ name = "j"
   │               │   └─ value[expression]/int = "0"
   │               ├─ while/
-  │               │   ├─ condition/expression/binary/
+  │               │   ├─ condition[expression]/binary/
   │               │   │   ├─ left[expression]/unary[postfix]/name = "j"
   │               │   │   ├─ op[operator and less] = "<"
   │               │   │   └─ right[expression]/int = "2"
@@ -528,8 +528,8 @@ unit/
   │               │       └─ right[expression]/int = "2"
   │               ├─ foreach/
   │               │   ├─ type/name = "var"
-  │               │   ├─ target[left]/expression/name = "n"
-  │               │   ├─ iterable[right]/expression/name = "odds"
+  │               │   ├─ target[expression]/name = "n"
+  │               │   ├─ iterable[expression]/name = "odds"
   │               │   └─ body/expression/call/
   │               │       ├─ name = "log"
   │               │       └─ object/name = "n"
@@ -559,8 +559,8 @@ unit/
   │               │   │       └─ string = "\"boom\""
   │               │   ├─ catch/
   │               │   │   ├─ type/name = "InvalidOperationException"
-  │               │   │   ├─ binding[as]/expression/name = "ex"
-  │               │   │   ├─ filter/expression/binary/
+  │               │   │   ├─ binding[expression]/name = "ex"
+  │               │   │   ├─ filter[expression]/binary/
   │               │   │   │   ├─ left[expression]/object/name = "ex"
   │               │   │   │   ├─ op[operator and greater] = ">"
   │               │   │   │   └─ right[expression]/int = "0"
@@ -652,12 +652,12 @@ unit/
   │                   │   │   └─ right[expression]/object/name = "raw"
   │                   │   ├─ op[operator and plus] = "+"
   │                   │   └─ right[expression]/ternary/
-  │                   │       ├─ condition/expression/binary/
+  │                   │       ├─ condition[expression]/binary/
   │                   │       │   ├─ left[expression]/name = "label"
   │                   │       │   ├─ op[operator and equal] = "=="
   │                   │       │   └─ right[expression]/name = "kind"
-  │                   │       ├─ if_true[then]/expression/int = "0"
-  │                   │       └─ if_false[else]/expression/int = "1"
+  │                   │       ├─ if_true[expression]/int = "0"
+  │                   │       └─ if_false[expression]/int = "1"
   │                   ├─ op[operator and plus] = "+"
   │                   └─ right[expression]/object/name = "shouted"
   └─ namespace/
@@ -1006,7 +1006,7 @@ unit/
       │       │       │       ├─ name = "grp"
       │       │       │       └─ select/object/name = "grp"
       │       │       ├─ if/
-      │       │       │   ├─ condition/expression/is/
+      │       │       │   ├─ condition[expression]/is/
       │       │       │   │   ├─ name = "xs"
       │       │       │   │   └─ pattern[declaration]/
       │       │       │   │       ├─ type[array]/type/name = "int"
@@ -1065,13 +1065,13 @@ unit/
       │       │       │   ├─ unary[postfix]/name = "i"
       │       │       │   └─ body/
       │       │       │       ├─ if/
-      │       │       │       │   ├─ condition/expression/binary/
+      │       │       │       │   ├─ condition[expression]/binary/
       │       │       │       │   │   ├─ left[expression]/name = "i"
       │       │       │       │   │   ├─ op[operator and equal] = "=="
       │       │       │       │   │   └─ right[expression]/int = "1"
       │       │       │       │   └─ body/continue = "continue;"
       │       │       │       └─ if/
-      │       │       │           ├─ condition/expression/binary/
+      │       │       │           ├─ condition[expression]/binary/
       │       │       │           │   ├─ left[expression]/name = "i"
       │       │       │           │   ├─ op[operator and equal] = "=="
       │       │       │           │   └─ right[expression]/int = "2"
