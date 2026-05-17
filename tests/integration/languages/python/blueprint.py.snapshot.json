@@ -56,16 +56,33 @@
   ],
   "class": [
     {
-      "body": "pass",
-      "generic": {
-        "type": {
-          "name": "T"
+      "decorators": [],
+      "name": "Box",
+      "generics": [
+        {
+          "$type": "generic",
+          "type": {
+            "name": "T"
+          }
         }
-      },
-      "name": "Box"
+      ],
+      "bases": [],
+      "where_clauses": [],
+      "body": "pass"
     },
     {
+      "decorators": [
+        {
+          "$type": "decorator",
+          "name": "dataclass"
+        }
+      ],
+      "name": "Point",
+      "generics": [],
+      "bases": [],
+      "where_clauses": [],
       "body": {
+        "$type": "body",
         "assign": [
           {
             "expression": [
@@ -121,29 +138,65 @@
         "expression": {
           "string": "\"\"\"A dataclass with default factory.\"\"\""
         }
-      },
-      "decorator": {
-        "name": "dataclass"
-      },
-      "name": "Point"
+      }
     },
     {
-      "body": "pass",
-      "name": "Base"
+      "decorators": [],
+      "name": "Base",
+      "generics": [],
+      "bases": [],
+      "where_clauses": [],
+      "body": "pass"
     },
     {
-      "body": "pass",
-      "extends": {
-        "type": {
-          "name": "type"
+      "decorators": [],
+      "name": "Meta",
+      "generics": [],
+      "bases": [
+        {
+          "$type": "extends",
+          "type": {
+            "name": "type"
+          }
         }
-      },
-      "name": "Meta"
+      ],
+      "where_clauses": [],
+      "body": "pass"
     },
     {
+      "decorators": [],
+      "name": "Derived",
+      "generics": [],
+      "bases": [
+        {
+          "$type": "extends",
+          "type": {
+            "name": "Base"
+          }
+        },
+        {
+          "$type": "extends",
+          "type": {
+            "keyword_argument": {
+              "name": [
+                "metaclass",
+                "Meta"
+              ]
+            }
+          }
+        }
+      ],
+      "where_clauses": [],
       "body": {
+        "$type": "body",
         "class": {
+          "decorators": [],
+          "name": "Nested",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
           "body": {
+            "$type": "body",
             "assign": {
               "expression": [
                 {
@@ -154,8 +207,7 @@
                 }
               ]
             }
-          },
-          "name": "Nested"
+          }
         },
         "expression": {
           "string": "\"\"\"Class with inheritance and metaclass kwarg.\"\"\""
@@ -163,7 +215,26 @@
         "function": [
           {
             "public": true,
+            "decorators": [],
+            "name": "__init__",
+            "generics": [],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "name": "self"
+              },
+              {
+                "$type": "parameter",
+                "name": "name",
+                "type": {
+                  "$type": "type",
+                  "name": "str"
+                }
+              }
+            ],
+            "throws": [],
             "body": {
+              "$type": "body",
               "assign": {
                 "expression": [
                   {
@@ -174,23 +245,26 @@
                   }
                 ]
               }
-            },
-            "name": "__init__",
-            "parameter": [
-              {
-                "name": "self"
-              },
-              {
-                "name": "name",
-                "type": {
-                  "name": "str"
-                }
-              }
-            ]
+            }
           },
           {
             "public": true,
+            "decorators": [],
+            "name": "__eq__",
+            "generics": [],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "name": "self"
+              },
+              {
+                "$type": "parameter",
+                "name": "other"
+              }
+            ],
+            "throws": [],
             "body": {
+              "$type": "body",
               "return": {
                 "expression": {
                   "logical": {
@@ -223,37 +297,10 @@
                   }
                 }
               }
-            },
-            "name": "__eq__",
-            "parameter": [
-              {
-                "name": "self"
-              },
-              {
-                "name": "other"
-              }
-            ]
-          }
-        ]
-      },
-      "extends": [
-        {
-          "type": {
-            "name": "Base"
-          }
-        },
-        {
-          "type": {
-            "keyword_argument": {
-              "name": [
-                "metaclass",
-                "Meta"
-              ]
             }
           }
-        }
-      ],
-      "name": "Derived"
+        ]
+      }
     }
   ],
   "comment": [
@@ -338,7 +385,36 @@
   ],
   "function": [
     {
+      "decorators": [],
+      "name": "simple",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "a"
+        },
+        {
+          "$type": "parameter",
+          "name": "b",
+          "default": "1"
+        },
+        {
+          "$type": "parameter",
+          "name": "args"
+        },
+        {
+          "$type": "parameter",
+          "name": "kw_only",
+          "default": "2"
+        },
+        {
+          "$type": "parameter",
+          "name": "kwargs"
+        }
+      ],
+      "throws": [],
       "body": {
+        "$type": "body",
         "expression": {
           "string": "\"\"\"Cover default, varargs, keyword-only, and **kwargs.\"\"\""
         },
@@ -375,30 +451,44 @@
             }
           }
         }
-      },
-      "name": "simple",
-      "parameter": [
+      }
+    },
+    {
+      "decorators": [],
+      "name": "pos_only",
+      "generics": [],
+      "parameters": [
         {
+          "$type": "parameter",
           "name": "a"
         },
         {
-          "int": "1",
+          "$type": "parameter",
           "name": "b"
         },
+        "/",
         {
-          "name": "args"
+          "$type": "parameter",
+          "name": "c"
         },
         {
-          "int": "2",
-          "name": "kw_only"
+          "$type": "parameter",
+          "name": "d"
+        },
+        "*",
+        {
+          "$type": "parameter",
+          "name": "e"
         },
         {
-          "name": "kwargs"
+          "$type": "parameter",
+          "name": "f",
+          "default": "0"
         }
-      ]
-    },
-    {
+      ],
+      "throws": [],
       "body": {
+        "$type": "body",
         "expression": {
           "string": "\"\"\"Cover positional-only and keyword-only boundaries.\"\"\""
         },
@@ -416,60 +506,100 @@
             }
           }
         }
-      },
-      "keyword_separator": "*",
-      "name": "pos_only",
-      "parameter": [
-        {
-          "name": "a"
-        },
-        {
-          "name": "b"
-        },
-        {
-          "name": "c"
-        },
-        {
-          "name": "d"
-        },
-        {
-          "name": "e"
-        },
-        {
-          "int": "0",
-          "name": "f"
-        }
-      ],
-      "positional_separator": "/"
+      }
     },
     {
+      "decorators": [],
+      "name": "identity",
+      "generics": [
+        {
+          "$type": "generic",
+          "type": {
+            "name": "T"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "v",
+          "type": {
+            "$type": "type",
+            "name": "T"
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "name": "T"
+        }
+      },
+      "throws": [],
       "body": {
+        "$type": "body",
         "return": {
           "expression": {
             "name": "v"
           }
         }
-      },
-      "generic": {
-        "type": {
-          "name": "T"
-        }
-      },
-      "name": "identity",
-      "parameter": {
-        "name": "v",
-        "type": {
-          "name": "T"
-        }
-      },
-      "returns": {
-        "type": {
-          "name": "T"
-        }
       }
     },
     {
+      "decorators": [],
+      "name": "annotated",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "x",
+          "type": {
+            "$type": "type",
+            "name": "int"
+          }
+        },
+        {
+          "$type": "parameter",
+          "name": "y",
+          "type": {
+            "$type": "type",
+            "name": [
+              "Optional",
+              "str"
+            ]
+          },
+          "default": "None"
+        },
+        {
+          "$type": "parameter",
+          "name": "z",
+          "type": {
+            "$type": "type",
+            "union": true,
+            "none": "None",
+            "type": {
+              "name": [
+                "list",
+                "int"
+              ]
+            }
+          },
+          "default": "None"
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "name": [
+            "Union",
+            "int"
+          ],
+          "none": "None"
+        }
+      },
+      "throws": [],
       "body": {
+        "$type": "body",
         "assert": {
           "comparison": {
             "int": "0",
@@ -571,53 +701,32 @@
             }
           }
         }
-      },
-      "name": "annotated",
-      "parameter": [
-        {
-          "name": "x",
-          "type": {
-            "name": "int"
-          }
-        },
-        {
-          "name": "y",
-          "none": "None",
-          "type": {
-            "name": [
-              "Optional",
-              "str"
-            ]
-          }
-        },
-        {
-          "name": "z",
-          "none": "None",
-          "type": {
-            "union": true,
-            "none": "None",
-            "type": {
-              "name": [
-                "list",
-                "int"
-              ]
-            }
-          }
-        }
-      ],
-      "returns": {
-        "type": {
-          "name": [
-            "Union",
-            "int"
-          ],
-          "none": "None"
-        }
       }
     },
     {
       "async": true,
+      "decorators": [],
+      "name": "async_work",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "url",
+          "type": {
+            "$type": "type",
+            "name": "str"
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "name": "bytes"
+        }
+      },
+      "throws": [],
       "body": {
+        "$type": "body",
         "with": {
           "async": true,
           "as": {
@@ -672,22 +781,21 @@
             }
           }
         }
-      },
-      "name": "async_work",
-      "parameter": {
-        "name": "url",
-        "type": {
-          "name": "str"
-        }
-      },
-      "returns": {
-        "type": {
-          "name": "bytes"
-        }
       }
     },
     {
+      "decorators": [],
+      "name": "gen_demo",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "n"
+        }
+      ],
+      "throws": [],
       "body": {
+        "$type": "body",
         "for": {
           "targets": [
             {
@@ -741,18 +849,51 @@
             }
           }
         }
-      },
-      "name": "gen_demo",
-      "parameter": {
-        "name": "n"
       }
     },
     {
+      "decorators": [],
+      "name": "repeat",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "times"
+        }
+      ],
+      "throws": [],
       "body": {
+        "$type": "body",
         "function": {
+          "decorators": [],
+          "name": "decorator",
+          "generics": [],
+          "parameters": [
+            {
+              "$type": "parameter",
+              "name": "fn"
+            }
+          ],
+          "throws": [],
           "body": {
+            "$type": "body",
             "function": {
+              "decorators": [],
+              "name": "wrapper",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "name": "a"
+                },
+                {
+                  "$type": "parameter",
+                  "name": "kw"
+                }
+              ],
+              "throws": [],
               "body": {
+                "$type": "body",
                 "for": {
                   "targets": [
                     {
@@ -786,26 +927,13 @@
                     }
                   }
                 }
-              },
-              "name": "wrapper",
-              "parameter": [
-                {
-                  "name": "a"
-                },
-                {
-                  "name": "kw"
-                }
-              ]
+              }
             },
             "return": {
               "expression": {
                 "name": "wrapper"
               }
             }
-          },
-          "name": "decorator",
-          "parameter": {
-            "name": "fn"
           }
         },
         "return": {
@@ -813,29 +941,41 @@
             "name": "decorator"
           }
         }
-      },
-      "name": "repeat",
-      "parameter": {
-        "name": "times"
       }
     },
     {
-      "body": "pass",
-      "decorator": [
+      "decorators": [
         {
+          "$type": "decorator",
           "name": "staticmethod"
         },
         {
+          "$type": "decorator",
           "call": {
             "int": "3",
             "name": "repeat"
           }
         }
       ],
-      "name": "stacked"
+      "name": "stacked",
+      "generics": [],
+      "parameters": [],
+      "throws": [],
+      "body": "pass"
     },
     {
+      "decorators": [],
+      "name": "control_flow",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "items"
+        }
+      ],
+      "throws": [],
       "body": {
+        "$type": "body",
         "assign": [
           {
             "expression": [
@@ -963,7 +1103,7 @@
           "handlers": [
             {
               "$type": "except",
-              "type_target": {
+              "type": {
                 "$type": "type",
                 "tuple": {
                   "name": [
@@ -993,7 +1133,7 @@
             },
             {
               "$type": "except",
-              "type_target": {
+              "type": {
                 "$type": "type",
                 "name": "Exception"
               },
@@ -1086,14 +1226,21 @@
             ]
           }
         }
-      },
-      "name": "control_flow",
-      "parameter": {
-        "name": "items"
       }
     },
     {
+      "decorators": [],
+      "name": "match_demo",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "msg"
+        }
+      ],
+      "throws": [],
       "body": {
+        "$type": "body",
         "match": {
           "body": {
             "arm": [
@@ -1205,14 +1352,21 @@
           },
           "name": "msg"
         }
-      },
-      "name": "match_demo",
-      "parameter": {
-        "name": "msg"
       }
     },
     {
+      "decorators": [],
+      "name": "comprehensions",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "data"
+        }
+      ],
+      "throws": [],
       "body": {
+        "$type": "body",
         "assign": [
           {
             "expression": [
@@ -1388,14 +1542,21 @@
             }
           ]
         }
-      },
-      "name": "comprehensions",
-      "parameter": {
-        "name": "data"
       }
     },
     {
+      "decorators": [],
+      "name": "expression_demo",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "items"
+        }
+      ],
+      "throws": [],
       "body": {
+        "$type": "body",
         "assign": [
           {
             "expression": [
@@ -1476,7 +1637,14 @@
                 "call": {
                   "call": {
                     "lambda": {
-                      "binary": {
+                      "parameters": [
+                        {
+                          "$type": "parameter",
+                          "name": "v"
+                        }
+                      ],
+                      "body": {
+                        "$type": "binary",
                         "left": {
                           "$type": "expression",
                           "name": "v"
@@ -1490,9 +1658,6 @@
                           "$type": "expression",
                           "int": "2"
                         }
-                      },
-                      "parameter": {
-                        "name": "v"
                       }
                     },
                     "name": [
@@ -1645,14 +1810,16 @@
             }
           ]
         }
-      },
-      "name": "expression_demo",
-      "parameter": {
-        "name": "items"
       }
     },
     {
+      "decorators": [],
+      "name": "closure_demo",
+      "generics": [],
+      "parameters": [],
+      "throws": [],
       "body": {
+        "$type": "body",
         "assign": {
           "expression": [
             {
@@ -1667,7 +1834,13 @@
           "name": "counter"
         },
         "function": {
+          "decorators": [],
+          "name": "inc",
+          "generics": [],
+          "parameters": [],
+          "throws": [],
           "body": {
+            "$type": "body",
             "assign": {
               "expression": [
                 {
@@ -1686,19 +1859,36 @@
                 "name": "counter"
               }
             }
-          },
-          "name": "inc"
+          }
         },
         "return": {
           "expression": {
             "name": "inc"
           }
         }
-      },
-      "name": "closure_demo"
+      }
     },
     {
+      "decorators": [],
+      "name": "patterns_and_misc",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "values"
+        },
+        {
+          "$type": "parameter",
+          "name": "items"
+        },
+        {
+          "$type": "parameter",
+          "name": "x"
+        }
+      ],
+      "throws": [],
       "body": {
+        "$type": "body",
         "assign": [
           {
             "expression": {
@@ -1899,7 +2089,7 @@
           "handlers": [
             {
               "$type": "except",
-              "type_target": {
+              "type": {
                 "$type": "type",
                 "tuple": {
                   "name": [
@@ -1924,19 +2114,7 @@
             }
           ]
         }
-      },
-      "name": "patterns_and_misc",
-      "parameter": [
-        {
-          "name": "values"
-        },
-        {
-          "name": "items"
-        },
-        {
-          "name": "x"
-        }
-      ]
+      }
     }
   ],
   "import": [

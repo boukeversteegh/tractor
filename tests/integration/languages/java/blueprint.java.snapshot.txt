@@ -33,17 +33,18 @@ program/
   │   │   └─ extends/type/
   │   │       ├─ name = "Comparable"
   │   │       └─ name = "T"
-  │   ├─ extends/type/name = "Base"
-  │   ├─ implements/type/
-  │   │   ├─ name = "Handler"
-  │   │   └─ name = "T"
+  │   ├─ bases/
+  │   │   ├─ extends/type/name = "Base"
+  │   │   └─ implements/type/
+  │   │       ├─ name = "Handler"
+  │   │       └─ name = "T"
   │   └─ body/
   │       ├─ comment = "// Line comment before a field"
   │       ├─ comment[leading] = "/* block comment */"
   │       ├─ field[public and static and final]/
   │       │   ├─ type/name = "int"
   │       │   ├─ name = "MAX"
-  │       │   └─ expression/int = "100"
+  │       │   └─ value[expression]/int = "100"
   │       ├─ field[private]/
   │       │   ├─ type/name = "String"
   │       │   └─ name = "name"
@@ -135,7 +136,7 @@ program/
   │       │   │   └─ name = "xs"
   │       │   └─ body/
   │       │       ├─ variable/
-  │       │       │   ├─ type_ann[type]/name = "int"
+  │       │       │   ├─ type/name = "int"
   │       │       │   ├─ name = "total"
   │       │       │   └─ value[expression]/int = "0"
   │       │       ├─ foreach/
@@ -146,7 +147,7 @@ program/
   │       │       │       ├─ expression/name = "total"
   │       │       │       └─ expression/name = "x"
   │       │       ├─ variable/
-  │       │       │   ├─ type_ann[type]/name = "int"
+  │       │       │   ├─ type/name = "int"
   │       │       │   ├─ name = "i"
   │       │       │   └─ value[expression]/int = "0"
   │       │       ├─ while/
@@ -274,7 +275,7 @@ program/
           │   ├─ name = "literals"
           │   └─ body/
           │       ├─ variable/
-          │       │   ├─ type_ann[type and array]/
+          │       │   ├─ type[array]/
           │       │   │   ├─ name = "int"
           │       │   │   └─ type = "[]"
           │       │   ├─ name = "arr"
@@ -283,17 +284,17 @@ program/
           │       │       ├─ int = "2"
           │       │       └─ int = "3"
           │       ├─ variable/
-          │       │   ├─ type_ann[type]/name = "char"
+          │       │   ├─ type/name = "char"
           │       │   ├─ name = "ch"
           │       │   └─ value[expression]/string = "'A'"
           │       ├─ variable/
-          │       │   ├─ type_ann[type]/
+          │       │   ├─ type/
           │       │   │   ├─ name = "Class"
           │       │   │   └─ type = "?"
           │       │   ├─ name = "cls"
           │       │   └─ value[expression]/type/name = "String"
           │       └─ variable/
-          │           ├─ type_ann[type]/
+          │           ├─ type/
           │           │   ├─ name = "java.util.function.Function"
           │           │   ├─ name = "Object"
           │           │   └─ name = "String"
@@ -310,7 +311,7 @@ program/
           │   │   └─ name = "o"
           │   └─ body/
           │       ├─ variable/
-          │       │   ├─ type_ann[type]/name = "int"
+          │       │   ├─ type/name = "int"
           │       │   ├─ name = "n"
           │       │   └─ value[expression]/cast/
           │       │       ├─ type/name = "int"
@@ -322,7 +323,7 @@ program/
           │       │   │   └─ right[expression]/int = "0"
           │       │   └─ string = "\"non-negative\""
           │       ├─ variable/
-          │       │   ├─ type_ann[type]/name = "boolean"
+          │       │   ├─ type/name = "boolean"
           │       │   ├─ name = "isStr"
           │       │   └─ value[expression]/is/
           │       │       ├─ name = "o"
@@ -331,7 +332,7 @@ program/
           │       │   ├─ name = "outer"
           │       │   └─ c_for/
           │       │       ├─ initializer[variable]/
-          │       │       │   ├─ type_ann[type]/name = "int"
+          │       │       │   ├─ type/name = "int"
           │       │       │   ├─ name = "i"
           │       │       │   └─ value[expression]/int = "0"
           │       │       ├─ condition[binary]/
@@ -353,7 +354,7 @@ program/
           │       │               │   └─ right[expression]/int = "3"
           │       │               └─ body/name = "outer"
           │       ├─ variable/
-          │       │   ├─ type_ann[type]/name = "int"
+          │       │   ├─ type/name = "int"
           │       │   ├─ name = "k"
           │       │   └─ value[expression]/int = "0"
           │       └─ do_while/
@@ -376,7 +377,7 @@ program/
           │       │   │   │   └─ right[expression]/null = "null"
           │       │   │   └─ body/object_creation/name = "java.io.IOException"
           │       │   └─ catch/
-          │       │       ├─ type_target[type]/
+          │       │       ├─ type/
           │       │       │   ├─ name = "java.io.IOException"
           │       │       │   └─ name = "RuntimeException"
           │       │       ├─ binding[as]/expression/name = "e"
@@ -393,7 +394,7 @@ program/
               │   └─ name = "o"
               └─ body/
                   ├─ variable/
-                  │   ├─ type_ann[type]/name = "int"
+                  │   ├─ type/name = "int"
                   │   ├─ name = "v"
                   │   └─ value[expression]/switch/
                   │       ├─ name = "o"

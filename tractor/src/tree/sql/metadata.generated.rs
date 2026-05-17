@@ -544,7 +544,7 @@ pub fn fields_of(tree: &SqlTree) -> Vec<TreeField<'_, SqlTree>> {
             out.push(TreeField::Many { name: "columns", items: columns.iter().collect() });
             if let Some(__t) = into { out.push(TreeField::Single { name: "into", value: __t }); }
             if let Some(__t) = from { out.push(TreeField::Single { name: "from", value: __t }); }
-            if let Some(__t) = where_ { out.push(TreeField::Single { name: "where_", value: __t }); }
+            if let Some(__t) = where_ { out.push(TreeField::Single { name: "where", value: __t }); }
             if let Some(__t) = group_by { out.push(TreeField::Single { name: "group_by", value: __t }); }
             if let Some(__t) = having { out.push(TreeField::Single { name: "having", value: __t }); }
             if let Some(__t) = order_by { out.push(TreeField::Single { name: "order_by", value: __t }); }
@@ -557,11 +557,11 @@ pub fn fields_of(tree: &SqlTree) -> Vec<TreeField<'_, SqlTree>> {
         SqlTree::Update { table, assignments, where_, .. } => {
             out.push(TreeField::Single { name: "table", value: table });
             out.push(TreeField::Many { name: "assignments", items: assignments.iter().collect() });
-            if let Some(__t) = where_ { out.push(TreeField::Single { name: "where_", value: __t }); }
+            if let Some(__t) = where_ { out.push(TreeField::Single { name: "where", value: __t }); }
         }
         SqlTree::Delete { from, where_, .. } => {
             if let Some(__t) = from { out.push(TreeField::Single { name: "from", value: __t }); }
-            if let Some(__t) = where_ { out.push(TreeField::Single { name: "where_", value: __t }); }
+            if let Some(__t) = where_ { out.push(TreeField::Single { name: "where", value: __t }); }
         }
         SqlTree::Merge { target, source, on, whens, .. } => {
             out.push(TreeField::Single { name: "target", value: target });
@@ -645,7 +645,7 @@ pub fn fields_of(tree: &SqlTree) -> Vec<TreeField<'_, SqlTree>> {
         }
         SqlTree::Case { whens, else_, .. } => {
             out.push(TreeField::Many { name: "whens", items: whens.iter().collect() });
-            if let Some(__t) = else_ { out.push(TreeField::Single { name: "else_", value: __t }); }
+            if let Some(__t) = else_ { out.push(TreeField::Single { name: "else", value: __t }); }
         }
         SqlTree::When { condition, value, .. } => {
             out.push(TreeField::Single { name: "condition", value: condition });
@@ -653,7 +653,7 @@ pub fn fields_of(tree: &SqlTree) -> Vec<TreeField<'_, SqlTree>> {
         }
         SqlTree::Cast { value, type_, .. } => {
             out.push(TreeField::Single { name: "value", value: value });
-            out.push(TreeField::Single { name: "type_", value: type_ });
+            out.push(TreeField::Single { name: "type", value: type_ });
         }
         SqlTree::Call { callee, arguments, .. } => {
             out.push(TreeField::Single { name: "callee", value: callee });
@@ -693,7 +693,7 @@ pub fn fields_of(tree: &SqlTree) -> Vec<TreeField<'_, SqlTree>> {
         }
         SqlTree::ColumnDef { name, type_, constraints, .. } => {
             out.push(TreeField::Single { name: "name", value: name });
-            out.push(TreeField::Single { name: "type_", value: type_ });
+            out.push(TreeField::Single { name: "type", value: type_ });
             out.push(TreeField::Many { name: "constraints", items: constraints.iter().collect() });
         }
         SqlTree::Constraint { name, body, .. } => {

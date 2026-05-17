@@ -759,46 +759,51 @@ fn fields_arm(v: &Variant, tree: &str) -> String {
         for field in &named.named {
             let Some(ident) = &field.ident else { continue };
             let fname = ident.to_string();
+            // Projected field name strips Rust-specific noise
+            // (`type_ann` → `type`, `else_` → `else`, etc.). The Rust
+            // binding stays the original `fname`; only the user-facing
+            // XML element / JSON key uses the projected form.
+            let pname = field_name_to_json_key(&fname);
             let ty = type_str(&field.ty);
             if ty == box_t {
                 bindings.push(fname.clone());
                 body.push_str(&format!(
-                    "            out.push(TreeField::Single {{ name: {fname:?}, value: {fname} }});\n",
+                    "            out.push(TreeField::Single {{ name: {pname:?}, value: {fname} }});\n",
                 ));
             } else if ty == opt_box_t {
                 bindings.push(fname.clone());
                 body.push_str(&format!(
-                    "            if let Some(__t) = {fname} {{ out.push(TreeField::Single {{ name: {fname:?}, value: __t }}); }}\n",
+                    "            if let Some(__t) = {fname} {{ out.push(TreeField::Single {{ name: {pname:?}, value: __t }}); }}\n",
                 ));
             } else if ty == vec_t {
                 bindings.push(fname.clone());
                 body.push_str(&format!(
-                    "            out.push(TreeField::Many {{ name: {fname:?}, items: {fname}.iter().collect() }});\n",
+                    "            out.push(TreeField::Many {{ name: {pname:?}, items: {fname}.iter().collect() }});\n",
                 ));
             } else {
                 match ty.as_str() {
                     "Expression" => {
                         bindings.push(fname.clone());
                         body.push_str(&format!(
-                            "            out.push(TreeField::Single {{ name: {fname:?}, value: &{fname}.inner }});\n",
+                            "            out.push(TreeField::Single {{ name: {pname:?}, value: &{fname}.inner }});\n",
                         ));
                     }
                     "Option<Expression>" => {
                         bindings.push(fname.clone());
                         body.push_str(&format!(
-                            "            if let Some(__e) = {fname} {{ out.push(TreeField::Single {{ name: {fname:?}, value: &__e.inner }}); }}\n",
+                            "            if let Some(__e) = {fname} {{ out.push(TreeField::Single {{ name: {pname:?}, value: &__e.inner }}); }}\n",
                         ));
                     }
                     "LambdaBody" => {
                         bindings.push(fname.clone());
                         body.push_str(&format!(
-                            "            out.push(TreeField::Single {{ name: {fname:?}, value: {fname}.inner() }});\n",
+                            "            out.push(TreeField::Single {{ name: {pname:?}, value: {fname}.inner() }});\n",
                         ));
                     }
                     "AccessReceiver" => {
                         bindings.push(fname.clone());
                         body.push_str(&format!(
-                            "            if let AccessReceiver::Instance(__t) = {fname} {{ out.push(TreeField::Single {{ name: {fname:?}, value: __t }}); }}\n",
+                            "            if let AccessReceiver::Instance(__t) = {fname} {{ out.push(TreeField::Single {{ name: {pname:?}, value: __t }}); }}\n",
                         ));
                     }
                     "Modifiers" => {
@@ -887,7 +892,7 @@ fn fields_arm(v: &Variant, tree: &str) -> String {
                         // path instead.
                         bindings.push(fname.clone());
                         body.push_str(&format!(
-                            "            out.push(TreeField::Scalar {{ name: {fname:?}, value: {fname}.as_str() }});\n",
+                            "            out.push(TreeField::Scalar {{ name: {pname:?}, value: {fname}.as_str() }});\n",
                         ));
                     }
                     _ => {}

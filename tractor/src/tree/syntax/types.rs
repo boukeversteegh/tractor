@@ -885,6 +885,7 @@ pub enum SyntaxTree {
     /// syntax). `body` is a typed [`LambdaBody`] enum so the renderer
     /// dispatches on the form (block vs expression) without inspecting
     /// the inner tree's variant.
+    /// @field_projection
     Lambda {
         modifiers: Modifiers,
         parameters: Vec<SyntaxTree>,
@@ -903,6 +904,7 @@ pub enum SyntaxTree {
     /// `modifiers` carries `async`, `static`, `virtual`, `override`,
     /// `abstract`, etc. as exhaustive flags. Python sets only
     /// `async_`; C# sets many more.
+    /// @field_projection
     Function {
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
@@ -918,6 +920,7 @@ pub enum SyntaxTree {
 
     /// `<method>` — instance / static method on a class. Same shape
     /// as [`SyntaxTree::Function`]; sibling variant.
+    /// @field_projection
     Method {
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
@@ -942,6 +945,7 @@ pub enum SyntaxTree {
     /// renderer emits one zero-width marker per active flag.
     /// Flipping any flag swaps the corresponding marker by
     /// construction.
+    /// @field_projection
     Class {
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
@@ -958,6 +962,7 @@ pub enum SyntaxTree {
     /// `<struct>` — C# struct declaration. Same shape as `Class`;
     /// distinct variant so the element name follows the variant tag
     /// mechanically (no string discriminator).
+    /// @field_projection
     Struct {
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
@@ -972,6 +977,7 @@ pub enum SyntaxTree {
 
     /// `<interface>` — C# / Java / TypeScript interface. Same shape
     /// as `Class`; sibling variant.
+    /// @field_projection
     Interface {
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
@@ -986,6 +992,7 @@ pub enum SyntaxTree {
 
     /// `<record>` — C# / Java record declaration. Same shape as
     /// `Class`; sibling variant.
+    /// @field_projection
     Record {
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
@@ -1020,6 +1027,7 @@ pub enum SyntaxTree {
     /// (`<ref/>`, `<out/>`, `<in/>`, `<params/>`, `<this/>`).
     /// `modifiers` carries TS constructor-parameter access markers
     /// (`<public/>`, `<private/>`, `<readonly/>`, `<override/>`).
+    /// @field_projection
     Parameter {
         kind: ParamKind,
         extra_markers: Vec<Marker>,
@@ -1371,6 +1379,7 @@ pub enum SyntaxTree {
     /// `<field>` — class-level field declaration. Same shape as
     /// [`SyntaxTree::Variable`]; sibling variant for the distinct
     /// semantic concept (member scope, can carry full modifiers).
+    /// @field_projection
     Field {
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
@@ -1384,6 +1393,7 @@ pub enum SyntaxTree {
     /// `<event>` — C# event declaration. Same shape as
     /// [`SyntaxTree::Field`]; sibling variant for the distinct C#
     /// `event` member concept.
+    /// @field_projection
     Event {
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,

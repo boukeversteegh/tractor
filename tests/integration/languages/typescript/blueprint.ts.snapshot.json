@@ -10,6 +10,7 @@
           "required": true,
           "name": "input",
           "type": {
+            "$type": "type",
             "name": "string"
           }
         }
@@ -51,12 +52,17 @@
         "object": true,
         "method": {
           "public": true,
+          "decorators": [],
           "name": "copy",
+          "generics": [],
+          "parameters": [],
           "returns": {
+            "$type": "returns",
             "type": {
               "name": "this"
             }
-          }
+          },
+          "throws": []
         }
       }
     },
@@ -88,6 +94,7 @@
               "required": true,
               "name": "head",
               "type": {
+                "$type": "type",
                 "name": "number"
               }
             }
@@ -97,6 +104,7 @@
               "optional": true,
               "name": "tail",
               "type": {
+                "$type": "type",
                 "name": "string"
               }
             }
@@ -117,7 +125,13 @@
     }
   ],
   "class": {
+    "decorators": [],
+    "name": "StaticBlock",
+    "generics": [],
+    "bases": [],
+    "where_clauses": [],
     "body": {
+      "$type": "body",
       "block": {
         "static": true,
         "body": {
@@ -140,13 +154,14 @@
       "field": {
         "public": true,
         "static": true,
-        "expression": {
+        "decorators": [],
+        "name": "counter",
+        "value": {
+          "$type": "expression",
           "number": "0"
-        },
-        "name": "counter"
+        }
       }
-    },
-    "name": "StaticBlock"
+    }
   },
   "comment": [
     "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax.",
@@ -208,7 +223,7 @@
       "variable": {
         "decorators": [],
         "const": true,
-        "type_ann": {
+        "type": {
           "$type": "type",
           "name": "boolean"
         },
@@ -217,31 +232,44 @@
     },
     {
       "function": {
+        "decorators": [],
         "name": "externalThing",
-        "parameter": {
-          "required": true,
-          "name": "name",
-          "type": {
-            "name": "string"
+        "generics": [],
+        "parameters": [
+          {
+            "$type": "parameter",
+            "required": true,
+            "name": "name",
+            "type": {
+              "$type": "type",
+              "name": "string"
+            }
           }
-        },
+        ],
         "returns": {
+          "$type": "returns",
           "type": {
             "name": "void"
           }
-        }
+        },
+        "throws": []
       }
     },
     {
       "namespace": {
         "body": {
           "function": {
+            "decorators": [],
             "name": "init",
+            "generics": [],
+            "parameters": [],
             "returns": {
+              "$type": "returns",
               "type": {
                 "name": "void"
               }
-            }
+            },
+            "throws": []
           }
         },
         "name": "SideEffect"
@@ -292,22 +320,47 @@
     },
     {
       "interface": {
+        "decorators": [],
+        "name": "Shape",
+        "generics": [
+          {
+            "$type": "generic",
+            "name": "T",
+            "type": {
+              "default": true,
+              "type": {
+                "name": "number"
+              }
+            }
+          }
+        ],
+        "bases": [],
+        "where_clauses": [],
         "body": {
+          "$type": "body",
           "method": {
             "public": true,
+            "decorators": [],
             "name": "describe",
-            "parameter": {
-              "required": true,
-              "name": "prefix",
+            "generics": [],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "required": true,
+                "name": "prefix",
+                "type": {
+                  "$type": "type",
+                  "name": "string"
+                }
+              }
+            ],
+            "returns": {
+              "$type": "returns",
               "type": {
                 "name": "string"
               }
             },
-            "returns": {
-              "type": {
-                "name": "string"
-              }
-            }
+            "throws": []
           },
           "property": [
             {
@@ -331,17 +384,7 @@
               }
             }
           ]
-        },
-        "generic": {
-          "name": "T",
-          "type": {
-            "default": true,
-            "type": {
-              "name": "number"
-            }
-          }
-        },
-        "name": "Shape"
+        }
       }
     },
     {
@@ -430,6 +473,7 @@
             "required": true,
             "name": "input",
             "type": {
+              "$type": "type",
               "name": "T"
             }
           },
@@ -508,88 +552,137 @@
     {
       "class": {
         "abstract": true,
+        "decorators": [],
+        "name": "Base",
+        "generics": [
+          {
+            "$type": "generic",
+            "extends": {
+              "type": {
+                "name": "Shape"
+              }
+            },
+            "name": "T"
+          }
+        ],
+        "bases": [],
+        "where_clauses": [],
         "body": {
+          "$type": "body",
           "field": [
             {
               "public": true,
               "static": true,
-              "expression": {
-                "string": "\"base\""
+              "decorators": [],
+              "type": {
+                "$type": "type",
+                "name": "string"
               },
               "name": "kind",
-              "type": {
-                "name": "string"
+              "value": {
+                "$type": "expression",
+                "string": "\"base\""
               }
             },
             {
               "protected": true,
               "readonly": true,
-              "expression": {
+              "decorators": [],
+              "type": {
+                "$type": "type",
+                "name": "number"
+              },
+              "name": "createdAt",
+              "value": {
+                "$type": "expression",
                 "object": {
                   "name": "Date"
                 }
-              },
-              "name": "createdAt",
-              "type": {
-                "name": "number"
               }
             },
             {
               "private": true,
-              "expression": {
-                "object_creation": {
-                  "name": "Map"
-                }
-              },
-              "name": "_cache",
+              "decorators": [],
               "type": {
+                "$type": "type",
                 "name": [
                   "Map",
                   "string",
                   "T"
                 ]
+              },
+              "name": "_cache",
+              "value": {
+                "$type": "expression",
+                "object_creation": {
+                  "name": "Map"
+                }
               }
             }
           ],
           "method": [
             {
               "public": true,
-              "body": "{}",
+              "decorators": [],
               "name": "constructor",
-              "parameter": [
+              "generics": [],
+              "parameters": [
                 {
+                  "$type": "parameter",
                   "required": true,
                   "public": true,
                   "name": "name",
                   "type": {
+                    "$type": "type",
                     "name": "string"
                   }
                 },
                 {
+                  "$type": "parameter",
                   "optional": true,
                   "private": true,
                   "readonly": true,
                   "name": "seed",
                   "type": {
+                    "$type": "type",
                     "name": "number"
                   }
                 }
-              ]
+              ],
+              "throws": [],
+              "body": "{}"
             },
             {
               "public": true,
               "abstract": true,
+              "decorators": [],
               "name": "render",
+              "generics": [],
+              "parameters": [],
               "returns": {
+                "$type": "returns",
                 "type": {
                   "name": "string"
                 }
-              }
+              },
+              "throws": []
             },
             {
               "public": true,
               "get": true,
+              "decorators": [],
+              "name": "cacheSize",
+              "generics": [],
+              "parameters": [],
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "name": "number"
+                }
+              },
+              "throws": [],
               "body": {
+                "$type": "body",
                 "return": {
                   "expression": {
                     "object": {
@@ -597,18 +690,28 @@
                     }
                   }
                 }
-              },
-              "name": "cacheSize",
-              "returns": {
-                "type": {
-                  "name": "number"
-                }
               }
             },
             {
               "public": true,
               "set": true,
+              "decorators": [],
+              "name": "primary",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "value",
+                  "type": {
+                    "$type": "type",
+                    "name": "T"
+                  }
+                }
+              ],
+              "throws": [],
               "body": {
+                "$type": "body",
                 "expression": {
                   "object": {
                     "name": "value",
@@ -616,19 +719,42 @@
                     "this": "this"
                   }
                 }
-              },
-              "name": "primary",
-              "parameter": {
-                "required": true,
-                "name": "value",
-                "type": {
-                  "name": "T"
-                }
               }
             },
             {
               "public": true,
+              "decorators": [],
+              "name": "store",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "key",
+                  "type": {
+                    "$type": "type",
+                    "name": "string"
+                  }
+                },
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "value",
+                  "type": {
+                    "$type": "type",
+                    "name": "T"
+                  }
+                }
+              ],
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "name": "void"
+                }
+              },
+              "throws": [],
               "body": {
+                "$type": "body",
                 "expression": {
                   "object": {
                     "name": [
@@ -638,58 +764,97 @@
                     "this": "this"
                   }
                 }
-              },
-              "name": "store",
-              "parameter": [
-                {
-                  "required": true,
-                  "name": "key",
-                  "type": {
-                    "name": "string"
-                  }
-                },
-                {
-                  "required": true,
-                  "name": "value",
-                  "type": {
-                    "name": "T"
-                  }
-                }
-              ],
-              "returns": {
-                "type": {
-                  "name": "void"
-                }
               }
             }
           ]
-        },
-        "generic": {
-          "extends": {
-            "type": {
-              "name": "Shape"
-            }
-          },
-          "name": "T"
-        },
-        "name": "Base"
+        }
       }
     },
     {
       "class": {
+        "decorators": [],
+        "name": "Widget",
+        "generics": [
+          {
+            "$type": "generic",
+            "extends": {
+              "type": {
+                "name": "Shape"
+              }
+            },
+            "name": "T",
+            "type": {
+              "default": true,
+              "type": {
+                "name": [
+                  "Shape",
+                  "number"
+                ]
+              }
+            }
+          }
+        ],
+        "bases": [
+          {
+            "$type": "extends",
+            "type": {
+              "name": "Base"
+            }
+          },
+          {
+            "$type": "extends",
+            "type": {
+              "type": {
+                "name": "T"
+              }
+            }
+          }
+        ],
+        "where_clauses": [],
         "body": {
+          "$type": "body",
           "field": {
             "public": true,
             "static": true,
-            "expression": {
+            "decorators": [],
+            "name": "#counter",
+            "value": {
+              "$type": "expression",
               "number": "0"
-            },
-            "name": "#counter"
+            }
           },
           "method": [
             {
               "public": true,
+              "decorators": [],
+              "name": "constructor",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "name",
+                  "type": {
+                    "$type": "type",
+                    "name": "string"
+                  }
+                },
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "private": true,
+                  "name": "items",
+                  "type": {
+                    "$type": "type",
+                    "array": true,
+                    "name": "T"
+                  },
+                  "default": "[]"
+                }
+              ],
+              "throws": [],
               "body": {
+                "$type": "body",
                 "expression": [
                   {
                     "call": {
@@ -706,32 +871,24 @@
                     }
                   }
                 ]
-              },
-              "name": "constructor",
-              "parameter": [
-                {
-                  "required": true,
-                  "name": "name",
-                  "type": {
-                    "name": "string"
-                  }
-                },
-                {
-                  "required": true,
-                  "private": true,
-                  "list": "[]",
-                  "name": "items",
-                  "type": {
-                    "array": true,
-                    "name": "T"
-                  }
-                }
-              ]
+              }
             },
             {
               "public": true,
               "override": true,
+              "decorators": [],
+              "name": "render",
+              "generics": [],
+              "parameters": [],
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "name": "string"
+                }
+              },
+              "throws": [],
               "body": {
+                "$type": "body",
                 "return": {
                   "expression": {
                     "template": {
@@ -773,18 +930,35 @@
                     }
                   }
                 }
-              },
-              "name": "render",
-              "returns": {
-                "type": {
-                  "name": "string"
-                }
               }
             },
             {
               "public": true,
               "generator": true,
+              "decorators": [],
+              "name": "entries",
+              "generics": [],
+              "parameters": [],
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "name": "Generator",
+                  "type": {
+                    "tuple": true,
+                    "type": [
+                      {
+                        "name": "number"
+                      },
+                      {
+                        "name": "T"
+                      }
+                    ]
+                  }
+                }
+              },
+              "throws": [],
               "body": {
+                "$type": "body",
                 "c_for": {
                   "initializer": {
                     "$type": "variable",
@@ -834,29 +1008,52 @@
                     }
                   }
                 }
-              },
-              "name": "entries",
-              "returns": {
-                "type": {
-                  "name": "Generator",
-                  "type": {
-                    "tuple": true,
-                    "type": [
-                      {
-                        "name": "number"
-                      },
-                      {
-                        "name": "T"
-                      }
-                    ]
-                  }
-                }
               }
             },
             {
               "public": true,
               "async": true,
+              "decorators": [],
+              "name": "loadAll",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "urls",
+                  "type": {
+                    "$type": "type",
+                    "array": true,
+                    "name": "string"
+                  }
+                },
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": {
+                    "$type": "rest",
+                    "name": "extra"
+                  },
+                  "type": {
+                    "$type": "type",
+                    "array": true,
+                    "name": "string"
+                  }
+                }
+              ],
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "name": "Promise",
+                  "type": {
+                    "array": true,
+                    "name": "T"
+                  }
+                }
+              },
+              "throws": [],
               "body": {
+                "$type": "body",
                 "try": {
                   "body": {
                     "for": {
@@ -934,77 +1131,37 @@
                     }
                   }
                 }
-              },
-              "name": "loadAll",
-              "parameter": [
-                {
-                  "required": true,
-                  "name": "urls",
-                  "type": {
-                    "array": true,
-                    "name": "string"
-                  }
-                },
-                {
-                  "required": true,
-                  "rest": {
-                    "name": "extra"
-                  },
-                  "type": {
-                    "array": true,
-                    "name": "string"
-                  }
-                }
-              ],
-              "returns": {
-                "type": {
-                  "name": "Promise",
-                  "type": {
-                    "array": true,
-                    "name": "T"
-                  }
-                }
               }
             }
           ]
-        },
-        "extends": [
-          {
-            "type": {
-              "name": "Base"
-            }
-          },
-          {
-            "type": {
-              "type": {
-                "name": "T"
-              }
-            }
-          }
-        ],
-        "generic": {
-          "extends": {
-            "type": {
-              "name": "Shape"
-            }
-          },
-          "name": "T",
-          "type": {
-            "default": true,
-            "type": {
-              "name": [
-                "Shape",
-                "number"
-              ]
-            }
-          }
-        },
-        "name": "Widget"
+        }
       }
     },
     {
       "function": {
+        "decorators": [],
+        "name": "controlFlow",
+        "generics": [],
+        "parameters": [
+          {
+            "$type": "parameter",
+            "required": true,
+            "name": "n",
+            "type": {
+              "$type": "type",
+              "name": "number"
+            }
+          }
+        ],
+        "returns": {
+          "$type": "returns",
+          "type": {
+            "name": "Status"
+          }
+        },
+        "throws": [],
         "body": {
+          "$type": "body",
           "for": [
             {
               "body": {
@@ -1256,7 +1413,7 @@
             {
               "decorators": [],
               "let": true,
-              "type_ann": {
+              "type": {
                 "$type": "type",
                 "name": "Status"
               },
@@ -1269,7 +1426,7 @@
             {
               "decorators": [],
               "const": true,
-              "type_ann": {
+              "type": {
                 "$type": "type",
                 "name": [
                   "Record",
@@ -1307,19 +1464,6 @@
               "$type": "body",
               "comment": "/* never */"
             }
-          }
-        },
-        "name": "controlFlow",
-        "parameter": {
-          "required": true,
-          "name": "n",
-          "type": {
-            "name": "number"
-          }
-        },
-        "returns": {
-          "type": {
-            "name": "Status"
           }
         }
       }
@@ -1409,7 +1553,32 @@
   ],
   "function": [
     {
+      "decorators": [],
+      "name": "isShape",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "v",
+          "type": {
+            "$type": "type",
+            "name": "unknown"
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "predicate": {
+          "name": "v",
+          "type": {
+            "name": "Shape"
+          }
+        }
+      },
+      "throws": [],
       "body": {
+        "$type": "body",
         "return": {
           "expression": {
             "logical": {
@@ -1487,27 +1656,87 @@
             }
           }
         }
-      },
-      "name": "isShape",
-      "parameter": {
-        "required": true,
-        "name": "v",
-        "type": {
-          "name": "unknown"
-        }
-      },
-      "returns": {
-        "predicate": {
-          "name": "v",
-          "type": {
-            "name": "Shape"
-          }
-        }
       }
     },
     {
       "async": true,
+      "decorators": [],
+      "name": "compute",
+      "generics": [
+        {
+          "$type": "generic",
+          "extends": {
+            "type": {
+              "union": true,
+              "name": [
+                "number",
+                "string"
+              ]
+            }
+          },
+          "name": "T"
+        }
+      ],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "input",
+          "type": {
+            "$type": "type",
+            "name": "T"
+          }
+        },
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": {
+            "$type": "pattern",
+            "object": true,
+            "name": "label",
+            "pair": {
+              "name": "scale",
+              "number": "1"
+            }
+          },
+          "type": {
+            "$type": "type",
+            "object": true,
+            "property": [
+              {
+                "optional": true,
+                "name": "scale",
+                "type": {
+                  "name": "number"
+                }
+              },
+              {
+                "optional": true,
+                "name": "label",
+                "type": {
+                  "name": "string"
+                }
+              }
+            ]
+          },
+          "default": {
+            "$type": "object",
+            "literal": true
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "name": [
+            "Promise",
+            "Greeting"
+          ]
+        }
+      },
+      "throws": [],
       "body": {
+        "$type": "body",
         "comment": {
           "trailing": true
         },
@@ -1612,73 +1841,36 @@
             }
           }
         ]
-      },
-      "generic": {
-        "extends": {
-          "type": {
-            "union": true,
-            "name": [
-              "number",
-              "string"
-            ]
-          }
-        },
-        "name": "T"
-      },
-      "name": "compute",
-      "parameter": [
+      }
+    },
+    {
+      "decorators": [],
+      "name": "isNumber",
+      "generics": [],
+      "parameters": [
         {
+          "$type": "parameter",
           "required": true,
-          "name": "input",
+          "name": "x",
           "type": {
-            "name": "T"
-          }
-        },
-        {
-          "required": true,
-          "object": {
-            "literal": true
-          },
-          "pattern": {
-            "object": true,
-            "name": "label",
-            "pair": {
-              "name": "scale",
-              "number": "1"
-            }
-          },
-          "type": {
-            "object": true,
-            "property": [
-              {
-                "optional": true,
-                "name": "scale",
-                "type": {
-                  "name": "number"
-                }
-              },
-              {
-                "optional": true,
-                "name": "label",
-                "type": {
-                  "name": "string"
-                }
-              }
-            ]
+            "$type": "type",
+            "name": "unknown"
           }
         }
       ],
       "returns": {
-        "type": {
-          "name": [
-            "Promise",
-            "Greeting"
-          ]
+        "$type": "returns",
+        "predicate": {
+          "asserts": true,
+          "name": "x",
+          "type": {
+            "name": "number"
+          }
         }
-      }
-    },
-    {
+      },
+      "throws": [],
       "body": {
+        "$type": "body",
         "if": {
           "condition": {
             "$type": "condition",
@@ -1710,27 +1902,26 @@
             }
           }
         }
-      },
-      "name": "isNumber",
-      "parameter": {
-        "required": true,
-        "name": "x",
-        "type": {
-          "name": "unknown"
-        }
-      },
-      "returns": {
-        "predicate": {
-          "asserts": true,
-          "name": "x",
-          "type": {
-            "name": "number"
-          }
-        }
       }
     },
     {
+      "decorators": [],
+      "name": "MetaCtor",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "this",
+          "type": {
+            "$type": "type",
+            "name": "unknown"
+          }
+        }
+      ],
+      "throws": [],
       "body": {
+        "$type": "body",
         "return": {
           "expression": {
             "binary": {
@@ -1752,18 +1943,32 @@
             }
           }
         }
-      },
-      "name": "MetaCtor",
-      "parameter": {
-        "required": true,
-        "this": "this",
-        "type": {
-          "name": "unknown"
-        }
       }
     },
     {
+      "decorators": [],
+      "name": "controlOdds",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "value",
+          "type": {
+            "$type": "type",
+            "name": "number"
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "name": "number"
+        }
+      },
+      "throws": [],
       "body": {
+        "$type": "body",
         "do_while": {
           "body": {
             "$type": "body",
@@ -1987,23 +2192,91 @@
             }
           }
         ]
-      },
-      "name": "controlOdds",
-      "parameter": {
-        "required": true,
-        "name": "value",
-        "type": {
-          "name": "number"
-        }
-      },
-      "returns": {
-        "type": {
-          "name": "number"
-        }
       }
     },
     {
+      "decorators": [],
+      "name": "destructure",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": {
+            "$type": "pattern",
+            "object": true,
+            "pair": [
+              {
+                "name": [
+                  "a",
+                  "aa"
+                ],
+                "value": {
+                  "expression": {
+                    "number": "1"
+                  }
+                }
+              },
+              {
+                "name": [
+                  "b",
+                  "bb"
+                ]
+              }
+            ]
+          },
+          "type": {
+            "$type": "type",
+            "object": true,
+            "property": [
+              {
+                "optional": true,
+                "name": "a",
+                "type": {
+                  "name": "number"
+                }
+              },
+              {
+                "name": "b",
+                "type": {
+                  "name": "number"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": {
+            "$type": "pattern",
+            "array": true,
+            "name": "c",
+            "rest": {
+              "name": "rest"
+            },
+            "value": {
+              "expression": {
+                "number": "0"
+              }
+            }
+          },
+          "type": {
+            "$type": "type",
+            "array": true,
+            "name": "number"
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "name": "number"
+        }
+      },
+      "throws": [],
       "body": {
+        "$type": "body",
         "return": {
           "expression": {
             "binary": {
@@ -2052,76 +2325,6 @@
               }
             }
           }
-        }
-      },
-      "name": "destructure",
-      "parameter": [
-        {
-          "required": true,
-          "pattern": {
-            "object": true,
-            "pair": [
-              {
-                "name": [
-                  "a",
-                  "aa"
-                ],
-                "value": {
-                  "expression": {
-                    "number": "1"
-                  }
-                }
-              },
-              {
-                "name": [
-                  "b",
-                  "bb"
-                ]
-              }
-            ]
-          },
-          "type": {
-            "object": true,
-            "property": [
-              {
-                "optional": true,
-                "name": "a",
-                "type": {
-                  "name": "number"
-                }
-              },
-              {
-                "name": "b",
-                "type": {
-                  "name": "number"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "required": true,
-          "pattern": {
-            "array": true,
-            "name": "c",
-            "rest": {
-              "name": "rest"
-            },
-            "value": {
-              "expression": {
-                "number": "0"
-              }
-            }
-          },
-          "type": {
-            "array": true,
-            "name": "number"
-          }
-        }
-      ],
-      "returns": {
-        "type": {
-          "name": "number"
         }
       }
     }
@@ -2176,15 +2379,18 @@
               "required": true,
               "name": "parts",
               "type": {
+                "$type": "type",
                 "name": "TemplateStringsArray"
               }
             },
             {
               "required": true,
-              "rest": {
+              "name": {
+                "$type": "rest",
                 "name": "vals"
               },
               "type": {
+                "$type": "type",
                 "array": true,
                 "name": "unknown"
               }
@@ -2280,6 +2486,7 @@
             "required": true,
             "name": "xs",
             "type": {
+              "$type": "type",
               "array": true,
               "name": "U"
             }
@@ -2308,7 +2515,7 @@
     {
       "decorators": [],
       "const": true,
-      "type_ann": {
+      "type": {
         "$type": "type",
         "array": true,
         "name": "number"
@@ -2389,6 +2596,7 @@
             "required": true,
             "name": "x",
             "type": {
+              "$type": "type",
               "name": "number"
             }
           },
@@ -2403,7 +2611,7 @@
     {
       "decorators": [],
       "const": true,
-      "type_ann": {
+      "type": {
         "$type": "type",
         "union": true,
         "name": "string",

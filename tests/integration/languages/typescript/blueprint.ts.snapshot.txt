@@ -116,18 +116,18 @@ program/
   │       ├─ field[public and static]/
   │       │   ├─ name = "kind"
   │       │   ├─ type/name = "string"
-  │       │   └─ expression/string = "\"base\""
+  │       │   └─ value[expression]/string = "\"base\""
   │       ├─ field[protected and readonly]/
   │       │   ├─ name = "createdAt"
   │       │   ├─ type/name = "number"
-  │       │   └─ expression/object/name = "Date"
+  │       │   └─ value[expression]/object/name = "Date"
   │       ├─ field[private]/
   │       │   ├─ name = "_cache"
   │       │   ├─ type/
   │       │   │   ├─ name = "Map"
   │       │   │   ├─ name = "string"
   │       │   │   └─ name = "T"
-  │       │   └─ expression/object_creation/name = "Map"
+  │       │   └─ value[expression]/object_creation/name = "Map"
   │       ├─ method[public]/
   │       │   ├─ name = "constructor"
   │       │   ├─ parameter[required and public]/
@@ -179,7 +179,7 @@ program/
   │   └─ body/
   │       ├─ field[public and static]/
   │       │   ├─ name = "#counter"
-  │       │   └─ expression/number = "0"
+  │       │   └─ value[expression]/number = "0"
   │       ├─ method[public]/
   │       │   ├─ name = "constructor"
   │       │   ├─ parameter[required]/
@@ -188,7 +188,7 @@ program/
   │       │   ├─ parameter[required and private]/
   │       │   │   ├─ name = "items"
   │       │   │   ├─ type[array]/name = "T"
-  │       │   │   └─ list = "[]"
+  │       │   │   └─ default[list] = "[]"
   │       │   └─ body/
   │       │       ├─ expression/call/
   │       │       │   ├─ super = "super"
@@ -237,7 +237,7 @@ program/
   │           │   ├─ name = "urls"
   │           │   └─ type[array]/name = "string"
   │           ├─ parameter[required]/
-  │           │   ├─ rest/name = "extra"
+  │           │   ├─ name[rest]/name = "extra"
   │           │   └─ type[array]/name = "string"
   │           ├─ returns/type/
   │           │   ├─ name = "Promise"
@@ -293,7 +293,7 @@ program/
   │       │   ├─ name = "parts"
   │       │   └─ type/name = "TemplateStringsArray"
   │       ├─ parameter[required]/
-  │       │   ├─ rest/name = "vals"
+  │       │   ├─ name[rest]/name = "vals"
   │       │   └─ type[array]/name = "unknown"
   │       └─ value/expression/object/
   │           ├─ name = "parts"
@@ -325,7 +325,7 @@ program/
   │   │   ├─ name = "input"
   │   │   └─ type/name = "T"
   │   ├─ parameter[required]/
-  │   │   ├─ pattern[object]/
+  │   │   ├─ name[pattern and object]/
   │   │   │   ├─ pair/
   │   │   │   │   ├─ name = "scale"
   │   │   │   │   └─ number = "1"
@@ -337,7 +337,7 @@ program/
   │   │   │   └─ property[optional]/
   │   │   │       ├─ name = "label"
   │   │   │       └─ type/name = "string"
-  │   │   └─ object[literal] = "{}"
+  │   │   └─ default[object and literal] = "{}"
   │   ├─ returns/type/
   │   │   ├─ name = "Promise"
   │   │   └─ name = "Greeting"
@@ -386,7 +386,7 @@ program/
   │   └─ body/
   │       ├─ variable[let]/
   │       │   ├─ name = "status"
-  │       │   ├─ type_ann[type]/name = "Status"
+  │       │   ├─ type/name = "Status"
   │       │   └─ value[expression]/string = "\"idle\""
   │       ├─ if/
   │       │   ├─ condition/expression/binary/
@@ -430,7 +430,7 @@ program/
   │       │       └─ break = "break;"
   │       ├─ variable[const]/
   │       │   ├─ name = "obj"
-  │       │   ├─ type_ann[type]/
+  │       │   ├─ type/
   │       │   │   ├─ name = "Record"
   │       │   │   ├─ name = "string"
   │       │   │   └─ name = "number"
@@ -479,7 +479,7 @@ program/
   │           └─ number = "0"
   ├─ variable[const]/
   │   ├─ name = "doubled"
-  │   ├─ type_ann[type and array]/name = "number"
+  │   ├─ type[array]/name = "number"
   │   └─ value[expression]/object/
   │       ├─ list/
   │       │   ├─ number = "1"
@@ -505,7 +505,7 @@ program/
   │           └─ right[expression]/number = "2"
   ├─ variable[const]/
   │   ├─ name = "maybe"
-  │   ├─ type_ann[type and union]/
+  │   ├─ type[union]/
   │   │   ├─ name = "string"
   │   │   └─ type[literal]/null = "null"
   │   └─ value[expression]/null = "null"
@@ -533,7 +533,7 @@ program/
   ├─ comment[leading] = "// Ambient `declare` declarations."
   ├─ declare/variable[const]/
   │   ├─ name = "__DEV__"
-  │   └─ type_ann[type]/name = "boolean"
+  │   └─ type/name = "boolean"
   ├─ declare/function/
   │   ├─ name = "externalThing"
   │   ├─ parameter[required]/
@@ -596,7 +596,7 @@ program/
   │   └─ body/
   │       ├─ field[public and static]/
   │       │   ├─ name = "counter"
-  │       │   └─ expression/number = "0"
+  │       │   └─ value[expression]/number = "0"
   │       └─ block[static]/body/expression/assign/
   │           ├─ expression/object/name = "StaticBlock"
   │           └─ expression/number = "7"
@@ -635,7 +635,7 @@ program/
   ├─ function/
   │   ├─ name = "MetaCtor"
   │   ├─ parameter[required]/
-  │   │   ├─ this = "this"
+  │   │   ├─ name[this] = "this"
   │   │   └─ type/name = "unknown"
   │   └─ body/return/expression/binary/
   │       ├─ left[expression]/object/name = "new.target"
@@ -724,7 +724,7 @@ program/
   ├─ function/
   │   ├─ name = "destructure"
   │   ├─ parameter[required]/
-  │   │   ├─ pattern[object]/
+  │   │   ├─ name[pattern and object]/
   │   │   │   ├─ pair/
   │   │   │   │   ├─ name = "a"
   │   │   │   │   ├─ name = "aa"
@@ -740,7 +740,7 @@ program/
   │   │           ├─ name = "b"
   │   │           └─ type/name = "number"
   │   ├─ parameter[required]/
-  │   │   ├─ pattern[array]/
+  │   │   ├─ name[pattern and array]/
   │   │   │   ├─ name = "c"
   │   │   │   ├─ value/expression/number = "0"
   │   │   │   └─ rest/name = "rest"

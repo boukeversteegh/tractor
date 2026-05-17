@@ -163,11 +163,11 @@ unit/
   │   │       ├─ field[public and const]/
   │   │       │   ├─ type/name = "int"
   │   │       │   ├─ name = "MaxNameLength"
-  │   │       │   └─ expression/int = "128"
+  │   │       │   └─ value[expression]/int = "128"
   │   │       ├─ field[protected and internal and static and readonly]/
   │   │       │   ├─ type/name = "DateTime"
   │   │       │   ├─ name = "Epoch"
-  │   │       │   └─ expression/object_creation/
+  │   │       │   └─ value[expression]/object_creation/
   │   │       │       ├─ int = "1970"
   │   │       │       ├─ int = "1"
   │   │       │       └─ int = "1"
@@ -318,7 +318,7 @@ unit/
   │           │   └─ name = "numbers"
   │           └─ body/
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ name = "widget"
   │               │   └─ value[expression]/binary/
   │               │       ├─ left[expression]/name = "maybe"
@@ -328,14 +328,14 @@ unit/
   │               │           ├─ int = "1"
   │               │           └─ string = "\"alpha\""
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ name = "shouted"
   │               │   └─ value[expression]/binary/
   │               │       ├─ left[expression]/object/name = "widget"
   │               │       ├─ op[operator and null_coalesce] = "??"
   │               │       └─ right[expression]/string = "\"n/a\""
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ name = "label"
   │               │   └─ value[expression]/ternary/
   │               │       ├─ condition/expression/is/
@@ -347,7 +347,7 @@ unit/
   │               │       └─ if_false[else]/expression/string = "\"blank\""
   │               ├─ comment[leading] = "// switch expression + pattern matching"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "string"
+  │               │   ├─ type/name = "string"
   │               │   ├─ name = "kind"
   │               │   └─ value[expression]/switch/
   │               │       ├─ name = "widget"
@@ -370,7 +370,7 @@ unit/
   │               │           └─ string = "\"plain\""
   │               ├─ comment[leading] = "// switch statement + is-type-pattern"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "object"
+  │               │   ├─ type/name = "object"
   │               │   ├─ name = "token"
   │               │   └─ value[expression and non_null]/name = "widget"
   │               ├─ switch/
@@ -399,7 +399,7 @@ unit/
   │               │       └─ object/name = "probe"
   │               ├─ comment[leading] = "// LINQ query syntax + method syntax"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ name = "evens"
   │               │   └─ value[expression]/query/
   │               │       ├─ from[in]/
@@ -418,13 +418,13 @@ unit/
   │               │           ├─ op[operator and multiply] = "*"
   │               │           └─ right[expression]/name = "n"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ name = "odds"
   │               │   └─ value[expression]/object/
   │               │       ├─ name = "numbers"
   │               │       ├─ lambda/
   │               │       │   ├─ parameter/name = "n"
-  │               │       │   └─ binary/
+  │               │       │   └─ body[binary]/
   │               │       │       ├─ left[expression]/binary/
   │               │       │       │   ├─ left[expression]/name = "n"
   │               │       │       │   ├─ op[operator and modulo] = "%"
@@ -433,7 +433,7 @@ unit/
   │               │       │       └─ right[expression]/int = "0"
   │               │       └─ lambda/
   │               │           ├─ parameter/name = "n"
-  │               │           └─ binary/
+  │               │           └─ body[binary]/
   │               │               ├─ left[expression]/name = "n"
   │               │               ├─ op[operator and plus] = "+"
   │               │               └─ right[expression]/int = "1"
@@ -448,14 +448,14 @@ unit/
   │               │       ├─ op[operator and multiply] = "*"
   │               │       └─ right[expression]/name = "x"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/
+  │               │   ├─ type/
   │               │   │   ├─ name = "Func"
   │               │   │   ├─ name = "int"
   │               │   │   └─ name = "int"
   │               │   ├─ name = "cube"
   │               │   └─ value[expression]/lambda/
   │               │       ├─ parameter/name = "x"
-  │               │       └─ binary/
+  │               │       └─ body[binary]/
   │               │           ├─ left[expression]/binary/
   │               │           │   ├─ left[expression]/name = "x"
   │               │           │   ├─ op[operator and multiply] = "*"
@@ -463,7 +463,7 @@ unit/
   │               │           ├─ op[operator and multiply] = "*"
   │               │           └─ right[expression]/name = "x"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/
+  │               │   ├─ type/
   │               │   │   ├─ name = "Func"
   │               │   │   ├─ name = "int"
   │               │   │   └─ name = "int"
@@ -475,13 +475,13 @@ unit/
   │               │           ├─ op[operator and plus] = "+"
   │               │           └─ right[expression]/int = "1"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/
+  │               │   ├─ type/
   │               │   │   ├─ name = "Action"
   │               │   │   └─ name = "string"
   │               │   ├─ name = "log"
   │               │   └─ value[expression]/lambda/
   │               │       ├─ parameter/name = "msg"
-  │               │       └─ object/
+  │               │       └─ body[object]/
   │               │           ├─ name = "Console"
   │               │           └─ name = "msg"
   │               ├─ expression/call/
@@ -497,7 +497,7 @@ unit/
   │               ├─ comment[leading] = "// loops"
   │               ├─ c_for/
   │               │   ├─ initializer[variable]/
-  │               │   │   ├─ type_ann[type]/name = "var"
+  │               │   │   ├─ type/name = "var"
   │               │   │   ├─ name = "i"
   │               │   │   └─ value[expression]/int = "0"
   │               │   ├─ condition[binary]/
@@ -507,7 +507,7 @@ unit/
   │               │   ├─ unary[postfix]/name = "i"
   │               │   └─ body/comment = "/* for */"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "int"
+  │               │   ├─ type/name = "int"
   │               │   ├─ name = "j"
   │               │   └─ value[expression]/int = "0"
   │               ├─ while/
@@ -517,7 +517,7 @@ unit/
   │               │   │   └─ right[expression]/int = "2"
   │               │   └─ body = "{ }"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "int"
+  │               │   ├─ type/name = "int"
   │               │   ├─ name = "k"
   │               │   └─ value[expression]/int = "0"
   │               ├─ do_while/
@@ -527,7 +527,7 @@ unit/
   │               │       ├─ op[operator and less] = "<"
   │               │       └─ right[expression]/int = "2"
   │               ├─ foreach/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ target[left]/expression/name = "n"
   │               │   ├─ iterable[right]/expression/name = "odds"
   │               │   └─ body/expression/call/
@@ -535,7 +535,7 @@ unit/
   │               │       └─ object/name = "n"
   │               ├─ comment[leading] = "// try/catch/finally with when + using declaration + using statement"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ name = "scope"
   │               │   └─ value[expression]/object_creation/path/
   │               │       ├─ name = "System"
@@ -545,7 +545,7 @@ unit/
   │               │   ├─ try_body[body]/
   │               │   │   ├─ using/
   │               │   │   │   ├─ variable/
-  │               │   │   │   │   ├─ type_ann[type]/name = "var"
+  │               │   │   │   │   ├─ type/name = "var"
   │               │   │   │   │   ├─ name = "inner"
   │               │   │   │   │   └─ value[expression]/object_creation/path/
   │               │   │   │   │       ├─ name = "System"
@@ -558,7 +558,7 @@ unit/
   │               │   │       ├─ name = "InvalidOperationException"
   │               │   │       └─ string = "\"boom\""
   │               │   ├─ catch/
-  │               │   │   ├─ type_target[type]/name = "InvalidOperationException"
+  │               │   │   ├─ type/name = "InvalidOperationException"
   │               │   │   ├─ binding[as]/expression/name = "ex"
   │               │   │   ├─ filter/expression/binary/
   │               │   │   │   ├─ left[expression]/object/name = "ex"
@@ -568,12 +568,12 @@ unit/
   │               │   │       ├─ name = "log"
   │               │   │       └─ object/name = "ex"
   │               │   ├─ catch/
-  │               │   │   ├─ type_target[type]/name = "Exception"
+  │               │   │   ├─ type/name = "Exception"
   │               │   │   └─ body/throw = "throw;"
   │               │   └─ finally_body[finally]/body/expression/object/name = "scope"
   │               ├─ comment[leading] = "// tuples + deconstruction + target-typed new + collection expression"
   │               ├─ variable/
-  │               │   ├─ type_ann[type and tuple]/
+  │               │   ├─ type[tuple]/
   │               │   │   ├─ element/
   │               │   │   │   ├─ type/name = "int"
   │               │   │   │   └─ name = "count"
@@ -585,13 +585,13 @@ unit/
   │               │       ├─ object/name = "odds"
   │               │       └─ string = "\"odd\""
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ name[pattern and tuple]/
   │               │   │   ├─ name = "cnt"
   │               │   │   └─ name = "tg"
   │               │   └─ value[expression]/name = "pair"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/
+  │               │   ├─ type/
   │               │   │   ├─ name = "List"
   │               │   │   └─ name = "int"
   │               │   ├─ name = "list"
@@ -601,7 +601,7 @@ unit/
   │               │       ├─ int = "3"
   │               │       └─ range/name = "odds"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/
+  │               │   ├─ type/
   │               │   │   ├─ name = "Dictionary"
   │               │   │   ├─ name = "string"
   │               │   │   └─ name = "int"
@@ -615,21 +615,21 @@ unit/
   │               │           └─ expression/int = "2"
   │               ├─ comment[leading] = "// string literals"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ name = "plain"
   │               │   └─ value[expression]/string = "\"hello\""
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ name = "verbatim"
   │               │   └─ value[expression]/string = "@\"C:\\path\\file.txt\""
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ name = "interp"
   │               │   └─ value[expression]/string/
   │               │       ├─ interpolation/name = "cnt"
   │               │       └─ interpolation/name = "tg"
   │               ├─ variable/
-  │               │   ├─ type_ann[type]/name = "var"
+  │               │   ├─ type/name = "var"
   │               │   ├─ name = "raw"
   │               │   └─ value[expression]/string = "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\""
   │               └─ return/expression/binary/
@@ -687,14 +687,14 @@ unit/
       │       │   └─ body/
       │       │       ├─ comment[leading] = "// cast expression"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "int"
+      │       │       │   ├─ type/name = "int"
       │       │       │   ├─ name = "n"
       │       │       │   └─ value[expression]/cast/
       │       │       │       ├─ type/name = "int"
       │       │       │       └─ float = "3.14"
       │       │       ├─ comment[leading] = "// char literal"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "char"
+      │       │       │   ├─ type/name = "char"
       │       │       │   ├─ name = "ch"
       │       │       │   └─ value[expression]/string = "'A'"
       │       │       ├─ comment[leading] = "// checked statement + yield return (via iterator method below)"
@@ -707,7 +707,7 @@ unit/
       │       │       ├─ comment[leading] = "// fixed + unsafe handled in unsafe context (pointer omitted for clarity)\n        // goto + labeled statement"
       │       │       ├─ goto/name = "skip"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "int"
+      │       │       │   ├─ type/name = "int"
       │       │       │   ├─ name = "unreachable"
       │       │       │   └─ value[expression]/int = "0"
       │       │       ├─ label/
@@ -721,14 +721,14 @@ unit/
       │       │       │   └─ body/expression/unary[postfix]/name = "n"
       │       │       ├─ comment[leading] = "// with expression (record update)"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "var"
+      │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "m"
       │       │       │   └─ value[expression]/object_creation/
       │       │       │       ├─ name = "Money"
       │       │       │       ├─ float = "1.0m"
       │       │       │       └─ string = "\"USD\""
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "var"
+      │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "m2"
       │       │       │   └─ value[expression]/with/
       │       │       │       ├─ name = "m"
@@ -737,7 +737,7 @@ unit/
       │       │       │           └─ string = "\"EUR\""
       │       │       ├─ comment[leading] = "// anonymous object creation"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "var"
+      │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "anon"
       │       │       │   └─ value[expression]/new[anonymous]/
       │       │       │       ├─ name = "Name"
@@ -746,7 +746,7 @@ unit/
       │       │       │       └─ int = "42"
       │       │       ├─ comment[leading] = "// array creation"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type and array]/type/name = "int"
+      │       │       │   ├─ type[array]/type/name = "int"
       │       │       │   ├─ name = "arr"
       │       │       │   └─ value[expression]/new/
       │       │       │       ├─ type[array]/type/name = "int"
@@ -754,7 +754,7 @@ unit/
       │       │       │       ├─ int = "2"
       │       │       │       └─ int = "3"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type and array]/type/name = "int"
+      │       │       │   ├─ type[array]/type/name = "int"
       │       │       │   ├─ name = "arr2"
       │       │       │   └─ value[expression]/new/
       │       │       │       ├─ int = "4"
@@ -762,25 +762,25 @@ unit/
       │       │       │       └─ int = "6"
       │       │       ├─ comment[leading] = "// typeof + sizeof"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "Type"
+      │       │       │   ├─ type/name = "Type"
       │       │       │   ├─ name = "t"
       │       │       │   └─ value[expression]/typeof/type/name = "int"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "int"
+      │       │       │   ├─ type/name = "int"
       │       │       │   ├─ name = "sz"
       │       │       │   └─ value[expression]/sizeof/type/name = "int"
       │       │       ├─ comment[leading] = "// default expression"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "int"
+      │       │       │   ├─ type/name = "int"
       │       │       │   ├─ name = "def"
       │       │       │   └─ value[expression]/default/type/name = "int"
       │       │       ├─ comment[leading] = "// throw expression (in null-coalescing context)"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "string"
+      │       │       │   ├─ type/name = "string"
       │       │       │   ├─ name = "s"
       │       │       │   └─ value[expression]/null = "null"
       │       │       └─ variable/
-      │       │           ├─ type_ann[type]/name = "string"
+      │       │           ├─ type/name = "string"
       │       │           ├─ name = "s2"
       │       │           └─ value[expression]/binary/
       │       │               ├─ left[expression]/name = "s"
@@ -878,7 +878,7 @@ unit/
       │       │   │   ├─ name = "global::System"
       │       │   │   └─ name = "Int32"
       │       │   ├─ name = "aliased"
-      │       │   └─ expression/int = "0"
+      │       │   └─ value[expression]/int = "0"
       │       ├─ comment[leading] = "// Operator overloads + conversion operator."
       │       ├─ operator[public and static]/
       │       │   ├─ type/
@@ -983,7 +983,7 @@ unit/
       │       │   │   └─ name = "ys"
       │       │   └─ body/
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "var"
+      │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "joined"
       │       │       │   └─ value[expression]/query/
       │       │       │       ├─ from[in]/
@@ -1013,11 +1013,11 @@ unit/
       │       │       │   │       └─ name = "arr"
       │       │       │   └─ body/return/expression/object/name = "arr"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "object"
+      │       │       │   ├─ type/name = "object"
       │       │       │   ├─ name = "o"
       │       │       │   └─ value[expression]/name = "xs"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "var"
+      │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "asArr"
       │       │       │   └─ value[expression]/is/
       │       │       │       ├─ left/name = "o"
@@ -1055,7 +1055,7 @@ unit/
       │       │   └─ body/
       │       │       ├─ c_for/
       │       │       │   ├─ initializer[variable]/
-      │       │       │   │   ├─ type_ann[type]/name = "int"
+      │       │       │   │   ├─ type/name = "int"
       │       │       │   │   ├─ name = "i"
       │       │       │   │   └─ value[expression]/int = "0"
       │       │       │   ├─ condition[binary]/
@@ -1106,14 +1106,14 @@ unit/
       │       │   │   └─ name = "p"
       │       │   └─ body/fixed/
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/type/name = "int"
+      │       │       │   ├─ type/type/name = "int"
       │       │       │   ├─ name = "q"
       │       │       │   └─ value[expression]/unary/name = "a"
       │       │       └─ body/return/expression/unary/name = "q"
       │       ├─ field[private and static]/
       │       │   ├─ type/name = "int"
       │       │   ├─ name = "a"
-      │       │   └─ expression/int = "1"
+      │       │   └─ value[expression]/int = "1"
       │       ├─ comment[leading] = "// Function pointer type + parameter."
       │       ├─ method[public and static and unsafe]/
       │       │   ├─ name = "FnPtr"
@@ -1133,13 +1133,13 @@ unit/
       │       │   ├─ name = "Alloc"
       │       │   └─ body/
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/type/name = "int"
+      │       │       │   ├─ type/type/name = "int"
       │       │       │   ├─ name = "buf"
       │       │       │   └─ value[expression]/new[stackalloc]/type[array]/
       │       │       │       ├─ type/name = "int"
       │       │       │       └─ int = "3"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/
+      │       │       │   ├─ type/
       │       │       │   │   ├─ name = "Span"
       │       │       │   │   └─ name = "int"
       │       │       │   ├─ name = "span"
@@ -1151,7 +1151,7 @@ unit/
       │       │       │       ├─ int = "2"
       │       │       │       └─ int = "3"
       │       │       └─ variable/
-      │       │           ├─ type_ann[type]/
+      │       │           ├─ type/
       │       │           │   ├─ name = "Span"
       │       │           │   └─ name = "int"
       │       │           ├─ name = "auto"
@@ -1200,11 +1200,11 @@ unit/
       │       │   ├─ name = "RefExample"
       │       │   └─ body/
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "int"
+      │       │       │   ├─ type/name = "int"
       │       │       │   ├─ name = "x"
       │       │       │   └─ value[expression]/int = "0"
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type and ref]/type/name = "int"
+      │       │       │   ├─ type[ref]/type/name = "int"
       │       │       │   ├─ name = "r"
       │       │       │   └─ value[expression and ref]/name = "x"
       │       │       └─ assign/
@@ -1276,7 +1276,7 @@ unit/
       │       │   │   └─ name = "b"
       │       │   └─ body/
       │       │       ├─ variable/
-      │       │       │   ├─ type_ann[type]/name = "var"
+      │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "q"
       │       │       │   └─ value[expression]/query/
       │       │       │       ├─ from[in]/

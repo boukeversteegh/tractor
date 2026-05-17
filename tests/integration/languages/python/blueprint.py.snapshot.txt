@@ -42,11 +42,11 @@ module/
   │   ├─ parameter/name = "a"
   │   ├─ parameter/
   │   │   ├─ name = "b"
-  │   │   └─ int = "1"
+  │   │   └─ default[int] = "1"
   │   ├─ parameter/name = "args"
   │   ├─ parameter/
   │   │   ├─ name = "kw_only"
-  │   │   └─ int = "2"
+  │   │   └─ default[int] = "2"
   │   ├─ parameter/name = "kwargs"
   │   └─ body/
   │       ├─ expression/string = "\"\"\"Cover default, varargs, keyword-only, and **kwargs.\"\"\""
@@ -59,16 +59,17 @@ module/
   │           └─ right[expression]/name = "kw_only"
   ├─ function/
   │   ├─ name = "pos_only"
-  │   ├─ parameter/name = "a"
-  │   ├─ parameter/name = "b"
-  │   ├─ positional_separator = "/"
-  │   ├─ parameter/name = "c"
-  │   ├─ parameter/name = "d"
-  │   ├─ keyword_separator = "*"
-  │   ├─ parameter/name = "e"
-  │   ├─ parameter/
-  │   │   ├─ name = "f"
-  │   │   └─ int = "0"
+  │   ├─ parameters/
+  │   │   ├─ parameter/name = "a"
+  │   │   ├─ parameter/name = "b"
+  │   │   ├─ positional_separator = "/"
+  │   │   ├─ parameter/name = "c"
+  │   │   ├─ parameter/name = "d"
+  │   │   ├─ keyword_separator = "*"
+  │   │   ├─ parameter/name = "e"
+  │   │   └─ parameter/
+  │   │       ├─ name = "f"
+  │   │       └─ default[int] = "0"
   │   └─ body/
   │       ├─ expression/string = "\"\"\"Cover positional-only and keyword-only boundaries.\"\"\""
   │       └─ return/expression/tuple/
@@ -108,7 +109,7 @@ module/
   │   │   ├─ type/
   │   │   │   ├─ name = "Optional"
   │   │   │   └─ name = "str"
-  │   │   └─ none = "None"
+  │   │   └─ default[none] = "None"
   │   ├─ parameter/
   │   │   ├─ name = "z"
   │   │   ├─ type[union]/
@@ -116,7 +117,7 @@ module/
   │   │   │   │   ├─ name = "list"
   │   │   │   │   └─ name = "int"
   │   │   │   └─ none = "None"
-  │   │   └─ none = "None"
+  │   │   └─ default[none] = "None"
   │   ├─ returns/type/
   │   │   ├─ name = "Union"
   │   │   ├─ name = "int"
@@ -329,7 +330,7 @@ module/
   │       ├─ try/
   │       │   ├─ try_body[body]/expression/call/name = "risky"
   │       │   ├─ except/
-  │       │   │   ├─ type_target[type]/tuple/
+  │       │   │   ├─ type/tuple/
   │       │   │   │   ├─ name = "ValueError"
   │       │   │   │   └─ name = "TypeError"
   │       │   │   ├─ binding[as]/expression/name = "e"
@@ -339,7 +340,7 @@ module/
   │       │   │       │   └─ string = "\"bad\""
   │       │   │       └─ name = "e"
   │       │   ├─ except/
-  │       │   │   ├─ type_target[type]/name = "Exception"
+  │       │   │   ├─ type/name = "Exception"
   │       │   │   └─ body = "pass"
   │       │   ├─ else_body[else]/body/assign/
   │       │   │   ├─ expression/name = "total"
@@ -516,7 +517,7 @@ module/
   │       │           ├─ name = "map"
   │       │           ├─ lambda/
   │       │           │   ├─ parameter/name = "v"
-  │       │           │   └─ binary/
+  │       │           │   └─ body[binary]/
   │       │           │       ├─ left[expression]/name = "v"
   │       │           │       ├─ op[operator and multiply] = "*"
   │       │           │       └─ right[expression]/int = "2"
@@ -644,7 +645,7 @@ module/
           │   │       ├─ name = "list"
           │   │       └─ name = "items"
           │   └─ except/
-          │       ├─ type_target[type]/tuple/
+          │       ├─ type/tuple/
           │       │   ├─ name = "ValueError"
           │       │   └─ name = "TypeError"
           │       └─ body/assign/

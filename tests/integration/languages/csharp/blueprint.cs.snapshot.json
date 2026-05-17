@@ -8,11 +8,13 @@
           "public": true,
           "abstract": true,
           "partial": true,
-          "attribute": [
+          "decorators": [
             {
+              "$type": "attribute",
               "name": "Serializable"
             },
             {
+              "$type": "attribute",
               "argument": [
                 {
                   "string": "\"use V2\""
@@ -24,7 +26,12 @@
               "name": "Obsolete"
             }
           ],
+          "name": "EntityBase",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
           "body": {
+            "$type": "body",
             "constructor": [
               {
                 "protected": true,
@@ -49,6 +56,7 @@
                 "parameter": {
                   "name": "id",
                   "type": {
+                    "$type": "type",
                     "name": "int"
                   }
                 }
@@ -62,8 +70,9 @@
             },
             "event": {
               "public": true,
-              "name": "Changed",
+              "decorators": [],
               "type": {
+                "$type": "type",
                 "nullable": true,
                 "type": {
                   "name": [
@@ -71,18 +80,22 @@
                     "EntityBase"
                   ]
                 }
-              }
+              },
+              "name": "Changed"
             },
             "field": [
               {
                 "public": true,
                 "const": true,
-                "expression": {
-                  "int": "128"
+                "decorators": [],
+                "type": {
+                  "$type": "type",
+                  "name": "int"
                 },
                 "name": "MaxNameLength",
-                "type": {
-                  "name": "int"
+                "value": {
+                  "$type": "expression",
+                  "int": "128"
                 }
               },
               {
@@ -90,7 +103,14 @@
                 "internal": true,
                 "static": true,
                 "readonly": true,
-                "expression": {
+                "decorators": [],
+                "type": {
+                  "$type": "type",
+                  "name": "DateTime"
+                },
+                "name": "Epoch",
+                "value": {
+                  "$type": "expression",
                   "object_creation": {
                     "int": [
                       "1970",
@@ -98,18 +118,16 @@
                       "1"
                     ]
                   }
-                },
-                "name": "Epoch",
-                "type": {
-                  "name": "DateTime"
                 }
               },
               {
                 "private": true,
-                "name": "_version",
+                "decorators": [],
                 "type": {
+                  "$type": "type",
                   "name": "int"
-                }
+                },
+                "name": "_version"
               }
             ],
             "indexer": {
@@ -117,6 +135,7 @@
               "parameter": {
                 "name": "key",
                 "type": {
+                  "$type": "type",
                   "name": "string"
                 }
               },
@@ -133,17 +152,26 @@
               {
                 "public": true,
                 "abstract": true,
-                "name": "Describe"
+                "decorators": [],
+                "name": "Describe",
+                "generics": [],
+                "parameters": [],
+                "throws": []
               },
               {
                 "protected": true,
                 "virtual": true,
+                "decorators": [],
+                "name": "OnChanged",
+                "generics": [],
+                "parameters": [],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "object": {
                     "name": "Changed"
                   }
-                },
-                "name": "OnChanged"
+                }
               }
             ],
             "property": [
@@ -182,14 +210,35 @@
                 }
               }
             ]
-          },
-          "name": "EntityBase"
+          }
         },
         {
           "public": true,
           "sealed": true,
           "partial": true,
+          "decorators": [],
+          "name": "Widget",
+          "generics": [],
+          "bases": [
+            {
+              "$type": "extends",
+              "type": {
+                "name": "EntityBase"
+              }
+            },
+            {
+              "$type": "extends",
+              "type": {
+                "name": [
+                  "IRepository",
+                  "Widget"
+                ]
+              }
+            }
+          ],
+          "where_clauses": [],
           "body": {
+            "$type": "body",
             "constructor": [
               {
                 "public": true,
@@ -215,12 +264,14 @@
                   {
                     "name": "id",
                     "type": {
+                      "$type": "type",
                       "name": "int"
                     }
                   },
                   {
                     "name": "name",
                     "type": {
+                      "$type": "type",
                       "name": "string"
                     }
                   }
@@ -229,8 +280,9 @@
             ],
             "event": {
               "public": true,
-              "name": "Added",
+              "decorators": [],
               "type": {
+                "$type": "type",
                 "nullable": true,
                 "type": {
                   "name": [
@@ -238,13 +290,20 @@
                     "Widget"
                   ]
                 }
-              }
+              },
+              "name": "Added"
             },
             "method": [
               {
                 "public": true,
                 "override": true,
+                "decorators": [],
+                "name": "Describe",
+                "generics": [],
+                "parameters": [],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "string": {
                     "interpolation": [
                       {
@@ -258,12 +317,26 @@
                       }
                     ]
                   }
-                },
-                "name": "Describe"
+                }
               },
               {
                 "public": true,
+                "decorators": [],
+                "name": "Find",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "id",
+                    "type": {
+                      "$type": "type",
+                      "name": "int"
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "ternary": {
                     "condition": {
                       "$type": "condition",
@@ -298,19 +371,18 @@
                       }
                     }
                   }
-                },
-                "name": "Find",
-                "parameter": {
-                  "name": "id",
-                  "type": {
-                    "name": "int"
-                  }
                 }
               },
               {
                 "public": true,
                 "async": true,
+                "decorators": [],
+                "name": "AllAsync",
+                "generics": [],
+                "parameters": [],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "expression": {
                     "await": true,
                     "object": {
@@ -323,39 +395,37 @@
                       "index": {}
                     }
                   }
-                },
-                "name": "AllAsync"
+                }
               },
               {
                 "public": true,
                 "static": true,
-                "body": {
-                  "call": {
-                    "name": [
-                      "fn",
-                      "input"
-                    ]
-                  }
-                },
-                "generic": [
+                "decorators": [],
+                "name": "Pipe",
+                "generics": [
                   {
+                    "$type": "generic",
                     "name": "T"
                   },
                   {
+                    "$type": "generic",
                     "name": "TResult"
                   }
                 ],
-                "name": "Pipe",
-                "parameter": [
+                "parameters": [
                   {
+                    "$type": "parameter",
                     "name": "input",
                     "type": {
+                      "$type": "type",
                       "name": "T"
                     }
                   },
                   {
+                    "$type": "parameter",
                     "name": "fn",
                     "type": {
+                      "$type": "type",
                       "name": [
                         "Transformer",
                         "T",
@@ -363,7 +433,17 @@
                       ]
                     }
                   }
-                ]
+                ],
+                "throws": [],
+                "body": {
+                  "$type": "body",
+                  "call": {
+                    "name": [
+                      "fn",
+                      "input"
+                    ]
+                  }
+                }
               }
             ],
             "property": {
@@ -390,32 +470,38 @@
                 "name": "Priority"
               }
             }
-          },
-          "extends": [
-            {
-              "type": {
-                "name": "EntityBase"
-              }
-            },
-            {
-              "type": {
-                "name": [
-                  "IRepository",
-                  "Widget"
-                ]
-              }
-            }
-          ],
-          "name": "Widget"
+          }
         },
         {
           "public": true,
           "static": true,
+          "decorators": [],
+          "name": "WidgetExtensions",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
           "body": {
+            "$type": "body",
             "method": {
               "public": true,
               "static": true,
+              "decorators": [],
+              "name": "Shout",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "this": true,
+                  "name": "w",
+                  "type": {
+                    "$type": "type",
+                    "name": "Widget"
+                  }
+                }
+              ],
+              "throws": [],
               "body": {
+                "$type": "body",
                 "binary": {
                   "left": {
                     "$type": "expression",
@@ -433,33 +519,59 @@
                     "string": "\"!\""
                   }
                 }
-              },
-              "name": "Shout",
-              "parameter": {
-                "this": true,
-                "name": "w",
-                "type": {
-                  "name": "Widget"
-                }
               }
             }
-          },
-          "name": "WidgetExtensions"
+          }
         },
         {
           "internal": true,
           "static": true,
+          "decorators": [],
+          "name": "Demo",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
           "body": {
+            "$type": "body",
             "method": {
               "public": true,
               "static": true,
               "async": true,
+              "decorators": [],
+              "name": "RunAsync",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "name": "maybe",
+                  "type": {
+                    "$type": "type",
+                    "nullable": true,
+                    "type": {
+                      "name": "Widget"
+                    }
+                  }
+                },
+                {
+                  "$type": "parameter",
+                  "name": "numbers",
+                  "type": {
+                    "$type": "type",
+                    "name": [
+                      "IEnumerable",
+                      "int"
+                    ]
+                  }
+                }
+              ],
+              "throws": [],
               "body": {
+                "$type": "body",
                 "c_for": {
                   "initializer": {
                     "$type": "variable",
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -577,7 +689,7 @@
                   }
                 },
                 "foreach": {
-                  "type_ann": {
+                  "type": {
                     "$type": "type",
                     "name": "var"
                   },
@@ -634,7 +746,22 @@
                   }
                 },
                 "method": {
+                  "decorators": [],
+                  "name": "Square",
+                  "generics": [],
+                  "parameters": [
+                    {
+                      "$type": "parameter",
+                      "name": "x",
+                      "type": {
+                        "$type": "type",
+                        "name": "int"
+                      }
+                    }
+                  ],
+                  "throws": [],
                   "body": {
+                    "$type": "body",
                     "binary": {
                       "left": {
                         "$type": "expression",
@@ -649,13 +776,6 @@
                         "$type": "expression",
                         "name": "x"
                       }
-                    }
-                  },
-                  "name": "Square",
-                  "parameter": {
-                    "name": "x",
-                    "type": {
-                      "name": "int"
                     }
                   }
                 },
@@ -874,7 +994,7 @@
                       },
                       "variable": {
                         "decorators": [],
-                        "type_ann": {
+                        "type": {
                           "$type": "type",
                           "name": "var"
                         },
@@ -897,7 +1017,7 @@
                   "handlers": [
                     {
                       "$type": "catch",
-                      "type_target": {
+                      "type": {
                         "$type": "type",
                         "name": "InvalidOperationException"
                       },
@@ -943,7 +1063,7 @@
                     },
                     {
                       "$type": "catch",
-                      "type_target": {
+                      "type": {
                         "$type": "type",
                         "name": "Exception"
                       },
@@ -967,7 +1087,7 @@
                 "variable": [
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -997,7 +1117,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -1025,7 +1145,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -1072,7 +1192,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "string"
                     },
@@ -1138,7 +1258,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "object"
                     },
@@ -1151,7 +1271,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -1226,7 +1346,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -1236,7 +1356,14 @@
                       "object": {
                         "lambda": [
                           {
-                            "binary": {
+                            "parameters": [
+                              {
+                                "$type": "parameter",
+                                "name": "n"
+                              }
+                            ],
+                            "body": {
+                              "$type": "binary",
                               "left": {
                                 "$type": "expression",
                                 "binary": {
@@ -1264,13 +1391,17 @@
                                 "$type": "expression",
                                 "int": "0"
                               }
-                            },
-                            "parameter": {
-                              "name": "n"
                             }
                           },
                           {
-                            "binary": {
+                            "parameters": [
+                              {
+                                "$type": "parameter",
+                                "name": "n"
+                              }
+                            ],
+                            "body": {
+                              "$type": "binary",
                               "left": {
                                 "$type": "expression",
                                 "name": "n"
@@ -1284,9 +1415,6 @@
                                 "$type": "expression",
                                 "int": "1"
                               }
-                            },
-                            "parameter": {
-                              "name": "n"
                             }
                           }
                         ],
@@ -1296,7 +1424,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": [
                         "Func",
@@ -1308,7 +1436,14 @@
                     "value": {
                       "$type": "expression",
                       "lambda": {
-                        "binary": {
+                        "parameters": [
+                          {
+                            "$type": "parameter",
+                            "name": "x"
+                          }
+                        ],
+                        "body": {
+                          "$type": "binary",
                           "left": {
                             "$type": "expression",
                             "binary": {
@@ -1336,16 +1471,13 @@
                             "$type": "expression",
                             "name": "x"
                           }
-                        },
-                        "parameter": {
-                          "name": "x"
                         }
                       }
                     }
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": [
                         "Func",
@@ -1357,7 +1489,14 @@
                     "value": {
                       "$type": "expression",
                       "lambda": {
+                        "parameters": [
+                          {
+                            "$type": "parameter",
+                            "name": "x"
+                          }
+                        ],
                         "body": {
+                          "$type": "body",
                           "return": {
                             "expression": {
                               "binary": {
@@ -1377,16 +1516,13 @@
                               }
                             }
                           }
-                        },
-                        "parameter": {
-                          "name": "x"
                         }
                       }
                     }
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": [
                         "Action",
@@ -1397,21 +1533,25 @@
                     "value": {
                       "$type": "expression",
                       "lambda": {
-                        "object": {
+                        "parameters": [
+                          {
+                            "$type": "parameter",
+                            "name": "msg"
+                          }
+                        ],
+                        "body": {
+                          "$type": "object",
                           "name": [
                             "Console",
                             "msg"
                           ]
-                        },
-                        "parameter": {
-                          "name": "msg"
                         }
                       }
                     }
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "int"
                     },
@@ -1423,7 +1563,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "int"
                     },
@@ -1435,7 +1575,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -1455,7 +1595,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "tuple": true,
                       "element": [
@@ -1486,7 +1626,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -1505,7 +1645,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": [
                         "List",
@@ -1529,7 +1669,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": [
                         "Dictionary",
@@ -1572,7 +1712,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -1584,7 +1724,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -1596,7 +1736,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -1617,7 +1757,7 @@
                   },
                   {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -1654,31 +1794,9 @@
                   },
                   "body": "{ }"
                 }
-              },
-              "name": "RunAsync",
-              "parameter": [
-                {
-                  "name": "maybe",
-                  "type": {
-                    "nullable": true,
-                    "type": {
-                      "name": "Widget"
-                    }
-                  }
-                },
-                {
-                  "name": "numbers",
-                  "type": {
-                    "name": [
-                      "IEnumerable",
-                      "int"
-                    ]
-                  }
-                }
-              ]
+              }
             }
-          },
-          "name": "Demo"
+          }
         }
       ],
       "delegate": {
@@ -1697,6 +1815,7 @@
         "parameter": {
           "name": "value",
           "type": {
+            "$type": "type",
             "name": "T"
           }
         },
@@ -1745,11 +1864,36 @@
       ],
       "interface": {
         "public": true,
+        "decorators": [],
+        "name": "IRepository",
+        "generics": [
+          {
+            "$type": "generic",
+            "class": {},
+            "name": "T",
+            "new": {}
+          }
+        ],
+        "bases": [],
+        "where_clauses": [
+          {
+            "$type": "where",
+            "constraint": [
+              "class",
+              {
+                "new": "new()"
+              }
+            ],
+            "name": "T"
+          }
+        ],
         "body": {
+          "$type": "body",
           "event": {
             "private": true,
-            "name": "Added",
+            "decorators": [],
             "type": {
+              "$type": "type",
               "nullable": true,
               "type": {
                 "name": [
@@ -1757,72 +1901,107 @@
                   "T"
                 ]
               }
-            }
+            },
+            "name": "Added"
           },
           "method": [
             {
               "public": true,
+              "decorators": [],
               "name": "Find",
-              "parameter": {
-                "name": "id",
-                "type": {
-                  "name": "int"
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "name": "id",
+                  "type": {
+                    "$type": "type",
+                    "name": "int"
+                  }
                 }
-              }
+              ],
+              "throws": []
             },
             {
               "public": true,
-              "name": "AllAsync"
+              "decorators": [],
+              "name": "AllAsync",
+              "generics": [],
+              "parameters": [],
+              "throws": []
             }
           ]
-        },
-        "generic": {
-          "class": {},
-          "name": "T",
-          "new": {}
-        },
-        "name": "IRepository",
-        "where": {
-          "constraint": [
-            "class",
-            {
-              "new": "new()"
-            }
-          ],
-          "name": "T"
         }
       },
       "name": "Tractor.Fixtures.Traditional",
       "record": [
         {
           "public": true,
-          "body": {},
-          "name": "Money"
+          "decorators": [],
+          "name": "Money",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
+          "body": {
+            "$type": "body"
+          }
         },
         {
           "public": true,
-          "body": {},
-          "extends": {
-            "type": {
-              "name": [
-                "Money",
-                "Amount",
-                "Currency"
-              ]
+          "decorators": [],
+          "name": "TaxedMoney",
+          "generics": [],
+          "bases": [
+            {
+              "$type": "extends",
+              "type": {
+                "name": [
+                  "Money",
+                  "Amount",
+                  "Currency"
+                ]
+              }
             }
-          },
-          "name": "TaxedMoney"
+          ],
+          "where_clauses": [],
+          "body": {
+            "$type": "body"
+          }
         }
       ],
       "struct": {
         "public": true,
         "readonly": true,
+        "decorators": [],
+        "name": "Point",
+        "generics": [],
+        "bases": [],
+        "where_clauses": [],
         "body": {
+          "$type": "body",
           "method": [
             {
               "public": true,
               "override": true,
+              "decorators": [],
+              "name": "Equals",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "name": "o",
+                  "type": {
+                    "$type": "type",
+                    "nullable": true,
+                    "type": {
+                      "name": "object"
+                    }
+                  }
+                }
+              ],
+              "throws": [],
               "body": {
+                "$type": "body",
                 "logical": {
                   "left": {
                     "$type": "expression",
@@ -1861,22 +2040,18 @@
                     }
                   }
                 }
-              },
-              "name": "Equals",
-              "parameter": {
-                "name": "o",
-                "type": {
-                  "nullable": true,
-                  "type": {
-                    "name": "object"
-                  }
-                }
               }
             },
             {
               "public": true,
               "override": true,
+              "decorators": [],
+              "name": "GetHashCode",
+              "generics": [],
+              "parameters": [],
+              "throws": [],
               "body": {
+                "$type": "body",
                 "object": {
                   "name": [
                     "HashCode",
@@ -1884,8 +2059,7 @@
                     "Y"
                   ]
                 }
-              },
-              "name": "GetHashCode"
+              }
             }
           ],
           "operator": [
@@ -1940,12 +2114,14 @@
                 {
                   "name": "a",
                   "type": {
+                    "$type": "type",
                     "name": "Point"
                   }
                 },
                 {
                   "name": "b",
                   "type": {
+                    "$type": "type",
                     "name": "Point"
                   }
                 }
@@ -2014,12 +2190,14 @@
                 {
                   "name": "a",
                   "type": {
+                    "$type": "type",
                     "name": "Point"
                   }
                 },
                 {
                   "name": "b",
                   "type": {
+                    "$type": "type",
                     "name": "Point"
                   }
                 }
@@ -2054,12 +2232,14 @@
                 {
                   "name": "a",
                   "type": {
+                    "$type": "type",
                     "name": "Point"
                   }
                 },
                 {
                   "name": "b",
                   "type": {
+                    "$type": "type",
                     "name": "Point"
                   }
                 }
@@ -2093,8 +2273,7 @@
               }
             }
           ]
-        },
-        "name": "Point"
+        }
       }
     },
     {
@@ -2114,7 +2293,13 @@
         {
           "file": true,
           "sealed": true,
+          "decorators": [],
+          "name": "Hidden",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
           "body": {
+            "$type": "body",
             "property": {
               "public": true,
               "static": true,
@@ -2126,44 +2311,85 @@
                 "name": "int"
               }
             }
-          },
-          "name": "Hidden"
+          }
         },
         {
           "public": true,
           "static": true,
+          "decorators": [],
+          "name": "Entry",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
           "body": {
+            "$type": "body",
             "method": {
               "public": true,
               "static": true,
+              "decorators": [],
+              "name": "Get",
+              "generics": [],
+              "parameters": [],
+              "throws": [],
               "body": {
+                "$type": "body",
                 "object": {
                   "name": "Hidden"
                 }
-              },
-              "name": "Get"
+              }
             }
-          },
-          "name": "Entry"
+          }
         },
         {
           "public": true,
           "static": true,
+          "decorators": [],
+          "name": "Extras",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
           "body": {
+            "$type": "body",
             "class": {
               "public": true,
-              "attribute": {
-                "argument": [
-                  {
-                    "string": "\"legacy\""
-                  },
-                  {
-                    "bool": "false"
-                  }
-                ],
-                "name": "Obsolete"
-              },
+              "decorators": [
+                {
+                  "$type": "attribute",
+                  "argument": [
+                    {
+                      "string": "\"legacy\""
+                    },
+                    {
+                      "bool": "false"
+                    }
+                  ],
+                  "name": "Obsolete"
+                }
+              ],
+              "name": "Container",
+              "generics": [
+                {
+                  "$type": "generic",
+                  "class": {},
+                  "name": "T",
+                  "new": {}
+                }
+              ],
+              "bases": [],
+              "where_clauses": [
+                {
+                  "$type": "where",
+                  "constraint": [
+                    "class",
+                    {
+                      "new": "new()"
+                    }
+                  ],
+                  "name": "T"
+                }
+              ],
               "body": {
+                "$type": "body",
                 "constructor": {
                   "public": true,
                   "body": "{ }",
@@ -2180,6 +2406,7 @@
                   "parameter": {
                     "name": "i",
                     "type": {
+                      "$type": "type",
                       "name": "int"
                     }
                   },
@@ -2202,21 +2429,6 @@
                     "name": "T"
                   }
                 }
-              },
-              "generic": {
-                "class": {},
-                "name": "T",
-                "new": {}
-              },
-              "name": "Container",
-              "where": {
-                "constraint": [
-                  "class",
-                  {
-                    "new": "new()"
-                  }
-                ],
-                "name": "T"
               }
             },
             "comment": [
@@ -2300,6 +2512,7 @@
               "parameter": {
                 "name": "newValue",
                 "type": {
+                  "$type": "type",
                   "name": "int"
                 }
               },
@@ -2310,17 +2523,21 @@
             "event": [
               {
                 "public": true,
-                "name": "Changed",
+                "decorators": [],
                 "type": {
+                  "$type": "type",
                   "name": "OnChanged"
-                }
+                },
+                "name": "Changed"
               },
               {
                 "private": true,
-                "name": "_changed",
+                "decorators": [],
                 "type": {
+                  "$type": "type",
                   "name": "OnChanged"
-                }
+                },
+                "name": "_changed"
               },
               {
                 "public": true,
@@ -2363,28 +2580,34 @@
             "field": [
               {
                 "private": true,
-                "expression": {
-                  "int": "0"
-                },
-                "name": "aliased",
+                "decorators": [],
                 "type": {
+                  "$type": "type",
                   "path": {
                     "name": [
                       "global::System",
                       "Int32"
                     ]
                   }
+                },
+                "name": "aliased",
+                "value": {
+                  "$type": "expression",
+                  "int": "0"
                 }
               },
               {
                 "private": true,
                 "static": true,
-                "expression": {
-                  "int": "1"
+                "decorators": [],
+                "type": {
+                  "$type": "type",
+                  "name": "int"
                 },
                 "name": "a",
-                "type": {
-                  "name": "int"
+                "value": {
+                  "$type": "expression",
+                  "int": "1"
                 }
               }
             ],
@@ -2392,7 +2615,22 @@
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "Statements",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "o",
+                    "type": {
+                      "$type": "type",
+                      "name": "object"
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "checked": {
                     "body": {
                       "assign": {
@@ -2490,7 +2728,7 @@
                   "variable": [
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "int"
                       },
@@ -2507,7 +2745,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "char"
                       },
@@ -2519,7 +2757,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "int"
                       },
@@ -2531,7 +2769,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "var"
                       },
@@ -2547,7 +2785,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "var"
                       },
@@ -2565,7 +2803,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "var"
                       },
@@ -2585,7 +2823,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "array": true,
                         "type": {
@@ -2612,7 +2850,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "array": true,
                         "type": {
@@ -2633,7 +2871,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "Type"
                       },
@@ -2649,7 +2887,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "int"
                       },
@@ -2665,7 +2903,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "int"
                       },
@@ -2681,7 +2919,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "string"
                       },
@@ -2693,7 +2931,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "string"
                       },
@@ -2730,19 +2968,18 @@
                       }
                     }
                   ]
-                },
-                "name": "Statements",
-                "parameter": {
-                  "name": "o",
-                  "type": {
-                    "name": "object"
-                  }
                 }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "Yields",
+                "generics": [],
+                "parameters": [],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "yield": [
                     {
                       "int": "1"
@@ -2751,13 +2988,27 @@
                       "int": "2"
                     }
                   ]
-                },
-                "name": "Yields"
+                }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "Patterns",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "o",
+                    "type": {
+                      "$type": "type",
+                      "name": "object"
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "return": {
                     "expression": {
                       "switch": {
@@ -2856,19 +3107,37 @@
                       }
                     }
                   }
-                },
-                "name": "Patterns",
-                "parameter": {
-                  "name": "o",
-                  "type": {
-                    "name": "object"
-                  }
                 }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "Deconstruct",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "out": true,
+                    "name": "x",
+                    "type": {
+                      "$type": "type",
+                      "name": "int"
+                    }
+                  },
+                  {
+                    "$type": "parameter",
+                    "out": true,
+                    "name": "y",
+                    "type": {
+                      "$type": "type",
+                      "name": "int"
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "assign": [
                     {
                       "expression": [
@@ -2891,42 +3160,45 @@
                       ]
                     }
                   ]
-                },
-                "name": "Deconstruct",
-                "parameter": [
-                  {
-                    "out": true,
-                    "name": "x",
-                    "type": {
-                      "name": "int"
-                    }
-                  },
-                  {
-                    "out": true,
-                    "name": "y",
-                    "type": {
-                      "name": "int"
-                    }
-                  }
-                ]
+                }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "Pair",
+                "generics": [],
+                "parameters": [],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "tuple": {
                     "int": [
                       "1",
                       "2"
                     ]
                   }
-                },
-                "name": "Pair"
+                }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "Origin",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "o",
+                    "type": {
+                      "$type": "type",
+                      "name": "object"
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "switch": {
                     "arm": [
                       {
@@ -2971,44 +3243,76 @@
                     ],
                     "name": "o"
                   }
-                },
-                "name": "Origin",
-                "parameter": {
-                  "name": "o",
-                  "type": {
-                    "name": "object"
-                  }
                 }
               },
               {
                 "public": true,
-                "attribute": {
-                  "path": {
-                    "name": [
-                      "System",
-                      "Diagnostics",
-                      "CodeAnalysis",
-                      "NotNull"
-                    ]
+                "decorators": [
+                  {
+                    "$type": "attribute",
+                    "path": {
+                      "name": [
+                        "System",
+                        "Diagnostics",
+                        "CodeAnalysis",
+                        "NotNull"
+                      ]
+                    }
                   }
-                },
+                ],
+                "name": "Trim",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "s",
+                    "type": {
+                      "$type": "type",
+                      "name": "string"
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "object": {
                     "name": "s"
-                  }
-                },
-                "name": "Trim",
-                "parameter": {
-                  "name": "s",
-                  "type": {
-                    "name": "string"
                   }
                 }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "LinqExtras",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "xs",
+                    "type": {
+                      "$type": "type",
+                      "array": true,
+                      "type": {
+                        "name": "int"
+                      }
+                    }
+                  },
+                  {
+                    "$type": "parameter",
+                    "name": "ys",
+                    "type": {
+                      "$type": "type",
+                      "array": true,
+                      "type": {
+                        "name": "int"
+                      }
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "if": {
                     "condition": {
                       "$type": "condition",
@@ -3079,7 +3383,7 @@
                   "variable": [
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "var"
                       },
@@ -3142,7 +3446,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "object"
                       },
@@ -3154,7 +3458,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "var"
                       },
@@ -3177,33 +3481,30 @@
                       }
                     }
                   ]
-                },
-                "name": "LinqExtras",
-                "parameter": [
+                }
+              },
+              {
+                "public": true,
+                "static": true,
+                "decorators": [],
+                "name": "Listy",
+                "generics": [],
+                "parameters": [
                   {
+                    "$type": "parameter",
                     "name": "xs",
                     "type": {
-                      "array": true,
-                      "type": {
-                        "name": "int"
-                      }
-                    }
-                  },
-                  {
-                    "name": "ys",
-                    "type": {
+                      "$type": "type",
                       "array": true,
                       "type": {
                         "name": "int"
                       }
                     }
                   }
-                ]
-              },
-              {
-                "public": true,
-                "static": true,
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "switch": {
                     "arm": [
                       {
@@ -3239,27 +3540,23 @@
                     ],
                     "name": "xs"
                   }
-                },
-                "name": "Listy",
-                "parameter": {
-                  "name": "xs",
-                  "type": {
-                    "array": true,
-                    "type": {
-                      "name": "int"
-                    }
-                  }
                 }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "Trivial",
+                "generics": [],
+                "parameters": [],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "c_for": {
                     "initializer": {
                       "$type": "variable",
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "int"
                       },
@@ -3355,32 +3652,62 @@
                       "int": "0"
                     }
                   }
-                },
-                "name": "Trivial"
+                }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "Aligned",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "n",
+                    "type": {
+                      "$type": "type",
+                      "name": "int"
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "string": {
                     "interpolation": {
                       "int": "5",
                       "name": "n"
                     }
                   }
-                },
-                "name": "Aligned",
-                "parameter": {
-                  "name": "n",
-                  "type": {
-                    "name": "int"
-                  }
                 }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "Checks",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "a",
+                    "type": {
+                      "$type": "type",
+                      "name": "int"
+                    }
+                  },
+                  {
+                    "$type": "parameter",
+                    "name": "b",
+                    "type": {
+                      "$type": "type",
+                      "name": "int"
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "checked": {
                     "binary": {
                       "left": {
@@ -3398,28 +3725,30 @@
                       }
                     }
                   }
-                },
-                "name": "Checks",
-                "parameter": [
-                  {
-                    "name": "a",
-                    "type": {
-                      "name": "int"
-                    }
-                  },
-                  {
-                    "name": "b",
-                    "type": {
-                      "name": "int"
-                    }
-                  }
-                ]
+                }
               },
               {
                 "public": true,
                 "static": true,
                 "unsafe": true,
+                "decorators": [],
+                "name": "Pointer",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "p",
+                    "type": {
+                      "$type": "type",
+                      "type": {
+                        "name": "int"
+                      }
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "fixed": {
                     "body": {
                       "return": {
@@ -3432,7 +3761,7 @@
                     },
                     "variable": {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "type": {
                           "name": "int"
@@ -3447,36 +3776,21 @@
                       }
                     }
                   }
-                },
-                "name": "Pointer",
-                "parameter": {
-                  "name": "p",
-                  "type": {
-                    "type": {
-                      "name": "int"
-                    }
-                  }
                 }
               },
               {
                 "public": true,
                 "static": true,
                 "unsafe": true,
-                "body": {
-                  "expression": {
-                    "call": {
-                      "name": [
-                        "fn",
-                        "x"
-                      ]
-                    }
-                  }
-                },
+                "decorators": [],
                 "name": "FnPtr",
-                "parameter": [
+                "generics": [],
+                "parameters": [
                   {
+                    "$type": "parameter",
                     "name": "fn",
                     "type": {
+                      "$type": "type",
                       "parameter": {
                         "type": {
                           "name": "int"
@@ -3488,22 +3802,42 @@
                     }
                   },
                   {
+                    "$type": "parameter",
                     "name": "x",
                     "type": {
+                      "$type": "type",
                       "name": "int"
                     }
                   }
-                ]
+                ],
+                "throws": [],
+                "body": {
+                  "$type": "body",
+                  "expression": {
+                    "call": {
+                      "name": [
+                        "fn",
+                        "x"
+                      ]
+                    }
+                  }
+                }
               },
               {
                 "public": true,
                 "static": true,
                 "unsafe": true,
+                "decorators": [],
+                "name": "Alloc",
+                "generics": [],
+                "parameters": [],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "variable": [
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "type": {
                           "name": "int"
@@ -3526,7 +3860,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": [
                           "Span",
@@ -3555,7 +3889,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": [
                           "Span",
@@ -3576,13 +3910,18 @@
                       }
                     }
                   ]
-                },
-                "name": "Alloc"
+                }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "AnonMethod",
+                "generics": [],
+                "parameters": [],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "lambda": {
                     "body": {
                       "return": {
@@ -3608,48 +3947,52 @@
                     "parameter": {
                       "name": "x",
                       "type": {
+                        "$type": "type",
                         "name": "int"
                       }
                     }
-                  }
-                },
-                "name": "AnonMethod"
-              },
-              {
-                "public": true,
-                "static": true,
-                "body": {
-                  "is": {
-                    "name": [
-                      "o",
-                      "int"
-                    ]
-                  }
-                },
-                "name": "IsInt",
-                "parameter": {
-                  "name": "o",
-                  "type": {
-                    "name": "object"
                   }
                 }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "IsInt",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "o",
+                    "type": {
+                      "$type": "type",
+                      "name": "object"
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
-                  "object": {
+                  "$type": "body",
+                  "is": {
                     "name": [
-                      "xs",
-                      "i"
+                      "o",
+                      "int"
                     ]
                   }
-                },
+                }
+              },
+              {
+                "public": true,
+                "static": true,
+                "decorators": [],
                 "name": "ElementAt",
-                "parameter": [
+                "generics": [],
+                "parameters": [
                   {
+                    "$type": "parameter",
                     "name": "xs",
                     "type": {
+                      "$type": "type",
                       "array": true,
                       "type": {
                         "name": "int"
@@ -3657,26 +4000,49 @@
                     }
                   },
                   {
+                    "$type": "parameter",
                     "name": "i",
                     "type": {
+                      "$type": "type",
                       "name": "int"
                     }
                   }
-                ]
+                ],
+                "throws": [],
+                "body": {
+                  "$type": "body",
+                  "object": {
+                    "name": [
+                      "xs",
+                      "i"
+                    ]
+                  }
+                }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "Esc",
+                "generics": [],
+                "parameters": [],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "string": "\"newline\\\\nquote\\\\\\\"backslash\\\\\\\\\""
-                },
-                "name": "Esc"
+                }
               },
               {
                 "public": true,
                 "static": true,
                 "unsafe": true,
+                "decorators": [],
+                "name": "RefExample",
+                "generics": [],
+                "parameters": [],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "assign": {
                     "expression": [
                       {
@@ -3690,7 +4056,7 @@
                   "variable": [
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "name": "int"
                       },
@@ -3702,7 +4068,7 @@
                     },
                     {
                       "decorators": [],
-                      "type_ann": {
+                      "type": {
                         "$type": "type",
                         "ref": true,
                         "type": {
@@ -3717,32 +4083,20 @@
                       }
                     }
                   ]
-                },
-                "name": "RefExample"
+                }
               },
               {
                 "public": true,
                 "static": true,
-                "body": {
-                  "assign": {
-                    "expression": [
-                      {
-                        "name": "target"
-                      },
-                      {
-                        "object": {
-                          "int": "0",
-                          "name": "data"
-                        }
-                      }
-                    ]
-                  }
-                },
+                "decorators": [],
                 "name": "Scoped",
-                "parameter": [
+                "generics": [],
+                "parameters": [
                   {
+                    "$type": "parameter",
                     "name": "data",
                     "type": {
+                      "$type": "type",
                       "scoped": true,
                       "type": {
                         "path": {
@@ -3758,18 +4112,52 @@
                     }
                   },
                   {
+                    "$type": "parameter",
                     "ref": true,
                     "name": "target",
                     "type": {
+                      "$type": "type",
                       "name": "int"
                     }
                   }
-                ]
+                ],
+                "throws": [],
+                "body": {
+                  "$type": "body",
+                  "assign": {
+                    "expression": [
+                      {
+                        "name": "target"
+                      },
+                      {
+                        "object": {
+                          "int": "0",
+                          "name": "data"
+                        }
+                      }
+                    ]
+                  }
+                }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "VarPat",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "o",
+                    "type": {
+                      "$type": "type",
+                      "name": "object"
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "assign": {
                     "expression": [
                       {
@@ -3847,19 +4235,41 @@
                       }
                     }
                   }
-                },
-                "name": "VarPat",
-                "parameter": {
-                  "name": "o",
-                  "type": {
-                    "name": "object"
-                  }
                 }
               },
               {
                 "public": true,
                 "static": true,
+                "decorators": [],
+                "name": "JoinInto",
+                "generics": [],
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "name": "a",
+                    "type": {
+                      "$type": "type",
+                      "array": true,
+                      "type": {
+                        "name": "int"
+                      }
+                    }
+                  },
+                  {
+                    "$type": "parameter",
+                    "name": "b",
+                    "type": {
+                      "$type": "type",
+                      "array": true,
+                      "type": {
+                        "name": "int"
+                      }
+                    }
+                  }
+                ],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "return": {
                     "expression": {
                       "object": {
@@ -3869,7 +4279,7 @@
                   },
                   "variable": {
                     "decorators": [],
-                    "type_ann": {
+                    "type": {
                       "$type": "type",
                       "name": "var"
                     },
@@ -3906,35 +4316,19 @@
                       }
                     }
                   }
-                },
-                "name": "JoinInto",
-                "parameter": [
-                  {
-                    "name": "a",
-                    "type": {
-                      "array": true,
-                      "type": {
-                        "name": "int"
-                      }
-                    }
-                  },
-                  {
-                    "name": "b",
-                    "type": {
-                      "array": true,
-                      "type": {
-                        "name": "int"
-                      }
-                    }
-                  }
-                ]
+                }
               },
               {
                 "public": true,
+                "decorators": [],
+                "name": "IFormat",
+                "generics": [],
+                "parameters": [],
+                "throws": [],
                 "body": {
+                  "$type": "body",
                   "string": "\"default\""
-                },
-                "name": "IFormat"
+                }
               }
             ],
             "operator": [
@@ -3948,6 +4342,7 @@
                   {
                     "name": "a",
                     "type": {
+                      "$type": "type",
                       "name": [
                         "Container",
                         "T"
@@ -3957,6 +4352,7 @@
                   {
                     "name": "b",
                     "type": {
+                      "$type": "type",
                       "name": [
                         "Container",
                         "T"
@@ -3980,6 +4376,7 @@
                 "parameter": {
                   "name": "c",
                   "type": {
+                    "$type": "type",
                     "name": [
                       "Container",
                       "T"
@@ -3991,35 +4388,75 @@
                 }
               }
             ]
-          },
-          "name": "Extras"
+          }
         },
         {
           "public": true,
+          "decorators": [],
+          "name": "Wrap",
+          "generics": [],
+          "bases": [
+            {
+              "$type": "extends",
+              "type": {
+                "name": "IFormatProvider2"
+              }
+            }
+          ],
+          "where_clauses": [],
           "body": {
+            "$type": "body",
             "method": {
               "private": true,
+              "decorators": [],
+              "name": "IFormat",
+              "generics": [],
+              "parameters": [],
+              "throws": [],
               "body": {
+                "$type": "body",
                 "string": "\"explicit\""
-              },
-              "name": "IFormat"
+              }
             }
-          },
-          "extends": {
-            "type": {
-              "name": "IFormatProvider2"
-            }
-          },
-          "name": "Wrap"
+          }
         },
         {
           "public": true,
           "static": true,
+          "decorators": [],
+          "name": "RecordUse",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
           "body": {
+            "$type": "body",
             "method": {
               "public": true,
               "static": true,
+              "decorators": [],
+              "name": "Move",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "name": "p",
+                  "type": {
+                    "$type": "type",
+                    "name": "Point"
+                  }
+                },
+                {
+                  "$type": "parameter",
+                  "name": "dx",
+                  "type": {
+                    "$type": "type",
+                    "name": "int"
+                  }
+                }
+              ],
+              "throws": [],
               "body": {
+                "$type": "body",
                 "with": {
                   "literal": {
                     "binary": {
@@ -4043,43 +4480,39 @@
                   },
                   "name": "p"
                 }
-              },
-              "name": "Move",
-              "parameter": [
-                {
-                  "name": "p",
-                  "type": {
-                    "name": "Point"
-                  }
-                },
-                {
-                  "name": "dx",
-                  "type": {
-                    "name": "int"
-                  }
-                }
-              ]
+              }
             }
-          },
-          "name": "RecordUse"
+          }
         },
         {
           "internal": true,
           "static": true,
-          "body": "{ }",
-          "name": "Debugging"
+          "decorators": [],
+          "name": "Debugging",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
+          "body": "{ }"
         },
         {
           "internal": true,
           "static": true,
-          "body": "{ }",
-          "name": "Legacy"
+          "decorators": [],
+          "name": "Legacy",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
+          "body": "{ }"
         },
         {
           "internal": true,
           "static": true,
-          "body": "{ }",
-          "name": "Modern"
+          "decorators": [],
+          "name": "Modern",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
+          "body": "{ }"
         }
       ],
       "comment": [
@@ -4092,13 +4525,22 @@
       "int": "0168",
       "interface": {
         "internal": true,
+        "decorators": [],
+        "name": "IFormatProvider2",
+        "generics": [],
+        "bases": [],
+        "where_clauses": [],
         "body": {
+          "$type": "body",
           "method": {
             "public": true,
-            "name": "IFormat"
+            "decorators": [],
+            "name": "IFormat",
+            "generics": [],
+            "parameters": [],
+            "throws": []
           }
-        },
-        "name": "IFormatProvider2"
+        }
       },
       "name": [
         "Tractor.Fixtures.FileScoped",
@@ -4107,8 +4549,14 @@
       ],
       "record": {
         "public": true,
-        "body": {},
-        "name": "Point"
+        "decorators": [],
+        "name": "Point",
+        "generics": [],
+        "bases": [],
+        "where_clauses": [],
+        "body": {
+          "$type": "body"
+        }
       },
       "using": {
         "name": "System"

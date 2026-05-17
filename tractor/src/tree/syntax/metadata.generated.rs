@@ -1043,7 +1043,7 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
             if let Some(__t) = else_body { out.push(TreeField::Single { name: "else_body", value: __t }); }
         }
         SyntaxTree::Foreach { type_ann, target, iterable, body, .. } => {
-            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type", value: __t }); }
             out.push(TreeField::Single { name: "target", value: target });
             out.push(TreeField::Single { name: "iterable", value: iterable });
             out.push(TreeField::Single { name: "body", value: body });
@@ -1084,13 +1084,13 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
             if let Some(__t) = finally_body { out.push(TreeField::Single { name: "finally_body", value: __t }); }
         }
         SyntaxTree::Except { type_target, binding, filter, body, .. } => {
-            if let Some(__t) = type_target { out.push(TreeField::Single { name: "type_target", value: __t }); }
+            if let Some(__t) = type_target { out.push(TreeField::Single { name: "type", value: __t }); }
             if let Some(__t) = binding { out.push(TreeField::Single { name: "binding", value: __t }); }
             if let Some(__t) = filter { out.push(TreeField::Single { name: "filter", value: __t }); }
             out.push(TreeField::Single { name: "body", value: body });
         }
         SyntaxTree::Catch { type_target, binding, filter, body, .. } => {
-            if let Some(__t) = type_target { out.push(TreeField::Single { name: "type_target", value: __t }); }
+            if let Some(__t) = type_target { out.push(TreeField::Single { name: "type", value: __t }); }
             if let Some(__t) = binding { out.push(TreeField::Single { name: "binding", value: __t }); }
             if let Some(__t) = filter { out.push(TreeField::Single { name: "filter", value: __t }); }
             out.push(TreeField::Single { name: "body", value: body });
@@ -1116,7 +1116,7 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
             out.push(TreeField::Single { name: "if_false", value: if_false });
         }
         SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {
-            if let Some(__t) = type_target { out.push(TreeField::Single { name: "type_target", value: __t }); }
+            if let Some(__t) = type_target { out.push(TreeField::Single { name: "type", value: __t }); }
             out.push(TreeField::Many { name: "arguments", items: arguments.iter().collect() });
             if let Some(__t) = initializer { out.push(TreeField::Single { name: "initializer", value: __t }); }
         }
@@ -1260,7 +1260,7 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
                 });
             }
             out.push(TreeField::Single { name: "name", value: name });
-            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type", value: __t }); }
             if let Some(__t) = default { out.push(TreeField::Single { name: "default", value: __t }); }
         }
         SyntaxTree::Skip { .. } => {}
@@ -1270,7 +1270,7 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
             out.push(TreeField::Single { name: "inner", value: inner });
         }
         SyntaxTree::Returns { type_ann, .. } => {
-            out.push(TreeField::Single { name: "type_ann", value: type_ann });
+            out.push(TreeField::Single { name: "type", value: type_ann });
         }
         SyntaxTree::Generic { items, .. } => {
             out.push(TreeField::Many { name: "items", items: items.iter().collect() });
@@ -1380,7 +1380,7 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
                 });
             }
             out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
-            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type", value: __t }); }
             out.push(TreeField::Single { name: "name", value: name });
             out.push(TreeField::Many { name: "accessors", items: accessors.iter().collect() });
             if let Some(__t) = value { out.push(TreeField::Single { name: "value", value: __t }); }
@@ -1435,7 +1435,7 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
             }
             out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
             for m in extra_markers { out.push(TreeField::Flag { name: m.name, marker: *m }); }
-            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type", value: __t }); }
             out.push(TreeField::Single { name: "name", value: name });
             if let Some(__e) = value { out.push(TreeField::Single { name: "value", value: &__e.inner }); }
         }
@@ -1451,7 +1451,7 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
                 });
             }
             out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
-            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type", value: __t }); }
             out.push(TreeField::Single { name: "name", value: name });
             if let Some(__e) = value { out.push(TreeField::Single { name: "value", value: &__e.inner }); }
         }
@@ -1467,16 +1467,16 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
                 });
             }
             out.push(TreeField::Many { name: "decorators", items: decorators.iter().collect() });
-            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type_ann", value: __t }); }
+            if let Some(__t) = type_ann { out.push(TreeField::Single { name: "type", value: __t }); }
             out.push(TreeField::Single { name: "name", value: name });
             if let Some(__e) = value { out.push(TreeField::Single { name: "value", value: &__e.inner }); }
         }
         SyntaxTree::Is { value, type_target, .. } => {
             out.push(TreeField::Single { name: "value", value: value });
-            out.push(TreeField::Single { name: "type_target", value: type_target });
+            out.push(TreeField::Single { name: "type", value: type_target });
         }
         SyntaxTree::Cast { type_ann, value, .. } => {
-            out.push(TreeField::Single { name: "type_ann", value: type_ann });
+            out.push(TreeField::Single { name: "type", value: type_ann });
             out.push(TreeField::Single { name: "value", value: value });
         }
         SyntaxTree::Null { text, .. } => {
@@ -1516,7 +1516,17 @@ pub fn use_field_projection(tree: &SyntaxTree) -> bool {
         SyntaxTree::Except { .. } => true,
         SyntaxTree::Catch { .. } => true,
         SyntaxTree::Ternary { .. } => true,
+        SyntaxTree::Lambda { .. } => true,
+        SyntaxTree::Function { .. } => true,
+        SyntaxTree::Method { .. } => true,
+        SyntaxTree::Class { .. } => true,
+        SyntaxTree::Struct { .. } => true,
+        SyntaxTree::Interface { .. } => true,
+        SyntaxTree::Record { .. } => true,
+        SyntaxTree::Parameter { .. } => true,
         SyntaxTree::Variable { .. } => true,
+        SyntaxTree::Field { .. } => true,
+        SyntaxTree::Event { .. } => true,
         _ => false,
     }
 }
