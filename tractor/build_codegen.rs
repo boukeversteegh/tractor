@@ -933,14 +933,50 @@ fn render_from_json(en: &ItemEnum) -> String {
         out.push_str(&from_json_arm(v, tag));
     }
 
-    // Unknown $type → SyntaxTree::Unknown carrying the tag.
+    // Unknown $type fallback:
+    //   - If the tag looks like a valid XML/Rust identifier (likely
+    //     an open-set SimpleStatement slot name: `type`, `returns`,
+    //     `left`, `right`, `where`, ...) → reconstruct as
+    //     SimpleStatement with that element_name. Inverts the
+    //     stripped-`$type` shape `to_json` produces for slot
+    //     wrappers.
+    //   - Otherwise (the tag contains hyphens, spaces, or otherwise
+    //     can't be a slot name) → SyntaxTree::Unknown carrying the
+    //     literal tag in `kind`. Flags typos and genuinely unknown
+    //     shapes.
     out.push_str(
-        "        _ => SyntaxTree::Unknown {
-            kind: format!(\"from_json:{}\", tag),
-            range: ByteRange::synthetic_empty(),
-            span: Span::point(0, 0),
-        },
+        "        _ => {
+            if tag_looks_like_slot_name(tag) {
+                SyntaxTree::SimpleStatement {
+                    element_name: static_tag,
+                    modifiers: Modifiers::from_marker_names(&marker_strs),
+                    extra_markers: Vec::new(),
+                    children,
+                    range: ByteRange::synthetic_empty(),
+                    span: Span::point(0, 0),
+                }
+            } else {
+                SyntaxTree::Unknown {
+                    kind: format!(\"from_json:{}\", tag),
+                    range: ByteRange::synthetic_empty(),
+                    span: Span::point(0, 0),
+                }
+            }
+        }
     }
+}
+
+/// True iff `tag` looks like a valid SimpleStatement-style slot
+/// name: starts with `[a-z_]`, continues with `[a-z0-9_]`. Avoids
+/// silently rewriting genuine typos (`not-a-real-variant`) into
+/// SimpleStatement when they really should surface as Unknown.
+fn tag_looks_like_slot_name(tag: &str) -> bool {
+    let mut chars = tag.chars();
+    let Some(first) = chars.next() else { return false };
+    if !(first.is_ascii_lowercase() || first == '_') {
+        return false;
+    }
+    chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
 }
 ",
     );
@@ -1099,13 +1135,60 @@ fn from_json_object_with_hint(
 
 /// Build one `$type` arm: pop children positionally into typed slots,
 /// fill scalars from JSON keys, default everything else.
+///
+/// `__kids` is the **overflow** list — map values whose JSON key
+/// doesn't match any of this variant's fields (counting both the
+/// raw Rust field name and the canonical JSON-key form from
+/// [`field_name_to_json_key`]). Fields that find their value via
+/// keyed lookup don't double-consume from `__kids`; fields that miss
+/// fall back to draining `__kids` positionally.
 fn from_json_arm(v: &Variant, tag: &str) -> String {
     let name = v.ident.to_string();
     let mut field_pops = String::new();
     let mut struct_fields: Vec<String> = Vec::new();
-    // Children are consumed positionally; track remaining via a
-    // mutable Vec drained from front.
-    field_pops.push_str("            let mut __kids = children;\n");
+    let mut claimed_keys: Vec<String> = Vec::new();
+
+    // Collect the JSON keys each field will claim (raw name + the
+    // canonical form). The Vec → array literal is emitted below.
+    if let Fields::Named(named) = &v.fields {
+        for field in &named.named {
+            let Some(ident) = &field.ident else { continue };
+            let fname = ident.to_string();
+            claimed_keys.push(fname.clone());
+            let canonical = field_name_to_json_key(&fname);
+            if canonical != fname {
+                claimed_keys.push(canonical);
+            }
+            // Vec<SyntaxTree> fields also try a singular form
+            // (parameters → parameter); claim that too.
+            let ty_pre = type_str(&field.ty);
+            if ty_pre == "Vec<SyntaxTree>" {
+                let singular = strip_plural_str(&fname);
+                if singular != fname && !claimed_keys.iter().any(|k| k == singular) {
+                    claimed_keys.push(singular.to_string());
+                }
+            }
+        }
+    }
+
+    // Rebuild __kids by walking the map once more and including only
+    // entries whose key is NOT in the claimed set. The global
+    // `children` (built by `dispatch_from_json_object`) is kept for
+    // the SimpleStatement fallback path but isn't used per-arm.
+    let claimed_lits: Vec<String> = claimed_keys.iter().map(|k| format!("{k:?}")).collect();
+    let claimed_arr = claimed_lits.join(", ");
+    field_pops.push_str(&format!(
+        "            let claimed: &[&str] = &[{claimed_arr}];\n\
+         \x20           let mut __kids: Vec<SyntaxTree> = map.iter()\n\
+         \x20               .filter(|(k, _)| k.as_str() != \"$type\" && k.as_str() != \"$children\" && !claimed.contains(&k.as_str()))\n\
+         \x20               .flat_map(|(k, v)| match v {{\n\
+         \x20                   Value::Bool(_) => Vec::new(),\n\
+         \x20                   Value::Array(arr) => arr.iter().map(|c| tree_from_json_with_type_hint(c, Some(k.as_str()))).collect(),\n\
+         \x20                   _ => vec![tree_from_json_with_type_hint(v, Some(k.as_str()))],\n\
+         \x20               }})\n\
+         \x20               .collect();\n\
+         \x20           let _ = &children;\n",
+    ));
     let _ = tag;
     if let Fields::Named(named) = &v.fields {
         for field in &named.named {
@@ -1161,11 +1244,15 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
         // Every keyed lookup passes the field name as the type hint so
         // child objects with stripped `$type` reconstruct as the
         // expected variant.
-        "Box<SyntaxTree>" => (
-            format!(
-                "{{
-                if let Some(v) = map.get({fname:?}) {{
-                    Box::new(tree_from_json_with_type_hint(v, Some({fname:?})))
+        "Box<SyntaxTree>" => {
+            let json_key = field_name_to_json_key(fname);
+            (
+                format!(
+                    "{{
+                let alt_key = {json_key:?};
+                let hint = if map.contains_key({fname:?}) {{ {fname:?} }} else {{ alt_key }};
+                if let Some(v) = map.get({fname:?}).or_else(|| map.get(alt_key)) {{
+                    Box::new(tree_from_json_with_type_hint(v, Some(hint)))
                 }} else if !__kids.is_empty() {{
                     Box::new(__kids.remove(0))
                 }} else {{
@@ -1176,42 +1263,63 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
                     }})
                 }}
             }}",
-                fname = fname,
-            ),
-            true,
-        ),
-        "Option<Box<SyntaxTree>>" => (
-            format!(
-                "{{
-                if let Some(v) = map.get({fname:?}) {{
-                    Some(Box::new(tree_from_json_with_type_hint(v, Some({fname:?}))))
+                    fname = fname,
+                    json_key = json_key,
+                ),
+                true,
+            )
+        }
+        "Option<Box<SyntaxTree>>" => {
+            let json_key = field_name_to_json_key(fname);
+            (
+                format!(
+                    "{{
+                let alt_key = {json_key:?};
+                let hint = if map.contains_key({fname:?}) {{ {fname:?} }} else {{ alt_key }};
+                if let Some(v) = map.get({fname:?}).or_else(|| map.get(alt_key)) {{
+                    Some(Box::new(tree_from_json_with_type_hint(v, Some(hint))))
                 }} else if !__kids.is_empty() {{
                     Some(Box::new(__kids.remove(0)))
                 }} else {{ None }}
             }}",
-                fname = fname,
-            ),
-            true,
-        ),
-        "Vec<SyntaxTree>" => (
-            format!(
-                "{{
+                    fname = fname,
+                    json_key = json_key,
+                ),
+                true,
+            )
+        }
+        "Vec<SyntaxTree>" => {
+            // Try three lookup forms: the literal field name (`parameters`),
+            // its singular (`parameter`), and the canonical form with
+            // semantic-suffix/trailing-underscore stripped
+            // (`type_anns` → `type`, `where_clauses` → `where`).
+            let json_key = field_name_to_json_key(fname);
+            (
+                format!(
+                    "{{
                 let singular = strip_plural({fname:?});
-                if let Some(v) = map.get({fname:?}).or_else(|| map.get(singular)) {{
+                let alt_key = {json_key:?};
+                if let Some(v) = map.get({fname:?})
+                    .or_else(|| map.get(singular))
+                    .or_else(|| map.get(alt_key))
+                {{
+                    let hint = if map.contains_key(singular) {{ singular }} else {{ alt_key }};
                     match v {{
                         Value::Array(arr) => arr.iter()
-                            .map(|c| tree_from_json_with_type_hint(c, Some(singular)))
+                            .map(|c| tree_from_json_with_type_hint(c, Some(hint)))
                             .collect(),
-                        _ => vec![tree_from_json_with_type_hint(v, Some(singular))],
+                        _ => vec![tree_from_json_with_type_hint(v, Some(hint))],
                     }}
                 }} else {{
                     std::mem::take(&mut __kids)
                 }}
             }}",
-                fname = fname,
-            ),
-            true,
-        ),
+                    fname = fname,
+                    json_key = json_key,
+                ),
+                true,
+            )
+        }
         "Expression" => (
             format!(
                 "{{
@@ -1410,6 +1518,57 @@ fn strip_trailing_underscore(s: &str) -> String {
     } else {
         s.to_string()
     }
+}
+
+/// Build-time mirror of the generated `strip_plural`. Used when
+/// computing the per-arm `claimed_keys` set so a `Vec<SyntaxTree>`
+/// field named `parameters` also claims the key `parameter`. Mirrors
+/// the same suffix rules — keep in sync with the runtime helper.
+fn strip_plural_str(s: &str) -> &str {
+    for suffix in ["_clauses", "_branches"] {
+        if let Some(stripped) = s.strip_suffix(suffix) {
+            return stripped;
+        }
+    }
+    for suffix in ["ies", "es", "s"] {
+        if let Some(stripped) = s.strip_suffix(suffix) {
+            return stripped;
+        }
+    }
+    s
+}
+
+/// Canonical JSON key for a Rust field name.
+///
+/// `to_json` emits children grouped by their **element name**, but
+/// `from_json` looks up by **Rust field name**. When the two differ,
+/// the keyed lookup misses and the codegen falls back to positional
+/// `__kids` drain — which is fragile and often wrong.
+///
+/// This helper returns the form the JSON key would take when the
+/// child element name "naturally" matches the field semantically.
+/// Currently strips two kinds of noise:
+///
+/// - **Trailing `_`** — Rust's reserved-word escape. `where_` /
+///   `else_` / `type_` lookup as `where` / `else` / `type` in JSON.
+/// - **Semantic suffixes** `_ann` / `_target` — developer-readability
+///   decorations that don't appear in the JSON projection. The child
+///   variant of `Parameter::type_ann` is rendered with element name
+///   "type", so the JSON key is `"type"`; same for `Catch::type_target`,
+///   `Except::type_target`, etc.
+///
+/// Returns the canonical key, or the original field name unchanged
+/// when no suffix matches.
+fn field_name_to_json_key(fname: &str) -> String {
+    for suffix in ["_ann", "_target"] {
+        if let Some(stripped) = fname.strip_suffix(suffix) {
+            return stripped.to_string();
+        }
+    }
+    if let Some(stripped) = fname.strip_suffix('_') {
+        return stripped.to_string();
+    }
+    fname.to_string()
 }
 
 fn write_if_changed(path: &str, content: &str) {
