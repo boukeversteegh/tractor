@@ -346,11 +346,17 @@ fn render_inline_into<T: WalkerTree>(
 /// Per-field rules:
 /// - [`TreeField::Flag`]: emit `<name/>` marker (same as `flags_of`
 ///   path).
-/// - [`TreeField::Single`]: emit `<name>{value}</name>` — the field
-///   name becomes the wrapper element, and the value renders inside.
-/// - [`TreeField::Many`]: emit each item flat when items are
-///   homogeneous (every item shares the same `element_name_of`);
-///   otherwise wrap in `<name>{items}</name>`.
+/// - [`TreeField::Single`]: emit `<name>` wrapper from the field name,
+///   then inside the wrapper emit `<variant_name/>` marker for the
+///   value's identity, then render the value's body. The variant
+///   identity is a marker (analog of JSON `$type`) rather than another
+///   wrapper, so XML has the same two facts as JSON without nesting
+///   them: field role = wrapper element, variant identity = marker.
+/// - [`TreeField::Many`]: items flat with their own element-name
+///   wrappers when the list is homogeneous (every item shares the same
+///   `element_name_of` — the field wrapper would be redundant);
+///   otherwise wrap in `<name>{items}</name>` (items keep their
+///   element names so siblings are distinguishable).
 fn render_body_via_fields<T: WalkerTree>(
     xot: &mut Xot,
     node: XotNode,
@@ -369,10 +375,7 @@ fn render_body_via_fields<T: WalkerTree>(
                 items.push(FieldRenderItem::Marker(marker));
             }
             TreeField::Single { name, value } => {
-                items.push(FieldRenderItem::Wrapped {
-                    wrapper: name,
-                    children: vec![value],
-                });
+                items.push(FieldRenderItem::FieldSingle { field_name: name, value });
             }
             TreeField::Many { name, items: vs } => {
                 if vs.is_empty() {
@@ -383,7 +386,7 @@ fn render_body_via_fields<T: WalkerTree>(
                         items.push(FieldRenderItem::Flat(v));
                     }
                 } else {
-                    items.push(FieldRenderItem::Wrapped { wrapper: name, children: vs });
+                    items.push(FieldRenderItem::FieldMany { field_name: name, children: vs });
                 }
             }
             // Scalar fields don't render to XML directly — the parent's
@@ -409,14 +412,37 @@ fn render_body_via_fields<T: WalkerTree>(
             FieldRenderItem::Flat(child) => {
                 render_walker_to_xot(xot, node, *child, source, context)?;
             }
-            FieldRenderItem::Wrapped { wrapper, children } => {
-                let display = T::display_name_for(wrapper, context).to_string();
+            FieldRenderItem::FieldSingle { field_name, value } => {
+                // Wrapper from field name (the role).
+                let display = T::display_name_for(field_name, context).to_string();
+                let name_id = xot.add_name(&display);
+                let wrap = xot.new_element(name_id);
+                xot.append(node, wrap)?;
+                set_span_attrs(xot, wrap, value.span_of());
+                // Variant identity as an empty marker — analog of JSON
+                // `$type`, so the type is queryable without nesting.
+                if let Some(variant_tag) = value.element_name_of() {
+                    let variant_display = T::display_name_for(variant_tag, context).to_string();
+                    let marker_id = xot.add_name(&variant_display);
+                    let marker = xot.new_element(marker_id);
+                    xot.append(wrap, marker)?;
+                    set_span_attrs(xot, marker, value.span_of());
+                }
+                // Render the value's body inside the field wrapper —
+                // no outer variant wrapper (the marker carries the
+                // identity instead).
+                render_body(xot, wrap, *value, source, context)?;
+            }
+            FieldRenderItem::FieldMany { field_name, children } => {
+                let display = T::display_name_for(field_name, context).to_string();
                 let name_id = xot.add_name(&display);
                 let wrap = xot.new_element(name_id);
                 xot.append(node, wrap)?;
                 if let Some(first) = children.first() {
                     set_span_attrs(xot, wrap, first.span_of());
                 }
+                // Items keep their element-name wrappers so siblings
+                // are distinguishable inside the heterogeneous list.
                 for child in children {
                     render_walker_to_xot(xot, wrap, *child, source, context)?;
                 }
@@ -435,9 +461,20 @@ fn render_body_via_fields<T: WalkerTree>(
 }
 
 enum FieldRenderItem<'a, T> {
+    /// Empty-element marker (a `Flag` TreeField).
     Marker(Marker),
+    /// Item from a homogeneous Many list — renders with its own
+    /// variant element-name wrapper (no field wrapping; items already
+    /// self-identify).
     Flat(&'a T),
-    Wrapped { wrapper: &'static str, children: Vec<&'a T> },
+    /// Single-field child — field name becomes the XML wrapper, the
+    /// value's variant identity is emitted as a `<variant_name/>`
+    /// marker inside, then the value's body fills the wrapper.
+    FieldSingle { field_name: &'static str, value: &'a T },
+    /// Heterogeneous Many list — wraps items in the field name; items
+    /// keep their variant element-name wrappers to remain
+    /// distinguishable.
+    FieldMany { field_name: &'static str, children: Vec<&'a T> },
 }
 
 impl<'a, T: WalkerTree> FieldRenderItem<'a, T> {
@@ -445,7 +482,8 @@ impl<'a, T: WalkerTree> FieldRenderItem<'a, T> {
         match self {
             FieldRenderItem::Marker(m) => m.range.start,
             FieldRenderItem::Flat(t) => t.range_of().start,
-            FieldRenderItem::Wrapped { children, .. } => {
+            FieldRenderItem::FieldSingle { value, .. } => value.range_of().start,
+            FieldRenderItem::FieldMany { children, .. } => {
                 children.iter().map(|c| c.range_of().start).min().unwrap_or(0)
             }
         }
@@ -454,7 +492,8 @@ impl<'a, T: WalkerTree> FieldRenderItem<'a, T> {
         match self {
             FieldRenderItem::Marker(m) => m.range.end,
             FieldRenderItem::Flat(t) => t.range_of().end,
-            FieldRenderItem::Wrapped { children, .. } => {
+            FieldRenderItem::FieldSingle { value, .. } => value.range_of().end,
+            FieldRenderItem::FieldMany { children, .. } => {
                 children.iter().map(|c| c.range_of().end).max().unwrap_or(0)
             }
         }

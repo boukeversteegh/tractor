@@ -51,12 +51,12 @@ module/
   │   └─ body/
   │       ├─ expression/string = "\"\"\"Cover default, varargs, keyword-only, and **kwargs.\"\"\""
   │       └─ return/expression/binary/
-  │           ├─ left/expression/binary/
-  │           │   ├─ left/expression/name = "a"
-  │           │   ├─ op/operator[plus] = "+"
-  │           │   └─ right/expression/name = "b"
-  │           ├─ op/operator[plus] = "+"
-  │           └─ right/expression/name = "kw_only"
+  │           ├─ left[expression]/binary/
+  │           │   ├─ left[expression]/name = "a"
+  │           │   ├─ op[operator and plus] = "+"
+  │           │   └─ right[expression]/name = "b"
+  │           ├─ op[operator and plus] = "+"
+  │           └─ right[expression]/name = "kw_only"
   ├─ function/
   │   ├─ name = "pos_only"
   │   ├─ parameter/name = "a"
@@ -188,9 +188,9 @@ module/
   │           ├─ name = "range"
   │           ├─ name = "n"
   │           └─ binary/
-  │               ├─ left/expression/name = "n"
-  │               ├─ op/operator[multiply] = "*"
-  │               └─ right/expression/int = "2"
+  │               ├─ left[expression]/name = "n"
+  │               ├─ op[operator and multiply] = "*"
+  │               └─ right[expression]/int = "2"
   ├─ function/
   │   ├─ name = "repeat"
   │   ├─ parameter/name = "times"
@@ -278,12 +278,12 @@ module/
   │           ├─ parameter/name = "self"
   │           ├─ parameter/name = "other"
   │           └─ body/return/expression/logical/
-  │               ├─ left/expression/call/
+  │               ├─ left[expression]/call/
   │               │   ├─ name = "isinstance"
   │               │   ├─ name = "other"
   │               │   └─ name = "Derived"
-  │               ├─ op/operator[and] = "and"
-  │               └─ right/expression/comparison/
+  │               ├─ op[operator and and] = "and"
+  │               └─ right[expression]/comparison/
   │                   ├─ object = "self.name"
   │                   └─ object/name = "other"
   ├─ function/
@@ -407,9 +407,9 @@ module/
   │       │   ├─ expression/name = "squares"
   │       │   └─ expression/list[comprehension]/
   │       │       ├─ binary/
-  │       │       │   ├─ left/expression/name = "x"
-  │       │       │   ├─ op/operator[multiply] = "*"
-  │       │       │   └─ right/expression/name = "x"
+  │       │       │   ├─ left[expression]/name = "x"
+  │       │       │   ├─ op[operator and multiply] = "*"
+  │       │       │   └─ right[expression]/name = "x"
   │       │       ├─ for/
   │       │       │   ├─ name = "x"
   │       │       │   └─ name = "data"
@@ -517,9 +517,9 @@ module/
   │       │           ├─ lambda/
   │       │           │   ├─ parameter/name = "v"
   │       │           │   └─ binary/
-  │       │           │       ├─ left/expression/name = "v"
-  │       │           │       ├─ op/operator[multiply] = "*"
-  │       │           │       └─ right/expression/int = "2"
+  │       │           │       ├─ left[expression]/name = "v"
+  │       │           │       ├─ op[operator and multiply] = "*"
+  │       │           │       └─ right[expression]/int = "2"
   │       │           └─ name = "items"
   │       ├─ assign/
   │       │   ├─ expression/name = "head"
@@ -581,9 +581,9 @@ module/
   ├─ type_alias/
   │   ├─ name = "IntOrStr"
   │   └─ binary/
-  │       ├─ left/expression/name = "int"
-  │       ├─ op/operator[bitwise_or] = "|"
-  │       └─ right/expression/name = "str"
+  │       ├─ left[expression]/name = "int"
+  │       ├─ op[operator and bitwise_or] = "|"
+  │       └─ right[expression]/name = "str"
   ├─ type_alias/
   │   ├─ type/
   │   │   ├─ name = "Pair"
@@ -624,9 +624,9 @@ module/
           │       │   └─ body/assign/
           │       │       ├─ expression/name = "matched"
           │       │       └─ expression/binary/
-          │       │           ├─ left/expression/name = "a"
-          │       │           ├─ op/operator[plus] = "+"
-          │       │           └─ right/expression/name = "b"
+          │       │           ├─ left[expression]/name = "a"
+          │       │           ├─ op[operator and plus] = "+"
+          │       │           └─ right[expression]/name = "b"
           │       ├─ arm/
           │       │   ├─ pattern/
           │       │   │   ├─ int = "1"

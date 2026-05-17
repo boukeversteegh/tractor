@@ -48,21 +48,21 @@ program/
   │       │       │       └─ assign/
   │       │       │           ├─ expression/name = "@id"
   │       │       │           └─ expression/logical/
-  │       │       │               ├─ left/expression/name = "id"
-  │       │       │               ├─ op/operator[or] = "||"
-  │       │       │               └─ right/expression/int = "0"
+  │       │       │               ├─ left[expression]/name = "id"
+  │       │       │               ├─ op[operator and or] = "||"
+  │       │       │               └─ right[expression]/int = "0"
   │       │       └─ method/
   │       │           ├─ name = "=="
   │       │           ├─ parameter/name = "other"
   │       │           └─ body/logical/
-  │       │               ├─ left/expression/object/
+  │       │               ├─ left[expression]/object/
   │       │               │   ├─ name = "other"
   │       │               │   └─ name = "Base"
-  │       │               ├─ op/operator[and] = "&&"
-  │       │               └─ right/expression/binary/
-  │       │                   ├─ left/expression/object/name = "other"
-  │       │                   ├─ op/operator[equal] = "=="
-  │       │                   └─ right/expression/name = "@name"
+  │       │               ├─ op[operator and and] = "&&"
+  │       │               └─ right[expression]/binary/
+  │       │                   ├─ left[expression]/object/name = "other"
+  │       │                   ├─ op[operator and equal] = "=="
+  │       │                   └─ right[expression]/name = "@name"
   │       └─ class/
   │           ├─ name = "User"
   │           ├─ extends/type/name = "Base"
@@ -157,9 +157,9 @@ program/
   │               │   ├─ parameter[splat]/name = "items"
   │               │   ├─ parameter[kwsplat]/name = "meta"
   │               │   └─ body/binary/
-  │               │       ├─ left/expression/object/name = "items"
-  │               │       ├─ op/operator[plus] = "+"
-  │               │       └─ right/expression/object/name = "meta"
+  │               │       ├─ left[expression]/object/name = "items"
+  │               │       ├─ op[operator and plus] = "+"
+  │               │       └─ right[expression]/object/name = "meta"
   │               ├─ name = "private"
   │               ├─ method/
   │               │   ├─ name = "secret"
@@ -254,17 +254,17 @@ program/
   │       │   └─ expression/int = "0"
   │       ├─ while/
   │       │   ├─ condition/expression/binary/
-  │       │   │   ├─ left/expression/name = "i"
-  │       │   │   ├─ op/operator[less] = "<"
-  │       │   │   └─ right/expression/int = "3"
+  │       │   │   ├─ left[expression]/name = "i"
+  │       │   │   ├─ op[operator and less] = "<"
+  │       │   │   └─ right[expression]/int = "3"
   │       │   └─ body/assign/
   │       │       ├─ expression/name = "i"
   │       │       └─ expression/int = "1"
   │       ├─ until/
   │       │   ├─ condition/expression/binary/
-  │       │   │   ├─ left/expression/name = "i"
-  │       │   │   ├─ op/operator[greater_or_equal] = ">="
-  │       │   │   └─ right/expression/int = "6"
+  │       │   │   ├─ left[expression]/name = "i"
+  │       │   │   ├─ op[operator and greater_or_equal] = ">="
+  │       │   │   └─ right[expression]/int = "6"
   │       │   └─ body/assign/
   │       │       ├─ expression/name = "i"
   │       │       └─ expression/int = "1"
@@ -300,18 +300,18 @@ program/
   │       │       └─ ensure/if/
   │       │           ├─ object/name = "items"
   │       │           └─ logical/
-  │       │               ├─ left/expression/unary/name = "items"
-  │       │               ├─ op/operator[and] = "&&"
-  │       │               └─ right/expression/false = "false"
+  │       │               ├─ left[expression]/unary/name = "items"
+  │       │               ├─ op[operator and and] = "&&"
+  │       │               └─ right[expression]/false = "false"
   │       ├─ assign/
   │       │   ├─ expression/name = "adder"
   │       │   └─ expression/lambda/
   │       │       ├─ parameter/name = "a"
   │       │       ├─ parameter/name = "b"
   │       │       └─ block/binary/
-  │       │           ├─ left/expression/name = "a"
-  │       │           ├─ op/operator[plus] = "+"
-  │       │           └─ right/expression/name = "b"
+  │       │           ├─ left[expression]/name = "a"
+  │       │           ├─ op[operator and plus] = "+"
+  │       │           └─ right[expression]/name = "b"
   │       ├─ assign/
   │       │   ├─ expression/name = "doubler"
   │       │   └─ expression/call/
@@ -319,9 +319,9 @@ program/
   │       │       └─ block/
   │       │           ├─ parameter/name = "n"
   │       │           └─ binary/
-  │       │               ├─ left/expression/name = "n"
-  │       │               ├─ op/operator[multiply] = "*"
-  │       │               └─ right/expression/int = "2"
+  │       │               ├─ left[expression]/name = "n"
+  │       │               ├─ op[operator and multiply] = "*"
+  │       │               └─ right[expression]/int = "2"
   │       ├─ assign/
   │       │   ├─ expression/name = "multi_stmt"
   │       │   └─ expression/call/
@@ -332,9 +332,9 @@ program/
   │       │           │   ├─ name = "puts"
   │       │           │   └─ name = "n"
   │       │           └─ binary/
-  │       │               ├─ left/expression/name = "n"
-  │       │               ├─ op/operator[plus] = "+"
-  │       │               └─ right/expression/int = "1"
+  │       │               ├─ left[expression]/name = "n"
+  │       │               ├─ op[operator and plus] = "+"
+  │       │               └─ right[expression]/int = "1"
   │       ├─ assign/
   │       │   ├─ expression/name = "multi_lambda"
   │       │   └─ expression/lambda/
@@ -344,9 +344,9 @@ program/
   │       │           │   ├─ name = "puts"
   │       │           │   └─ name = "n"
   │       │           └─ binary/
-  │       │               ├─ left/expression/name = "n"
-  │       │               ├─ op/operator[plus] = "+"
-  │       │               └─ right/expression/int = "1"
+  │       │               ├─ left[expression]/name = "n"
+  │       │               ├─ op[operator and plus] = "+"
+  │       │               └─ right[expression]/int = "1"
   │       ├─ assign/
   │       │   ├─ expression/name = "ternary"
   │       │   └─ expression/ternary/
@@ -359,9 +359,9 @@ program/
   │       ├─ assign/
   │       │   ├─ expression/name = "total"
   │       │   └─ expression/binary/
-  │       │       ├─ left/expression/name = "total"
-  │       │       ├─ op/operator[plus] = "+"
-  │       │       └─ right/expression/int = "1"
+  │       │       ├─ left[expression]/name = "total"
+  │       │       ├─ op[operator and plus] = "+"
+  │       │       └─ right[expression]/int = "1"
   │       ├─ assign/
   │       │   ├─ expression/
   │       │   │   ├─ name = "a"
@@ -373,26 +373,26 @@ program/
   │       │       ├─ int = "3"
   │       │       └─ int = "4"
   │       ├─ logical/
-  │       │   ├─ left/expression/assign/
+  │       │   ├─ left[expression]/assign/
   │       │   │   ├─ expression/name = "flag"
   │       │   │   └─ expression/true = "true"
-  │       │   ├─ op/operator[and] = "and"
-  │       │   └─ right/expression/false = "false"
+  │       │   ├─ op[operator and and] = "and"
+  │       │   └─ right[expression]/false = "false"
   │       ├─ logical/
-  │       │   ├─ left/expression/assign/
+  │       │   ├─ left[expression]/assign/
   │       │   │   ├─ expression/name = "flag"
   │       │   │   └─ expression/true = "true"
-  │       │   ├─ op/operator[or] = "or"
-  │       │   └─ right/expression/false = "false"
+  │       │   ├─ op[operator and or] = "or"
+  │       │   └─ right[expression]/false = "false"
   │       ├─ assign/
   │       │   ├─ expression/name = "flag"
   │       │   └─ expression/logical/
-  │       │       ├─ left/expression/logical/
-  │       │       │   ├─ left/expression/unary/name = "flag"
-  │       │       │   ├─ op/operator[and] = "&&"
-  │       │       │   └─ right/expression/name = "flag"
-  │       │       ├─ op/operator[or] = "||"
-  │       │       └─ right/expression/unary/name = "flag"
+  │       │       ├─ left[expression]/logical/
+  │       │       │   ├─ left[expression]/unary/name = "flag"
+  │       │       │   ├─ op[operator and and] = "&&"
+  │       │       │   └─ right[expression]/name = "flag"
+  │       │       ├─ op[operator and or] = "||"
+  │       │       └─ right[expression]/unary/name = "flag"
   │       └─ array/
   │           ├─ name = "result"
   │           ├─ object/
@@ -433,18 +433,18 @@ program/
   │       │       │   │   ├─ name = "head"
   │       │       │   │   └─ name = "Integer"
   │       │       │   └─ then/binary/
-  │       │       │       ├─ left/expression/name = "head"
-  │       │       │       ├─ op/operator[plus] = "+"
-  │       │       │       └─ right/expression/object/name = "tail"
+  │       │       │       ├─ left[expression]/name = "head"
+  │       │       │       ├─ op[operator and plus] = "+"
+  │       │       │       └─ right[expression]/object/name = "tail"
   │       │       ├─ in/
   │       │       │   ├─ pattern[array]/
   │       │       │   │   ├─ name = "first"
   │       │       │   │   ├─ parameter[splat] = "*"
   │       │       │   │   └─ name = "last"
   │       │       │   ├─ unless/binary/
-  │       │       │   │   ├─ left/expression/name = "first"
-  │       │       │   │   ├─ op/operator[equal] = "=="
-  │       │       │   │   └─ right/expression/name = "last"
+  │       │       │   │   ├─ left[expression]/name = "first"
+  │       │       │   │   ├─ op[operator and equal] = "=="
+  │       │       │   │   └─ right[expression]/name = "last"
   │       │       │   └─ then/symbol = ":find_pattern"
   │       │       ├─ in/
   │       │       │   ├─ pattern[hash]/pattern[keyword]/

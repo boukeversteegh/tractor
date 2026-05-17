@@ -92,20 +92,20 @@ program/
   │   │       ├─ expression/assign/
   │   │       │   ├─ expression/variable/name = "target"
   │   │       │   └─ expression/binary/
-  │   │       │       ├─ left/expression/variable/name = "who"
-  │   │       │       ├─ op/operator[null_coalesce] = "??"
-  │   │       │       └─ right/expression/object/variable/name = "this"
+  │   │       │       ├─ left[expression]/variable/name = "who"
+  │   │       │       ├─ op[operator and null_coalesce] = "??"
+  │   │       │       └─ right[expression]/object/variable/name = "this"
   │   │       └─ if/
   │   │           ├─ condition/expression/binary/
-  │   │           │   ├─ left/expression/object/variable/name = "this"
-  │   │           │   ├─ op/operator[greater] = ">"
-  │   │           │   └─ right/expression/int = "10"
+  │   │           │   ├─ left[expression]/object/variable/name = "this"
+  │   │           │   ├─ op[operator and greater] = ">"
+  │   │           │   └─ right[expression]/int = "10"
   │   │           ├─ then/body/return/string/interpolation/variable/name = "target"
   │   │           ├─ else_if/
   │   │           │   ├─ condition/expression/binary/
-  │   │           │   │   ├─ left/expression/object/variable/name = "this"
-  │   │           │   │   ├─ op/operator[greater] = ">"
-  │   │           │   │   └─ right/expression/int = "0"
+  │   │           │   │   ├─ left[expression]/object/variable/name = "this"
+  │   │           │   │   ├─ op[operator and greater] = ">"
+  │   │           │   │   └─ right[expression]/int = "0"
   │   │           │   └─ body/return/string/interpolation/variable/name = "target"
   │   │           └─ else/body/return/string/interpolation/variable/name = "target"
   │   ├─ method[public]/
@@ -116,15 +116,15 @@ program/
   │   │   ├─ type = "string"
   │   │   └─ body/return/ternary/
   │   │       ├─ binary/
-  │   │       │   ├─ left/expression/variable/name = "n"
-  │   │       │   ├─ op/operator[greater] = ">"
-  │   │       │   └─ right/expression/int = "0"
+  │   │       │   ├─ left[expression]/variable/name = "n"
+  │   │       │   ├─ op[operator and greater] = ">"
+  │   │       │   └─ right[expression]/int = "0"
   │   │       ├─ string = "\"positive\""
   │   │       └─ ternary/
   │   │           ├─ binary/
-  │   │           │   ├─ left/expression/variable/name = "n"
-  │   │           │   ├─ op/operator[less] = "<"
-  │   │           │   └─ right/expression/int = "0"
+  │   │           │   ├─ left[expression]/variable/name = "n"
+  │   │           │   ├─ op[operator and less] = "<"
+  │   │           │   └─ right[expression]/int = "0"
   │   │           ├─ string = "\"negative\""
   │   │           └─ string = "\"zero\""
   │   ├─ method[public]/
@@ -142,16 +142,16 @@ program/
   │   │       │   └─ string = "\"int\""
   │   │       ├─ arm/
   │   │       │   ├─ logical/
-  │   │       │   │   ├─ left/expression/call/
+  │   │       │   │   ├─ left[expression]/call/
   │   │       │   │   │   ├─ name = "is_string"
   │   │       │   │   │   └─ argument/variable/name = "value"
-  │   │       │   │   ├─ op/operator[and] = "&&"
-  │   │       │   │   └─ right/expression/binary/
-  │   │       │   │       ├─ left/expression/call/
+  │   │       │   │   ├─ op[operator and and] = "&&"
+  │   │       │   │   └─ right[expression]/binary/
+  │   │       │   │       ├─ left[expression]/call/
   │   │       │   │       │   ├─ name = "strlen"
   │   │       │   │       │   └─ argument/variable/name = "value"
-  │   │       │   │       ├─ op/operator[greater] = ">"
-  │   │       │   │       └─ right/expression/int = "0"
+  │   │       │   │       ├─ op[operator and greater] = ">"
+  │   │       │   │       └─ right[expression]/int = "0"
   │   │       │   └─ string = "\"non-empty string\""
   │   │       ├─ arm/
   │   │       │   ├─ call/
@@ -177,9 +177,9 @@ program/
   │   │       │   └─ body/
   │   │       │       ├─ if/
   │   │       │       │   ├─ condition/expression/binary/
-  │   │       │       │   │   ├─ left/expression/variable/name = "item"
-  │   │       │       │   │   ├─ op/operator[identical] = "==="
-  │   │       │       │   │   └─ right/expression/null = "null"
+  │   │       │       │   │   ├─ left[expression]/variable/name = "item"
+  │   │       │       │   │   ├─ op[operator and identical] = "==="
+  │   │       │       │   │   └─ right[expression]/null = "null"
   │   │       │       │   └─ then/body/continue = "continue;"
   │   │       │       └─ try/
   │   │       │           ├─ body/expression/assign/
@@ -275,9 +275,9 @@ program/
   │       │   └─ variable/name = "x"
   │       ├─ type = "int"
   │       └─ body/binary/
-  │           ├─ left/expression/variable/name = "x"
-  │           ├─ op/operator[multiply] = "*"
-  │           └─ right/expression/int = "2"
+  │           ├─ left[expression]/variable/name = "x"
+  │           ├─ op[operator and multiply] = "*"
+  │           └─ right[expression]/int = "2"
   ├─ expression/assign/
   │   ├─ expression/variable/name = "doubled"
   │   └─ expression/call/
@@ -296,11 +296,11 @@ program/
   │       ├─ variable/name = "pipeline"
   │       ├─ type = "int"
   │       └─ body/return/binary/
-  │           ├─ left/expression/call/
+  │           ├─ left[expression]/call/
   │           │   ├─ variable/name = "pipeline"
   │           │   └─ argument/variable/name = "x"
-  │           ├─ op/operator[plus] = "+"
-  │           └─ right/expression/int = "1"
+  │           ├─ op[operator and plus] = "+"
+  │           └─ right[expression]/int = "1"
   ├─ comment = "// Iter 17 shapes: nullsafe, anonymous class, intersection / DNF / bottom\n// type, function-static / global vars, dynamic var name, property\n// promotion, cast type, list-destructure, clone / unset / unique-label,\n// shell command, error suppression, augmented assignment, sequence /\n// reference assignment, first-class callable, heredoc / nowdoc."
   ├─ class/
   │   ├─ name = "PromotedDemo"
@@ -447,9 +447,9 @@ program/
   │       │   │   ├─ expression/variable/name = "j"
   │       │   │   └─ expression/int = "10"
   │       │   ├─ condition/expression/binary/
-  │       │   │   ├─ left/expression/variable/name = "i"
-  │       │   │   ├─ op/operator[less] = "<"
-  │       │   │   └─ right/expression/variable/name = "j"
+  │       │   │   ├─ left[expression]/variable/name = "i"
+  │       │   │   ├─ op[operator and less] = "<"
+  │       │   │   └─ right[expression]/variable/name = "j"
   │       │   ├─ unary/variable/name = "i"
   │       │   ├─ unary/variable/name = "j"
   │       │   └─ body/comment = "/* ... */"
@@ -461,15 +461,15 @@ program/
   │           ├─ condition/expression/bool = "true"
   │           ├─ arm/
   │           │   ├─ binary/
-  │           │   │   ├─ left/expression/variable/name = "value"
-  │           │   │   ├─ op/operator[instanceof] = "instanceof"
-  │           │   │   └─ right/expression/name = "Stringable"
+  │           │   │   ├─ left[expression]/variable/name = "value"
+  │           │   │   ├─ op[operator and instanceof] = "instanceof"
+  │           │   │   └─ right[expression]/name = "Stringable"
   │           │   └─ int = "1"
   │           ├─ arm/
   │           │   ├─ binary/
-  │           │   │   ├─ left/expression/variable/name = "value"
-  │           │   │   ├─ op/operator[instanceof] = "instanceof"
-  │           │   │   └─ right/expression/name = "Countable2"
+  │           │   │   ├─ left[expression]/variable/name = "value"
+  │           │   │   ├─ op[operator and instanceof] = "instanceof"
+  │           │   │   └─ right[expression]/name = "Countable2"
   │           │   └─ int = "2"
   │           └─ arm[default]/int = "0"
   ├─ comment[leading] = "// Intersection type in parameter position."
@@ -494,9 +494,9 @@ program/
   │   │   └─ variable/name = "thing"
   │   ├─ type = "bool"
   │   └─ body/return/binary/
-  │       ├─ left/expression/variable/name = "thing"
-  │       ├─ op/operator[not_identical] = "!=="
-  │       └─ right/expression/null = "null"
+  │       ├─ left[expression]/variable/name = "thing"
+  │       ├─ op[operator and not_identical] = "!=="
+  │       └─ right[expression]/null = "null"
   ├─ comment[leading] = "// Bottom type (`never`) in return position."
   ├─ function/
   │   ├─ name = "never_returns"
@@ -505,11 +505,11 @@ program/
   │       ├─ name = "RuntimeException"
   │       └─ argument/string = "\"boom\""
   └─ echo/binary/
-      ├─ left/expression/binary/
-      │   ├─ left/expression/string = "\"result: \""
-      │   ├─ op/operator[concat] = "."
-      │   └─ right/expression/call/
+      ├─ left[expression]/binary/
+      │   ├─ left[expression]/string = "\"result: \""
+      │   ├─ op[operator and concat] = "."
+      │   └─ right[expression]/call/
       │       ├─ variable/name = "closure"
       │       └─ argument/int = "5"
-      ├─ op/operator[concat] = "."
-      └─ right/expression/string = "\"\\n\""
+      ├─ op[operator and concat] = "."
+      └─ right[expression]/string = "\"\\n\""

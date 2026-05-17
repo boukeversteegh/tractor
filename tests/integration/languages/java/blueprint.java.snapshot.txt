@@ -98,9 +98,9 @@ program/
   │       │   ├─ throws/type/name = "IllegalArgumentException"
   │       │   └─ body/if/
   │       │       ├─ condition/expression/binary/
-  │       │       │   ├─ left/expression/name = "input"
-  │       │       │   ├─ op/operator[equal] = "=="
-  │       │       │   └─ right/expression/null = "null"
+  │       │       │   ├─ left[expression]/name = "input"
+  │       │       │   ├─ op[operator and equal] = "=="
+  │       │       │   └─ right[expression]/null = "null"
   │       │       ├─ body/throw/expression/object_creation/
   │       │       │   ├─ name = "IllegalArgumentException"
   │       │       │   └─ string = "\"null\""
@@ -116,15 +116,15 @@ program/
   │       │   │   └─ name = "n"
   │       │   └─ body/return/expression/ternary/
   │       │       ├─ condition/expression/binary/
-  │       │       │   ├─ left/expression/name = "n"
-  │       │       │   ├─ op/operator[greater] = ">"
-  │       │       │   └─ right/expression/int = "0"
+  │       │       │   ├─ left[expression]/name = "n"
+  │       │       │   ├─ op[operator and greater] = ">"
+  │       │       │   └─ right[expression]/int = "0"
   │       │       ├─ then/expression/string = "\"positive\""
   │       │       └─ else/expression/ternary/
   │       │           ├─ condition/expression/binary/
-  │       │           │   ├─ left/expression/name = "n"
-  │       │           │   ├─ op/operator[less] = "<"
-  │       │           │   └─ right/expression/int = "0"
+  │       │           │   ├─ left[expression]/name = "n"
+  │       │           │   ├─ op[operator and less] = "<"
+  │       │           │   └─ right[expression]/int = "0"
   │       │           ├─ then/expression/string = "\"negative\""
   │       │           └─ else/expression/string = "\"zero\""
   │       ├─ method[public]/
@@ -151,15 +151,15 @@ program/
   │       │       │   └─ expression/int = "0"
   │       │       ├─ while/
   │       │       │   ├─ condition/expression/binary/
-  │       │       │   │   ├─ left/expression/name = "i"
-  │       │       │   │   ├─ op/operator[less] = "<"
-  │       │       │   │   └─ right/expression/int = "3"
+  │       │       │   │   ├─ left[expression]/name = "i"
+  │       │       │   │   ├─ op[operator and less] = "<"
+  │       │       │   │   └─ right[expression]/int = "3"
   │       │       │   └─ body/expression/assign/
   │       │       │       ├─ expression/name = "i"
   │       │       │       └─ expression/binary/
-  │       │       │           ├─ left/expression/name = "i"
-  │       │       │           ├─ op/operator[plus] = "+"
-  │       │       │           └─ right/expression/int = "1"
+  │       │       │           ├─ left[expression]/name = "i"
+  │       │       │           ├─ op[operator and plus] = "+"
+  │       │       │           └─ right[expression]/int = "1"
   │       │       └─ return/expression/name = "total"
   │       ├─ method[public]/
   │       │   ├─ returns/type/name = "String"
@@ -174,9 +174,9 @@ program/
   │       │       │   │   ├─ type/name = "Integer"
   │       │       │   │   └─ name = "i"
   │       │       │   └─ expression/binary/
-  │       │       │       ├─ left/expression/string = "\"int \""
-  │       │       │       ├─ op/operator[plus] = "+"
-  │       │       │       └─ right/expression/name = "i"
+  │       │       │       ├─ left[expression]/string = "\"int \""
+  │       │       │       ├─ op[operator and plus] = "+"
+  │       │       │       └─ right[expression]/name = "i"
   │       │       ├─ arm/
   │       │       │   ├─ case/
   │       │       │   │   ├─ pattern/
@@ -184,9 +184,9 @@ program/
   │       │       │   │   │   └─ name = "s"
   │       │       │   │   └─ guard/unary/object/name = "s"
   │       │       │   └─ expression/binary/
-  │       │       │       ├─ left/expression/string = "\"non-empty: \""
-  │       │       │       ├─ op/operator[plus] = "+"
-  │       │       │       └─ right/expression/name = "s"
+  │       │       │       ├─ left[expression]/string = "\"non-empty: \""
+  │       │       │       ├─ op[operator and plus] = "+"
+  │       │       │       └─ right[expression]/name = "s"
   │       │       └─ arm/
   │       │           ├─ case = "default"
   │       │           └─ expression/string = "\"other\""
@@ -226,15 +226,15 @@ program/
   │               ├─ name = "Point"
   │               └─ body/if/
   │                   ├─ condition/expression/logical/
-  │                   │   ├─ left/expression/binary/
-  │                   │   │   ├─ left/expression/name = "x"
-  │                   │   │   ├─ op/operator[less] = "<"
-  │                   │   │   └─ right/expression/int = "0"
-  │                   │   ├─ op/operator[or] = "||"
-  │                   │   └─ right/expression/binary/
-  │                   │       ├─ left/expression/name = "y"
-  │                   │       ├─ op/operator[less] = "<"
-  │                   │       └─ right/expression/int = "0"
+  │                   │   ├─ left[expression]/binary/
+  │                   │   │   ├─ left[expression]/name = "x"
+  │                   │   │   ├─ op[operator and less] = "<"
+  │                   │   │   └─ right[expression]/int = "0"
+  │                   │   ├─ op[operator and or] = "||"
+  │                   │   └─ right[expression]/binary/
+  │                   │       ├─ left[expression]/name = "y"
+  │                   │       ├─ op[operator and less] = "<"
+  │                   │       └─ right[expression]/int = "0"
   │                   └─ body/object_creation/name = "IllegalArgumentException"
   ├─ class[package]/
   │   ├─ name = "Base"
@@ -317,9 +317,9 @@ program/
           │       │       └─ int = "0L"
           │       ├─ assert/
           │       │   ├─ binary/
-          │       │   │   ├─ left/expression/name = "n"
-          │       │   │   ├─ op/operator[greater_or_equal] = ">="
-          │       │   │   └─ right/expression/int = "0"
+          │       │   │   ├─ left[expression]/name = "n"
+          │       │   │   ├─ op[operator and greater_or_equal] = ">="
+          │       │   │   └─ right[expression]/int = "0"
           │       │   └─ string = "\"non-negative\""
           │       ├─ variable/
           │       │   ├─ type/name = "boolean"
@@ -335,22 +335,22 @@ program/
           │       │       │   ├─ name = "i"
           │       │       │   └─ expression/int = "0"
           │       │       ├─ binary/
-          │       │       │   ├─ left/expression/name = "i"
-          │       │       │   ├─ op/operator[less] = "<"
-          │       │       │   └─ right/expression/int = "5"
+          │       │       │   ├─ left[expression]/name = "i"
+          │       │       │   ├─ op[operator and less] = "<"
+          │       │       │   └─ right[expression]/int = "5"
           │       │       ├─ unary[postfix]/name = "i"
           │       │       └─ body/
           │       │           ├─ if/
           │       │           │   ├─ condition/expression/binary/
-          │       │           │   │   ├─ left/expression/name = "i"
-          │       │           │   │   ├─ op/operator[equal] = "=="
-          │       │           │   │   └─ right/expression/int = "1"
+          │       │           │   │   ├─ left[expression]/name = "i"
+          │       │           │   │   ├─ op[operator and equal] = "=="
+          │       │           │   │   └─ right[expression]/int = "1"
           │       │           │   └─ body/name = "outer"
           │       │           └─ if/
           │       │               ├─ condition/expression/binary/
-          │       │               │   ├─ left/expression/name = "i"
-          │       │               │   ├─ op/operator[equal] = "=="
-          │       │               │   └─ right/expression/int = "3"
+          │       │               │   ├─ left[expression]/name = "i"
+          │       │               │   ├─ op[operator and equal] = "=="
+          │       │               │   └─ right[expression]/int = "3"
           │       │               └─ body/name = "outer"
           │       ├─ variable/
           │       │   ├─ type/name = "int"
@@ -359,9 +359,9 @@ program/
           │       └─ do_while/
           │           ├─ body/expression/unary[postfix]/name = "k"
           │           └─ binary/
-          │               ├─ left/expression/name = "k"
-          │               ├─ op/operator[less] = "<"
-          │               └─ right/expression/int = "3"
+          │               ├─ left[expression]/name = "k"
+          │               ├─ op[operator and less] = "<"
+          │               └─ right[expression]/int = "3"
           ├─ comment[leading] = "/** Try-with-resources + multi-catch + synchronized block. */"
           ├─ method[package]/
           │   ├─ returns/type[void]/name = "void"
@@ -371,9 +371,9 @@ program/
           │       ├─ try/
           │       │   ├─ body/if/
           │       │   │   ├─ condition/expression/binary/
-          │       │   │   │   ├─ left/expression/name = "s"
-          │       │   │   │   ├─ op/operator[equal] = "=="
-          │       │   │   │   └─ right/expression/null = "null"
+          │       │   │   │   ├─ left[expression]/name = "s"
+          │       │   │   │   ├─ op[operator and equal] = "=="
+          │       │   │   │   └─ right[expression]/null = "null"
           │       │   │   └─ body/object_creation/name = "java.io.IOException"
           │       │   └─ catch/
           │       │       ├─ type/

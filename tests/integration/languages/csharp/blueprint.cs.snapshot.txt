@@ -86,13 +86,13 @@ unit/
   │   │       │   │   └─ name = "b"
   │   │       │   └─ body/object_creation/
   │   │       │       ├─ binary/
-  │   │       │       │   ├─ left/expression/object/name = "a"
-  │   │       │       │   ├─ op/operator[plus] = "+"
-  │   │       │       │   └─ right/expression/object/name = "b"
+  │   │       │       │   ├─ left[expression]/object/name = "a"
+  │   │       │       │   ├─ op[operator and plus] = "+"
+  │   │       │       │   └─ right[expression]/object/name = "b"
   │   │       │       └─ binary/
-  │   │       │           ├─ left/expression/object/name = "a"
-  │   │       │           ├─ op/operator[plus] = "+"
-  │   │       │           └─ right/expression/object/name = "b"
+  │   │       │           ├─ left[expression]/object/name = "a"
+  │   │       │           ├─ op[operator and plus] = "+"
+  │   │       │           └─ right[expression]/object/name = "b"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "bool"
   │   │       │   ├─ parameter/
@@ -102,15 +102,15 @@ unit/
   │   │       │   │   ├─ type/name = "Point"
   │   │       │   │   └─ name = "b"
   │   │       │   └─ body/logical/
-  │   │       │       ├─ left/expression/binary/
-  │   │       │       │   ├─ left/expression/object/name = "a"
-  │   │       │       │   ├─ op/operator[equal] = "=="
-  │   │       │       │   └─ right/expression/object/name = "b"
-  │   │       │       ├─ op/operator[and] = "&&"
-  │   │       │       └─ right/expression/binary/
-  │   │       │           ├─ left/expression/object/name = "a"
-  │   │       │           ├─ op/operator[equal] = "=="
-  │   │       │           └─ right/expression/object/name = "b"
+  │   │       │       ├─ left[expression]/binary/
+  │   │       │       │   ├─ left[expression]/object/name = "a"
+  │   │       │       │   ├─ op[operator and equal] = "=="
+  │   │       │       │   └─ right[expression]/object/name = "b"
+  │   │       │       ├─ op[operator and and] = "&&"
+  │   │       │       └─ right[expression]/binary/
+  │   │       │           ├─ left[expression]/object/name = "a"
+  │   │       │           ├─ op[operator and equal] = "=="
+  │   │       │           └─ right[expression]/object/name = "b"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "bool"
   │   │       │   ├─ parameter/
@@ -120,25 +120,25 @@ unit/
   │   │       │   │   ├─ type/name = "Point"
   │   │       │   │   └─ name = "b"
   │   │       │   └─ body/unary/binary/
-  │   │       │       ├─ left/expression/name = "a"
-  │   │       │       ├─ op/operator[equal] = "=="
-  │   │       │       └─ right/expression/name = "b"
+  │   │       │       ├─ left[expression]/name = "a"
+  │   │       │       ├─ op[operator and equal] = "=="
+  │   │       │       └─ right[expression]/name = "b"
   │   │       ├─ method[public and override]/
   │   │       │   ├─ name = "Equals"
   │   │       │   ├─ parameter/
   │   │       │   │   ├─ type[nullable]/type/name = "object"
   │   │       │   │   └─ name = "o"
   │   │       │   └─ body/logical/
-  │   │       │       ├─ left/expression/is/
+  │   │       │       ├─ left[expression]/is/
   │   │       │       │   ├─ name = "o"
   │   │       │       │   └─ pattern[declaration]/
   │   │       │       │       ├─ type/name = "Point"
   │   │       │       │       └─ name = "p"
-  │   │       │       ├─ op/operator[and] = "&&"
-  │   │       │       └─ right/expression/binary/
-  │   │       │           ├─ left/expression/name = "p"
-  │   │       │           ├─ op/operator[equal] = "=="
-  │   │       │           └─ right/expression/name = "this"
+  │   │       │       ├─ op[operator and and] = "&&"
+  │   │       │       └─ right[expression]/binary/
+  │   │       │           ├─ left[expression]/name = "p"
+  │   │       │           ├─ op[operator and equal] = "=="
+  │   │       │           └─ right[expression]/name = "this"
   │   │       └─ method[public and override]/
   │   │           ├─ name = "GetHashCode"
   │   │           └─ body/object/
@@ -265,9 +265,9 @@ unit/
   │   │       │   │   └─ name = "id"
   │   │       │   └─ body/ternary/
   │   │       │       ├─ condition/expression/binary/
-  │   │       │       │   ├─ left/expression/name = "id"
-  │   │       │       │   ├─ op/operator[equal] = "=="
-  │   │       │       │   └─ right/expression/name = "Id"
+  │   │       │       │   ├─ left[expression]/name = "id"
+  │   │       │       │   ├─ op[operator and equal] = "=="
+  │   │       │       │   └─ right[expression]/name = "Id"
   │   │       │       ├─ then/expression/name = "this"
   │   │       │       └─ else/expression/null = "null"
   │   │       ├─ method[public and async]/
@@ -301,9 +301,9 @@ unit/
   │   │       │   ├─ type/name = "Widget"
   │   │       │   └─ name = "w"
   │   │       └─ body/binary/
-  │   │           ├─ left/expression/object/name = "w"
-  │   │           ├─ op/operator[plus] = "+"
-  │   │           └─ right/expression/string = "\"!\""
+  │   │           ├─ left[expression]/object/name = "w"
+  │   │           ├─ op[operator and plus] = "+"
+  │   │           └─ right[expression]/string = "\"!\""
   │   └─ class[internal and static]/
   │       ├─ name = "Demo"
   │       └─ body/method[public and static and async]/
@@ -321,9 +321,9 @@ unit/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "widget"
   │               │   └─ expression/binary/
-  │               │       ├─ left/expression/name = "maybe"
-  │               │       ├─ op/operator[null_coalesce] = "??"
-  │               │       └─ right/expression/object_creation/
+  │               │       ├─ left[expression]/name = "maybe"
+  │               │       ├─ op[operator and null_coalesce] = "??"
+  │               │       └─ right[expression]/object_creation/
   │               │           ├─ name = "Widget"
   │               │           ├─ int = "1"
   │               │           └─ string = "\"alpha\""
@@ -331,9 +331,9 @@ unit/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "shouted"
   │               │   └─ expression/binary/
-  │               │       ├─ left/expression/object/name = "widget"
-  │               │       ├─ op/operator[null_coalesce] = "??"
-  │               │       └─ right/expression/string = "\"n/a\""
+  │               │       ├─ left[expression]/object/name = "widget"
+  │               │       ├─ op[operator and null_coalesce] = "??"
+  │               │       └─ right[expression]/string = "\"n/a\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "label"
@@ -361,9 +361,9 @@ unit/
   │               │       │   │   ├─ type/name = "Widget"
   │               │       │   │   └─ name = "w"
   │               │       │   ├─ when/binary/
-  │               │       │   │   ├─ left/expression/object/name = "w"
-  │               │       │   │   ├─ op/operator[greater] = ">"
-  │               │       │   │   └─ right/expression/int = "100"
+  │               │       │   │   ├─ left[expression]/object/name = "w"
+  │               │       │   │   ├─ op[operator and greater] = ">"
+  │               │       │   │   └─ right[expression]/int = "100"
   │               │       │   └─ string = "\"big\""
   │               │       └─ arm/
   │               │           ├─ discard = "_"
@@ -406,17 +406,17 @@ unit/
   │               │       │   ├─ name/name = "n"
   │               │       │   └─ value/expression/name = "numbers"
   │               │       ├─ where/binary/
-  │               │       │   ├─ left/expression/binary/
-  │               │       │   │   ├─ left/expression/name = "n"
-  │               │       │   │   ├─ op/operator[modulo] = "%"
-  │               │       │   │   └─ right/expression/int = "2"
-  │               │       │   ├─ op/operator[equal] = "=="
-  │               │       │   └─ right/expression/int = "0"
+  │               │       │   ├─ left[expression]/binary/
+  │               │       │   │   ├─ left[expression]/name = "n"
+  │               │       │   │   ├─ op[operator and modulo] = "%"
+  │               │       │   │   └─ right[expression]/int = "2"
+  │               │       │   ├─ op[operator and equal] = "=="
+  │               │       │   └─ right[expression]/int = "0"
   │               │       ├─ order/name = "n"
   │               │       └─ select/binary/
-  │               │           ├─ left/expression/name = "n"
-  │               │           ├─ op/operator[multiply] = "*"
-  │               │           └─ right/expression/name = "n"
+  │               │           ├─ left[expression]/name = "n"
+  │               │           ├─ op[operator and multiply] = "*"
+  │               │           └─ right[expression]/name = "n"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
   │               │   ├─ name = "odds"
@@ -425,18 +425,18 @@ unit/
   │               │       ├─ lambda/
   │               │       │   ├─ parameter/name = "n"
   │               │       │   └─ binary/
-  │               │       │       ├─ left/expression/binary/
-  │               │       │       │   ├─ left/expression/name = "n"
-  │               │       │       │   ├─ op/operator[modulo] = "%"
-  │               │       │       │   └─ right/expression/int = "2"
-  │               │       │       ├─ op/operator[not_equal] = "!="
-  │               │       │       └─ right/expression/int = "0"
+  │               │       │       ├─ left[expression]/binary/
+  │               │       │       │   ├─ left[expression]/name = "n"
+  │               │       │       │   ├─ op[operator and modulo] = "%"
+  │               │       │       │   └─ right[expression]/int = "2"
+  │               │       │       ├─ op[operator and not_equal] = "!="
+  │               │       │       └─ right[expression]/int = "0"
   │               │       └─ lambda/
   │               │           ├─ parameter/name = "n"
   │               │           └─ binary/
-  │               │               ├─ left/expression/name = "n"
-  │               │               ├─ op/operator[plus] = "+"
-  │               │               └─ right/expression/int = "1"
+  │               │               ├─ left[expression]/name = "n"
+  │               │               ├─ op[operator and plus] = "+"
+  │               │               └─ right[expression]/int = "1"
   │               ├─ comment[leading] = "// local function + lambda"
   │               ├─ method/
   │               │   ├─ name = "Square"
@@ -444,9 +444,9 @@ unit/
   │               │   │   ├─ type/name = "int"
   │               │   │   └─ name = "x"
   │               │   └─ body/binary/
-  │               │       ├─ left/expression/name = "x"
-  │               │       ├─ op/operator[multiply] = "*"
-  │               │       └─ right/expression/name = "x"
+  │               │       ├─ left[expression]/name = "x"
+  │               │       ├─ op[operator and multiply] = "*"
+  │               │       └─ right[expression]/name = "x"
   │               ├─ variable/
   │               │   ├─ type/
   │               │   │   ├─ name = "Func"
@@ -456,12 +456,12 @@ unit/
   │               │   └─ expression/lambda/
   │               │       ├─ parameter/name = "x"
   │               │       └─ binary/
-  │               │           ├─ left/expression/binary/
-  │               │           │   ├─ left/expression/name = "x"
-  │               │           │   ├─ op/operator[multiply] = "*"
-  │               │           │   └─ right/expression/name = "x"
-  │               │           ├─ op/operator[multiply] = "*"
-  │               │           └─ right/expression/name = "x"
+  │               │           ├─ left[expression]/binary/
+  │               │           │   ├─ left[expression]/name = "x"
+  │               │           │   ├─ op[operator and multiply] = "*"
+  │               │           │   └─ right[expression]/name = "x"
+  │               │           ├─ op[operator and multiply] = "*"
+  │               │           └─ right[expression]/name = "x"
   │               ├─ variable/
   │               │   ├─ type/
   │               │   │   ├─ name = "Func"
@@ -471,9 +471,9 @@ unit/
   │               │   └─ expression/lambda/
   │               │       ├─ parameter/name = "x"
   │               │       └─ body/return/expression/binary/
-  │               │           ├─ left/expression/name = "x"
-  │               │           ├─ op/operator[plus] = "+"
-  │               │           └─ right/expression/int = "1"
+  │               │           ├─ left[expression]/name = "x"
+  │               │           ├─ op[operator and plus] = "+"
+  │               │           └─ right[expression]/int = "1"
   │               ├─ variable/
   │               │   ├─ type/
   │               │   │   ├─ name = "Action"
@@ -501,9 +501,9 @@ unit/
   │               │   │   ├─ name = "i"
   │               │   │   └─ expression/int = "0"
   │               │   ├─ binary/
-  │               │   │   ├─ left/expression/name = "i"
-  │               │   │   ├─ op/operator[less] = "<"
-  │               │   │   └─ right/expression/int = "2"
+  │               │   │   ├─ left[expression]/name = "i"
+  │               │   │   ├─ op[operator and less] = "<"
+  │               │   │   └─ right[expression]/int = "2"
   │               │   ├─ unary[postfix]/name = "i"
   │               │   └─ body/comment = "/* for */"
   │               ├─ variable/
@@ -512,9 +512,9 @@ unit/
   │               │   └─ expression/int = "0"
   │               ├─ while/
   │               │   ├─ condition/expression/binary/
-  │               │   │   ├─ left/expression/unary[postfix]/name = "j"
-  │               │   │   ├─ op/operator[less] = "<"
-  │               │   │   └─ right/expression/int = "2"
+  │               │   │   ├─ left[expression]/unary[postfix]/name = "j"
+  │               │   │   ├─ op[operator and less] = "<"
+  │               │   │   └─ right[expression]/int = "2"
   │               │   └─ body = "{ }"
   │               ├─ variable/
   │               │   ├─ type/name = "int"
@@ -523,9 +523,9 @@ unit/
   │               ├─ do_while/
   │               │   ├─ body/expression/unary[postfix]/name = "k"
   │               │   └─ binary/
-  │               │       ├─ left/expression/name = "k"
-  │               │       ├─ op/operator[less] = "<"
-  │               │       └─ right/expression/int = "2"
+  │               │       ├─ left[expression]/name = "k"
+  │               │       ├─ op[operator and less] = "<"
+  │               │       └─ right[expression]/int = "2"
   │               ├─ foreach/
   │               │   ├─ type/name = "var"
   │               │   ├─ left/expression/name = "n"
@@ -561,9 +561,9 @@ unit/
   │               │   │   ├─ type/name = "InvalidOperationException"
   │               │   │   ├─ as/expression/name = "ex"
   │               │   │   ├─ filter/expression/binary/
-  │               │   │   │   ├─ left/expression/object/name = "ex"
-  │               │   │   │   ├─ op/operator[greater] = ">"
-  │               │   │   │   └─ right/expression/int = "0"
+  │               │   │   │   ├─ left[expression]/object/name = "ex"
+  │               │   │   │   ├─ op[operator and greater] = ">"
+  │               │   │   │   └─ right[expression]/int = "0"
   │               │   │   └─ body/expression/call/
   │               │   │       ├─ name = "log"
   │               │   │       └─ object/name = "ex"
@@ -633,33 +633,33 @@ unit/
   │               │   ├─ name = "raw"
   │               │   └─ expression/string = "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\""
   │               └─ return/expression/binary/
-  │                   ├─ left/expression/binary/
-  │                   │   ├─ left/expression/binary/
-  │                   │   │   ├─ left/expression/binary/
-  │                   │   │   │   ├─ left/expression/binary/
-  │                   │   │   │   │   ├─ left/expression/binary/
-  │                   │   │   │   │   │   ├─ left/expression/binary/
-  │                   │   │   │   │   │   │   ├─ left/expression/object/name = "list"
-  │                   │   │   │   │   │   │   ├─ op/operator[plus] = "+"
-  │                   │   │   │   │   │   │   └─ right/expression/object/name = "map"
-  │                   │   │   │   │   │   ├─ op/operator[plus] = "+"
-  │                   │   │   │   │   │   └─ right/expression/object/name = "plain"
-  │                   │   │   │   │   ├─ op/operator[plus] = "+"
-  │                   │   │   │   │   └─ right/expression/object/name = "verbatim"
-  │                   │   │   │   ├─ op/operator[plus] = "+"
-  │                   │   │   │   └─ right/expression/object/name = "interp"
-  │                   │   │   ├─ op/operator[plus] = "+"
-  │                   │   │   └─ right/expression/object/name = "raw"
-  │                   │   ├─ op/operator[plus] = "+"
-  │                   │   └─ right/expression/ternary/
+  │                   ├─ left[expression]/binary/
+  │                   │   ├─ left[expression]/binary/
+  │                   │   │   ├─ left[expression]/binary/
+  │                   │   │   │   ├─ left[expression]/binary/
+  │                   │   │   │   │   ├─ left[expression]/binary/
+  │                   │   │   │   │   │   ├─ left[expression]/binary/
+  │                   │   │   │   │   │   │   ├─ left[expression]/object/name = "list"
+  │                   │   │   │   │   │   │   ├─ op[operator and plus] = "+"
+  │                   │   │   │   │   │   │   └─ right[expression]/object/name = "map"
+  │                   │   │   │   │   │   ├─ op[operator and plus] = "+"
+  │                   │   │   │   │   │   └─ right[expression]/object/name = "plain"
+  │                   │   │   │   │   ├─ op[operator and plus] = "+"
+  │                   │   │   │   │   └─ right[expression]/object/name = "verbatim"
+  │                   │   │   │   ├─ op[operator and plus] = "+"
+  │                   │   │   │   └─ right[expression]/object/name = "interp"
+  │                   │   │   ├─ op[operator and plus] = "+"
+  │                   │   │   └─ right[expression]/object/name = "raw"
+  │                   │   ├─ op[operator and plus] = "+"
+  │                   │   └─ right[expression]/ternary/
   │                   │       ├─ condition/expression/binary/
-  │                   │       │   ├─ left/expression/name = "label"
-  │                   │       │   ├─ op/operator[equal] = "=="
-  │                   │       │   └─ right/expression/name = "kind"
+  │                   │       │   ├─ left[expression]/name = "label"
+  │                   │       │   ├─ op[operator and equal] = "=="
+  │                   │       │   └─ right[expression]/name = "kind"
   │                   │       ├─ then/expression/int = "0"
   │                   │       └─ else/expression/int = "1"
-  │                   ├─ op/operator[plus] = "+"
-  │                   └─ right/expression/object/name = "shouted"
+  │                   ├─ op[operator and plus] = "+"
+  │                   └─ right[expression]/object/name = "shouted"
   └─ namespace/
       ├─ name = "Tractor.Fixtures.FileScoped"
       ├─ using/name = "System"
@@ -701,9 +701,9 @@ unit/
       │       │       ├─ checked/body/assign/
       │       │       │   ├─ expression/name = "n"
       │       │       │   └─ expression/binary/
-      │       │       │       ├─ left/expression/name = "n"
-      │       │       │       ├─ op/operator[plus] = "+"
-      │       │       │       └─ right/expression/int = "1"
+      │       │       │       ├─ left[expression]/name = "n"
+      │       │       │       ├─ op[operator and plus] = "+"
+      │       │       │       └─ right[expression]/int = "1"
       │       │       ├─ comment[leading] = "// fixed + unsafe handled in unsafe context (pointer omitted for clarity)\n        // goto + labeled statement"
       │       │       ├─ goto/name = "skip"
       │       │       ├─ variable/
@@ -783,9 +783,9 @@ unit/
       │       │           ├─ type/name = "string"
       │       │           ├─ name = "s2"
       │       │           └─ expression/binary/
-      │       │               ├─ left/expression/name = "s"
-      │       │               ├─ op/operator[null_coalesce] = "??"
-      │       │               └─ right/expression/throw/expression/object_creation/
+      │       │               ├─ left[expression]/name = "s"
+      │       │               ├─ op[operator and null_coalesce] = "??"
+      │       │               └─ right[expression]/throw/expression/object_creation/
       │       │                   ├─ name = "ArgumentNullException"
       │       │                   └─ call/
       │       │                       ├─ name = "nameof"
@@ -992,9 +992,9 @@ unit/
       │       │       │       ├─ let/
       │       │       │       │   ├─ name = "xx"
       │       │       │       │   └─ binary/
-      │       │       │       │       ├─ left/expression/name = "x"
-      │       │       │       │       ├─ op/operator[multiply] = "*"
-      │       │       │       │       └─ right/expression/name = "x"
+      │       │       │       │       ├─ left[expression]/name = "x"
+      │       │       │       │       ├─ op[operator and multiply] = "*"
+      │       │       │       │       └─ right[expression]/name = "x"
       │       │       │       ├─ join[in]/
       │       │       │       │   ├─ name = "y"
       │       │       │       │   ├─ name = "ys"
@@ -1023,12 +1023,12 @@ unit/
       │       │       │       ├─ left/name = "o"
       │       │       │       └─ right/type[array]/type/name = "int"
       │       │       └─ return/expression/binary/
-      │       │           ├─ left/expression/object/name = "joined"
-      │       │           ├─ op/operator[plus] = "+"
-      │       │           └─ right/expression/binary/
-      │       │               ├─ left/expression/object/name = "asArr"
-      │       │               ├─ op/operator[null_coalesce] = "??"
-      │       │               └─ right/expression/int = "0"
+      │       │           ├─ left[expression]/object/name = "joined"
+      │       │           ├─ op[operator and plus] = "+"
+      │       │           └─ right[expression]/binary/
+      │       │               ├─ left[expression]/object/name = "asArr"
+      │       │               ├─ op[operator and null_coalesce] = "??"
+      │       │               └─ right[expression]/int = "0"
       │       ├─ comment[leading] = "// List patterns (C# 11). Slice patterns omitted because the\n    // pinned tree-sitter-c-sharp grammar emits ERROR for `..` in\n    // list patterns; the IR pipeline handles them when the grammar\n    // is regenerated."
       │       ├─ method[public and static]/
       │       │   ├─ name = "Listy"
@@ -1059,22 +1059,22 @@ unit/
       │       │       │   │   ├─ name = "i"
       │       │       │   │   └─ expression/int = "0"
       │       │       │   ├─ binary/
-      │       │       │   │   ├─ left/expression/name = "i"
-      │       │       │   │   ├─ op/operator[less] = "<"
-      │       │       │   │   └─ right/expression/int = "3"
+      │       │       │   │   ├─ left[expression]/name = "i"
+      │       │       │   │   ├─ op[operator and less] = "<"
+      │       │       │   │   └─ right[expression]/int = "3"
       │       │       │   ├─ unary[postfix]/name = "i"
       │       │       │   └─ body/
       │       │       │       ├─ if/
       │       │       │       │   ├─ condition/expression/binary/
-      │       │       │       │   │   ├─ left/expression/name = "i"
-      │       │       │       │   │   ├─ op/operator[equal] = "=="
-      │       │       │       │   │   └─ right/expression/int = "1"
+      │       │       │       │   │   ├─ left[expression]/name = "i"
+      │       │       │       │   │   ├─ op[operator and equal] = "=="
+      │       │       │       │   │   └─ right[expression]/int = "1"
       │       │       │       │   └─ body/continue = "continue;"
       │       │       │       └─ if/
       │       │       │           ├─ condition/expression/binary/
-      │       │       │           │   ├─ left/expression/name = "i"
-      │       │       │           │   ├─ op/operator[equal] = "=="
-      │       │       │           │   └─ right/expression/int = "2"
+      │       │       │           │   ├─ left[expression]/name = "i"
+      │       │       │           │   ├─ op[operator and equal] = "=="
+      │       │       │           │   └─ right[expression]/int = "2"
       │       │       │           └─ body/break = "break;"
       │       │       └─ return/expression/int = "0"
       │       ├─ comment[leading] = "// Interpolation with alignment + format specifier."
@@ -1096,9 +1096,9 @@ unit/
       │       │   │   ├─ type/name = "int"
       │       │   │   └─ name = "b"
       │       │   └─ body/checked/binary/
-      │       │       ├─ left/expression/name = "a"
-      │       │       ├─ op/operator[plus] = "+"
-      │       │       └─ right/expression/name = "b"
+      │       │       ├─ left[expression]/name = "a"
+      │       │       ├─ op[operator and plus] = "+"
+      │       │       └─ right[expression]/name = "b"
       │       ├─ method[public and static and unsafe]/
       │       │   ├─ name = "Pointer"
       │       │   ├─ parameter/
@@ -1167,9 +1167,9 @@ unit/
       │       │       │   ├─ type/name = "int"
       │       │       │   └─ name = "x"
       │       │       └─ body/return/expression/binary/
-      │       │           ├─ left/expression/name = "x"
-      │       │           ├─ op/operator[plus] = "+"
-      │       │           └─ right/expression/int = "1"
+      │       │           ├─ left[expression]/name = "x"
+      │       │           ├─ op[operator and plus] = "+"
+      │       │           └─ right[expression]/int = "1"
       │       ├─ comment[leading] = "// Simple is-expression (type test, no pattern binding)."
       │       ├─ method[public and static]/
       │       │   ├─ name = "IsInt"
@@ -1320,9 +1320,9 @@ unit/
       │           └─ literal/
       │               ├─ name = "X"
       │               └─ binary/
-      │                   ├─ left/expression/object/name = "p"
-      │                   ├─ op/operator[plus] = "+"
-      │                   └─ right/expression/name = "dx"
+      │                   ├─ left[expression]/object/name = "p"
+      │                   ├─ op[operator and plus] = "+"
+      │                   └─ right[expression]/name = "dx"
       ├─ comment = "// Global / assembly-level attribute (file scope)."
       ├─ attribute/
       │   ├─ path/

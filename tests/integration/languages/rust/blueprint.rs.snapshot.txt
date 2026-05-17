@@ -335,9 +335,9 @@ file/
   │       │       ├─ name = "a"
   │       │       ├─ name = "b"
   │       │       └─ binary/
-  │       │           ├─ left/expression/name = "a"
-  │       │           ├─ op/operator[plus] = "+"
-  │       │           └─ right/expression/name = "b"
+  │       │           ├─ left[expression]/name = "a"
+  │       │           ├─ op[operator and plus] = "+"
+  │       │           └─ right[expression]/name = "b"
   │       ├─ let/
   │       │   ├─ name = "s"
   │       │   └─ value/expression/call/
@@ -480,13 +480,13 @@ file/
   │       │           │   │   ├─ name = "x"
   │       │           │   │   ├─ name = "y"
   │       │           │   │   └─ condition/binary/
-  │       │           │   │       ├─ left/expression/name = "x"
-  │       │           │   │       ├─ op/operator[equal] = "=="
-  │       │           │   │       └─ right/expression/name = "y"
+  │       │           │   │       ├─ left[expression]/name = "x"
+  │       │           │   │       ├─ op[operator and equal] = "=="
+  │       │           │   │       └─ right[expression]/name = "y"
   │       │           │   └─ value/binary/
-  │       │           │       ├─ left/expression/name = "x"
-  │       │           │       ├─ op/operator[plus] = "+"
-  │       │           │       └─ right/expression/name = "y"
+  │       │           │       ├─ left[expression]/name = "x"
+  │       │           │       ├─ op[operator and plus] = "+"
+  │       │           │       └─ right[expression]/name = "y"
   │       │           ├─ arm/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ pattern[struct]/
@@ -496,14 +496,14 @@ file/
   │       │           │   │   │   ├─ pattern[field]/name = "w"
   │       │           │   │   │   └─ pattern[field]/name = "h"
   │       │           │   │   └─ condition/binary/
-  │       │           │   │       ├─ left/expression/name = "w"
-  │       │           │   │       ├─ op/operator[greater] = ">"
-  │       │           │   │       └─ right/expression/int = "0"
+  │       │           │   │       ├─ left[expression]/name = "w"
+  │       │           │   │       ├─ op[operator and greater] = ">"
+  │       │           │   │       └─ right[expression]/int = "0"
   │       │           │   └─ value/cast/
   │       │           │       ├─ value/expression/binary/
-  │       │           │       │   ├─ left/expression/name = "w"
-  │       │           │       │   ├─ op/operator[multiply] = "*"
-  │       │           │       │   └─ right/expression/name = "h"
+  │       │           │       │   ├─ left[expression]/name = "w"
+  │       │           │       │   ├─ op[operator and multiply] = "*"
+  │       │           │       │   └─ right[expression]/name = "h"
   │       │           │       └─ type/name = "i32"
   │       │           ├─ arm/
   │       │           │   ├─ pattern/
@@ -584,21 +584,21 @@ file/
   │       │       │   └─ to/int = "10"
   │       │       └─ body/if/
   │       │           ├─ condition/binary/
-  │       │           │   ├─ left/expression/binary/
-  │       │           │   │   ├─ left/expression/name = "i"
-  │       │           │   │   ├─ op/operator[multiply] = "*"
-  │       │           │   │   └─ right/expression/name = "j"
-  │       │           │   ├─ op/operator[greater] = ">"
-  │       │           │   └─ right/expression/int = "20"
+  │       │           │   ├─ left[expression]/binary/
+  │       │           │   │   ├─ left[expression]/name = "i"
+  │       │           │   │   ├─ op[operator and multiply] = "*"
+  │       │           │   │   └─ right[expression]/name = "j"
+  │       │           │   ├─ op[operator and greater] = ">"
+  │       │           │   └─ right[expression]/int = "20"
   │       │           └─ then/block/expression/break/name = "'outer"
   │       ├─ let[mut]/
   │       │   ├─ name = "n"
   │       │   └─ value/expression/int = "0"
   │       ├─ while/
   │       │   ├─ condition/expression/binary/
-  │       │   │   ├─ left/expression/name = "n"
-  │       │   │   ├─ op/operator[less] = "<"
-  │       │   │   └─ right/expression/int = "3"
+  │       │   │   ├─ left[expression]/name = "n"
+  │       │   │   ├─ op[operator and less] = "<"
+  │       │   │   └─ right[expression]/int = "3"
   │       │   └─ body/expression/assign/
   │       │       ├─ name = "n"
   │       │       └─ int = "1"
@@ -666,9 +666,9 @@ file/
   │       ├─ let/
   │       │   ├─ name = "block"
   │       │   └─ value/expression/block[async]/binary/
-  │       │       ├─ left/expression/int = "1u32"
-  │       │       ├─ op/operator[plus] = "+"
-  │       │       └─ right/expression/int = "2"
+  │       │       ├─ left[expression]/int = "1u32"
+  │       │       ├─ op[operator and plus] = "+"
+  │       │       └─ right[expression]/int = "2"
   │       └─ await/name = "block"
   ├─ function[pub]/
   │   ├─ name = "unsafe_block"
@@ -816,21 +816,21 @@ file/
   │       │           │   │   ├─ name = "b"
   │       │           │   │   └─ name = "_c"
   │       │           │   └─ value/binary/
-  │       │           │       ├─ left/expression/name = "a"
-  │       │           │       ├─ op/operator[plus] = "+"
-  │       │           │       └─ right/expression/name = "b"
+  │       │           │       ├─ left[expression]/name = "a"
+  │       │           │       ├─ op[operator and plus] = "+"
+  │       │           │       └─ right[expression]/name = "b"
   │       │           └─ arm/
   │       │               ├─ pattern/pattern[tuple]/
   │       │               │   ├─ name = "a"
   │       │               │   ├─ name = "b"
   │       │               │   └─ name = "c"
   │       │               └─ value/binary/
-  │       │                   ├─ left/expression/binary/
-  │       │                   │   ├─ left/expression/name = "a"
-  │       │                   │   ├─ op/operator[plus] = "+"
-  │       │                   │   └─ right/expression/name = "b"
-  │       │                   ├─ op/operator[plus] = "+"
-  │       │                   └─ right/expression/name = "c"
+  │       │                   ├─ left[expression]/binary/
+  │       │                   │   ├─ left[expression]/name = "a"
+  │       │                   │   ├─ op[operator and plus] = "+"
+  │       │                   │   └─ right[expression]/name = "b"
+  │       │                   ├─ op[operator and plus] = "+"
+  │       │                   └─ right[expression]/name = "c"
   │       ├─ comment[leading] = "// slice_pattern."
   │       ├─ let/
   │       │   ├─ name = "arr"
@@ -853,9 +853,9 @@ file/
   │       │           │   │   ├─ pattern[rest] = ".."
   │       │           │   │   └─ name = "last"
   │       │           │   └─ value/binary/
-  │       │           │       ├─ left/expression/name = "first"
-  │       │           │       ├─ op/operator[plus] = "+"
-  │       │           │       └─ right/expression/name = "last"
+  │       │           │       ├─ left[expression]/name = "first"
+  │       │           │       ├─ op[operator and plus] = "+"
+  │       │           │       └─ right[expression]/name = "last"
   │       │           ├─ arm/
   │       │           │   ├─ pattern/pattern[slice]/name = "only"
   │       │           │   └─ value/unary/name = "only"
@@ -869,22 +869,22 @@ file/
   │       ├─ expression/assign/
   │       │   ├─ name = "counter"
   │       │   └─ binary/
-  │       │       ├─ left/expression/name = "total"
-  │       │       ├─ op/operator[plus] = "+"
-  │       │       └─ right/expression/name = "head_tail"
+  │       │       ├─ left[expression]/name = "total"
+  │       │       ├─ op[operator and plus] = "+"
+  │       │       └─ right[expression]/name = "head_tail"
   │       ├─ comment[leading] = "// array_expression."
   │       ├─ let/
   │       │   ├─ name = "triples"
   │       │   └─ value/expression/array/
   │       │       ├─ name = "counter"
   │       │       ├─ binary/
-  │       │       │   ├─ left/expression/name = "counter"
-  │       │       │   ├─ op/operator[multiply] = "*"
-  │       │       │   └─ right/expression/int = "2"
+  │       │       │   ├─ left[expression]/name = "counter"
+  │       │       │   ├─ op[operator and multiply] = "*"
+  │       │       │   └─ right[expression]/int = "2"
   │       │       └─ binary/
-  │       │           ├─ left/expression/name = "counter"
-  │       │           ├─ op/operator[multiply] = "*"
-  │       │           └─ right/expression/int = "3"
+  │       │           ├─ left[expression]/name = "counter"
+  │       │           ├─ op[operator and multiply] = "*"
+  │       │           └─ right[expression]/int = "3"
   │       ├─ comment[leading] = "// unit_expression as value."
   │       ├─ let/
   │       │   ├─ name = "unit_val"
@@ -906,13 +906,13 @@ file/
   │       │   │   │   └─ pattern[rest] = ".."
   │       │   │   ├─ name = "inner"
   │       │   │   └─ binary/
-  │       │   │       ├─ left/expression/name = "ix"
-  │       │   │       ├─ op/operator[greater] = ">"
-  │       │   │       └─ right/expression/int = "0"
+  │       │   │       ├─ left[expression]/name = "ix"
+  │       │   │       ├─ op[operator and greater] = ">"
+  │       │   │       └─ right[expression]/int = "0"
   │       │   └─ then/block/expression/return/binary/
-  │       │       ├─ left/expression/name = "ix"
-  │       │       ├─ op/operator[plus] = "+"
-  │       │       └─ right/expression/name = "x"
+  │       │       ├─ left[expression]/name = "ix"
+  │       │       ├─ op[operator and plus] = "+"
+  │       │       └─ right[expression]/name = "x"
   │       ├─ comment[leading] = "// negative_literal in pattern position."
   │       ├─ let/
   │       │   ├─ name = "signed"
@@ -942,11 +942,11 @@ file/
   │       │       │   └─ type/name = "i32"
   │       │       └─ name = "new"
   │       └─ binary/
-  │           ├─ left/expression/cast/
+  │           ├─ left[expression]/cast/
   │           │   ├─ value/expression/object/name = "v"
   │           │   └─ type/name = "i32"
-  │           ├─ op/operator[plus] = "+"
-  │           └─ right/expression/object/
+  │           ├─ op[operator and plus] = "+"
+  │           └─ right[expression]/object/
   │               ├─ name = "triples"
   │               └─ int = "0"
   └─ function[private]/

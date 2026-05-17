@@ -319,13 +319,13 @@ file/
   │       │       ├─ variable[short]/
   │       │       │   ├─ left/expression/name = "x"
   │       │       │   └─ right/expression/binary/
-  │       │       │       ├─ left/expression/name = "n"
-  │       │       │       ├─ op/operator[plus] = "+"
-  │       │       │       └─ right/expression/int = "1"
+  │       │       │       ├─ left[expression]/name = "n"
+  │       │       │       ├─ op[operator and plus] = "+"
+  │       │       │       └─ right[expression]/int = "1"
   │       │       └─ return/expression/binary/
-  │       │           ├─ left/expression/name = "x"
-  │       │           ├─ op/operator[multiply] = "*"
-  │       │           └─ right/expression/int = "2"
+  │       │           ├─ left[expression]/name = "x"
+  │       │           ├─ op[operator and multiply] = "*"
+  │       │           └─ right[expression]/int = "2"
   │       ├─ assign/
   │       │   ├─ expression/name = "_"
   │       │   └─ expression/call/
@@ -441,9 +441,9 @@ file/
   │       ├─ case/
   │       │   ├─ type/name = "string"
   │       │   └─ return/expression/binary/
-  │       │       ├─ left/expression/string = "\"string:\""
-  │       │       ├─ op/operator[plus] = "+"
-  │       │       └─ right/expression/name = "v"
+  │       │       ├─ left[expression]/string = "\"string:\""
+  │       │       ├─ op[operator and plus] = "+"
+  │       │       └─ right[expression]/name = "v"
   │       ├─ case/
   │       │   ├─ type/name = "Stringer"
   │       │   └─ return/expression/object/name = "v"
@@ -480,9 +480,9 @@ file/
           │   │   │   └─ name = "err"
           │   │   └─ right/expression/object/name = "io"
           │   ├─ condition/expression/binary/
-          │   │   ├─ left/expression/name = "err"
-          │   │   ├─ op/operator[not_equal] = "!="
-          │   │   └─ right/expression/nil = "nil"
+          │   │   ├─ left[expression]/name = "err"
+          │   │   ├─ op[operator and not_equal] = "!="
+          │   │   └─ right[expression]/nil = "nil"
           │   ├─ then/body/return/expression/call/
           │   │   ├─ name = "wrap"
           │   │   └─ name = "err"
@@ -494,15 +494,15 @@ file/
           │   │   ├─ left/expression/name = "i"
           │   │   └─ right/expression/int = "0"
           │   ├─ condition/expression/binary/
-          │   │   ├─ left/expression/name = "i"
-          │   │   ├─ op/operator[less] = "<"
-          │   │   └─ right/expression/int = "10"
+          │   │   ├─ left[expression]/name = "i"
+          │   │   ├─ op[operator and less] = "<"
+          │   │   └─ right[expression]/int = "10"
           │   ├─ unary[postfix]/name = "i"
           │   └─ body/if/
           │       ├─ condition/expression/binary/
-          │       │   ├─ left/expression/name = "i"
-          │       │   ├─ op/operator[equal] = "=="
-          │       │   └─ right/expression/int = "5"
+          │       │   ├─ left[expression]/name = "i"
+          │       │   ├─ op[operator and equal] = "=="
+          │       │   └─ right[expression]/int = "5"
           │       └─ then/body/continue = "continue"
           ├─ for/
           │   ├─ range/
@@ -538,9 +538,9 @@ file/
           │   └─ right/expression/int = "0"
           ├─ for/
           │   ├─ condition/expression/binary/
-          │   │   ├─ left/expression/name = "n"
-          │   │   ├─ op/operator[less] = "<"
-          │   │   └─ right/expression/int = "3"
+          │   │   ├─ left[expression]/name = "n"
+          │   │   ├─ op[operator and less] = "<"
+          │   │   └─ right[expression]/int = "3"
           │   └─ body/unary[postfix]/name = "n"
           ├─ go/call/closure/expression/object/
           │   ├─ name = "fmt"
@@ -646,12 +646,12 @@ file/
           │   │   ├─ left/expression/name = "err"
           │   │   └─ right/expression/call/name = "doThing"
           │   ├─ condition/expression/logical/
-          │   │   ├─ left/expression/object/
+          │   │   ├─ left[expression]/object/
           │   │   │   ├─ name = "errors"
           │   │   │   ├─ name = "err"
           │   │   │   └─ unary/name = "target"
-          │   │   ├─ op/operator[or] = "||"
-          │   │   └─ right/expression/object/
+          │   │   ├─ op[operator and or] = "||"
+          │   │   └─ right[expression]/object/
           │   │       ├─ name = "errors"
           │   │       ├─ name = "err"
           │   │       └─ name = "ErrNotFound"

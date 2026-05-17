@@ -14,20 +14,17 @@
                 "expression": {
                   "binary": {
                     "right": {
-                      "expression": {
-                        "name": "b"
-                      }
+                      "name": "b",
+                      "expression": true
                     },
                     "left": {
-                      "expression": {
-                        "name": "a"
-                      }
+                      "name": "a",
+                      "expression": true
                     },
                     "op": {
-                      "operator": {
-                        "text": "+",
-                        "plus": true
-                      }
+                      "text": "+",
+                      "operator": true,
+                      "plus": true
                     }
                   }
                 }
@@ -56,20 +53,17 @@
                 "expression": {
                   "binary": {
                     "right": {
-                      "expression": {
-                        "name": "b"
-                      }
+                      "name": "b",
+                      "expression": true
                     },
                     "left": {
-                      "expression": {
-                        "name": "a"
-                      }
+                      "name": "a",
+                      "expression": true
                     },
                     "op": {
-                      "operator": {
-                        "text": "-",
-                        "minus": true
-                      }
+                      "text": "-",
+                      "operator": true,
+                      "minus": true
                     }
                   }
                 }
@@ -98,20 +92,17 @@
                 "expression": {
                   "binary": {
                     "right": {
-                      "expression": {
-                        "name": "b"
-                      }
+                      "name": "b",
+                      "expression": true
                     },
                     "left": {
-                      "expression": {
-                        "name": "a"
-                      }
+                      "name": "a",
+                      "expression": true
                     },
                     "op": {
-                      "operator": {
-                        "text": "*",
-                        "multiply": true
-                      }
+                      "text": "*",
+                      "operator": true,
+                      "multiply": true
                     }
                   }
                 }
@@ -154,20 +145,17 @@
                 "expression": {
                   "binary": {
                     "right": {
-                      "expression": {
-                        "name": "name"
-                      }
+                      "name": "name",
+                      "expression": true
                     },
                     "left": {
-                      "expression": {
-                        "string": "\"Hello, \""
-                      }
+                      "string": "\"Hello, \"",
+                      "expression": true
                     },
                     "op": {
-                      "operator": {
-                        "text": "+",
-                        "plus": true
-                      }
+                      "text": "+",
+                      "operator": true,
+                      "plus": true
                     }
                   }
                 }
@@ -188,20 +176,17 @@
                 "expression": {
                   "binary": {
                     "right": {
-                      "expression": {
-                        "name": "name"
-                      }
+                      "name": "name",
+                      "expression": true
                     },
                     "left": {
-                      "expression": {
-                        "string": "\"Goodbye, \""
-                      }
+                      "string": "\"Goodbye, \"",
+                      "expression": true
                     },
                     "op": {
-                      "operator": {
-                        "text": "+",
-                        "plus": true
-                      }
+                      "text": "+",
+                      "operator": true,
+                      "plus": true
                     }
                   }
                 }

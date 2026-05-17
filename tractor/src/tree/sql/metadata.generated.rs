@@ -529,7 +529,9 @@ pub fn fields_of(tree: &SqlTree) -> Vec<TreeField<'_, SqlTree>> {
         SqlTree::Statement { inner, .. } => {
             out.push(TreeField::Single { name: "inner", value: inner });
         }
-        SqlTree::Go { .. } => {}
+        SqlTree::Go { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
         SqlTree::Exec { target, .. } => {
             out.push(TreeField::Single { name: "target", value: target });
         }
@@ -615,15 +617,18 @@ pub fn fields_of(tree: &SqlTree) -> Vec<TreeField<'_, SqlTree>> {
         SqlTree::Reference { parts, .. } => {
             out.push(TreeField::Many { name: "parts", items: parts.iter().collect() });
         }
-        SqlTree::Compare { left, right, .. } => {
+        SqlTree::Compare { left, op_text, right, .. } => {
             out.push(TreeField::Single { name: "left", value: left });
+            out.push(TreeField::Scalar { name: "op_text", value: op_text.as_str() });
             out.push(TreeField::Single { name: "right", value: right });
         }
-        SqlTree::Binary { left, right, .. } => {
+        SqlTree::Binary { left, op_text, right, .. } => {
             out.push(TreeField::Single { name: "left", value: left });
+            out.push(TreeField::Scalar { name: "op_text", value: op_text.as_str() });
             out.push(TreeField::Single { name: "right", value: right });
         }
-        SqlTree::Unary { operand, .. } => {
+        SqlTree::Unary { op_text, operand, .. } => {
+            out.push(TreeField::Scalar { name: "op_text", value: op_text.as_str() });
             out.push(TreeField::Single { name: "operand", value: operand });
         }
         SqlTree::Assign { target, value, .. } => {
@@ -711,16 +716,30 @@ pub fn fields_of(tree: &SqlTree) -> Vec<TreeField<'_, SqlTree>> {
         SqlTree::DataType { length, .. } => {
             if let Some(__t) = length { out.push(TreeField::Single { name: "length", value: __t }); }
         }
-        SqlTree::Identifier { .. } => {}
-        SqlTree::Schema { .. } => {}
-        SqlTree::Alias { .. } => {}
+        SqlTree::Identifier { value, .. } => {
+            out.push(TreeField::Scalar { name: "value", value: value.as_str() });
+        }
+        SqlTree::Schema { value, .. } => {
+            out.push(TreeField::Scalar { name: "value", value: value.as_str() });
+        }
+        SqlTree::Alias { value, .. } => {
+            out.push(TreeField::Scalar { name: "value", value: value.as_str() });
+        }
         SqlTree::Temp { name, .. } => {
             out.push(TreeField::Single { name: "name", value: name });
         }
-        SqlTree::Variable { .. } => {}
-        SqlTree::Literal { .. } => {}
-        SqlTree::Comment { .. } => {}
-        SqlTree::Unknown { .. } => {}
+        SqlTree::Variable { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        SqlTree::Literal { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        SqlTree::Comment { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        SqlTree::Unknown { kind, .. } => {
+            out.push(TreeField::Scalar { name: "kind", value: kind.as_str() });
+        }
     }
     out
 }

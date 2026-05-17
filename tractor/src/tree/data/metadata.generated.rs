@@ -210,11 +210,20 @@ pub fn fields_of(tree: &DataTree) -> Vec<TreeField<'_, DataTree>> {
             out.push(TreeField::Single { name: "name", value: name });
             out.push(TreeField::Many { name: "children", items: children.iter().collect() });
         }
-        DataTree::String { .. } => {}
-        DataTree::Number { .. } => {}
-        DataTree::Bool { .. } => {}
-        DataTree::Null { .. } => {}
-        DataTree::Comment { leading, trailing, .. } => {
+        DataTree::String { value, .. } => {
+            out.push(TreeField::Scalar { name: "value", value: value.as_str() });
+        }
+        DataTree::Number { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        DataTree::Bool { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        DataTree::Null { text, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
+        }
+        DataTree::Comment { text, leading, trailing, .. } => {
+            out.push(TreeField::Scalar { name: "text", value: text.as_str() });
             if let Flag::On { range: frange, span: fspan } = leading {
                 out.push(TreeField::Flag {
                     name: "leading",
@@ -241,7 +250,9 @@ pub fn fields_of(tree: &DataTree) -> Vec<TreeField<'_, DataTree>> {
             }
             out.push(TreeField::Many { name: "children", items: children.iter().collect() });
         }
-        DataTree::Unknown { .. } => {}
+        DataTree::Unknown { kind, .. } => {
+            out.push(TreeField::Scalar { name: "kind", value: kind.as_str() });
+        }
     }
     out
 }
