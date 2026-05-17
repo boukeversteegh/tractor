@@ -74,3 +74,25 @@ pub fn element_name_for_lang<'a>(variant_tag: &'a str, lang: Option<&str>) -> &'
     }
     variant_tag
 }
+
+/// Inverse of [`element_name_for_lang`]: given a user-facing
+/// `display_name` (e.g. `"program"` for TypeScript), return the
+/// canonical variant tag (`"module"`) used by `from_json` dispatch.
+/// Falls through to the input unchanged when no override matches —
+/// canonical names pass through, unknown names are left for the
+/// caller to handle.
+pub fn canonical_name_for_lang<'a>(display_name: &'a str, lang: Option<&str>) -> &'a str {
+    if let Some(lang) = lang {
+        for (l, tag, native) in OVERRIDES {
+            if *l == lang && *native == display_name {
+                return *tag;
+            }
+        }
+    }
+    for (tag, display) in UNIVERSAL_OVERRIDES {
+        if *display == display_name {
+            return *tag;
+        }
+    }
+    display_name
+}
