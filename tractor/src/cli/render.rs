@@ -4,13 +4,20 @@ use tractor::language_info::{get_language_info, get_language_for_extension};
 use tractor::parser::{parse, ParseInput, ParseOptions};
 use tractor::xpath::Tree;
 
-/// Render mode: round-trip parse source → tree → source.
+/// Render mode: round-trip parse source → tree → source, OR
+/// reconstruct from a JSON tree projection and render to source.
 ///
-/// The `render` command parses source through the typed-tree pipeline
-/// and re-emits it via the tree-aware source renderer
-/// (`tree::render::render`). In anchored mode (the default) this is a
-/// byte-for-byte identity — useful for verifying lossless parse and as
-/// the substrate that `tractor set` / `tractor update` build on.
+/// **Source input** (default): parses source through the typed-tree
+/// pipeline and re-emits it via the tree-aware source renderer
+/// (`tree::render::render`). In anchored mode this is byte-for-byte
+/// identity — useful for verifying lossless parse and as the
+/// substrate that `tractor set` / `tractor update` build on.
+///
+/// **JSON input** (`--from json`, or auto-detected by leading `{` /
+/// `[`): deserialises the JSON to a `SyntaxTree` via `tree_from_json`
+/// and renders to source. Synthetic ranges; no anchor available, so
+/// output is canonical-form (the language's `render_source` syntax
+/// config drives spacing / keywords).
 #[derive(Args, Debug)]
 pub struct RenderArgs {
     /// Target file (determines language from extension). When given,
@@ -26,12 +33,27 @@ pub struct RenderArgs {
     /// Source string (alternative to stdin / file)
     #[arg(short = 's', long = "string")]
     pub input: Option<String>,
+
+    /// Input format: `source` (parse-then-render round-trip; the
+    /// default) or `json` (reconstruct a tree from its `$type`-
+    /// discriminated JSON projection and render to source). When
+    /// omitted, the input is sniffed — a leading `{` or `[` after
+    /// trimming whitespace is treated as JSON.
+    #[arg(long = "from")]
+    pub from: Option<String>,
 }
 
 pub fn run_render(args: RenderArgs) -> Result<(), Box<dyn std::error::Error>> {
     let lang = resolve_language(&args)?;
     let input = read_input(&args)?;
     let file_label = args.file.clone().unwrap_or_else(|| "<stdin>".to_string());
+
+    if input_is_json(&args, &input) {
+        let rendered = render_from_json(&input, &lang)
+            .map_err(|e| format!("render from json: {e}"))?;
+        write_output(&args, &rendered)?;
+        return Ok(());
+    }
 
     let parsed = parse(
         ParseInput::Inline { content: &input, file_label: &file_label },
@@ -59,13 +81,49 @@ pub fn run_render(args: RenderArgs) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    write_output(&args, &rendered)?;
+
+    Ok(())
+}
+
+/// Choose JSON vs source input mode. Explicit `--from json`/`source`
+/// wins; otherwise sniff a non-whitespace leading `{` or `[` to
+/// auto-detect a JSON tree projection.
+fn input_is_json(args: &RenderArgs, input: &str) -> bool {
+    match args.from.as_deref() {
+        Some("json") => return true,
+        Some("source") => return false,
+        Some(_) => {} // unknown value falls through to sniffing
+        None => {}
+    }
+    input
+        .trim_start()
+        .chars()
+        .next()
+        .is_some_and(|c| c == '{' || c == '[')
+}
+
+/// Deserialise the JSON tree projection, reconstruct a `SyntaxTree`
+/// via the codegen'd `tree_from_json`, and render to `lang`. Uses
+/// canonical (no-anchor) rendering — the tree carries synthetic
+/// ranges after the JSON hop.
+fn render_from_json(input: &str, lang: &str) -> Result<String, String> {
+    let value: serde_json::Value = serde_json::from_str(input)
+        .map_err(|e| format!("invalid JSON: {e}"))?;
+    if lang == "tsql" {
+        return Err("tsql tree-from-json not implemented (SqlTree has no from_json yet)".into());
+    }
+    let tree = tractor::tree::tree_from_json(&value, Some(lang));
+    Ok(tractor::tree::render::render(&tree, lang, None))
+}
+
+fn write_output(args: &RenderArgs, rendered: &str) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(file) = &args.file {
-        std::fs::write(file, &rendered)?;
+        std::fs::write(file, rendered)?;
         eprintln!("Rendered to {}", file);
     } else {
         print!("{}", rendered);
     }
-
     Ok(())
 }
 
