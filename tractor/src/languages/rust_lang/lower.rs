@@ -832,7 +832,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         if let Some(o) = operand {
                             return SyntaxTree::Expression {
                                 inner: Box::new(lower_node(o, source)),
-                                marker: Some("try"),
+                                marker: Some(crate::tree::types::ExpressionMarker::Try),
                                 range, span,
                             };
                         }

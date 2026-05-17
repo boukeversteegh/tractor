@@ -152,8 +152,8 @@ const SYNTAX_HEADER: &str = "\
 #[allow(unused_imports)]
 use super::types::{
     Access, AccessReceiver, AccessorKind, AccessSegment, ByteRange,
-    Expression, Flag, LambdaBody, Marker, Modifiers, OperatorKind, ParamKind,
-    QuoteStyle, SlotKind, Span, SyntaxTree,
+    Expression, ExpressionMarker, Flag, LambdaBody, Marker, Modifiers,
+    OperatorKind, ParamKind, QuoteStyle, SlotKind, Span, SyntaxTree,
 };
 
 #[allow(unused_imports)]
@@ -433,19 +433,19 @@ fn flags_arm(v: &Variant, tree: &str) -> String {
                         fname
                     ));
                 }
-                "Option<&'staticstr>" if fname == "marker" => {
-                    // `Expression.marker: Option<&'static str>` carries a
-                    // single optional marker name on the host element
-                    // (`non_null`, `ref`, etc. — Principle #15). The
-                    // synthetic span is the host's own span; the
-                    // walker's positional sort then keeps the marker
-                    // first in the element body (range_start = 0).
+                "Option<ExpressionMarker>" if fname == "marker" => {
+                    // `Expression.marker: Option<ExpressionMarker>` —
+                    // closed enum discriminator emitted as the marker
+                    // name from `.marker_name()`. The synthetic span
+                    // is the host's own span; the walker's positional
+                    // sort keeps the marker first in the element body
+                    // (range_start = 0).
                     bindings.push(fname.clone());
                     needs_span = true;
                     body.push_str(&format!(
-                        "            if let Some(name) = {} {{
+                        "            if let Some(m) = {} {{
                 out.push(Marker {{
-                    name,
+                    name: m.marker_name(),
                     range: ByteRange::synthetic_empty(),
                     span: *span,
                 }});
@@ -855,11 +855,12 @@ fn fields_arm(v: &Variant, tree: &str) -> String {
 ",
                         ));
                     }
-                    "Option<&'staticstr>" if fname == "marker" => {
+                    "Option<ExpressionMarker>" if fname == "marker" => {
                         bindings.push(fname.clone());
                         needs_span = true;
                         body.push_str(&format!(
-                            "            if let Some(name) = {fname} {{
+                            "            if let Some(m) = {fname} {{
+                let name = m.marker_name();
                 out.push(TreeField::Flag {{
                     name,
                     marker: Marker {{ name, range: ByteRange::synthetic_empty(), span: *span }},
@@ -1736,6 +1737,18 @@ fn from_json_field_expr(fname: &str, ty: &str) -> (String, bool) {
         "Option<&'staticstr>" => ("None".into(), false),
         "Option<ByteRange>" => ("None".into(), false),
         "Option<Span>" => ("None".into(), false),
+        "Option<ExpressionMarker>" => (
+            // Scan boolean keys for a recognised ExpressionMarker
+            // name (`non_null` / `await` / `try`). Mirrors the JSON
+            // shape emitted by the walker: closed-enum markers
+            // serialise as boolean fields on the host object.
+            "map.iter()
+                .find_map(|(k, v)| match v {
+                    Value::Bool(true) => ExpressionMarker::from_marker_name(k.as_str()),
+                    _ => None,
+                })".into(),
+            false,
+        ),
         "AccessorKind" => (
             "{
                 map.get(\"kind\").and_then(|v| v.as_str()).map(|s| match s {

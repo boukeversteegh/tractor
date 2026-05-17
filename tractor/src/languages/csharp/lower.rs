@@ -1825,7 +1825,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             match (operand_node, op_text.as_str()) {
                 (Some(o), "!") => SyntaxTree::Expression {
                     inner: Box::new(lower_node(o, source)),
-                    marker: Some("non_null"),
+                    marker: Some(crate::tree::types::ExpressionMarker::NonNull),
                     range, span,
                 },
                 (Some(o), _) => match op_marker(&op_text) {
@@ -1917,7 +1917,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             match operand {
                 Some(o) => SyntaxTree::Expression {
                     inner: Box::new(lower_node(o, source)),
-                    marker: Some("await"),
+                    marker: Some(crate::tree::types::ExpressionMarker::Await),
                     range,
                     span,
                 },

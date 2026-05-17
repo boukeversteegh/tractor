@@ -12,8 +12,8 @@
 #[allow(unused_imports)]
 use super::types::{
     Access, AccessReceiver, AccessorKind, AccessSegment, ByteRange,
-    Expression, Flag, LambdaBody, Marker, Modifiers, OperatorKind, ParamKind,
-    QuoteStyle, SlotKind, Span, SyntaxTree,
+    Expression, ExpressionMarker, Flag, LambdaBody, Marker, Modifiers,
+    OperatorKind, ParamKind, QuoteStyle, SlotKind, Span, SyntaxTree,
 };
 
 #[allow(unused_imports)]
@@ -142,9 +142,9 @@ pub fn flags_of(tree: &SyntaxTree) -> Vec<Marker> {
     match tree {
         SyntaxTree::Module { .. } => {}
         SyntaxTree::Expression { marker, span, .. } => {
-            if let Some(name) = marker {
+            if let Some(m) = marker {
                 out.push(Marker {
-                    name,
+                    name: m.marker_name(),
                     range: ByteRange::synthetic_empty(),
                     span: *span,
                 });
@@ -958,7 +958,8 @@ pub fn fields_of(tree: &SyntaxTree) -> Vec<TreeField<'_, SyntaxTree>> {
         }
         SyntaxTree::Expression { inner, marker, span, .. } => {
             out.push(TreeField::Single { name: "inner", value: inner });
-            if let Some(name) = marker {
+            if let Some(m) = marker {
+                let name = m.marker_name();
                 out.push(TreeField::Flag {
                     name,
                     marker: Marker { name, range: ByteRange::synthetic_empty(), span: *span },
@@ -2211,7 +2212,11 @@ fn dispatch_from_json_object(map: &serde_json::Map<String, Value>, tag: &str) ->
                     })
                 }
             };
-            let marker = None;
+            let marker = map.iter()
+                .find_map(|(k, v)| match v {
+                    Value::Bool(true) => ExpressionMarker::from_marker_name(k.as_str()),
+                    _ => None,
+                });
             let range = ByteRange::synthetic_empty();
             let span = Span::point(0, 0);
             SyntaxTree::Expression {

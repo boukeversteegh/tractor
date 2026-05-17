@@ -1240,7 +1240,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             match inner {
                 Some(i) => SyntaxTree::Expression {
                     inner: Box::new(lower_node(i, source)),
-                    marker: Some("await"),
+                    marker: Some(crate::tree::types::ExpressionMarker::Await),
                     range,
                     span,
                 },

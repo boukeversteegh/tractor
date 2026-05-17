@@ -442,10 +442,8 @@ pub enum SyntaxTree {
     /// match on a uniform parent regardless of inner shape.
     ///
     /// `marker` adds an empty marker child first (rendered as
-    /// `<expression[marker]>` in tree-text view). Used for:
-    /// - `non_null` — C#'s `obj!` postfix non-null assertion
-    /// - `await` — `await x` (when not in a statement context)
-    /// - More may be added as needed.
+    /// `<expression[marker]>` in tree-text view). See
+    /// [`ExpressionMarker`] for the closed set.
     ///
     /// **Why on the host, not the operand:** Principle #15 — markers
     /// live in stable predictable locations. The expression host is
@@ -453,7 +451,7 @@ pub enum SyntaxTree {
     /// rather than appearing on the bare inner name/expression.
     Expression {
         inner: Box<SyntaxTree>,
-        marker: Option<&'static str>,
+        marker: Option<ExpressionMarker>,
         range: ByteRange,
         span: Span,
     },
@@ -2084,6 +2082,48 @@ impl OperatorKind {
             }
             _ => SyntaxTree::Binary { left, op, right, range, span },
         }
+    }
+}
+
+/// Closed set of markers attachable to [`SyntaxTree::Expression`]
+/// (the Principle #15 value-host element). Each marker renders as
+/// an empty child element inside `<expression>`: `<expression><try/>x?</expression>`.
+///
+/// Replaces the prior open-string `marker: Option<&'static str>` field
+/// — the typed enum guarantees we cover every emitted marker name in
+/// one place, and `from_marker_name` gives `from_json` round-trip
+/// support.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExpressionMarker {
+    /// `non_null` — C# postfix non-null assertion `obj!`.
+    NonNull,
+    /// `await` — `await x` in expression position (where the
+    /// expression host is the stable home for the marker per
+    /// Principle #15).
+    Await,
+    /// `try` — Rust `?` postfix operator and `try { ... }` block.
+    Try,
+}
+
+impl ExpressionMarker {
+    /// Snake_case name emitted as the empty marker element name.
+    pub const fn marker_name(self) -> &'static str {
+        match self {
+            ExpressionMarker::NonNull => "non_null",
+            ExpressionMarker::Await => "await",
+            ExpressionMarker::Try => "try",
+        }
+    }
+
+    /// Inverse of [`marker_name`]: used by `from_json` to reconstruct
+    /// the enum from its serialised name.
+    pub fn from_marker_name(name: &str) -> Option<Self> {
+        Some(match name {
+            "non_null" => ExpressionMarker::NonNull,
+            "await" => ExpressionMarker::Await,
+            "try" => ExpressionMarker::Try,
+            _ => return None,
+        })
     }
 }
 
