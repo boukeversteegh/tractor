@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<results>
+  <match file="tests/integration/sample.cs" line="2" column="14" end_line="2" end_column="24">
+    <value>Calculator</value>
+  </match>
+  <match file="tests/integration/sample.cs" line="9" column="14" end_line="9" end_column="21">
+    <value>Greeter</value>
+  </match>
+</results>

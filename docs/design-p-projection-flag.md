@@ -39,9 +39,9 @@ user flags
 The feature required two structural decisions in the report model:
 
 - Summary is structural. `success`, `totals`, `expected`, and `query` live under `summary`.
-- Schema is stored on the report as structured schema IR (`Vec<SchemaNode>`), not as pre-rendered text.
+- Schema is stored on the report as structured schema tree (`Vec<SchemaNode>`), not as pre-rendered text.
 
-For CLI output, schema text is rendered from that IR at the output layer:
+For CLI output, schema text is rendered from that tree at the output layer:
 
 - Text renders schema as text and can colorize it.
 - JSON/YAML/XML render the schema as rendered text in the CLI output contract.
@@ -162,7 +162,7 @@ Still intentionally out of scope:
 
 ### Discussed with the project owner
 
-- Schema did not ship as an opaque pre-rendered string stored on the report. It ships as schema IR on the report, with text rendering deferred to the output layer.
+- Schema did not ship as an opaque pre-rendered string stored on the report. It ships as schema tree on the report, with text rendering deferred to the output layer.
 - Schema color support was restored as part of that change by rendering text schema at the output layer.
 - Grouping was not left undefined for projection. The shipped behavior preserves grouping for match-preserving projections (`results` and `report`).
 
@@ -191,6 +191,6 @@ The original proposal checklist has been collapsed into shipped validation items
 - `-p` is implemented as report projection, not as a separate ad hoc rendering path.
 - `--single` is implemented as "first, bare" for sequence projections.
 - Summary is structural on the report model.
-- Schema is stored as IR and rendered at the output layer.
+- Schema is stored as a tree and rendered at the output layer.
 - Grouping is preserved for match-preserving projections.
 - The shipped implementation differs from the original proposal mainly in the schema model, grouping support, and where summary ownership lives.

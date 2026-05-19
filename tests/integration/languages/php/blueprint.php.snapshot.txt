@@ -1,0 +1,515 @@
+program/
+  ├─ tag[open] = "<?php"
+  ├─ comment = "// Blueprint fixture — exercises every major PHP construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented."
+  ├─ declare/int = "1"
+  ├─ namespace/
+  │   ├─ name = "App"
+  │   └─ name = "Blueprint"
+  ├─ use/path/
+  │   ├─ name = "App"
+  │   └─ name = "Base"
+  ├─ use[alias]/
+  │   ├─ path/
+  │   │   ├─ name = "App"
+  │   │   └─ name = "Logger"
+  │   └─ aliased/name = "Log"
+  ├─ use[group]/
+  │   ├─ path/name = "App"
+  │   ├─ use/name = "First"
+  │   └─ use/name = "Second"
+  ├─ comment[leading] = "/**\n * Demo class with various PHP features.\n */"
+  ├─ class[abstract]/
+  │   ├─ attribute/
+  │   │   ├─ name = "Attribute"
+  │   │   └─ argument/member[static]/
+  │   │       ├─ name = "Attribute"
+  │   │       └─ name = "TARGET_CLASS"
+  │   ├─ name = "Demo"
+  │   ├─ extends/type/name = "Base"
+  │   ├─ implements/
+  │   │   ├─ type/name = "Speaker"
+  │   │   └─ type/name = "Countable"
+  │   ├─ use/name = "Loggable"
+  │   ├─ const[public]/constant/
+  │   │   ├─ name = "MAX"
+  │   │   └─ int = "100"
+  │   ├─ const[private]/constant/
+  │   │   ├─ name = "DEFAULT_NAME"
+  │   │   └─ string = "\"anonymous\""
+  │   ├─ field[private]/
+  │   │   ├─ type = "string"
+  │   │   └─ name = "$name"
+  │   ├─ field[public and readonly]/
+  │   │   ├─ type = "int"
+  │   │   └─ name = "$count"
+  │   ├─ field[protected]/
+  │   │   ├─ type[optional]/type = "string"
+  │   │   ├─ name = "$label"
+  │   │   └─ null = "null"
+  │   ├─ field[public and static]/
+  │   │   ├─ type = "int"
+  │   │   ├─ name = "$registry"
+  │   │   └─ int = "0"
+  │   ├─ method[public]/
+  │   │   ├─ name = "__construct"
+  │   │   ├─ parameter/
+  │   │   │   ├─ type = "string"
+  │   │   │   └─ variable/name = "name"
+  │   │   ├─ parameter/
+  │   │   │   ├─ type = "int"
+  │   │   │   ├─ variable/name = "count"
+  │   │   │   └─ int = "0"
+  │   │   └─ body/
+  │   │       ├─ expression/assign/
+  │   │       │   ├─ expression/object/variable/name = "this"
+  │   │       │   └─ expression/variable/name = "name"
+  │   │       └─ expression/assign/
+  │   │           ├─ expression/object/variable/name = "this"
+  │   │           └─ expression/variable/name = "count"
+  │   ├─ method[public and abstract]/
+  │   │   ├─ name = "render"
+  │   │   └─ type = "string"
+  │   ├─ method[public and static and final]/
+  │   │   ├─ name = "create"
+  │   │   ├─ parameter/
+  │   │   │   ├─ type = "string"
+  │   │   │   └─ variable/name = "name"
+  │   │   ├─ type/name = "static"
+  │   │   └─ body/return/new/
+  │   │       ├─ name = "static"
+  │   │       └─ argument/variable/name = "name"
+  │   ├─ method[public]/
+  │   │   ├─ name = "greet"
+  │   │   ├─ parameter/
+  │   │   │   ├─ type[optional]/type = "string"
+  │   │   │   ├─ variable/name = "who"
+  │   │   │   └─ null = "null"
+  │   │   ├─ parameter[variadic]/
+  │   │   │   ├─ type = "string"
+  │   │   │   └─ variable/name = "extras"
+  │   │   ├─ type = "string"
+  │   │   └─ body/
+  │   │       ├─ expression/assign/
+  │   │       │   ├─ expression/variable/name = "target"
+  │   │       │   └─ expression/binary/
+  │   │       │       ├─ left[expression]/variable/name = "who"
+  │   │       │       ├─ op[operator and null_coalesce] = "??"
+  │   │       │       └─ right[expression]/object/variable/name = "this"
+  │   │       └─ if/
+  │   │           ├─ condition/expression/binary/
+  │   │           │   ├─ left[expression]/object/variable/name = "this"
+  │   │           │   ├─ op[operator and greater] = ">"
+  │   │           │   └─ right[expression]/int = "10"
+  │   │           ├─ then/body/return/string/interpolation/variable/name = "target"
+  │   │           ├─ else_if/
+  │   │           │   ├─ condition/expression/binary/
+  │   │           │   │   ├─ left[expression]/object/variable/name = "this"
+  │   │           │   │   ├─ op[operator and greater] = ">"
+  │   │           │   │   └─ right[expression]/int = "0"
+  │   │           │   └─ body/return/string/interpolation/variable/name = "target"
+  │   │           └─ else/body/return/string/interpolation/variable/name = "target"
+  │   ├─ method[public]/
+  │   │   ├─ name = "describe"
+  │   │   ├─ parameter/
+  │   │   │   ├─ type = "int"
+  │   │   │   └─ variable/name = "n"
+  │   │   ├─ type = "string"
+  │   │   └─ body/return/ternary/
+  │   │       ├─ binary/
+  │   │       │   ├─ left[expression]/variable/name = "n"
+  │   │       │   ├─ op[operator and greater] = ">"
+  │   │       │   └─ right[expression]/int = "0"
+  │   │       ├─ string = "\"positive\""
+  │   │       └─ ternary/
+  │   │           ├─ binary/
+  │   │           │   ├─ left[expression]/variable/name = "n"
+  │   │           │   ├─ op[operator and less] = "<"
+  │   │           │   └─ right[expression]/int = "0"
+  │   │           ├─ string = "\"negative\""
+  │   │           └─ string = "\"zero\""
+  │   ├─ method[public]/
+  │   │   ├─ name = "categorize"
+  │   │   ├─ parameter/
+  │   │   │   ├─ type = "mixed"
+  │   │   │   └─ variable/name = "value"
+  │   │   ├─ type = "string"
+  │   │   └─ body/return/match/
+  │   │       ├─ condition/expression/bool = "true"
+  │   │       ├─ arm/
+  │   │       │   ├─ call/
+  │   │       │   │   ├─ name = "is_int"
+  │   │       │   │   └─ argument/variable/name = "value"
+  │   │       │   └─ string = "\"int\""
+  │   │       ├─ arm/
+  │   │       │   ├─ logical/
+  │   │       │   │   ├─ left[expression]/call/
+  │   │       │   │   │   ├─ name = "is_string"
+  │   │       │   │   │   └─ argument/variable/name = "value"
+  │   │       │   │   ├─ op[operator and and] = "&&"
+  │   │       │   │   └─ right[expression]/binary/
+  │   │       │   │       ├─ left[expression]/call/
+  │   │       │   │       │   ├─ name = "strlen"
+  │   │       │   │       │   └─ argument/variable/name = "value"
+  │   │       │   │       ├─ op[operator and greater] = ">"
+  │   │       │   │       └─ right[expression]/int = "0"
+  │   │       │   └─ string = "\"non-empty string\""
+  │   │       ├─ arm/
+  │   │       │   ├─ call/
+  │   │       │   │   ├─ name = "is_array"
+  │   │       │   │   └─ argument/variable/name = "value"
+  │   │       │   └─ string = "\"array\""
+  │   │       └─ arm[default]/string = "\"other\""
+  │   ├─ method[public]/
+  │   │   ├─ name = "process"
+  │   │   ├─ parameter/
+  │   │   │   ├─ type = "iterable"
+  │   │   │   └─ variable/name = "items"
+  │   │   ├─ type = "array"
+  │   │   └─ body/
+  │   │       ├─ expression/assign/
+  │   │       │   ├─ expression/variable/name = "results"
+  │   │       │   └─ expression/array = "[]"
+  │   │       ├─ foreach/
+  │   │       │   ├─ right/expression/variable/name = "items"
+  │   │       │   ├─ left/expression/pair/
+  │   │       │   │   ├─ variable/name = "key"
+  │   │       │   │   └─ variable/name = "item"
+  │   │       │   └─ body/
+  │   │       │       ├─ if/
+  │   │       │       │   ├─ condition/expression/binary/
+  │   │       │       │   │   ├─ left[expression]/variable/name = "item"
+  │   │       │       │   │   ├─ op[operator and identical] = "==="
+  │   │       │       │   │   └─ right[expression]/null = "null"
+  │   │       │       │   └─ then/body/continue = "continue;"
+  │   │       │       └─ try/
+  │   │       │           ├─ body/expression/assign/
+  │   │       │           │   ├─ expression/object/
+  │   │       │           │   │   ├─ variable/name = "results"
+  │   │       │           │   │   └─ variable/name = "key"
+  │   │       │           │   └─ expression/object/
+  │   │       │           │       ├─ variable/name = "this"
+  │   │       │           │       └─ argument/variable/name = "item"
+  │   │       │           └─ catch/
+  │   │       │               ├─ types/type/name = "Throwable"
+  │   │       │               ├─ variable/name = "e"
+  │   │       │               └─ body/continue = "continue;"
+  │   │       └─ return/variable/name = "results"
+  │   └─ method[private]/
+  │       ├─ name = "transform"
+  │       ├─ parameter/
+  │       │   ├─ type = "mixed"
+  │       │   └─ variable/name = "item"
+  │       ├─ type = "mixed"
+  │       └─ body/return/variable/name = "item"
+  ├─ interface/
+  │   ├─ name = "Speaker"
+  │   └─ method[public]/
+  │       ├─ name = "greet"
+  │       ├─ parameter/
+  │       │   ├─ type[optional]/type = "string"
+  │       │   └─ variable/name = "who"
+  │       └─ type = "string"
+  ├─ interface/
+  │   ├─ name = "Countable"
+  │   └─ method[public]/
+  │       ├─ name = "count"
+  │       └─ type = "int"
+  ├─ trait/
+  │   ├─ name = "Loggable"
+  │   └─ method[protected]/
+  │       ├─ name = "log"
+  │       ├─ parameter/
+  │       │   ├─ type = "string"
+  │       │   └─ variable/name = "msg"
+  │       ├─ type = "void"
+  │       └─ body/echo/string/interpolation/variable/name = "msg"
+  ├─ enum/
+  │   ├─ name = "Status"
+  │   ├─ type = "string"
+  │   ├─ constant/
+  │   │   ├─ name = "Active"
+  │   │   └─ string = "\"active\""
+  │   ├─ constant/
+  │   │   ├─ name = "Inactive"
+  │   │   └─ string = "\"inactive\""
+  │   ├─ constant/
+  │   │   ├─ name = "Pending"
+  │   │   └─ string = "\"pending\""
+  │   └─ method[public]/
+  │       ├─ name = "label"
+  │       ├─ type = "string"
+  │       └─ body/return/match/
+  │           ├─ condition/expression/variable/name = "this"
+  │           ├─ arm/
+  │           │   ├─ member[static]/
+  │           │   │   ├─ name = "Status"
+  │           │   │   └─ name = "Active"
+  │           │   └─ string = "\"✓\""
+  │           ├─ arm/
+  │           │   ├─ member[static]/
+  │           │   │   ├─ name = "Status"
+  │           │   │   └─ name = "Inactive"
+  │           │   └─ string = "\"×\""
+  │           └─ arm/
+  │               ├─ member[static]/
+  │               │   ├─ name = "Status"
+  │               │   └─ name = "Pending"
+  │               └─ string = "\"…\""
+  ├─ function/
+  │   ├─ name = "factory"
+  │   ├─ parameter/
+  │   │   ├─ type = "callable"
+  │   │   └─ variable/name = "fn"
+  │   ├─ parameter[variadic]/
+  │   │   ├─ type = "mixed"
+  │   │   └─ variable/name = "args"
+  │   ├─ type = "mixed"
+  │   └─ body/return/call/
+  │       ├─ variable/name = "fn"
+  │       └─ argument/spread/variable/name = "args"
+  ├─ expression/assign/
+  │   ├─ expression/variable/name = "pipeline"
+  │   └─ expression/arrow/
+  │       ├─ parameter/
+  │       │   ├─ type = "int"
+  │       │   └─ variable/name = "x"
+  │       ├─ type = "int"
+  │       └─ body/binary/
+  │           ├─ left[expression]/variable/name = "x"
+  │           ├─ op[operator and multiply] = "*"
+  │           └─ right[expression]/int = "2"
+  ├─ expression/assign/
+  │   ├─ expression/variable/name = "doubled"
+  │   └─ expression/call/
+  │       ├─ name = "array_map"
+  │       ├─ argument/variable/name = "pipeline"
+  │       └─ argument/array/
+  │           ├─ int = "1"
+  │           ├─ int = "2"
+  │           └─ int = "3"
+  ├─ expression/assign/
+  │   ├─ expression/variable/name = "closure"
+  │   └─ expression/function[anonymous]/
+  │       ├─ parameter/
+  │       │   ├─ type = "int"
+  │       │   └─ variable/name = "x"
+  │       ├─ variable/name = "pipeline"
+  │       ├─ type = "int"
+  │       └─ body/return/binary/
+  │           ├─ left[expression]/call/
+  │           │   ├─ variable/name = "pipeline"
+  │           │   └─ argument/variable/name = "x"
+  │           ├─ op[operator and plus] = "+"
+  │           └─ right[expression]/int = "1"
+  ├─ comment = "// Iter 17 shapes: nullsafe, anonymous class, intersection / DNF / bottom\n// type, function-static / global vars, dynamic var name, property\n// promotion, cast type, list-destructure, clone / unset / unique-label,\n// shell command, error suppression, augmented assignment, sequence /\n// reference assignment, first-class callable, heredoc / nowdoc."
+  ├─ class/
+  │   ├─ name = "PromotedDemo"
+  │   └─ method[public]/
+  │       ├─ name = "__construct"
+  │       ├─ parameter[public and readonly and promoted]/
+  │       │   ├─ type = "string"
+  │       │   └─ variable/name = "name"
+  │       ├─ parameter[protected and promoted]/
+  │       │   ├─ type = "int"
+  │       │   ├─ variable/name = "count"
+  │       │   └─ int = "0"
+  │       └─ body = "{}"
+  ├─ interface/
+  │   ├─ name = "Stringable"
+  │   └─ method[public]/
+  │       ├─ name = "__toString"
+  │       └─ type = "string"
+  ├─ interface/
+  │   ├─ name = "Countable2"
+  │   └─ method[public]/
+  │       ├─ name = "size"
+  │       └─ type = "int"
+  ├─ function/
+  │   ├─ name = "shapes"
+  │   ├─ parameter/
+  │   │   ├─ type[optional]/type/name = "PromotedDemo"
+  │   │   └─ variable/name = "thing"
+  │   ├─ parameter/
+  │   │   ├─ type = "mixed"
+  │   │   └─ variable/name = "value"
+  │   ├─ type = "mixed"
+  │   └─ body/
+  │       ├─ comment[leading] = "// Nullsafe member access + call."
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "name"
+  │       │   └─ expression/member[nullsafe]/
+  │       │       ├─ variable/name = "thing"
+  │       │       └─ name = "name"
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "size"
+  │       │   └─ expression/object/variable/name = "thing"
+  │       ├─ comment[leading] = "// Anonymous class."
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "anon"
+  │       │   └─ expression/new/class[anonymous]/
+  │       │       ├─ implements/type/name = "Stringable"
+  │       │       └─ method[public]/
+  │       │           ├─ name = "__toString"
+  │       │           ├─ type = "string"
+  │       │           └─ body/return/string = "\"anon\""
+  │       ├─ comment[leading] = "// First-class callable + augmented assignment."
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "maker"
+  │       │   └─ expression/call/
+  │       │       ├─ name = "strtoupper"
+  │       │       └─ argument[variadic] = "..."
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "count"
+  │       │   └─ expression/int = "0"
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "count"
+  │       │   └─ expression/int = "5"
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "count"
+  │       │   └─ expression/int = "2"
+  │       ├─ comment[leading] = "// Reference assignment + by-ref foreach."
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "items"
+  │       │   └─ expression/array/
+  │       │       ├─ int = "1"
+  │       │       ├─ int = "2"
+  │       │       └─ int = "3"
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "alias"
+  │       │   └─ expression/object/
+  │       │       ├─ variable/name = "items"
+  │       │       └─ int = "0"
+  │       ├─ foreach/
+  │       │   ├─ right/expression/variable/name = "items"
+  │       │   ├─ left/expression = "&$x"
+  │       │   └─ body/expression/assign/
+  │       │       ├─ expression/variable/name = "x"
+  │       │       └─ expression/int = "10"
+  │       ├─ unset/variable/name = "x"
+  │       ├─ comment[leading] = "// List destructure."
+  │       ├─ expression/assign/
+  │       │   ├─ expression/array/
+  │       │   │   ├─ variable/name = "first"
+  │       │   │   └─ variable/name = "second"
+  │       │   └─ expression/variable/name = "items"
+  │       ├─ expression/assign/
+  │       │   ├─ expression/array/
+  │       │   │   ├─ variable/name = "third"
+  │       │   │   └─ variable/name = "fifth"
+  │       │   └─ expression/array/
+  │       │       ├─ int = "10"
+  │       │       ├─ int = "20"
+  │       │       ├─ int = "30"
+  │       │       ├─ int = "40"
+  │       │       └─ int = "50"
+  │       ├─ comment[leading] = "// Function-local static + global."
+  │       ├─ variable[static]/
+  │       │   ├─ variable/name = "cached"
+  │       │   └─ null = "null"
+  │       ├─ variable[global]/variable/name = "REGISTRY"
+  │       ├─ comment[leading] = "// Dynamic variable name + cast type."
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "varname"
+  │       │   └─ expression/string = "\"thing\""
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable[dynamic]/variable/name = "varname"
+  │       │   └─ expression/int = "42"
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "cast"
+  │       │   └─ expression/cast/
+  │       │       ├─ type = "int"
+  │       │       └─ variable/name = "value"
+  │       ├─ comment[leading] = "// Clone, error suppression, shell."
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "copy"
+  │       │   └─ expression/clone/variable/name = "anon"
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "maybe"
+  │       │   └─ expression/unary/call/
+  │       │       ├─ name = "file_get_contents"
+  │       │       └─ argument/string = "\"/missing\""
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "output"
+  │       │   └─ expression/shell = "`echo hi`"
+  │       ├─ comment[leading] = "// Heredoc / nowdoc."
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "here"
+  │       │   └─ expression/string[heredoc] = "<<<EOT\n        hello $name\n        line two\n        EOT"
+  │       ├─ expression/assign/
+  │       │   ├─ expression/variable/name = "now"
+  │       │   └─ expression/string[nowdoc] = "<<<'EOT'\n        no interpolation: $not_a_var\n        EOT"
+  │       ├─ comment[leading] = "// Sequence in a for header."
+  │       ├─ for/
+  │       │   ├─ assign/
+  │       │   │   ├─ expression/variable/name = "i"
+  │       │   │   └─ expression/int = "0"
+  │       │   ├─ assign/
+  │       │   │   ├─ expression/variable/name = "j"
+  │       │   │   └─ expression/int = "10"
+  │       │   ├─ condition/expression/binary/
+  │       │   │   ├─ left[expression]/variable/name = "i"
+  │       │   │   ├─ op[operator and less] = "<"
+  │       │   │   └─ right[expression]/variable/name = "j"
+  │       │   ├─ unary/variable/name = "i"
+  │       │   ├─ unary/variable/name = "j"
+  │       │   └─ body/comment = "/* ... */"
+  │       ├─ comment[leading] = "// Goto + named label."
+  │       ├─ goto/name = "end"
+  │       ├─ label/name = "end"
+  │       ├─ comment[leading] = "// Match-arm; intersection / DNF / bottom types appear in\n    // declarative positions (parameters / returns), not in\n    // `instanceof` expressions, so the type-shape exercises live in\n    // sibling functions below."
+  │       └─ return/match/
+  │           ├─ condition/expression/bool = "true"
+  │           ├─ arm/
+  │           │   ├─ binary/
+  │           │   │   ├─ left[expression]/variable/name = "value"
+  │           │   │   ├─ op[operator and instanceof] = "instanceof"
+  │           │   │   └─ right[expression]/name = "Stringable"
+  │           │   └─ int = "1"
+  │           ├─ arm/
+  │           │   ├─ binary/
+  │           │   │   ├─ left[expression]/variable/name = "value"
+  │           │   │   ├─ op[operator and instanceof] = "instanceof"
+  │           │   │   └─ right[expression]/name = "Countable2"
+  │           │   └─ int = "2"
+  │           └─ arm[default]/int = "0"
+  ├─ comment[leading] = "// Intersection type in parameter position."
+  ├─ function/
+  │   ├─ name = "require_both"
+  │   ├─ parameter/
+  │   │   ├─ type[intersection]/
+  │   │   │   ├─ type/name = "Stringable"
+  │   │   │   └─ type/name = "Countable2"
+  │   │   └─ variable/name = "thing"
+  │   ├─ type = "int"
+  │   └─ body/return/object/variable/name = "thing"
+  ├─ comment[leading] = "// DNF type in parameter position."
+  ├─ function/
+  │   ├─ name = "dnf_demo"
+  │   ├─ parameter/
+  │   │   ├─ type[disjunctive]/
+  │   │   │   ├─ type[intersection]/
+  │   │   │   │   ├─ type/name = "Stringable"
+  │   │   │   │   └─ type/name = "Countable2"
+  │   │   │   └─ type = "null"
+  │   │   └─ variable/name = "thing"
+  │   ├─ type = "bool"
+  │   └─ body/return/binary/
+  │       ├─ left[expression]/variable/name = "thing"
+  │       ├─ op[operator and not_identical] = "!=="
+  │       └─ right[expression]/null = "null"
+  ├─ comment[leading] = "// Bottom type (`never`) in return position."
+  ├─ function/
+  │   ├─ name = "never_returns"
+  │   ├─ type[bottom] = "never"
+  │   └─ body/expression/throw/expression/new/
+  │       ├─ name = "RuntimeException"
+  │       └─ argument/string = "\"boom\""
+  └─ echo/binary/
+      ├─ left[expression]/binary/
+      │   ├─ left[expression]/string = "\"result: \""
+      │   ├─ op[operator and concat] = "."
+      │   └─ right[expression]/call/
+      │       ├─ variable/name = "closure"
+      │       └─ argument/int = "5"
+      ├─ op[operator and concat] = "."
+      └─ right[expression]/string = "\"\\n\""

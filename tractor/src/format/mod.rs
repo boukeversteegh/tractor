@@ -251,7 +251,7 @@ fn render_test_text(
                 let rendered = if let Some(ref s) = rm.source {
                     render_source_precomputed(
                         s,
-                        rm.tree.as_ref(),
+                        rm.tree.as_ref().map(|t| t.as_xml_node()),
                         rm.line,
                         rm.column,
                         rm.end_line,
@@ -261,7 +261,7 @@ fn render_test_text(
                 } else if let Some(ref ls) = rm.lines {
                     render_lines(
                         ls,
-                        rm.tree.as_ref(),
+                        rm.tree.as_ref().map(|t| t.as_xml_node()),
                         rm.line,
                         rm.column,
                         rm.end_line,
@@ -270,7 +270,8 @@ fn render_test_text(
                     )
                 } else if let Some(ref v) = rm.value {
                     format!("{v}\n")
-                } else if let Some(ref node) = rm.tree {
+                } else if let Some(t) = rm.tree.as_ref() {
+                    let node = t.as_xml_node();
                     if ctx.output_format == OutputFormat::Text {
                         render_query_tree_node(node, &render_opts)
                     } else {

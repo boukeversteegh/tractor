@@ -1,0 +1,1371 @@
+{
+  "$type": "program",
+  "class": [
+    {
+      "public": true,
+      "final": true,
+      "decorators": [
+        {
+          "$type": "annotation",
+          "name": "SuppressWarnings",
+          "string": "\"unchecked\""
+        }
+      ],
+      "name": "Demo",
+      "generics": [
+        {
+          "$type": "generic",
+          "extends": {
+            "type": {
+              "name": [
+                "Comparable",
+                "T"
+              ]
+            }
+          },
+          "name": "T"
+        }
+      ],
+      "bases": [
+        {
+          "$type": "extends",
+          "type": {
+            "name": "Base"
+          }
+        },
+        {
+          "$type": "implements",
+          "type": {
+            "name": [
+              "Handler",
+              "T"
+            ]
+          }
+        }
+      ],
+      "where_clauses": [],
+      "body": {
+        "$type": "body",
+        "class": {
+          "public": true,
+          "decorators": [],
+          "name": "Color",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
+          "body": {
+            "$type": "body",
+            "constant": [
+              {
+                "name": "RED"
+              },
+              {
+                "name": "GREEN"
+              },
+              {
+                "name": "BLUE"
+              }
+            ],
+            "method": {
+              "public": true,
+              "decorators": [],
+              "name": "rgb",
+              "generics": [],
+              "parameters": [],
+              "returns": {
+                "$type": "returns",
+                "type": "int"
+              },
+              "throws": [],
+              "body": {
+                "$type": "body",
+                "return": {
+                  "expression": {
+                    "switch": {
+                      "arm": [
+                        {
+                          "case": {
+                            "name": "RED"
+                          },
+                          "expression": {
+                            "int": "0xFF0000"
+                          }
+                        },
+                        {
+                          "case": {
+                            "name": "GREEN"
+                          },
+                          "expression": {
+                            "int": "0x00FF00"
+                          }
+                        },
+                        {
+                          "case": {
+                            "name": "BLUE"
+                          },
+                          "expression": {
+                            "int": "0x0000FF"
+                          }
+                        }
+                      ],
+                      "this": "this"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "comment": [
+          "// Line comment before a field",
+          {
+            "leading": true
+          },
+          {
+            "trailing": true
+          }
+        ],
+        "constructor": [
+          {
+            "public": true,
+            "body": {
+              "call": {
+                "this": true,
+                "null": "null"
+              }
+            },
+            "name": "Demo"
+          },
+          {
+            "public": true,
+            "body": {
+              "call": {
+                "super": true
+              },
+              "expression": {
+                "assign": {
+                  "expression": [
+                    {
+                      "object": {
+                        "this": "this"
+                      }
+                    },
+                    {
+                      "name": "name"
+                    }
+                  ]
+                }
+              }
+            },
+            "name": "Demo",
+            "parameter": {
+              "name": "name",
+              "type": "String"
+            }
+          }
+        ],
+        "field": [
+          {
+            "public": true,
+            "static": true,
+            "final": true,
+            "decorators": [],
+            "type": "int",
+            "name": "MAX",
+            "value": {
+              "$type": "expression",
+              "int": "100"
+            }
+          },
+          {
+            "private": true,
+            "decorators": [],
+            "type": "String",
+            "name": "name"
+          },
+          {
+            "protected": true,
+            "decorators": [],
+            "type": {
+              "$type": "type",
+              "name": "List",
+              "type": {
+                "name": [
+                  "Map",
+                  "String",
+                  "T"
+                ]
+              }
+            },
+            "name": "items"
+          },
+          {
+            "package": true,
+            "decorators": [],
+            "type": "int",
+            "name": "pkg"
+          },
+          {
+            "package": true,
+            "volatile": true,
+            "transient": true,
+            "decorators": [],
+            "type": "boolean",
+            "name": "ready"
+          }
+        ],
+        "interface": {
+          "private": true,
+          "decorators": [],
+          "name": "Handler",
+          "generics": [
+            {
+              "$type": "generic",
+              "name": "U"
+            }
+          ],
+          "bases": [],
+          "where_clauses": [],
+          "body": {
+            "$type": "body",
+            "method": {
+              "public": true,
+              "decorators": [],
+              "name": "process",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "name": "input",
+                  "type": "U"
+                }
+              ],
+              "returns": {
+                "$type": "returns",
+                "type": "U"
+              },
+              "throws": [
+                {
+                  "$type": "throws",
+                  "type": {
+                    "name": "IllegalArgumentException"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "method": [
+          {
+            "public": true,
+            "static": true,
+            "decorators": [],
+            "name": "factory",
+            "generics": [
+              {
+                "$type": "generic",
+                "name": "R"
+              }
+            ],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "name": "mapper",
+                "type": {
+                  "$type": "type",
+                  "name": [
+                    "Function",
+                    "String",
+                    "R"
+                  ]
+                }
+              }
+            ],
+            "returns": {
+              "$type": "returns",
+              "type": "R"
+            },
+            "throws": [],
+            "body": {
+              "$type": "body",
+              "return": {
+                "expression": {
+                  "object": {
+                    "name": "mapper",
+                    "string": "\"hello\""
+                  }
+                }
+              }
+            }
+          },
+          {
+            "public": true,
+            "synchronized": true,
+            "decorators": [
+              {
+                "$type": "annotation",
+                "name": "Override"
+              }
+            ],
+            "name": "process",
+            "generics": [],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "name": "input",
+                "type": "T"
+              }
+            ],
+            "returns": {
+              "$type": "returns",
+              "type": "T"
+            },
+            "throws": [
+              {
+                "$type": "throws",
+                "type": {
+                  "name": "IllegalArgumentException"
+                }
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "if": {
+                "condition": {
+                  "$type": "expression",
+                  "binary": {
+                    "left": {
+                      "$type": "expression",
+                      "name": "input"
+                    },
+                    "op": {
+                      "$type": "operator",
+                      "text": "==",
+                      "equal": true
+                    },
+                    "right": {
+                      "$type": "expression",
+                      "null": "null"
+                    }
+                  }
+                },
+                "body": {
+                  "$type": "body",
+                  "throw": {
+                    "expression": {
+                      "object_creation": {
+                        "name": "IllegalArgumentException",
+                        "string": "\"null\""
+                      }
+                    }
+                  }
+                },
+                "else_branch": {
+                  "$type": "else_if",
+                  "condition": {
+                    "$type": "expression",
+                    "unary": {
+                      "name": "ready"
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "return": {
+                      "expression": {
+                        "null": "null"
+                      }
+                    }
+                  },
+                  "else_branch": {
+                    "$type": "else",
+                    "body": {
+                      "$type": "body",
+                      "return": {
+                        "expression": {
+                          "name": "input"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "public": true,
+            "decorators": [],
+            "name": "describe",
+            "generics": [],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "name": "n",
+                "type": "int"
+              }
+            ],
+            "returns": {
+              "$type": "returns",
+              "type": "String"
+            },
+            "throws": [],
+            "body": {
+              "$type": "body",
+              "return": {
+                "expression": {
+                  "ternary": {
+                    "condition": {
+                      "$type": "expression",
+                      "binary": {
+                        "left": {
+                          "$type": "expression",
+                          "name": "n"
+                        },
+                        "op": {
+                          "$type": "operator",
+                          "text": ">",
+                          "greater": true
+                        },
+                        "right": {
+                          "$type": "expression",
+                          "int": "0"
+                        }
+                      }
+                    },
+                    "if_true": {
+                      "$type": "expression",
+                      "string": "\"positive\""
+                    },
+                    "if_false": {
+                      "$type": "expression",
+                      "ternary": {
+                        "condition": {
+                          "$type": "expression",
+                          "binary": {
+                            "left": {
+                              "$type": "expression",
+                              "name": "n"
+                            },
+                            "op": {
+                              "$type": "operator",
+                              "text": "<",
+                              "less": true
+                            },
+                            "right": {
+                              "$type": "expression",
+                              "int": "0"
+                            }
+                          }
+                        },
+                        "if_true": {
+                          "$type": "expression",
+                          "string": "\"negative\""
+                        },
+                        "if_false": {
+                          "$type": "expression",
+                          "string": "\"zero\""
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "public": true,
+            "decorators": [],
+            "name": "sum",
+            "generics": [],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "variadic": true,
+                "name": "xs",
+                "type": "int"
+              }
+            ],
+            "returns": {
+              "$type": "returns",
+              "type": "int"
+            },
+            "throws": [],
+            "body": {
+              "$type": "body",
+              "foreach": {
+                "body": {
+                  "expression": {
+                    "assign": {
+                      "expression": [
+                        {
+                          "name": "total"
+                        },
+                        {
+                          "name": "x"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "name": "x",
+                "type": {
+                  "name": "int"
+                },
+                "value": {
+                  "expression": {
+                    "name": "xs"
+                  }
+                }
+              },
+              "return": {
+                "expression": {
+                  "name": "total"
+                }
+              },
+              "variable": [
+                {
+                  "decorators": [],
+                  "type": "int",
+                  "name": "total",
+                  "value": {
+                    "$type": "expression",
+                    "int": "0"
+                  }
+                },
+                {
+                  "decorators": [],
+                  "type": "int",
+                  "name": "i",
+                  "value": {
+                    "$type": "expression",
+                    "int": "0"
+                  }
+                }
+              ],
+              "while": {
+                "condition": {
+                  "$type": "expression",
+                  "binary": {
+                    "left": {
+                      "$type": "expression",
+                      "name": "i"
+                    },
+                    "op": {
+                      "$type": "operator",
+                      "text": "<",
+                      "less": true
+                    },
+                    "right": {
+                      "$type": "expression",
+                      "int": "3"
+                    }
+                  }
+                },
+                "body": {
+                  "$type": "body",
+                  "expression": {
+                    "assign": {
+                      "expression": [
+                        {
+                          "name": "i"
+                        },
+                        {
+                          "binary": {
+                            "left": {
+                              "$type": "expression",
+                              "name": "i"
+                            },
+                            "op": {
+                              "$type": "operator",
+                              "text": "+",
+                              "plus": true
+                            },
+                            "right": {
+                              "$type": "expression",
+                              "int": "1"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "public": true,
+            "decorators": [],
+            "name": "match",
+            "generics": [],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "name": "o",
+                "type": "Object"
+              }
+            ],
+            "returns": {
+              "$type": "returns",
+              "type": "String"
+            },
+            "throws": [],
+            "body": {
+              "$type": "body",
+              "return": {
+                "expression": {
+                  "switch": {
+                    "arm": [
+                      {
+                        "case": {
+                          "pattern": {
+                            "name": "i",
+                            "type": {
+                              "name": "Integer"
+                            }
+                          }
+                        },
+                        "expression": {
+                          "binary": {
+                            "left": {
+                              "$type": "expression",
+                              "string": "\"int \""
+                            },
+                            "op": {
+                              "$type": "operator",
+                              "text": "+",
+                              "plus": true
+                            },
+                            "right": {
+                              "$type": "expression",
+                              "name": "i"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "case": {
+                          "guard": {
+                            "unary": {
+                              "object": {
+                                "name": "s"
+                              }
+                            }
+                          },
+                          "pattern": {
+                            "name": "s",
+                            "type": {
+                              "name": "String"
+                            }
+                          }
+                        },
+                        "expression": {
+                          "binary": {
+                            "left": {
+                              "$type": "expression",
+                              "string": "\"non-empty: \""
+                            },
+                            "op": {
+                              "$type": "operator",
+                              "text": "+",
+                              "plus": true
+                            },
+                            "right": {
+                              "$type": "expression",
+                              "name": "s"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "case": "default",
+                        "expression": {
+                          "string": "\"other\""
+                        }
+                      }
+                    ],
+                    "name": "o"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "record": {
+          "public": true,
+          "decorators": [],
+          "name": "Point",
+          "generics": [],
+          "bases": [],
+          "where_clauses": [],
+          "body": {
+            "$type": "body",
+            "constructor": {
+              "public": true,
+              "body": {
+                "if": {
+                  "condition": {
+                    "$type": "expression",
+                    "logical": {
+                      "left": {
+                        "$type": "expression",
+                        "binary": {
+                          "left": {
+                            "$type": "expression",
+                            "name": "x"
+                          },
+                          "op": {
+                            "$type": "operator",
+                            "text": "<",
+                            "less": true
+                          },
+                          "right": {
+                            "$type": "expression",
+                            "int": "0"
+                          }
+                        }
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "||",
+                        "or": true
+                      },
+                      "right": {
+                        "$type": "expression",
+                        "binary": {
+                          "left": {
+                            "$type": "expression",
+                            "name": "y"
+                          },
+                          "op": {
+                            "$type": "operator",
+                            "text": "<",
+                            "less": true
+                          },
+                          "right": {
+                            "$type": "expression",
+                            "int": "0"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "object_creation": {
+                      "name": "IllegalArgumentException"
+                    }
+                  }
+                }
+              },
+              "name": "Point"
+            }
+          }
+        }
+      }
+    },
+    {
+      "package": true,
+      "decorators": [],
+      "name": "Base",
+      "generics": [],
+      "bases": [],
+      "where_clauses": [],
+      "body": {
+        "$type": "body",
+        "method": {
+          "package": true,
+          "decorators": [],
+          "name": "greet",
+          "generics": [],
+          "parameters": [],
+          "returns": {
+            "$type": "returns",
+            "type": "String"
+          },
+          "throws": [],
+          "body": {
+            "$type": "body",
+            "return": {
+              "expression": {
+                "object": {
+                  "name": "String",
+                  "object": {
+                    "call": {
+                      "name": "getClass"
+                    }
+                  },
+                  "string": "\"hello from %s\""
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "package": true,
+      "decorators": [],
+      "name": "Extras",
+      "generics": [],
+      "bases": [],
+      "where_clauses": [],
+      "body": {
+        "$type": "body",
+        "block": {
+          "static": true,
+          "expression": {
+            "assign": {
+              "expression": [
+                {
+                  "name": "SEED"
+                },
+                {
+                  "int": "42"
+                }
+              ]
+            }
+          }
+        },
+        "comment": [
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          },
+          {
+            "leading": true
+          }
+        ],
+        "field": {
+          "package": true,
+          "static": true,
+          "final": true,
+          "decorators": [],
+          "type": "int",
+          "name": "SEED"
+        },
+        "method": [
+          {
+            "package": true,
+            "decorators": [],
+            "name": "literals",
+            "generics": [],
+            "parameters": [],
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "void": true,
+                "name": "void"
+              }
+            },
+            "throws": [],
+            "body": {
+              "$type": "body",
+              "variable": [
+                {
+                  "decorators": [],
+                  "type": {
+                    "$type": "type",
+                    "array": true,
+                    "name": "int",
+                    "type": "[]"
+                  },
+                  "name": "arr",
+                  "value": {
+                    "$type": "expression",
+                    "array": {
+                      "literal": true,
+                      "int": [
+                        "1",
+                        "2",
+                        "3"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "decorators": [],
+                  "type": "char",
+                  "name": "ch",
+                  "value": {
+                    "$type": "expression",
+                    "string": "'A'"
+                  }
+                },
+                {
+                  "decorators": [],
+                  "type": {
+                    "$type": "type",
+                    "name": "Class",
+                    "type": "?"
+                  },
+                  "name": "cls",
+                  "value": {
+                    "$type": "expression",
+                    "type": {
+                      "name": "String"
+                    }
+                  }
+                },
+                {
+                  "decorators": [],
+                  "type": {
+                    "$type": "type",
+                    "name": [
+                      "java.util.function.Function",
+                      "Object",
+                      "String"
+                    ]
+                  },
+                  "name": "ref",
+                  "value": {
+                    "$type": "expression",
+                    "member": {
+                      "name": [
+                        "String",
+                        "valueOf"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "package": true,
+            "decorators": [],
+            "name": "controlFlow",
+            "generics": [],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "name": "o",
+                "type": "Object"
+              }
+            ],
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "void": true,
+                "name": "void"
+              }
+            },
+            "throws": [],
+            "body": {
+              "$type": "body",
+              "assert": {
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "name": "n"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": ">=",
+                    "greater_or_equal": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "int": "0"
+                  }
+                },
+                "string": "\"non-negative\""
+              },
+              "do_while": {
+                "body": {
+                  "$type": "body",
+                  "expression": {
+                    "unary": {
+                      "postfix": true,
+                      "name": "k"
+                    }
+                  }
+                },
+                "condition": {
+                  "$type": "binary",
+                  "left": {
+                    "$type": "expression",
+                    "name": "k"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "<",
+                    "less": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "int": "3"
+                  }
+                }
+              },
+              "label": {
+                "c_for": {
+                  "initializer": {
+                    "$type": "variable",
+                    "decorators": [],
+                    "type": "int",
+                    "name": "i",
+                    "value": {
+                      "$type": "expression",
+                      "int": "0"
+                    }
+                  },
+                  "condition": {
+                    "$type": "binary",
+                    "left": {
+                      "$type": "expression",
+                      "name": "i"
+                    },
+                    "op": {
+                      "$type": "operator",
+                      "text": "<",
+                      "less": true
+                    },
+                    "right": {
+                      "$type": "expression",
+                      "int": "5"
+                    }
+                  },
+                  "updates": [
+                    {
+                      "$type": "unary",
+                      "postfix": true,
+                      "name": "i"
+                    }
+                  ],
+                  "body": {
+                    "$type": "body",
+                    "if": [
+                      {
+                        "condition": {
+                          "$type": "expression",
+                          "binary": {
+                            "left": {
+                              "$type": "expression",
+                              "name": "i"
+                            },
+                            "op": {
+                              "$type": "operator",
+                              "text": "==",
+                              "equal": true
+                            },
+                            "right": {
+                              "$type": "expression",
+                              "int": "1"
+                            }
+                          }
+                        },
+                        "body": {
+                          "$type": "body",
+                          "name": "outer"
+                        }
+                      },
+                      {
+                        "condition": {
+                          "$type": "expression",
+                          "binary": {
+                            "left": {
+                              "$type": "expression",
+                              "name": "i"
+                            },
+                            "op": {
+                              "$type": "operator",
+                              "text": "==",
+                              "equal": true
+                            },
+                            "right": {
+                              "$type": "expression",
+                              "int": "3"
+                            }
+                          }
+                        },
+                        "body": {
+                          "$type": "body",
+                          "name": "outer"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "name": "outer"
+              },
+              "variable": [
+                {
+                  "decorators": [],
+                  "type": "int",
+                  "name": "n",
+                  "value": {
+                    "$type": "expression",
+                    "cast": {
+                      "int": "0L",
+                      "name": "int"
+                    }
+                  }
+                },
+                {
+                  "decorators": [],
+                  "type": "boolean",
+                  "name": "isStr",
+                  "value": {
+                    "$type": "expression",
+                    "is": {
+                      "name": [
+                        "o",
+                        "String"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "decorators": [],
+                  "type": "int",
+                  "name": "k",
+                  "value": {
+                    "$type": "expression",
+                    "int": "0"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "package": true,
+            "decorators": [],
+            "name": "resources",
+            "generics": [],
+            "parameters": [],
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "void": true,
+                "name": "void"
+              }
+            },
+            "throws": [
+              {
+                "$type": "throws",
+                "type": {
+                  "name": "Exception"
+                }
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "lock": {
+                "body": {
+                  "expression": {
+                    "name": "SEED"
+                  }
+                },
+                "this": "this"
+              },
+              "try": {
+                "try_body": {
+                  "$type": "body",
+                  "if": {
+                    "condition": {
+                      "$type": "expression",
+                      "binary": {
+                        "left": {
+                          "$type": "expression",
+                          "name": "s"
+                        },
+                        "op": {
+                          "$type": "operator",
+                          "text": "==",
+                          "equal": true
+                        },
+                        "right": {
+                          "$type": "expression",
+                          "null": "null"
+                        }
+                      }
+                    },
+                    "body": {
+                      "$type": "body",
+                      "object_creation": {
+                        "name": "java.io.IOException"
+                      }
+                    }
+                  }
+                },
+                "handlers": [
+                  {
+                    "$type": "catch",
+                    "type": [
+                      "java.io.IOException",
+                      "RuntimeException"
+                    ],
+                    "binding": {
+                      "$type": "expression",
+                      "name": "e"
+                    },
+                    "body": {
+                      "$type": "body",
+                      "throw": {
+                        "expression": {
+                          "name": "e"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "package": true,
+            "decorators": [],
+            "name": "yieldDemo",
+            "generics": [],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "name": "o",
+                "type": "Object"
+              }
+            ],
+            "returns": {
+              "$type": "returns",
+              "type": "int"
+            },
+            "throws": [],
+            "body": {
+              "$type": "body",
+              "return": {
+                "expression": {
+                  "name": "v"
+                }
+              },
+              "variable": {
+                "decorators": [],
+                "type": "int",
+                "name": "v",
+                "value": {
+                  "$type": "expression",
+                  "switch": {
+                    "arm": [
+                      {
+                        "case": {
+                          "pattern": {
+                            "name": "i",
+                            "type": {
+                              "name": "Integer"
+                            }
+                          }
+                        },
+                        "expression": {
+                          "name": "i"
+                        }
+                      },
+                      {
+                        "body": {
+                          "yield": {
+                            "int": "0"
+                          }
+                        },
+                        "case": "default"
+                      }
+                    ],
+                    "name": "o"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "comment": [
+    "// Blueprint fixture — exercises every major Java construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented; every\n// cycle of improvements should regenerate the snapshot.",
+    {
+      "leading": true
+    },
+    "// Iter 19: new shapes — control flow, expressions, literals, patterns.",
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    }
+  ],
+  "import": [
+    {
+      "path": {
+        "name": [
+          "java",
+          "util",
+          "List"
+        ]
+      }
+    },
+    {
+      "path": {
+        "name": [
+          "java",
+          "util",
+          "Map"
+        ]
+      }
+    },
+    {
+      "path": {
+        "name": [
+          "java",
+          "util",
+          "function",
+          "Function"
+        ]
+      }
+    },
+    {
+      "static": true,
+      "path": {
+        "name": [
+          "java",
+          "util",
+          "Collections",
+          "emptyList"
+        ]
+      }
+    }
+  ],
+  "interface": {
+    "body": {
+      "method": [
+        {
+          "name": [
+            "String",
+            "value"
+          ],
+          "string": "\"default\""
+        },
+        {
+          "int": "30",
+          "name": [
+            "int",
+            "timeout"
+          ]
+        }
+      ]
+    },
+    "name": "Config"
+  },
+  "package": {
+    "path": {
+      "name": [
+        "com",
+        "example",
+        "blueprint"
+      ]
+    }
+  }
+}

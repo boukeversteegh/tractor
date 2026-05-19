@@ -85,12 +85,12 @@ Wrapping in parens sometimes helps: `(true())` returns 1 result vs `true()` retu
 String atomics show as `"hello"` (with quotes) in `-v value` mode because we use
 `xpath_representation()`. Integer/boolean atomics render correctly as `3`, `true()`.
 
-## Chosen Approach: Native IR with XPath 3.1
+## Chosen Approach: Native tree with XPath 3.1
 
 ### Architecture
 
 XPath 3.1 is sufficient — no XQuery needed. The pipeline uses a native intermediate
-representation (IR) instead of XML string serialization:
+representation (tree) instead of XML string serialization:
 
 ```
 Source files → TreeSitter → xot tree → XPath 3.1 query
@@ -102,7 +102,7 @@ Source files → TreeSitter → xot tree → XPath 3.1 query
                           Node items   Atomic items   Function items
                               │             │         (map/array)
                               ↓             ↓              ↓
-                          XmlNode IR    value string    JSON string
+                          XmlNode tree    value string    JSON string
                          (native tree)                 (via xee serialize)
                               │             │              │
                               └─────────────┼──────────────┘
@@ -114,7 +114,7 @@ Source files → TreeSitter → xot tree → XPath 3.1 query
                               (text, json, yaml, xml, gcc)
 ```
 
-### XmlNode IR
+### XmlNode tree
 
 XML node results are represented as a native `XmlNode` enum instead of serialized
 XML strings. This eliminates the serialize → parse roundtrip that existed before:
@@ -129,7 +129,7 @@ pub enum XmlNode {
 }
 ```
 
-The IR is built once from the xot tree in `engine.rs` (`xot_node_to_xml_node`),
+The tree is built once from the xot tree in `engine.rs` (`xot_node_to_xml_node`),
 then consumed directly by all downstream renderers:
 - **Text/XML output**: `render_xml_node()` — pretty-prints with colors/depth-limiting
 - **JSON/YAML output**: `xml_node_to_json()` — walks tree to build JSON with field lifting
@@ -146,7 +146,7 @@ with `method: "json"`), and stored in `Match.value` as opaque strings.
 This is a pragmatic choice: xee's `Map` and `Array` types have their iteration
 methods marked `pub(crate)`, making them inaccessible from external code. The only
 public way to extract data is via `serialize()`. If xee exposes iteration in the
-future, these could be converted to native IR types instead.
+future, these could be converted to native tree types instead.
 
 ### Key files
 
@@ -168,4 +168,4 @@ covers the `/ map` use case without needing XQuery.
 Key remaining work:
 - Fix duplicate results for aggregate expressions (investigate xee SequenceQuery behavior)
 - Consider a shorthand syntax for the verbose `serialize(..., map{"method":"json"})` pattern
-- If xee exposes map/array iteration in the future, add native IR types for them
+- If xee exposes map/array iteration in the future, add native tree types for them

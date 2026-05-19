@@ -1,0 +1,676 @@
+file/
+  ├─ comment = "// Package blueprint is a kitchen-sink Go fixture for tractor snapshot tests."
+  ├─ comment = "// Rendered by `tractor query <file> -p tree --single` with NO depth limit so"
+  ├─ comment = "// any design-principle transform change produces a visible snapshot diff."
+  ├─ comment[leading] = "// Intentionally syntactically valid but not built."
+  ├─ package/name = "blueprint"
+  ├─ import/path/name = "fmt"
+  ├─ import/path/name = "context"
+  ├─ import/path/name = "errors"
+  ├─ import/path/name = "io"
+  ├─ import[alias]/
+  │   ├─ aliased/name = "myio"
+  │   └─ path/name = "io"
+  ├─ import[dot]/path/name = "strings"
+  ├─ import[blank]/path/
+  │   ├─ name = "net"
+  │   ├─ name = "http"
+  │   └─ name = "pprof"
+  ├─ const[exported]/
+  │   ├─ name = "Pi"
+  │   └─ value/expression/float = "3.14159"
+  ├─ const[exported]/
+  │   ├─ name = "StatusIdle"
+  │   └─ value/expression/name = "iota"
+  ├─ const[exported]/name = "StatusRunning"
+  ├─ const[exported]/name = "StatusDone"
+  ├─ const[unexported]/name = "_"
+  ├─ const[exported]/name = "StatusError"
+  ├─ var[exported]/
+  │   ├─ name = "ErrNotFound"
+  │   └─ value/expression/object/
+  │       ├─ name = "errors"
+  │       └─ string = "\"not found\""
+  ├─ var[unexported]/
+  │   ├─ name = "globalCount"
+  │   └─ type/name = "int"
+  ├─ var[unexported]/
+  │   ├─ name = "name"
+  │   ├─ name = "age"
+  │   ├─ value/expression/string = "\"alice\""
+  │   └─ value/expression/int = "30"
+  ├─ interface[exported]/
+  │   ├─ name = "Number"
+  │   └─ extends/type/
+  │       ├─ type[approximation]/name = "int"
+  │       └─ type[approximation]/name = "float64"
+  ├─ interface[exported]/
+  │   ├─ name = "Stringer"
+  │   └─ method/
+  │       ├─ name = "String"
+  │       └─ returns/type/name = "string"
+  ├─ interface[exported]/
+  │   ├─ name = "ReadStringer"
+  │   ├─ extends/type/type/
+  │   │   ├─ name = "io"
+  │   │   └─ name = "Reader"
+  │   ├─ extends/type/name = "Stringer"
+  │   └─ method/
+  │       ├─ name = "Close"
+  │       └─ returns/type/name = "error"
+  ├─ alias[exported]/
+  │   ├─ name = "Alias"
+  │   └─ type/
+  │       ├─ name = "context"
+  │       └─ name = "Context"
+  ├─ type[exported]/
+  │   ├─ name = "UserID"
+  │   └─ type/name = "int64"
+  ├─ type[exported]/
+  │   ├─ name = "Handler"
+  │   └─ type[function]/
+  │       ├─ parameter/
+  │       │   ├─ name = "ctx"
+  │       │   └─ type/
+  │       │       ├─ name = "context"
+  │       │       └─ name = "Context"
+  │       ├─ parameter/
+  │       │   ├─ name = "id"
+  │       │   └─ name = "UserID"
+  │       └─ name = "error"
+  ├─ struct[exported]/
+  │   ├─ name = "Container"
+  │   └─ field[unexported]/
+  │       ├─ name = "items"
+  │       └─ slice/name = "T"
+  ├─ struct[exported]/
+  │   ├─ name = "MyErr"
+  │   └─ field[unexported]/
+  │       ├─ name = "msg"
+  │       └─ type/name = "string"
+  ├─ struct[exported]/
+  │   ├─ name = "Point"
+  │   ├─ field[exported]/
+  │   │   ├─ name = "X"
+  │   │   ├─ name = "Y"
+  │   │   ├─ type/name = "int"
+  │   │   └─ string[raw] = "`json:\"x,omitempty\"`"
+  │   └─ field[exported]/
+  │       ├─ name = "Name"
+  │       ├─ type/name = "string"
+  │       └─ string[raw] = "`json:\"name\"`"
+  ├─ struct[exported]/
+  │   ├─ name = "Labeled"
+  │   ├─ field/type/name = "Point"
+  │   ├─ field[exported]/
+  │   │   ├─ name = "Tag"
+  │   │   └─ type/name = "string"
+  │   ├─ field[unexported]/
+  │   │   ├─ name = "_"
+  │   │   └─ struct = "struct{}"
+  │   └─ field[exported]/
+  │       ├─ name = "Meta"
+  │       └─ struct/field[exported]/
+  │           ├─ name = "Created"
+  │           └─ type/name = "int64"
+  ├─ method[exported]/
+  │   ├─ parameter/
+  │   │   ├─ name = "c"
+  │   │   └─ pointer/type[generic]/
+  │   │       ├─ name = "Container"
+  │   │       └─ name = "T"
+  │   ├─ name = "Push"
+  │   ├─ parameter/
+  │   │   ├─ name = "v"
+  │   │   └─ name = "T"
+  │   └─ body/assign/
+  │       ├─ expression/object/name = "c"
+  │       └─ expression/call/
+  │           ├─ name = "append"
+  │           ├─ object/name = "c"
+  │           └─ name = "v"
+  ├─ method[exported]/
+  │   ├─ parameter/
+  │   │   ├─ name = "p"
+  │   │   └─ name = "Point"
+  │   ├─ name = "String"
+  │   ├─ name = "string"
+  │   └─ body/return/expression/object/
+  │       ├─ name = "fmt"
+  │       ├─ string = "\"(%d,%d)\""
+  │       ├─ object/name = "p"
+  │       └─ object/name = "p"
+  ├─ method[exported]/
+  │   ├─ parameter/
+  │   │   ├─ name = "p"
+  │   │   └─ pointer/name = "Point"
+  │   ├─ name = "Shift"
+  │   ├─ parameter/
+  │   │   ├─ name = "dx"
+  │   │   ├─ name = "dy"
+  │   │   └─ name = "int"
+  │   └─ body/
+  │       ├─ assign/
+  │       │   ├─ expression/object/name = "p"
+  │       │   └─ expression/name = "dx"
+  │       └─ assign/
+  │           ├─ expression/object/name = "p"
+  │           └─ expression/name = "dy"
+  ├─ method[exported]/
+  │   ├─ parameter/
+  │   │   ├─ name = "e"
+  │   │   └─ pointer/name = "MyErr"
+  │   ├─ name = "Error"
+  │   ├─ name = "string"
+  │   └─ body/return/expression/object/name = "e"
+  ├─ function[unexported]/
+  │   ├─ name = "wrap"
+  │   ├─ parameter/
+  │   │   ├─ name = "err"
+  │   │   └─ name = "error"
+  │   ├─ name = "error"
+  │   └─ body/return/expression/object/
+  │       ├─ name = "fmt"
+  │       ├─ string = "\"wrap: %w\""
+  │       └─ name = "err"
+  ├─ function[unexported]/
+  │   ├─ name = "doThing"
+  │   ├─ name = "error"
+  │   └─ body/return/expression/nil = "nil"
+  ├─ function[unexported]/
+  │   ├─ name = "risky"
+  │   ├─ parameter/name = "int"
+  │   ├─ parameter/name = "error"
+  │   └─ body/return/
+  │       ├─ expression/int = "0"
+  │       └─ expression/name = "ErrNotFound"
+  ├─ function[exported]/
+  │   ├─ name = "Map"
+  │   ├─ generic/
+  │   │   ├─ name = "T"
+  │   │   ├─ name = "U"
+  │   │   └─ name = "any"
+  │   ├─ parameter/
+  │   │   ├─ name = "xs"
+  │   │   └─ slice/name = "T"
+  │   ├─ parameter/
+  │   │   ├─ name = "f"
+  │   │   └─ type[function]/
+  │   │       ├─ parameter/name = "T"
+  │   │       └─ name = "U"
+  │   ├─ slice/name = "U"
+  │   └─ body/
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "out"
+  │       │   └─ right/expression/call/
+  │       │       ├─ name = "make"
+  │       │       ├─ slice/name = "U"
+  │       │       ├─ int = "0"
+  │       │       └─ call/
+  │       │           ├─ name = "len"
+  │       │           └─ name = "xs"
+  │       ├─ for/
+  │       │   ├─ range/
+  │       │   │   ├─ left/
+  │       │   │   │   ├─ expression/name = "_"
+  │       │   │   │   └─ expression/name = "x"
+  │       │   │   └─ right/expression/name = "xs"
+  │       │   └─ body/assign/
+  │       │       ├─ expression/name = "out"
+  │       │       └─ expression/call/
+  │       │           ├─ name = "append"
+  │       │           ├─ name = "out"
+  │       │           └─ call/
+  │       │               ├─ name = "f"
+  │       │               └─ name = "x"
+  │       └─ return/expression/name = "out"
+  ├─ function[exported]/
+  │   ├─ name = "Sum"
+  │   ├─ generic/
+  │   │   ├─ name = "T"
+  │   │   └─ name = "Number"
+  │   ├─ parameter/
+  │   │   ├─ name = "xs"
+  │   │   └─ slice/name = "T"
+  │   ├─ parameter/
+  │   │   ├─ name = "total"
+  │   │   └─ name = "T"
+  │   └─ body/
+  │       ├─ for/
+  │       │   ├─ range/
+  │       │   │   ├─ left/
+  │       │   │   │   ├─ expression/name = "_"
+  │       │   │   │   └─ expression/name = "x"
+  │       │   │   └─ right/expression/name = "xs"
+  │       │   └─ body/assign/
+  │       │       ├─ expression/name = "total"
+  │       │       └─ expression/name = "x"
+  │       └─ return = "return"
+  ├─ function[exported]/
+  │   ├─ name = "Uniq"
+  │   ├─ generic/
+  │   │   ├─ name = "T"
+  │   │   └─ name = "comparable"
+  │   ├─ parameter/
+  │   │   ├─ name = "xs"
+  │   │   └─ slice/name = "T"
+  │   ├─ parameter/
+  │   │   ├─ name = "out"
+  │   │   └─ slice/name = "T"
+  │   └─ body/
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "seen"
+  │       │   └─ right/expression/literal/map/
+  │       │       ├─ name = "T"
+  │       │       └─ struct = "struct{}"
+  │       ├─ for/
+  │       │   ├─ range/
+  │       │   │   ├─ left/
+  │       │   │   │   ├─ expression/name = "_"
+  │       │   │   │   └─ expression/name = "x"
+  │       │   │   └─ right/expression/name = "xs"
+  │       │   └─ body/if/
+  │       │       ├─ variable[short]/
+  │       │       │   ├─ left/expression/
+  │       │       │   │   ├─ name = "_"
+  │       │       │   │   └─ name = "ok"
+  │       │       │   └─ right/expression/object/
+  │       │       │       ├─ name = "seen"
+  │       │       │       └─ name = "x"
+  │       │       ├─ condition/expression/unary/name = "ok"
+  │       │       └─ then/body/
+  │       │           ├─ assign/
+  │       │           │   ├─ expression/object/
+  │       │           │   │   ├─ name = "seen"
+  │       │           │   │   └─ name = "x"
+  │       │           │   └─ expression/literal/struct = "struct{}"
+  │       │           └─ assign/
+  │       │               ├─ expression/name = "out"
+  │       │               └─ expression/call/
+  │       │                   ├─ name = "append"
+  │       │                   ├─ name = "out"
+  │       │                   └─ name = "x"
+  │       └─ return = "return"
+  ├─ function[unexported]/
+  │   ├─ name = "variadic"
+  │   ├─ parameter/
+  │   │   ├─ name = "prefix"
+  │   │   └─ name = "string"
+  │   ├─ parameter[variadic]/
+  │   │   ├─ name = "vals"
+  │   │   └─ name = "int"
+  │   ├─ parameter/
+  │   │   ├─ name = "sum"
+  │   │   └─ name = "int"
+  │   ├─ parameter/
+  │   │   ├─ name = "err"
+  │   │   └─ name = "error"
+  │   └─ body/
+  │       ├─ defer/call/closure/assign/
+  │       │   ├─ expression/name = "_"
+  │       │   └─ expression/call/name = "recover"
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "multiStmt"
+  │       │   └─ right/expression/closure/
+  │       │       ├─ parameter/
+  │       │       │   ├─ name = "n"
+  │       │       │   └─ name = "int"
+  │       │       ├─ name = "int"
+  │       │       ├─ variable[short]/
+  │       │       │   ├─ left/expression/name = "x"
+  │       │       │   └─ right/expression/binary/
+  │       │       │       ├─ left[expression]/name = "n"
+  │       │       │       ├─ op[operator and plus] = "+"
+  │       │       │       └─ right[expression]/int = "1"
+  │       │       └─ return/expression/binary/
+  │       │           ├─ left[expression]/name = "x"
+  │       │           ├─ op[operator and multiply] = "*"
+  │       │           └─ right[expression]/int = "2"
+  │       ├─ assign/
+  │       │   ├─ expression/name = "_"
+  │       │   └─ expression/call/
+  │       │       ├─ name = "multiStmt"
+  │       │       └─ int = "3"
+  │       ├─ assign/
+  │       │   ├─ expression/name = "_"
+  │       │   └─ expression/call/
+  │       │       ├─ name = "ToUpper"
+  │       │       └─ name = "prefix"
+  │       ├─ for/
+  │       │   ├─ range/
+  │       │   │   ├─ left/
+  │       │   │   │   ├─ expression/name = "_"
+  │       │   │   │   └─ expression/name = "v"
+  │       │   │   └─ right/expression/name = "vals"
+  │       │   └─ body/assign/
+  │       │       ├─ expression/name = "sum"
+  │       │       └─ expression/name = "v"
+  │       └─ return = "return"
+  ├─ comment = "// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere"
+  ├─ comment = "// in the blueprint: fixed-length array types, implicit-length array"
+  ├─ comment = "// literals, slice expressions, parenthesized type conversions, generic"
+  ├─ comment = "// instantiation in value position, variadic argument expansion, and"
+  ├─ comment[leading] = "// the `fallthrough` switch keyword."
+  ├─ function[unexported]/
+  │   ├─ name = "arraysAndCasts"
+  │   └─ body/
+  │       ├─ var[unexported]/
+  │       │   ├─ name = "fixed"
+  │       │   ├─ array/
+  │       │   │   ├─ int = "5"
+  │       │   │   └─ name = "int"
+  │       │   └─ value/expression/literal/
+  │       │       ├─ array/
+  │       │       │   ├─ int = "5"
+  │       │       │   └─ name = "int"
+  │       │       ├─ int = "1"
+  │       │       ├─ int = "2"
+  │       │       ├─ int = "3"
+  │       │       ├─ int = "4"
+  │       │       └─ int = "5"
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "implicit"
+  │       │   └─ right/expression/literal/
+  │       │       ├─ array[implicit]/name = "int"
+  │       │       ├─ int = "10"
+  │       │       ├─ int = "20"
+  │       │       └─ int = "30"
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "sub"
+  │       │   └─ right/expression/object[slice]/
+  │       │       ├─ name = "fixed"
+  │       │       ├─ from/int = "1"
+  │       │       └─ to/int = "3"
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "chRecvOnly"
+  │       │   └─ right/expression/call[type]/
+  │       │       ├─ chan/name = "int"
+  │       │       └─ nil = "nil"
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "mapper"
+  │       │   └─ right/expression/type[generic]/
+  │       │       ├─ name = "Map"
+  │       │       ├─ name = "int"
+  │       │       └─ name = "string"
+  │       ├─ assign/
+  │       │   ├─ expression/
+  │       │   │   ├─ name = "_"
+  │       │   │   └─ name = "_"
+  │       │   └─ expression/call/
+  │       │       ├─ name = "variadic"
+  │       │       ├─ string = "\"nums\""
+  │       │       └─ spread/index[slice]/object/name = "fixed"
+  │       ├─ switch/
+  │       │   ├─ value/expression/object/
+  │       │   │   ├─ name = "implicit"
+  │       │   │   └─ int = "0"
+  │       │   ├─ case/
+  │       │   │   ├─ value/expression/int = "10"
+  │       │   │   └─ fallthrough = "fallthrough"
+  │       │   └─ case/
+  │       │       ├─ value/expression/int = "20"
+  │       │       └─ assign/
+  │       │           ├─ expression/name = "_"
+  │       │           └─ expression/name = "sub"
+  │       └─ assign/
+  │           ├─ expression/
+  │           │   ├─ name = "_"
+  │           │   ├─ name = "_"
+  │           │   └─ name = "_"
+  │           └─ expression/
+  │               ├─ name = "chRecvOnly"
+  │               ├─ name = "mapper"
+  │               └─ name = "sub"
+  ├─ function[unexported]/
+  │   ├─ name = "classify"
+  │   ├─ parameter/
+  │   │   ├─ name = "x"
+  │   │   └─ name = "any"
+  │   ├─ name = "string"
+  │   └─ body/switch[type]/
+  │       ├─ name = "v"
+  │       ├─ value/expression/name = "x"
+  │       ├─ case/
+  │       │   ├─ type/name = "nil"
+  │       │   └─ return/expression/string = "\"nil\""
+  │       ├─ case/
+  │       │   ├─ type/name = "int"
+  │       │   ├─ type/name = "int32"
+  │       │   ├─ type/name = "int64"
+  │       │   └─ return/expression/string = "\"int-ish\""
+  │       ├─ case/
+  │       │   ├─ type/name = "string"
+  │       │   └─ return/expression/binary/
+  │       │       ├─ left[expression]/string = "\"string:\""
+  │       │       ├─ op[operator and plus] = "+"
+  │       │       └─ right[expression]/name = "v"
+  │       ├─ case/
+  │       │   ├─ type/name = "Stringer"
+  │       │   └─ return/expression/object/name = "v"
+  │       └─ default/return/expression/object/
+  │           ├─ name = "fmt"
+  │           ├─ string = "\"%T\""
+  │           └─ name = "v"
+  └─ function[unexported]/
+      ├─ name = "controlFlow"
+      ├─ parameter/
+      │   ├─ name = "ctx"
+      │   └─ type/
+      │       ├─ name = "context"
+      │       └─ name = "Context"
+      ├─ parameter/
+      │   ├─ name = "in"
+      │   └─ chan/name = "int"
+      ├─ parameter/
+      │   ├─ name = "out"
+      │   └─ chan/name = "int"
+      ├─ name = "error"
+      └─ body/
+          ├─ variable[short]/
+          │   ├─ left/expression/
+          │   │   ├─ name = "raw"
+          │   │   └─ name = "ch"
+          │   └─ right/expression/
+          │       ├─ string[raw] = "`no \"escapes\" here`"
+          │       └─ char = "'A'"
+          ├─ if/
+          │   ├─ variable[short]/
+          │   │   ├─ left/expression/
+          │   │   │   ├─ name = "x"
+          │   │   │   └─ name = "err"
+          │   │   └─ right/expression/object/name = "io"
+          │   ├─ condition/expression/binary/
+          │   │   ├─ left[expression]/name = "err"
+          │   │   ├─ op[operator and not_equal] = "!="
+          │   │   └─ right[expression]/nil = "nil"
+          │   ├─ then/body/return/expression/call/
+          │   │   ├─ name = "wrap"
+          │   │   └─ name = "err"
+          │   └─ else/body/assign/
+          │       ├─ expression/name = "_"
+          │       └─ expression/name = "x"
+          ├─ for/
+          │   ├─ variable[short]/
+          │   │   ├─ left/expression/name = "i"
+          │   │   └─ right/expression/int = "0"
+          │   ├─ condition/expression/binary/
+          │   │   ├─ left[expression]/name = "i"
+          │   │   ├─ op[operator and less] = "<"
+          │   │   └─ right[expression]/int = "10"
+          │   ├─ unary[postfix]/name = "i"
+          │   └─ body/if/
+          │       ├─ condition/expression/binary/
+          │       │   ├─ left[expression]/name = "i"
+          │       │   ├─ op[operator and equal] = "=="
+          │       │   └─ right[expression]/int = "5"
+          │       └─ then/body/continue = "continue"
+          ├─ for/
+          │   ├─ range/
+          │   │   ├─ left/expression/name = "i"
+          │   │   └─ right/expression/int = "5"
+          │   └─ body/assign/
+          │       ├─ expression/name = "_"
+          │       └─ expression/name = "i"
+          ├─ for/
+          │   ├─ range/
+          │   │   ├─ left/
+          │   │   │   ├─ expression/name = "k"
+          │   │   │   └─ expression/name = "v"
+          │   │   └─ right/expression/literal/
+          │   │       ├─ map/
+          │   │       │   ├─ name = "string"
+          │   │       │   └─ name = "int"
+          │   │       ├─ pair/
+          │   │       │   ├─ string = "\"a\""
+          │   │       │   └─ value/int = "1"
+          │   │       └─ pair/
+          │   │           ├─ string = "\"b\""
+          │   │           └─ value/int = "2"
+          │   └─ body/assign/
+          │       ├─ expression/
+          │       │   ├─ name = "_"
+          │       │   └─ name = "_"
+          │       └─ expression/
+          │           ├─ name = "k"
+          │           └─ name = "v"
+          ├─ variable[short]/
+          │   ├─ left/expression/name = "n"
+          │   └─ right/expression/int = "0"
+          ├─ for/
+          │   ├─ condition/expression/binary/
+          │   │   ├─ left[expression]/name = "n"
+          │   │   ├─ op[operator and less] = "<"
+          │   │   └─ right[expression]/int = "3"
+          │   └─ body/unary[postfix]/name = "n"
+          ├─ go/call/closure/expression/object/
+          │   ├─ name = "fmt"
+          │   └─ string = "\"bg\""
+          ├─ labeled/
+          │   ├─ name = "Outer"
+          │   └─ for/body/select/
+          │       ├─ case/
+          │       │   ├─ receive/
+          │       │   │   ├─ name = "v"
+          │       │   │   ├─ name = "ok"
+          │       │   │   └─ unary/name = "in"
+          │       │   ├─ if/
+          │       │   │   ├─ condition/expression/unary/name = "ok"
+          │       │   │   └─ then/body/break/name = "Outer"
+          │       │   └─ send/
+          │       │       ├─ name = "out"
+          │       │       └─ name = "v"
+          │       ├─ case/
+          │       │   ├─ send/
+          │       │   │   ├─ name = "out"
+          │       │   │   └─ int = "42"
+          │       │   └─ continue/name = "Outer"
+          │       └─ case/
+          │           ├─ receive/unary/object/name = "ctx"
+          │           └─ goto/name = "cleanup"
+          ├─ labeled/
+          │   ├─ name = "cleanup"
+          │   └─ variable[short]/
+          │       ├─ left/expression/name = "buffered"
+          │       └─ right/expression/call/
+          │           ├─ name = "make"
+          │           ├─ chan/name = "int"
+          │           └─ int = "4"
+          ├─ send/
+          │   ├─ name = "buffered"
+          │   └─ int = "1"
+          ├─ expression/call/
+          │   ├─ name = "close"
+          │   └─ name = "buffered"
+          ├─ variable[short]/
+          │   ├─ left/expression/
+          │   │   ├─ name = "pt"
+          │   │   └─ name = "pts"
+          │   └─ right/expression/
+          │       ├─ unary/literal/
+          │       │   ├─ name = "Point"
+          │       │   ├─ pair/
+          │       │   │   ├─ name = "X"
+          │       │   │   └─ value/int = "1"
+          │       │   └─ pair/
+          │       │       ├─ name = "Y"
+          │       │       └─ value/int = "2"
+          │       └─ literal/
+          │           ├─ slice/name = "Point"
+          │           ├─ pair/
+          │           │   ├─ name = "X"
+          │           │   └─ value/int = "0"
+          │           ├─ pair/
+          │           │   ├─ name = "X"
+          │           │   └─ value/int = "1"
+          │           └─ pair/
+          │               ├─ name = "Y"
+          │               └─ value/int = "1"
+          ├─ variable[short]/
+          │   ├─ left/expression/name = "m"
+          │   └─ right/expression/literal/
+          │       ├─ map/
+          │       │   ├─ name = "string"
+          │       │   └─ name = "Point"
+          │       └─ pair/
+          │           ├─ string = "\"a\""
+          │           └─ value/pair/
+          │               ├─ name = "X"
+          │               └─ value/int = "1"
+          ├─ var[unexported]/
+          │   ├─ name = "r"
+          │   ├─ type/
+          │   │   ├─ name = "io"
+          │   │   └─ name = "Reader"
+          │   └─ value/expression/call/
+          │       ├─ name = "new"
+          │       └─ type/
+          │           ├─ name = "myio"
+          │           └─ name = "PipeReader"
+          ├─ if/
+          │   ├─ variable[short]/
+          │   │   ├─ left/expression/
+          │   │   │   ├─ name = "s"
+          │   │   │   └─ name = "ok"
+          │   │   └─ right/expression/assert/
+          │   │       ├─ name = "r"
+          │   │       └─ name = "Stringer"
+          │   ├─ condition/expression/name = "ok"
+          │   └─ then/body/assign/
+          │       ├─ expression/name = "_"
+          │       └─ expression/name = "s"
+          ├─ var[unexported]/
+          │   ├─ name = "target"
+          │   └─ pointer/name = "MyErr"
+          ├─ if/
+          │   ├─ variable[short]/
+          │   │   ├─ left/expression/name = "err"
+          │   │   └─ right/expression/call/name = "doThing"
+          │   ├─ condition/expression/logical/
+          │   │   ├─ left[expression]/object/
+          │   │   │   ├─ name = "errors"
+          │   │   │   ├─ name = "err"
+          │   │   │   └─ unary/name = "target"
+          │   │   ├─ op[operator and or] = "||"
+          │   │   └─ right[expression]/object/
+          │   │       ├─ name = "errors"
+          │   │       ├─ name = "err"
+          │   │       └─ name = "ErrNotFound"
+          │   └─ then/body/return/expression/name = "err"
+          ├─ assign/
+          │   ├─ expression/
+          │   │   ├─ name = "_"
+          │   │   ├─ name = "_"
+          │   │   ├─ name = "_"
+          │   │   ├─ name = "_"
+          │   │   ├─ name = "_"
+          │   │   └─ name = "_"
+          │   └─ expression/
+          │       ├─ name = "raw"
+          │       ├─ name = "ch"
+          │       ├─ name = "pt"
+          │       ├─ name = "pts"
+          │       ├─ name = "m"
+          │       └─ call/
+          │           ├─ name = "UserID"
+          │           └─ int = "42"
+          └─ return/expression/nil = "nil"

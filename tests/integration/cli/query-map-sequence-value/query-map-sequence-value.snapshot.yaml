@@ -1,0 +1,19 @@
+results:
+- file: tests/integration/sample.cs
+  line: 1
+  tree:
+    classes:
+    - name: Calculator
+      methods:
+      - Add
+      - Subtract
+      - Multiply
+    - name: Greeter
+      methods:
+      - Hello
+      - Goodbye
+      - Reset
+❌ Warning: "methods": body/method/name/string(.) matched multiple values and was automatically converted to an array.
+❌ With different input this could be a single value instead, which would break tools consuming this output.
+❌   Always array:  "methods": array { body/method/name/string(.) }
+❌   Always single: "methods": (body/method/name/string(.))[1]

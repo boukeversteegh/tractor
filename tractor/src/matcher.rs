@@ -310,12 +310,9 @@ pub fn project_report(report: &mut Report, view: &ViewSet) {
         if !is_diagnostic {
             // Map/Array nodes are always kept — they're the only representation for data formats.
             // For other nodes, keep when tree/lines/source is selected (needed for rendering).
-            let keep_tree = match &m.tree {
-                Some(node) if matches!(
-                    node,
-                    tractor::xpath::XmlNode::Map { .. }
-                        | tractor::xpath::XmlNode::Array { .. }
-                ) => true,
+            let keep_tree = match m.tree.as_ref().map(|t| t.as_xml_node()) {
+                Some(tractor::xpath::XmlNode::Map { .. })
+                    | Some(tractor::xpath::XmlNode::Array { .. }) => true,
                 _ => view.has(ViewField::Tree) || view.has(ViewField::Lines) || view.has(ViewField::Source),
             };
             if !keep_tree {
@@ -350,7 +347,7 @@ pub fn attach_report_schema(report: &mut Report, _depth: Option<usize>) {
 
     let mut collector = tractor::SchemaCollector::new();
     for m in report.all_matches() {
-        if let Some(ref node) = m.tree {
+        if let Some(node) = m.tree.as_ref().map(|t| t.as_xml_node()) {
             collector.collect_from_xml_node(node);
         }
     }
@@ -518,11 +515,11 @@ mod tests {
             end_line: 1,
             end_column: 1,
             command: "query".to_string(),
-            tree: Some(tractor::xpath::XmlNode::Element {
+            tree: Some(tractor::xpath::Tree::Xml(tractor::xpath::XmlNode::Element {
                 name: "a".to_string(),
                 attributes: vec![],
                 children: vec![],
-            }),
+            })),
             value: Some("1".to_string()),
             source: Some("<a>1</a>".to_string()),
             lines: Some(vec!["<a>1</a>".to_string()]),

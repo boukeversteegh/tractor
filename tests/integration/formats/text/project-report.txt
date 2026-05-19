@@ -1,6 +1,0 @@
-tests/integration/formats/sample-classes.cs
-Calculator
-
-tests/integration/formats/sample-classes.cs
-Greeter
-2 matches

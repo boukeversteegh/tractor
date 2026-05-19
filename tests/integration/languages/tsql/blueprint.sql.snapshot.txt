@@ -1,0 +1,335 @@
+file/
+  ├─ comment = "-- Simple T-SQL example"
+  ├─ statement/select/
+  │   ├─ column/reference/
+  │   │   ├─ identifier = "u"
+  │   │   └─ identifier = "Name"
+  │   ├─ column/reference/
+  │   │   ├─ identifier = "u"
+  │   │   └─ identifier = "Age"
+  │   ├─ from/relation/
+  │   │   ├─ identifier = "Users"
+  │   │   └─ alias = "u"
+  │   ├─ where/compare/
+  │   │   ├─ reference/
+  │   │   │   ├─ identifier = "u"
+  │   │   │   └─ identifier = "Age"
+  │   │   └─ literal = "18"
+  │   └─ order_by/order_target/reference/
+  │       ├─ identifier = "u"
+  │       └─ identifier = "Name"
+  ├─ statement/insert/
+  │   ├─ relation/identifier = "AuditLog"
+  │   ├─ identifier = "Action"
+  │   ├─ identifier = "Timestamp"
+  │   ├─ literal = "'UserQuery'"
+  │   └─ call/identifier = "GETDATE"
+  ├─ statement/delete/
+  │   ├─ from/identifier = "OldRecords"
+  │   └─ where/compare/
+  │       ├─ identifier = "CreatedAt"
+  │       └─ literal = "'2020-01-01'"
+  ├─ comment = "-- Bracket identifiers, schema-qualified names, variables"
+  ├─ statement/select/
+  │   ├─ column/
+  │   │   ├─ reference/
+  │   │   │   ├─ reference/
+  │   │   │   │   ├─ identifier = "[dbo]"
+  │   │   │   │   └─ identifier = "[Users]"
+  │   │   │   └─ identifier = "[Name]"
+  │   │   └─ alias = "UserName"
+  │   ├─ column/variable = "@StartDate"
+  │   ├─ from/relation/
+  │   │   ├─ schema = "[dbo]"
+  │   │   └─ identifier = "[Users]"
+  │   └─ where/between/
+  │       ├─ identifier = "[Age]"
+  │       ├─ literal = "18"
+  │       └─ literal = "65"
+  ├─ comment = "-- UPDATE with variables and schema-qualified table"
+  ├─ statement/update/
+  │   ├─ relation/
+  │   │   ├─ schema = "dbo"
+  │   │   └─ identifier = "Config"
+  │   ├─ assign/
+  │   │   ├─ identifier = "Value"
+  │   │   └─ variable = "@NewValue"
+  │   └─ where/compare/
+  │       ├─ identifier = "[Key]"
+  │       └─ variable = "@KeyName"
+  ├─ comment = "-- JOINs"
+  ├─ statement/select/
+  │   ├─ column/reference/
+  │   │   ├─ identifier = "o"
+  │   │   └─ identifier = "ID"
+  │   ├─ column/reference/
+  │   │   ├─ identifier = "u"
+  │   │   └─ identifier = "Name"
+  │   ├─ column/reference/
+  │   │   ├─ identifier = "a"
+  │   │   └─ identifier = "City"
+  │   ├─ from/
+  │   │   ├─ relation/
+  │   │   │   ├─ identifier = "Orders"
+  │   │   │   └─ alias = "o"
+  │   │   ├─ join/
+  │   │   │   ├─ relation/
+  │   │   │   │   ├─ identifier = "Users"
+  │   │   │   │   └─ alias = "u"
+  │   │   │   └─ compare/
+  │   │   │       ├─ reference/
+  │   │   │       │   ├─ identifier = "o"
+  │   │   │       │   └─ identifier = "UserID"
+  │   │   │       └─ reference/
+  │   │   │           ├─ identifier = "u"
+  │   │   │           └─ identifier = "ID"
+  │   │   └─ join[left]/
+  │   │       ├─ relation/
+  │   │       │   ├─ identifier = "Addresses"
+  │   │       │   └─ alias = "a"
+  │   │       └─ compare/
+  │   │           ├─ reference/
+  │   │           │   ├─ identifier = "u"
+  │   │           │   └─ identifier = "ID"
+  │   │           └─ reference/
+  │   │               ├─ identifier = "a"
+  │   │               └─ identifier = "UserID"
+  │   └─ where/compare/
+  │       ├─ reference/
+  │       │   ├─ identifier = "o"
+  │       │   └─ identifier = "Total"
+  │       └─ literal = "100"
+  ├─ comment = "-- Subquery with IN"
+  ├─ statement/select/
+  │   ├─ column/identifier = "Name"
+  │   ├─ from/relation/identifier = "Users"
+  │   └─ where/compare/
+  │       ├─ identifier = "ID"
+  │       └─ subquery/select/
+  │           ├─ column/identifier = "UserID"
+  │           ├─ from/relation/identifier = "Orders"
+  │           └─ where/compare/
+  │               ├─ identifier = "Total"
+  │               └─ literal = "50"
+  ├─ comment = "-- EXISTS"
+  ├─ statement/select/
+  │   ├─ column/reference/
+  │   │   ├─ identifier = "u"
+  │   │   └─ identifier = "Name"
+  │   ├─ from/relation/
+  │   │   ├─ identifier = "Users"
+  │   │   └─ alias = "u"
+  │   └─ where/exists/subquery/select/
+  │       ├─ column/literal = "1"
+  │       ├─ from/relation/
+  │       │   ├─ identifier = "Orders"
+  │       │   └─ alias = "o"
+  │       └─ where/compare/
+  │           ├─ reference/
+  │           │   ├─ identifier = "o"
+  │           │   └─ identifier = "UserID"
+  │           └─ reference/
+  │               ├─ identifier = "u"
+  │               └─ identifier = "ID"
+  ├─ comment = "-- GROUP BY, HAVING, aggregate functions"
+  ├─ statement/select/
+  │   ├─ column/identifier = "Department"
+  │   ├─ column/
+  │   │   ├─ call/
+  │   │   │   ├─ identifier = "COUNT"
+  │   │   │   └─ column/star = "*"
+  │   │   └─ alias = "HeadCount"
+  │   ├─ column/
+  │   │   ├─ call/
+  │   │   │   ├─ identifier = "AVG"
+  │   │   │   └─ column/identifier = "Salary"
+  │   │   └─ alias = "AvgSalary"
+  │   ├─ from/relation/identifier = "Employees"
+  │   ├─ group_by/identifier = "Department"
+  │   └─ having/compare/
+  │       ├─ call/
+  │       │   ├─ identifier = "COUNT"
+  │       │   └─ column/star = "*"
+  │       └─ literal = "5"
+  ├─ comment = "-- CASE WHEN"
+  ├─ statement/select/
+  │   ├─ column/identifier = "Name"
+  │   ├─ column/
+  │   │   ├─ case/
+  │   │   │   ├─ when/
+  │   │   │   │   ├─ compare/
+  │   │   │   │   │   ├─ identifier = "Age"
+  │   │   │   │   │   └─ literal = "18"
+  │   │   │   │   └─ literal = "'Adult'"
+  │   │   │   └─ literal = "'Minor'"
+  │   │   └─ alias = "Category"
+  │   └─ from/relation/identifier = "Users"
+  ├─ comment = "-- CTE (Common Table Expression)"
+  ├─ statement/select/
+  │   ├─ cte/
+  │   │   ├─ identifier = "ActiveUsers"
+  │   │   └─ statement/select/
+  │   │       ├─ column/identifier = "ID"
+  │   │       ├─ column/identifier = "Name"
+  │   │       ├─ from/relation/identifier = "Users"
+  │   │       └─ where/compare/
+  │   │           ├─ identifier = "Active"
+  │   │           └─ literal = "1"
+  │   ├─ column/identifier = "Name"
+  │   └─ from/relation/identifier = "ActiveUsers"
+  ├─ comment = "-- UNION ALL"
+  ├─ statement/union/
+  │   ├─ select/
+  │   │   ├─ column/identifier = "Name"
+  │   │   └─ column/
+  │   │       ├─ literal = "'User'"
+  │   │       └─ alias = "Source"
+  │   ├─ from/
+  │   │   ├─ unknown = "FROM"
+  │   │   └─ relation/identifier = "Users"
+  │   ├─ select/
+  │   │   ├─ column/identifier = "Name"
+  │   │   └─ column/
+  │   │       ├─ literal = "'Admin'"
+  │   │       └─ alias = "Source"
+  │   └─ from/
+  │       ├─ unknown = "FROM"
+  │       └─ relation/identifier = "Admins"
+  ├─ comment = "-- Window function with PARTITION BY"
+  ├─ statement/select/
+  │   ├─ column/identifier = "Name"
+  │   ├─ column/
+  │   │   ├─ window/
+  │   │   │   ├─ call/identifier = "ROW_NUMBER"
+  │   │   │   └─ over/
+  │   │   │       ├─ partition_by/identifier = "Department"
+  │   │   │       └─ order_by/order_target[desc]/identifier = "Salary"
+  │   │   └─ alias = "Rank"
+  │   └─ from/relation/identifier = "Employees"
+  ├─ comment = "-- COALESCE, CAST, LIKE, IS NULL, IN list"
+  ├─ statement/select/
+  │   ├─ column/
+  │   │   ├─ call/
+  │   │   │   ├─ identifier = "COALESCE"
+  │   │   │   ├─ column/identifier = "Nickname"
+  │   │   │   └─ column/identifier = "Name"
+  │   │   └─ alias = "DisplayName"
+  │   ├─ column/
+  │   │   ├─ cast/
+  │   │   │   ├─ identifier = "Age"
+  │   │   │   └─ data_type/literal = "10"
+  │   │   └─ alias = "AgeText"
+  │   ├─ from/relation/identifier = "Users"
+  │   └─ where/compare/
+  │       ├─ compare/
+  │       │   ├─ compare/
+  │       │   │   ├─ identifier = "Email"
+  │       │   │   └─ literal = "'%@gmail.com'"
+  │       │   └─ compare/
+  │       │       ├─ identifier = "DeletedAt"
+  │       │       └─ literal = "NULL"
+  │       └─ compare/
+  │           ├─ identifier = "Role"
+  │           └─ unknown = "('admin', 'moderator')"
+  ├─ comment = "-- DISTINCT with ORDER BY DESC"
+  ├─ statement/select/
+  │   ├─ column/identifier = "Department"
+  │   ├─ from/relation/identifier = "Employees"
+  │   └─ order_by/order_target[desc]/identifier = "Department"
+  ├─ comment = "-- CREATE TABLE"
+  ├─ statement/create/
+  │   ├─ identifier = "Audit"
+  │   ├─ column_def/
+  │   │   ├─ identifier = "ID"
+  │   │   └─ data_type = "INT"
+  │   ├─ column_def/
+  │   │   ├─ identifier = "Action"
+  │   │   └─ data_type/literal = "100"
+  │   └─ column_def/
+  │       ├─ identifier = "CreatedAt"
+  │       └─ call/identifier = "GETDATE"
+  ├─ comment = "-- MERGE statement"
+  ├─ statement/merge/
+  │   ├─ relation/identifier = "Target"
+  │   ├─ relation/identifier = "Source"
+  │   ├─ compare/
+  │   │   ├─ reference/
+  │   │   │   ├─ identifier = "t"
+  │   │   │   └─ identifier = "ID"
+  │   │   └─ reference/
+  │   │       ├─ identifier = "s"
+  │   │       └─ identifier = "ID"
+  │   ├─ merge_when/update/
+  │   │   ├─ unknown = "t.Name = s.Name"
+  │   │   └─ assign/
+  │   │       ├─ reference/
+  │   │       │   ├─ identifier = "t"
+  │   │       │   └─ identifier = "Name"
+  │   │       └─ reference/
+  │   │           ├─ identifier = "s"
+  │   │           └─ identifier = "Name"
+  │   └─ merge_when/unknown = "(ID, Name)"
+  ├─ comment = "-- SELECT INTO temp table"
+  ├─ statement/select/
+  │   ├─ column/identifier = "Name"
+  │   ├─ column/identifier = "Age"
+  │   ├─ column/temp/identifier = "TempUsers"
+  │   ├─ from/relation/identifier = "Users"
+  │   └─ where/compare/
+  │       ├─ identifier = "Active"
+  │       └─ literal = "1"
+  ├─ comment = "-- Transaction"
+  ├─ transaction/
+  │   ├─ statement/update/
+  │   │   ├─ relation/identifier = "Accounts"
+  │   │   ├─ assign/
+  │   │   │   ├─ identifier = "Balance"
+  │   │   │   └─ binary/
+  │   │   │       ├─ identifier = "Balance"
+  │   │   │       └─ literal = "100"
+  │   │   └─ where/compare/
+  │   │       ├─ identifier = "ID"
+  │   │       └─ literal = "1"
+  │   └─ statement/update/
+  │       ├─ relation/identifier = "Accounts"
+  │       ├─ assign/
+  │       │   ├─ identifier = "Balance"
+  │       │   └─ binary/
+  │       │       ├─ identifier = "Balance"
+  │       │       └─ literal = "100"
+  │       └─ where/compare/
+  │           ├─ identifier = "ID"
+  │           └─ literal = "2"
+  ├─ comment = "-- SET variable"
+  ├─ statement/set/
+  │   ├─ variable = "@Threshold"
+  │   └─ literal = "42"
+  ├─ comment = "-- Scalar function"
+  ├─ statement/function/
+  │   ├─ schema = "dbo"
+  │   ├─ identifier = "GetAge"
+  │   ├─ column_def/
+  │   │   ├─ variable = "@BirthDate"
+  │   │   └─ unknown = "@BirthDate DATE"
+  │   ├─ data_type = "INT"
+  │   └─ call/
+  │       ├─ identifier = "DATEDIFF"
+  │       ├─ column/identifier = "YEAR"
+  │       ├─ column/variable = "@BirthDate"
+  │       └─ column/call/identifier = "GETDATE"
+  ├─ go = "GO"
+  ├─ comment = "-- EXEC stored procedure"
+  ├─ statement/exec/identifier = "sp_helpdb"
+  ├─ comment = "-- Iter 21: new shapes — DDL variants."
+  ├─ comment = "-- CREATE VIEW, DROP TABLE"
+  ├─ statement/create/
+  │   ├─ identifier = "ActiveUsers"
+  │   └─ unknown = "SELECT ID, Name FROM Users WHERE Active = 1"
+  ├─ statement/drop/identifier = "TempData"
+  ├─ comment = "-- ALTER TABLE: add constraint, drop constraint"
+  ├─ statement/alter/
+  │   ├─ identifier = "Orders"
+  │   └─ unknown = "ADD CONSTRAINT fk_customer FOREIGN KEY (CustomerID) REFERENCES Customers(ID)"
+  └─ statement/alter/
+      ├─ identifier = "Orders"
+      └─ unknown = "DROP CONSTRAINT fk_customer"

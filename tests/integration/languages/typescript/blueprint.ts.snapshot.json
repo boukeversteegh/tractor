@@ -1,0 +1,2641 @@
+{
+  "$type": "program",
+  "alias": [
+    {
+      "name": "Builder",
+      "type": {
+        "constructor": true,
+        "name": "Status",
+        "parameter": {
+          "required": true,
+          "name": "input",
+          "type": "string"
+        }
+      }
+    },
+    {
+      "generic": {
+        "name": "T"
+      },
+      "name": "Identity",
+      "type": {
+        "conditional": true,
+        "else": {
+          "type": {
+            "name": "never"
+          }
+        },
+        "left": {
+          "type": {
+            "typeof": true,
+            "name": "globalThis"
+          }
+        },
+        "right": {
+          "type": {
+            "name": "T"
+          }
+        },
+        "then": {
+          "type": {
+            "name": "T"
+          }
+        }
+      }
+    },
+    {
+      "name": "Reflective",
+      "type": {
+        "object": true,
+        "method": {
+          "public": true,
+          "decorators": [],
+          "name": "copy",
+          "generics": [],
+          "parameters": [],
+          "returns": {
+            "$type": "returns",
+            "type": "this"
+          },
+          "throws": []
+        }
+      }
+    },
+    {
+      "name": "RestArgs",
+      "type": {
+        "tuple": true,
+        "type": [
+          {
+            "name": "number"
+          },
+          {
+            "rest": true,
+            "type": {
+              "array": true,
+              "name": "string"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OptionalSlot",
+      "type": {
+        "tuple": true,
+        "type": [
+          {
+            "parameter": {
+              "required": true,
+              "name": "head",
+              "type": "number"
+            }
+          },
+          {
+            "parameter": {
+              "optional": true,
+              "name": "tail",
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "NestedTy",
+      "type": {
+        "lookup": true,
+        "name": "StaticBlock",
+        "type": {
+          "literal": true,
+          "string": "\"counter\""
+        }
+      }
+    }
+  ],
+  "class": {
+    "decorators": [],
+    "name": "StaticBlock",
+    "generics": [],
+    "bases": [],
+    "where_clauses": [],
+    "body": {
+      "$type": "body",
+      "block": {
+        "static": true,
+        "body": {
+          "expression": {
+            "assign": {
+              "expression": [
+                {
+                  "object": {
+                    "name": "StaticBlock"
+                  }
+                },
+                {
+                  "number": "7"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "field": {
+        "public": true,
+        "static": true,
+        "decorators": [],
+        "name": "counter",
+        "value": {
+          "$type": "expression",
+          "number": "0"
+        }
+      }
+    }
+  },
+  "comment": [
+    "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax.",
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    "// Iter 18: TS 5+ / advanced type / declare / module shapes.",
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    },
+    {
+      "leading": true
+    }
+  ],
+  "declare": [
+    {
+      "variable": {
+        "decorators": [],
+        "const": true,
+        "type": {
+          "$type": "type",
+          "name": "boolean"
+        },
+        "name": "__DEV__"
+      }
+    },
+    {
+      "function": {
+        "decorators": [],
+        "name": "externalThing",
+        "generics": [],
+        "parameters": [
+          {
+            "$type": "parameter",
+            "required": true,
+            "name": "name",
+            "type": "string"
+          }
+        ],
+        "returns": {
+          "$type": "returns",
+          "type": "void"
+        },
+        "throws": []
+      }
+    },
+    {
+      "namespace": {
+        "body": {
+          "function": {
+            "decorators": [],
+            "name": "init",
+            "generics": [],
+            "parameters": [],
+            "returns": {
+              "$type": "returns",
+              "type": "void"
+            },
+            "throws": []
+          }
+        },
+        "name": "SideEffect"
+      }
+    }
+  ],
+  "export": [
+    {
+      "spec": {
+        "name": "namedA"
+      },
+      "string": "\"./barrel\""
+    },
+    {
+      "alias": {
+        "generic": {
+          "name": "T"
+        },
+        "name": "Re",
+        "type": {
+          "conditional": true,
+          "else": {
+            "type": {
+              "name": "never"
+            }
+          },
+          "left": {
+            "type": {
+              "name": "T"
+            }
+          },
+          "right": {
+            "type": {
+              "name": "Array",
+              "type": {
+                "infer": true,
+                "name": "U"
+              }
+            }
+          },
+          "then": {
+            "type": {
+              "name": "U"
+            }
+          }
+        }
+      }
+    },
+    {
+      "interface": {
+        "decorators": [],
+        "name": "Shape",
+        "generics": [
+          {
+            "$type": "generic",
+            "name": "T",
+            "type": {
+              "default": true,
+              "type": {
+                "name": "number"
+              }
+            }
+          }
+        ],
+        "bases": [],
+        "where_clauses": [],
+        "body": {
+          "$type": "body",
+          "method": {
+            "public": true,
+            "decorators": [],
+            "name": "describe",
+            "generics": [],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "required": true,
+                "name": "prefix",
+                "type": "string"
+              }
+            ],
+            "returns": {
+              "$type": "returns",
+              "type": "string"
+            },
+            "throws": []
+          },
+          "property": [
+            {
+              "readonly": true,
+              "name": "id",
+              "type": {
+                "name": "string"
+              }
+            },
+            {
+              "optional": true,
+              "name": "label",
+              "type": {
+                "name": "string"
+              }
+            },
+            {
+              "name": "value",
+              "type": {
+                "name": "T"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "alias": {
+        "name": "Point",
+        "type": {
+          "object": true,
+          "property": [
+            {
+              "name": "x",
+              "type": {
+                "name": "number"
+              }
+            },
+            {
+              "name": "y",
+              "type": {
+                "name": "number"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "alias": {
+        "name": "Pair",
+        "type": {
+          "tuple": true,
+          "type": [
+            {
+              "name": "string"
+            },
+            {
+              "name": "number"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "alias": {
+        "name": "Status",
+        "type": {
+          "union": true,
+          "type": [
+            {
+              "union": true,
+              "type": [
+                {
+                  "union": true,
+                  "type": [
+                    {
+                      "literal": true,
+                      "string": "\"idle\""
+                    },
+                    {
+                      "literal": true,
+                      "string": "\"loading\""
+                    }
+                  ]
+                },
+                {
+                  "literal": true,
+                  "string": "\"ready\""
+                }
+              ]
+            },
+            {
+              "literal": true,
+              "string": "\"error\""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "alias": {
+        "generic": {
+          "name": "T"
+        },
+        "name": "Mapper",
+        "type": {
+          "function": true,
+          "parameter": {
+            "required": true,
+            "name": "input",
+            "type": "T"
+          },
+          "returns": {
+            "type": {
+              "name": "T"
+            }
+          }
+        }
+      }
+    },
+    {
+      "alias": {
+        "generic": {
+          "name": "T"
+        },
+        "name": "Partialized",
+        "type": {
+          "object": true,
+          "indexer": {
+            "type": [
+              {
+                "mapped": true,
+                "name": "K",
+                "type": {
+                  "keyof": true,
+                  "name": "T"
+                }
+              },
+              {
+                "optional": true,
+                "type": {
+                  "lookup": true,
+                  "name": [
+                    "T",
+                    "K"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "alias": {
+        "name": "Greeting",
+        "type": {
+          "template": true,
+          "name": "${string}",
+          "string": "hello, "
+        }
+      }
+    },
+    {
+      "enum": {
+        "body": {
+          "constant": [
+            {
+              "name": "Red",
+              "string": "\"RED\""
+            },
+            {
+              "name": "Green",
+              "string": "\"GREEN\""
+            },
+            {
+              "name": "Blue",
+              "string": "\"BLUE\""
+            }
+          ]
+        },
+        "name": "Color"
+      }
+    },
+    {
+      "class": {
+        "abstract": true,
+        "decorators": [],
+        "name": "Base",
+        "generics": [
+          {
+            "$type": "generic",
+            "extends": {
+              "type": {
+                "name": "Shape"
+              }
+            },
+            "name": "T"
+          }
+        ],
+        "bases": [],
+        "where_clauses": [],
+        "body": {
+          "$type": "body",
+          "field": [
+            {
+              "public": true,
+              "static": true,
+              "decorators": [],
+              "type": "string",
+              "name": "kind",
+              "value": {
+                "$type": "expression",
+                "string": "\"base\""
+              }
+            },
+            {
+              "protected": true,
+              "readonly": true,
+              "decorators": [],
+              "type": "number",
+              "name": "createdAt",
+              "value": {
+                "$type": "expression",
+                "object": {
+                  "name": "Date"
+                }
+              }
+            },
+            {
+              "private": true,
+              "decorators": [],
+              "type": {
+                "$type": "type",
+                "name": [
+                  "Map",
+                  "string",
+                  "T"
+                ]
+              },
+              "name": "_cache",
+              "value": {
+                "$type": "expression",
+                "object_creation": {
+                  "name": "Map"
+                }
+              }
+            }
+          ],
+          "method": [
+            {
+              "public": true,
+              "decorators": [],
+              "name": "constructor",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "public": true,
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "$type": "parameter",
+                  "optional": true,
+                  "private": true,
+                  "readonly": true,
+                  "name": "seed",
+                  "type": "number"
+                }
+              ],
+              "throws": [],
+              "body": "{}"
+            },
+            {
+              "public": true,
+              "abstract": true,
+              "decorators": [],
+              "name": "render",
+              "generics": [],
+              "parameters": [],
+              "returns": {
+                "$type": "returns",
+                "type": "string"
+              },
+              "throws": []
+            },
+            {
+              "public": true,
+              "get": true,
+              "decorators": [],
+              "name": "cacheSize",
+              "generics": [],
+              "parameters": [],
+              "returns": {
+                "$type": "returns",
+                "type": "number"
+              },
+              "throws": [],
+              "body": {
+                "$type": "body",
+                "return": {
+                  "expression": {
+                    "object": {
+                      "this": "this"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "set": true,
+              "decorators": [],
+              "name": "primary",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "value",
+                  "type": "T"
+                }
+              ],
+              "throws": [],
+              "body": {
+                "$type": "body",
+                "expression": {
+                  "object": {
+                    "name": "value",
+                    "string": "\"primary\"",
+                    "this": "this"
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "decorators": [],
+              "name": "store",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "key",
+                  "type": "string"
+                },
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "value",
+                  "type": "T"
+                }
+              ],
+              "returns": {
+                "$type": "returns",
+                "type": "void"
+              },
+              "throws": [],
+              "body": {
+                "$type": "body",
+                "expression": {
+                  "object": {
+                    "name": [
+                      "key",
+                      "value"
+                    ],
+                    "this": "this"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "class": {
+        "decorators": [],
+        "name": "Widget",
+        "generics": [
+          {
+            "$type": "generic",
+            "extends": {
+              "type": {
+                "name": "Shape"
+              }
+            },
+            "name": "T",
+            "type": {
+              "default": true,
+              "type": {
+                "name": [
+                  "Shape",
+                  "number"
+                ]
+              }
+            }
+          }
+        ],
+        "bases": [
+          {
+            "$type": "extends",
+            "type": {
+              "name": "Base"
+            }
+          },
+          {
+            "$type": "extends",
+            "type": {
+              "type": {
+                "name": "T"
+              }
+            }
+          }
+        ],
+        "where_clauses": [],
+        "body": {
+          "$type": "body",
+          "field": {
+            "public": true,
+            "static": true,
+            "decorators": [],
+            "name": "#counter",
+            "value": {
+              "$type": "expression",
+              "number": "0"
+            }
+          },
+          "method": [
+            {
+              "public": true,
+              "decorators": [],
+              "name": "constructor",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "private": true,
+                  "name": "items",
+                  "type": {
+                    "$type": "type",
+                    "array": true,
+                    "name": "T"
+                  },
+                  "default": "[]"
+                }
+              ],
+              "throws": [],
+              "body": {
+                "$type": "body",
+                "expression": [
+                  {
+                    "call": {
+                      "name": "name",
+                      "super": "super"
+                    }
+                  },
+                  {
+                    "unary": {
+                      "postfix": true,
+                      "object": {
+                        "name": "Widget"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "public": true,
+              "override": true,
+              "decorators": [],
+              "name": "render",
+              "generics": [],
+              "parameters": [],
+              "returns": {
+                "$type": "returns",
+                "type": "string"
+              },
+              "throws": [],
+              "body": {
+                "$type": "body",
+                "return": {
+                  "expression": {
+                    "template": {
+                      "interpolation": {
+                        "nonnull": {
+                          "name": "first"
+                        }
+                      },
+                      "string": [
+                        "Widget<",
+                        ">"
+                      ]
+                    }
+                  }
+                },
+                "variable": {
+                  "decorators": [],
+                  "const": true,
+                  "name": "first",
+                  "value": {
+                    "$type": "expression",
+                    "binary": {
+                      "left": {
+                        "$type": "expression",
+                        "object": {
+                          "number": "0",
+                          "this": "this"
+                        }
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "??",
+                        "null_coalesce": true
+                      },
+                      "right": {
+                        "$type": "expression",
+                        "string": "\"unnamed\""
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "generator": true,
+              "decorators": [],
+              "name": "entries",
+              "generics": [],
+              "parameters": [],
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "$type": "type",
+                  "name": "Generator",
+                  "type": {
+                    "tuple": true,
+                    "type": [
+                      {
+                        "name": "number"
+                      },
+                      {
+                        "name": "T"
+                      }
+                    ]
+                  }
+                }
+              },
+              "throws": [],
+              "body": {
+                "$type": "body",
+                "c_for": {
+                  "initializer": {
+                    "$type": "variable",
+                    "decorators": [],
+                    "let": true,
+                    "name": "i",
+                    "value": {
+                      "$type": "expression",
+                      "number": "0"
+                    }
+                  },
+                  "condition": {
+                    "$type": "binary",
+                    "left": {
+                      "$type": "expression",
+                      "name": "i"
+                    },
+                    "op": {
+                      "$type": "operator",
+                      "text": "<",
+                      "less": true
+                    },
+                    "right": {
+                      "$type": "expression",
+                      "object": {
+                        "this": "this"
+                      }
+                    }
+                  },
+                  "updates": [
+                    {
+                      "$type": "unary",
+                      "postfix": true,
+                      "name": "i"
+                    }
+                  ],
+                  "body": {
+                    "$type": "body",
+                    "yield": {
+                      "list": {
+                        "name": "i",
+                        "object": {
+                          "name": "i",
+                          "this": "this"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "async": true,
+              "decorators": [],
+              "name": "loadAll",
+              "generics": [],
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "urls",
+                  "type": {
+                    "$type": "type",
+                    "array": true,
+                    "name": "string"
+                  }
+                },
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": {
+                    "$type": "rest",
+                    "name": "extra"
+                  },
+                  "type": {
+                    "$type": "type",
+                    "array": true,
+                    "name": "string"
+                  }
+                }
+              ],
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "$type": "type",
+                  "name": "Promise",
+                  "type": {
+                    "array": true,
+                    "name": "T"
+                  }
+                }
+              },
+              "throws": [],
+              "body": {
+                "$type": "body",
+                "try": {
+                  "body": {
+                    "for": {
+                      "body": {
+                        "expression": {
+                          "await": {
+                            "call": {
+                              "name": [
+                                "fetch",
+                                "u"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "u"
+                        }
+                      },
+                      "right": {
+                        "expression": {
+                          "name": "merged"
+                        }
+                      }
+                    },
+                    "return": {
+                      "expression": {
+                        "object": {
+                          "this": "this"
+                        }
+                      }
+                    },
+                    "variable": {
+                      "decorators": [],
+                      "const": true,
+                      "name": "merged",
+                      "value": {
+                        "$type": "expression",
+                        "list": {
+                          "list_splat": [
+                            {
+                              "name": "urls"
+                            },
+                            {
+                              "name": "extra"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "catch": {
+                    "body": {
+                      "throw": {
+                        "expression": {
+                          "as": {
+                            "name": [
+                              "e",
+                              "Error"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "name": "e"
+                  },
+                  "finally": {
+                    "body": {
+                      "expression": {
+                        "object": {
+                          "this": "this"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "function": {
+        "decorators": [],
+        "name": "controlFlow",
+        "generics": [],
+        "parameters": [
+          {
+            "$type": "parameter",
+            "required": true,
+            "name": "n",
+            "type": "number"
+          }
+        ],
+        "returns": {
+          "$type": "returns",
+          "type": "Status"
+        },
+        "throws": [],
+        "body": {
+          "$type": "body",
+          "for": [
+            {
+              "body": {
+                "expression": {
+                  "assign": {
+                    "expression": [
+                      {
+                        "nonnull": {
+                          "object": {
+                            "name": [
+                              "obj",
+                              "k"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "number": "1"
+                      }
+                    ]
+                  }
+                }
+              },
+              "left": {
+                "expression": {
+                  "name": "k"
+                }
+              },
+              "right": {
+                "expression": {
+                  "name": "obj"
+                }
+              }
+            },
+            {
+              "body": {
+                "expression": {
+                  "unary": {
+                    "name": "v"
+                  }
+                }
+              },
+              "left": {
+                "expression": {
+                  "pattern": {
+                    "array": true,
+                    "name": "v"
+                  }
+                }
+              },
+              "right": {
+                "expression": {
+                  "object": {
+                    "name": [
+                      "Object",
+                      "obj"
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "if": {
+            "condition": {
+              "$type": "expression",
+              "binary": {
+                "left": {
+                  "$type": "expression",
+                  "name": "n"
+                },
+                "op": {
+                  "$type": "operator",
+                  "text": "<",
+                  "less": true
+                },
+                "right": {
+                  "$type": "expression",
+                  "number": "0"
+                }
+              }
+            },
+            "body": {
+              "$type": "body",
+              "assign": {
+                "expression": [
+                  {
+                    "name": "status"
+                  },
+                  {
+                    "string": "\"error\""
+                  }
+                ]
+              }
+            },
+            "else_branch": {
+              "$type": "else_if",
+              "condition": {
+                "$type": "expression",
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "name": "n"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "===",
+                    "equal": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "number": "0"
+                  }
+                }
+              },
+              "body": {
+                "$type": "body",
+                "assign": {
+                  "expression": [
+                    {
+                      "name": "status"
+                    },
+                    {
+                      "string": "\"idle\""
+                    }
+                  ]
+                }
+              },
+              "else_branch": {
+                "$type": "else_if",
+                "condition": {
+                  "$type": "expression",
+                  "binary": {
+                    "left": {
+                      "$type": "expression",
+                      "name": "n"
+                    },
+                    "op": {
+                      "$type": "operator",
+                      "text": "<",
+                      "less": true
+                    },
+                    "right": {
+                      "$type": "expression",
+                      "number": "10"
+                    }
+                  }
+                },
+                "body": {
+                  "$type": "body",
+                  "assign": {
+                    "expression": [
+                      {
+                        "name": "status"
+                      },
+                      {
+                        "string": "\"loading\""
+                      }
+                    ]
+                  }
+                },
+                "else_branch": {
+                  "$type": "else",
+                  "body": {
+                    "$type": "body",
+                    "assign": {
+                      "expression": [
+                        {
+                          "name": "status"
+                        },
+                        {
+                          "string": "\"ready\""
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "return": {
+            "expression": {
+              "ternary": {
+                "condition": {
+                  "$type": "expression",
+                  "binary": {
+                    "left": {
+                      "$type": "expression",
+                      "name": "n"
+                    },
+                    "op": {
+                      "$type": "operator",
+                      "text": ">",
+                      "greater": true
+                    },
+                    "right": {
+                      "$type": "expression",
+                      "number": "0"
+                    }
+                  }
+                },
+                "if_true": {
+                  "$type": "expression",
+                  "name": "status"
+                },
+                "if_false": {
+                  "$type": "expression",
+                  "string": "\"idle\""
+                }
+              }
+            }
+          },
+          "switch": {
+            "arm": [
+              {
+                "break": "break;",
+                "string": "\"ready\""
+              },
+              {
+                "string": "\"error\"",
+                "throw": {
+                  "expression": {
+                    "object_creation": {
+                      "name": "Error",
+                      "string": "\"bad\""
+                    }
+                  }
+                }
+              },
+              {
+                "break": "break;",
+                "comment": "/* fallthrough */"
+              }
+            ],
+            "name": "status"
+          },
+          "variable": [
+            {
+              "decorators": [],
+              "let": true,
+              "type": {
+                "$type": "type",
+                "name": "Status"
+              },
+              "name": "status",
+              "value": {
+                "$type": "expression",
+                "string": "\"idle\""
+              }
+            },
+            {
+              "decorators": [],
+              "const": true,
+              "type": {
+                "$type": "type",
+                "name": [
+                  "Record",
+                  "string",
+                  "number"
+                ]
+              },
+              "name": "obj",
+              "value": {
+                "$type": "expression",
+                "object": {
+                  "literal": true,
+                  "pair": [
+                    {
+                      "name": "a",
+                      "number": "1"
+                    },
+                    {
+                      "name": "b",
+                      "number": "2"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "while": {
+            "condition": {
+              "$type": "expression",
+              "false": "false"
+            },
+            "body": {
+              "$type": "body",
+              "comment": "/* never */"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "expression": [
+    {
+      "unary": {
+        "name": "arrow"
+      }
+    },
+    {
+      "unary": {
+        "name": "doubled"
+      }
+    },
+    {
+      "unary": {
+        "name": "fallback"
+      }
+    },
+    {
+      "unary": {
+        "name": "nonNull"
+      }
+    },
+    {
+      "unary": {
+        "name": "ns"
+      }
+    },
+    {
+      "unary": {
+        "name": "defaultExport"
+      }
+    },
+    {
+      "unary": {
+        "name": "aliasedB"
+      }
+    },
+    {
+      "unary": {
+        "name": "controlOdds"
+      }
+    },
+    {
+      "unary": {
+        "name": "destructure"
+      }
+    },
+    {
+      "unary": {
+        "name": "asserted"
+      }
+    },
+    {
+      "unary": {
+        "name": "fixed"
+      }
+    },
+    {
+      "unary": {
+        "name": "url"
+      }
+    },
+    {
+      "unary": {
+        "name": "nestedVal"
+      }
+    },
+    {
+      "unary": {
+        "name": "pattern"
+      }
+    },
+    {
+      "unary": {
+        "name": "MetaCtor"
+      }
+    },
+    {
+      "unary": {
+        "name": "legacy"
+      }
+    }
+  ],
+  "function": [
+    {
+      "decorators": [],
+      "name": "isShape",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "v",
+          "type": "unknown"
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "$type": "predicate",
+          "name": "v",
+          "type": {
+            "name": "Shape"
+          }
+        }
+      },
+      "throws": [],
+      "body": {
+        "$type": "body",
+        "return": {
+          "expression": {
+            "logical": {
+              "left": {
+                "$type": "expression",
+                "logical": {
+                  "left": {
+                    "$type": "expression",
+                    "binary": {
+                      "left": {
+                        "$type": "expression",
+                        "unary": {
+                          "name": "v"
+                        }
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "===",
+                        "equal": true
+                      },
+                      "right": {
+                        "$type": "expression",
+                        "string": "\"object\""
+                      }
+                    }
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "&&",
+                    "and": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "binary": {
+                      "left": {
+                        "$type": "expression",
+                        "name": "v"
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "!==",
+                        "not_equal": true
+                      },
+                      "right": {
+                        "$type": "expression",
+                        "null": "null"
+                      }
+                    }
+                  }
+                }
+              },
+              "op": {
+                "$type": "operator",
+                "text": "&&",
+                "and": true
+              },
+              "right": {
+                "$type": "expression",
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "string": "\"id\""
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "in",
+                    "in": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "name": "v"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "async": true,
+      "decorators": [],
+      "name": "compute",
+      "generics": [
+        {
+          "$type": "generic",
+          "extends": {
+            "type": {
+              "union": true,
+              "name": [
+                "number",
+                "string"
+              ]
+            }
+          },
+          "name": "T"
+        }
+      ],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "input",
+          "type": "T"
+        },
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": {
+            "$type": "pattern",
+            "object": true,
+            "name": "label",
+            "pair": {
+              "name": "scale",
+              "number": "1"
+            }
+          },
+          "type": {
+            "$type": "type",
+            "object": true,
+            "property": [
+              {
+                "optional": true,
+                "name": "scale",
+                "type": {
+                  "name": "number"
+                }
+              },
+              {
+                "optional": true,
+                "name": "label",
+                "type": {
+                  "name": "string"
+                }
+              }
+            ]
+          },
+          "default": {
+            "$type": "object",
+            "literal": true
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "$type": "type",
+          "name": [
+            "Promise",
+            "Greeting"
+          ]
+        }
+      },
+      "throws": [],
+      "body": {
+        "$type": "body",
+        "comment": {
+          "trailing": true
+        },
+        "return": {
+          "expression": {
+            "as": {
+              "name": [
+                "msg",
+                "Greeting"
+              ]
+            }
+          }
+        },
+        "variable": [
+          {
+            "decorators": [],
+            "const": true,
+            "name": {
+              "$type": "pattern",
+              "array": true,
+              "name": "head",
+              "rest": {
+                "name": "rest"
+              }
+            },
+            "value": {
+              "$type": "expression",
+              "object": {
+                "call": {
+                  "name": [
+                    "String",
+                    "input"
+                  ]
+                },
+                "string": "\"\""
+              }
+            }
+          },
+          {
+            "decorators": [],
+            "const": true,
+            "name": "spread",
+            "value": {
+              "$type": "expression",
+              "object": {
+                "literal": true,
+                "list_splat": {
+                  "object": {
+                    "literal": true,
+                    "name": "scale"
+                  }
+                },
+                "name": [
+                  "label",
+                  "head",
+                  "rest"
+                ]
+              }
+            }
+          },
+          {
+            "decorators": [],
+            "const": true,
+            "name": "msg",
+            "value": {
+              "$type": "expression",
+              "as": {
+                "call": {
+                  "interpolation": [
+                    {
+                      "binary": {
+                        "left": {
+                          "$type": "expression",
+                          "name": "label"
+                        },
+                        "op": {
+                          "$type": "operator",
+                          "text": "??",
+                          "null_coalesce": true
+                        },
+                        "right": {
+                          "$type": "expression",
+                          "string": "\"world\""
+                        }
+                      }
+                    },
+                    {
+                      "object": {
+                        "name": "spread"
+                      }
+                    }
+                  ],
+                  "name": "tag",
+                  "string": [
+                    "hello, ",
+                    " (",
+                    ")"
+                  ]
+                },
+                "name": "Greeting"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "decorators": [],
+      "name": "isNumber",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "x",
+          "type": "unknown"
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "$type": "predicate",
+          "asserts": true,
+          "name": "x",
+          "type": {
+            "name": "number"
+          }
+        }
+      },
+      "throws": [],
+      "body": {
+        "$type": "body",
+        "if": {
+          "condition": {
+            "$type": "expression",
+            "binary": {
+              "left": {
+                "$type": "expression",
+                "unary": {
+                  "name": "x"
+                }
+              },
+              "op": {
+                "$type": "operator",
+                "text": "!==",
+                "not_equal": true
+              },
+              "right": {
+                "$type": "expression",
+                "string": "\"number\""
+              }
+            }
+          },
+          "body": {
+            "$type": "body",
+            "object_creation": {
+              "name": "Error",
+              "string": "\"not a number\""
+            }
+          }
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "name": "MetaCtor",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "this",
+          "type": "unknown"
+        }
+      ],
+      "throws": [],
+      "body": {
+        "$type": "body",
+        "return": {
+          "expression": {
+            "binary": {
+              "left": {
+                "$type": "expression",
+                "object": {
+                  "name": "new.target"
+                }
+              },
+              "op": {
+                "$type": "operator",
+                "text": "??",
+                "null_coalesce": true
+              },
+              "right": {
+                "$type": "expression",
+                "string": "\"\""
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "name": "controlOdds",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "value",
+          "type": "number"
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": "number"
+      },
+      "throws": [],
+      "body": {
+        "$type": "body",
+        "do_while": {
+          "body": {
+            "$type": "body",
+            "expression": {
+              "unary": {
+                "postfix": true,
+                "name": "n"
+              }
+            }
+          },
+          "condition": {
+            "$type": "binary",
+            "left": {
+              "$type": "expression",
+              "name": "n"
+            },
+            "op": {
+              "$type": "operator",
+              "text": "<",
+              "less": true
+            },
+            "right": {
+              "$type": "expression",
+              "number": "3"
+            }
+          }
+        },
+        "if": {
+          "condition": {
+            "$type": "expression",
+            "false": "false"
+          },
+          "body": "debugger;"
+        },
+        "label": {
+          "c_for": {
+            "initializer": {
+              "$type": "variable",
+              "let": true,
+              "declarator": [
+                {
+                  "name": "i",
+                  "value": {
+                    "expression": {
+                      "number": "0"
+                    }
+                  }
+                },
+                {
+                  "name": "j",
+                  "value": {
+                    "expression": {
+                      "number": "100"
+                    }
+                  }
+                }
+              ]
+            },
+            "condition": {
+              "$type": "binary",
+              "left": {
+                "$type": "expression",
+                "name": "i"
+              },
+              "op": {
+                "$type": "operator",
+                "text": "<",
+                "less": true
+              },
+              "right": {
+                "$type": "expression",
+                "number": "5"
+              }
+            },
+            "updates": [
+              {
+                "$type": "unary",
+                "postfix": true,
+                "name": "i"
+              },
+              {
+                "$type": "unary",
+                "postfix": true,
+                "name": "j"
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "expression": {
+                "assign": {
+                  "expression": [
+                    {
+                      "name": "total"
+                    },
+                    {
+                      "assign": {
+                        "expression": [
+                          {
+                            "name": "total"
+                          },
+                          {
+                            "name": "i"
+                          }
+                        ]
+                      },
+                      "binary": {
+                        "left": {
+                          "$type": "expression",
+                          "name": "total"
+                        },
+                        "op": {
+                          "$type": "operator",
+                          "text": "*",
+                          "multiply": true
+                        },
+                        "right": {
+                          "$type": "expression",
+                          "number": "2"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "if": [
+                {
+                  "condition": {
+                    "$type": "expression",
+                    "binary": {
+                      "left": {
+                        "$type": "expression",
+                        "name": "i"
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "===",
+                        "equal": true
+                      },
+                      "right": {
+                        "$type": "expression",
+                        "number": "2"
+                      }
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "name": "outer"
+                  }
+                },
+                {
+                  "condition": {
+                    "$type": "expression",
+                    "binary": {
+                      "left": {
+                        "$type": "expression",
+                        "name": "i"
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "===",
+                        "equal": true
+                      },
+                      "right": {
+                        "$type": "expression",
+                        "number": "4"
+                      }
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "name": "outer"
+                  }
+                }
+              ]
+            }
+          },
+          "name": "outer"
+        },
+        "return": {
+          "expression": {
+            "binary": {
+              "left": {
+                "$type": "expression",
+                "name": "total"
+              },
+              "op": {
+                "$type": "operator",
+                "text": "+",
+                "plus": true
+              },
+              "right": {
+                "$type": "expression",
+                "name": "n"
+              }
+            }
+          }
+        },
+        "variable": [
+          {
+            "decorators": [],
+            "let": true,
+            "name": "total",
+            "value": {
+              "$type": "expression",
+              "number": "0"
+            }
+          },
+          {
+            "decorators": [],
+            "let": true,
+            "name": "n",
+            "value": {
+              "$type": "expression",
+              "number": "0"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "decorators": [],
+      "name": "destructure",
+      "generics": [],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": {
+            "$type": "pattern",
+            "object": true,
+            "pair": [
+              {
+                "name": [
+                  "a",
+                  "aa"
+                ],
+                "value": {
+                  "expression": {
+                    "number": "1"
+                  }
+                }
+              },
+              {
+                "name": [
+                  "b",
+                  "bb"
+                ]
+              }
+            ]
+          },
+          "type": {
+            "$type": "type",
+            "object": true,
+            "property": [
+              {
+                "optional": true,
+                "name": "a",
+                "type": {
+                  "name": "number"
+                }
+              },
+              {
+                "name": "b",
+                "type": {
+                  "name": "number"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": {
+            "$type": "pattern",
+            "array": true,
+            "name": "c",
+            "rest": {
+              "name": "rest"
+            },
+            "value": {
+              "expression": {
+                "number": "0"
+              }
+            }
+          },
+          "type": {
+            "$type": "type",
+            "array": true,
+            "name": "number"
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": "number"
+      },
+      "throws": [],
+      "body": {
+        "$type": "body",
+        "return": {
+          "expression": {
+            "binary": {
+              "left": {
+                "$type": "expression",
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "binary": {
+                      "left": {
+                        "$type": "expression",
+                        "name": "aa"
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "+",
+                        "plus": true
+                      },
+                      "right": {
+                        "$type": "expression",
+                        "name": "bb"
+                      }
+                    }
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "+",
+                    "plus": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "name": "c"
+                  }
+                }
+              },
+              "op": {
+                "$type": "operator",
+                "text": "+",
+                "plus": true
+              },
+              "right": {
+                "$type": "expression",
+                "object": {
+                  "name": "rest"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "import": [
+    {
+      "default": true,
+      "group": true,
+      "name": "defaultExport",
+      "path": "./barrel",
+      "spec": [
+        {
+          "name": "namedA"
+        },
+        {
+          "name": [
+            "namedB",
+            "aliasedB"
+          ]
+        }
+      ]
+    },
+    {
+      "namespace": {
+        "name": "ns"
+      },
+      "path": "./namespace"
+    },
+    {
+      "group": true,
+      "path": "./types",
+      "spec": {
+        "name": "OnlyAtCompileTime"
+      }
+    },
+    {
+      "sideeffect": true,
+      "name": "legacy",
+      "string": "\"./legacy\""
+    }
+  ],
+  "variable": [
+    {
+      "decorators": [],
+      "const": true,
+      "name": "tag",
+      "value": {
+        "$type": "expression",
+        "arrow": {
+          "parameter": [
+            {
+              "required": true,
+              "name": "parts",
+              "type": "TemplateStringsArray"
+            },
+            {
+              "required": true,
+              "name": {
+                "$type": "rest",
+                "name": "vals"
+              },
+              "type": {
+                "$type": "type",
+                "array": true,
+                "name": "unknown"
+              }
+            }
+          ],
+          "value": {
+            "expression": {
+              "object": {
+                "arrow": {
+                  "parameter": [
+                    {
+                      "required": true,
+                      "name": "acc"
+                    },
+                    {
+                      "required": true,
+                      "name": "p"
+                    },
+                    {
+                      "required": true,
+                      "name": "i"
+                    }
+                  ],
+                  "value": {
+                    "expression": {
+                      "binary": {
+                        "left": {
+                          "$type": "expression",
+                          "binary": {
+                            "left": {
+                              "$type": "expression",
+                              "name": "acc"
+                            },
+                            "op": {
+                              "$type": "operator",
+                              "text": "+",
+                              "plus": true
+                            },
+                            "right": {
+                              "$type": "expression",
+                              "name": "p"
+                            }
+                          }
+                        },
+                        "op": {
+                          "$type": "operator",
+                          "text": "+",
+                          "plus": true
+                        },
+                        "right": {
+                          "$type": "expression",
+                          "binary": {
+                            "left": {
+                              "$type": "expression",
+                              "object": {
+                                "name": [
+                                  "vals",
+                                  "i"
+                                ]
+                              }
+                            },
+                            "op": {
+                              "$type": "operator",
+                              "text": "??",
+                              "null_coalesce": true
+                            },
+                            "right": {
+                              "$type": "expression",
+                              "string": "\"\""
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "name": "parts",
+                "string": "\"\""
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "name": "arrow",
+      "value": {
+        "$type": "expression",
+        "arrow": {
+          "parameter": {
+            "required": true,
+            "name": "xs",
+            "type": {
+              "$type": "type",
+              "array": true,
+              "name": "U"
+            }
+          },
+          "returns": {
+            "type": {
+              "$type": "type",
+              "union": true,
+              "name": "U",
+              "type": {
+                "literal": true,
+                "name": "undefined"
+              }
+            }
+          },
+          "value": {
+            "expression": {
+              "object": {
+                "name": "xs",
+                "number": "0"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "type": {
+        "$type": "type",
+        "array": true,
+        "name": "number"
+      },
+      "name": "doubled",
+      "value": {
+        "$type": "expression",
+        "object": {
+          "arrow": {
+            "parameter": {
+              "required": true,
+              "name": "x"
+            },
+            "returns": {
+              "type": "number"
+            },
+            "value": {
+              "expression": {
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "name": "x"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "*",
+                    "multiply": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "number": "2"
+                  }
+                }
+              }
+            }
+          },
+          "list": {
+            "number": [
+              "1",
+              "2",
+              "3"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "name": "arrowBlock",
+      "value": {
+        "$type": "expression",
+        "arrow": {
+          "body": {
+            "return": {
+              "expression": {
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "name": "x"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "*",
+                    "multiply": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "number": "2"
+                  }
+                }
+              }
+            }
+          },
+          "parameter": {
+            "required": true,
+            "name": "x",
+            "type": "number"
+          },
+          "returns": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "type": {
+        "$type": "type",
+        "union": true,
+        "name": "string",
+        "type": {
+          "literal": true,
+          "null": "null"
+        }
+      },
+      "name": "maybe",
+      "value": {
+        "$type": "expression",
+        "null": "null"
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "name": "fallback",
+      "value": {
+        "$type": "expression",
+        "binary": {
+          "left": {
+            "$type": "expression",
+            "name": "maybe"
+          },
+          "op": {
+            "$type": "operator",
+            "text": "??",
+            "null_coalesce": true
+          },
+          "right": {
+            "$type": "expression",
+            "string": "\"default\""
+          }
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "name": "nonNull",
+      "value": {
+        "$type": "expression",
+        "nonnull": {
+          "as": {
+            "name": "maybe",
+            "type": {
+              "union": true,
+              "name": "string",
+              "type": {
+                "literal": true,
+                "null": "null"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "name": "asserted",
+      "value": {
+        "$type": "expression",
+        "as": {
+          "as": {
+            "string": "\"42\"",
+            "type": {
+              "name": "unknown"
+            }
+          },
+          "type": {
+            "name": "number"
+          }
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "name": "arrayOf",
+      "value": {
+        "$type": "expression",
+        "type": {
+          "generic": true,
+          "type": {
+            "name": "number"
+          }
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "name": "fixed",
+      "value": {
+        "$type": "expression",
+        "call": {
+          "name": "arrayOf"
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "name": "url",
+      "value": {
+        "$type": "expression",
+        "object": {
+          "name": "import.meta"
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "name": "nestedVal",
+      "value": {
+        "$type": "expression",
+        "object": {
+          "name": "StaticBlock"
+        }
+      }
+    },
+    {
+      "decorators": [],
+      "const": true,
+      "name": "pattern",
+      "value": {
+        "$type": "expression",
+        "string": "/^foo(\\d+)bar$/giu"
+      }
+    }
+  ]
+}

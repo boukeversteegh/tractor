@@ -59,6 +59,8 @@ anyhow = "1.0"
 regex = "1.10"
 wasm-bindgen = "0.2"
 console_error_panic_hook = "0.1"
+strum = "0.26"
+strum_macros = "0.26"
 
 # Grammar patches (managed by: task grammar:patch)
 [patch.crates-io]

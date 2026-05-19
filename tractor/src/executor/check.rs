@@ -236,7 +236,7 @@ mod tests {
     #[test]
     fn test_validate_examples_pass_and_fail_correct() {
         let rules = vec![compile(
-            Rule::new("no-comments", "//line_comment")
+            Rule::new("no-comments", "//comment")
                 .with_language("rust")
                 .with_valid_examples(vec!["fn main() {}".to_string()])
                 .with_invalid_examples(vec!["// hello\nfn main() {}".to_string()]),
@@ -251,7 +251,7 @@ mod tests {
     #[test]
     fn test_validate_examples_valid_unexpectedly_matches() {
         let rules = vec![compile(
-            Rule::new("no-comments", "//line_comment")
+            Rule::new("no-comments", "//comment")
                 .with_language("rust")
                 .with_valid_examples(vec!["// oops this is a comment".to_string()]),
             None,
@@ -267,7 +267,7 @@ mod tests {
     #[test]
     fn test_validate_examples_invalid_does_not_match() {
         let rules = vec![compile(
-            Rule::new("no-comments", "//line_comment")
+            Rule::new("no-comments", "//comment")
                 .with_language("rust")
                 .with_invalid_examples(vec!["fn main() {}".to_string()]),
             None,
@@ -283,7 +283,7 @@ mod tests {
     #[test]
     fn test_validate_examples_language_from_operation() {
         let rules = vec![compile(
-            Rule::new("no-comments", "//line_comment")
+            Rule::new("no-comments", "//comment")
                 .with_valid_examples(vec!["fn main() {}".to_string()]),
             Some("rust"),
         )];
@@ -296,7 +296,7 @@ mod tests {
     #[test]
     fn test_validate_examples_no_language_errors() {
         let rules = vec![compile(
-            Rule::new("no-comments", "//line_comment")
+            Rule::new("no-comments", "//comment")
                 .with_valid_examples(vec!["fn main() {}".to_string()]),
             None,
         )];

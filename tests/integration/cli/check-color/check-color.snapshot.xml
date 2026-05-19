@@ -1,0 +1,40 @@
+🟫<?xml version="1.0" encoding="UTF-8"?>🟫
+🟫<🟫🟦report🟦🟫>🟫
+  🟫<🟫🟦summary🟦🟫>🟫
+    🟫<🟫🟦success🟦🟫>false🟫🟫</🟫🟦success🟦🟫>🟫
+    🟫<🟫🟦totals🟦🟫>🟫
+      🟫<🟫🟦results🟦🟫>2🟫🟫</🟫🟦results🟦🟫>🟫
+      🟫<🟫🟦files🟦🟫>1🟫🟫</🟫🟦files🟦🟫>🟫
+      🟫<🟫🟦errors🟦🟫>2🟫🟫</🟫🟦errors🟦🟫>🟫
+    🟫</🟫🟦totals🟦🟫>🟫
+  🟫</🟫🟦summary🟦🟫>🟫
+  🟫<🟫🟦group-by🟦🟫>file🟫🟫</🟫🟦group-by🟦🟫>🟫
+  🟫<🟫🟦results🟦🟫>🟫
+    🟫<🟫🟦group🟦 🟪file🟪🟫="🟫🟨tests/integration/sample.cs🟨🟫"🟫🟫>🟫
+      🟫<🟫🟦match🟦 🟪line🟪🟫="🟫🟨2🟨🟫"🟫 🟪column🟪🟫="🟫🟨1🟨🟫"🟫 🟪end_line🟪🟫="🟫🟨7🟨🟫"🟫 🟪end_column🟪🟫="🟫🟨2🟨🟫"🟫🟫>🟫
+        🟫<🟫🟦reason🟦🟫>class found🟫🟫</🟫🟦reason🟦🟫>🟫
+        🟫<🟫🟦severity🟦🟫>error🟫🟫</🟫🟦severity🟦🟫>🟫
+        🟫<🟫🟦lines🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>public class Calculator🟫🟫</🟫🟦line🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>{🟫🟫</🟫🟦line🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>    public int Add(int a, int b) { return a + b; }🟫🟫</🟫🟦line🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>    public int Subtract(int a, int b) { return a - b; }🟫🟫</🟫🟦line🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>    public int Multiply(int a, int b) { return a * b; }🟫🟫</🟫🟦line🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>}🟫🟫</🟫🟦line🟦🟫>🟫
+        🟫</🟫🟦lines🟦🟫>🟫
+      🟫</🟫🟦match🟦🟫>🟫
+      🟫<🟫🟦match🟦 🟪line🟪🟫="🟫🟨9🟨🟫"🟫 🟪column🟪🟫="🟫🟨1🟨🟫"🟫 🟪end_line🟪🟫="🟫🟨14🟨🟫"🟫 🟪end_column🟪🟫="🟫🟨2🟨🟫"🟫🟫>🟫
+        🟫<🟫🟦reason🟦🟫>class found🟫🟫</🟫🟦reason🟦🟫>🟫
+        🟫<🟫🟦severity🟦🟫>error🟫🟫</🟫🟦severity🟦🟫>🟫
+        🟫<🟫🟦lines🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>public class Greeter🟫🟫</🟫🟦line🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>{🟫🟫</🟫🟦line🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>    public string Hello(string name) { return &quot;Hello, &quot; + name; }🟫🟫</🟫🟦line🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>    public string Goodbye(string name) { return &quot;Goodbye, &quot; + name; }🟫🟫</🟫🟦line🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>    public void Reset() { }🟫🟫</🟫🟦line🟦🟫>🟫
+          🟫<🟫🟦line🟦🟫>}🟫🟫</🟫🟦line🟦🟫>🟫
+        🟫</🟫🟦lines🟦🟫>🟫
+      🟫</🟫🟦match🟦🟫>🟫
+    🟫</🟫🟦group🟦🟫>🟫
+  🟫</🟫🟦results🟦🟫>🟫
+🟫</🟫🟦report🟦🟫>🟫

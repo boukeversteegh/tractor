@@ -1,0 +1,2 @@
+tests/integration/cli/set/sample.yaml:2: updated //database/host
+Set 1 match in 1 file

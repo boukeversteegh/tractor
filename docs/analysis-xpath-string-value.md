@@ -42,7 +42,7 @@ The XPath code path does NOT query the xot tree directly. Instead:
 
 ```
 tractor/src/parser/mod.rs:
-  parse_string_to_xot() → builds xot tree
+  parse() / parse_inline_to_xee() → builds xot tree
 
 tractor/src/output/xml_renderer.rs:
   render_document() → adds indentation between elements

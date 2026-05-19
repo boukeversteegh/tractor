@@ -1,0 +1,409 @@
+program/
+  ├─ comment = "// Blueprint fixture — exercises every major Java construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented; every\n// cycle of improvements should regenerate the snapshot."
+  ├─ package/path/
+  │   ├─ name = "com"
+  │   ├─ name = "example"
+  │   └─ name = "blueprint"
+  ├─ import/path/
+  │   ├─ name = "java"
+  │   ├─ name = "util"
+  │   └─ name = "List"
+  ├─ import/path/
+  │   ├─ name = "java"
+  │   ├─ name = "util"
+  │   └─ name = "Map"
+  ├─ import/path/
+  │   ├─ name = "java"
+  │   ├─ name = "util"
+  │   ├─ name = "function"
+  │   └─ name = "Function"
+  ├─ import[static]/path/
+  │   ├─ name = "java"
+  │   ├─ name = "util"
+  │   ├─ name = "Collections"
+  │   └─ name = "emptyList"
+  ├─ comment[leading] = "/** Javadoc comment on the class. */"
+  ├─ class[public and final]/
+  │   ├─ annotation/
+  │   │   ├─ name = "SuppressWarnings"
+  │   │   └─ string = "\"unchecked\""
+  │   ├─ name = "Demo"
+  │   ├─ generic/
+  │   │   ├─ name = "T"
+  │   │   └─ extends/type/
+  │   │       ├─ name = "Comparable"
+  │   │       └─ name = "T"
+  │   ├─ bases/
+  │   │   ├─ extends/type/name = "Base"
+  │   │   └─ implements/type/
+  │   │       ├─ name = "Handler"
+  │   │       └─ name = "T"
+  │   └─ body/
+  │       ├─ comment = "// Line comment before a field"
+  │       ├─ comment[leading] = "/* block comment */"
+  │       ├─ field[public and static and final]/
+  │       │   ├─ type[name] = "int"
+  │       │   ├─ name = "MAX"
+  │       │   └─ value[expression]/int = "100"
+  │       ├─ field[private]/
+  │       │   ├─ type[name] = "String"
+  │       │   └─ name = "name"
+  │       ├─ field[protected]/
+  │       │   ├─ type/
+  │       │   │   ├─ name = "List"
+  │       │   │   └─ type/
+  │       │   │       ├─ name = "Map"
+  │       │   │       ├─ name = "String"
+  │       │   │       └─ name = "T"
+  │       │   └─ name = "items"
+  │       ├─ field[package]/
+  │       │   ├─ type[name] = "int"
+  │       │   └─ name = "pkg"
+  │       ├─ comment[trailing] = "// trailing line comment"
+  │       ├─ field[package and volatile and transient]/
+  │       │   ├─ type[name] = "boolean"
+  │       │   └─ name = "ready"
+  │       ├─ constructor[public]/
+  │       │   ├─ name = "Demo"
+  │       │   └─ body/call[this]/null = "null"
+  │       ├─ constructor[public]/
+  │       │   ├─ name = "Demo"
+  │       │   ├─ parameter/
+  │       │   │   ├─ type[name] = "String"
+  │       │   │   └─ name = "name"
+  │       │   └─ body/
+  │       │       ├─ call[super] = "();"
+  │       │       └─ expression/assign/
+  │       │           ├─ expression/object/this = "this"
+  │       │           └─ expression/name = "name"
+  │       ├─ method[public and static]/
+  │       │   ├─ generic/name = "R"
+  │       │   ├─ returns/type[name] = "R"
+  │       │   ├─ name = "factory"
+  │       │   ├─ parameter/
+  │       │   │   ├─ type/
+  │       │   │   │   ├─ name = "Function"
+  │       │   │   │   ├─ name = "String"
+  │       │   │   │   └─ name = "R"
+  │       │   │   └─ name = "mapper"
+  │       │   └─ body/return/expression/object/
+  │       │       ├─ name = "mapper"
+  │       │       └─ string = "\"hello\""
+  │       ├─ method[public and synchronized]/
+  │       │   ├─ annotation/name = "Override"
+  │       │   ├─ returns/type[name] = "T"
+  │       │   ├─ name = "process"
+  │       │   ├─ parameter/
+  │       │   │   ├─ type[name] = "T"
+  │       │   │   └─ name = "input"
+  │       │   ├─ throws/type/name = "IllegalArgumentException"
+  │       │   └─ body/if/
+  │       │       ├─ condition[expression]/binary/
+  │       │       │   ├─ left[expression]/name = "input"
+  │       │       │   ├─ op[operator and equal] = "=="
+  │       │       │   └─ right[expression]/null = "null"
+  │       │       ├─ body/throw/expression/object_creation/
+  │       │       │   ├─ name = "IllegalArgumentException"
+  │       │       │   └─ string = "\"null\""
+  │       │       └─ else_branch[else_if]/
+  │       │           ├─ condition[expression]/unary/name = "ready"
+  │       │           ├─ body/return/expression/null = "null"
+  │       │           └─ else_branch[else]/body/return/expression/name = "input"
+  │       ├─ method[public]/
+  │       │   ├─ returns/type[name] = "String"
+  │       │   ├─ name = "describe"
+  │       │   ├─ parameter/
+  │       │   │   ├─ type[name] = "int"
+  │       │   │   └─ name = "n"
+  │       │   └─ body/return/expression/ternary/
+  │       │       ├─ condition[expression]/binary/
+  │       │       │   ├─ left[expression]/name = "n"
+  │       │       │   ├─ op[operator and greater] = ">"
+  │       │       │   └─ right[expression]/int = "0"
+  │       │       ├─ if_true[expression]/string = "\"positive\""
+  │       │       └─ if_false[expression]/ternary/
+  │       │           ├─ condition[expression]/binary/
+  │       │           │   ├─ left[expression]/name = "n"
+  │       │           │   ├─ op[operator and less] = "<"
+  │       │           │   └─ right[expression]/int = "0"
+  │       │           ├─ if_true[expression]/string = "\"negative\""
+  │       │           └─ if_false[expression]/string = "\"zero\""
+  │       ├─ method[public]/
+  │       │   ├─ returns/type[name] = "int"
+  │       │   ├─ name = "sum"
+  │       │   ├─ parameter[variadic]/
+  │       │   │   ├─ type[name] = "int"
+  │       │   │   └─ name = "xs"
+  │       │   └─ body/
+  │       │       ├─ variable/
+  │       │       │   ├─ type[name] = "int"
+  │       │       │   ├─ name = "total"
+  │       │       │   └─ value[expression]/int = "0"
+  │       │       ├─ foreach/
+  │       │       │   ├─ type/name = "int"
+  │       │       │   ├─ name = "x"
+  │       │       │   ├─ value/expression/name = "xs"
+  │       │       │   └─ body/expression/assign/
+  │       │       │       ├─ expression/name = "total"
+  │       │       │       └─ expression/name = "x"
+  │       │       ├─ variable/
+  │       │       │   ├─ type[name] = "int"
+  │       │       │   ├─ name = "i"
+  │       │       │   └─ value[expression]/int = "0"
+  │       │       ├─ while/
+  │       │       │   ├─ condition[expression]/binary/
+  │       │       │   │   ├─ left[expression]/name = "i"
+  │       │       │   │   ├─ op[operator and less] = "<"
+  │       │       │   │   └─ right[expression]/int = "3"
+  │       │       │   └─ body/expression/assign/
+  │       │       │       ├─ expression/name = "i"
+  │       │       │       └─ expression/binary/
+  │       │       │           ├─ left[expression]/name = "i"
+  │       │       │           ├─ op[operator and plus] = "+"
+  │       │       │           └─ right[expression]/int = "1"
+  │       │       └─ return/expression/name = "total"
+  │       ├─ method[public]/
+  │       │   ├─ returns/type[name] = "String"
+  │       │   ├─ name = "match"
+  │       │   ├─ parameter/
+  │       │   │   ├─ type[name] = "Object"
+  │       │   │   └─ name = "o"
+  │       │   └─ body/return/expression/switch/
+  │       │       ├─ name = "o"
+  │       │       ├─ arm/
+  │       │       │   ├─ case/pattern/
+  │       │       │   │   ├─ type/name = "Integer"
+  │       │       │   │   └─ name = "i"
+  │       │       │   └─ expression/binary/
+  │       │       │       ├─ left[expression]/string = "\"int \""
+  │       │       │       ├─ op[operator and plus] = "+"
+  │       │       │       └─ right[expression]/name = "i"
+  │       │       ├─ arm/
+  │       │       │   ├─ case/
+  │       │       │   │   ├─ pattern/
+  │       │       │   │   │   ├─ type/name = "String"
+  │       │       │   │   │   └─ name = "s"
+  │       │       │   │   └─ guard/unary/object/name = "s"
+  │       │       │   └─ expression/binary/
+  │       │       │       ├─ left[expression]/string = "\"non-empty: \""
+  │       │       │       ├─ op[operator and plus] = "+"
+  │       │       │       └─ right[expression]/name = "s"
+  │       │       └─ arm/
+  │       │           ├─ case = "default"
+  │       │           └─ expression/string = "\"other\""
+  │       ├─ interface[private]/
+  │       │   ├─ name = "Handler"
+  │       │   ├─ generic/name = "U"
+  │       │   └─ body/method[public]/
+  │       │       ├─ returns/type[name] = "U"
+  │       │       ├─ name = "process"
+  │       │       ├─ parameter/
+  │       │       │   ├─ type[name] = "U"
+  │       │       │   └─ name = "input"
+  │       │       └─ throws/type/name = "IllegalArgumentException"
+  │       ├─ class[public]/
+  │       │   ├─ name = "Color"
+  │       │   └─ body/
+  │       │       ├─ constant/name = "RED"
+  │       │       ├─ constant/name = "GREEN"
+  │       │       ├─ constant/name = "BLUE"
+  │       │       └─ method[public]/
+  │       │           ├─ returns/type[name] = "int"
+  │       │           ├─ name = "rgb"
+  │       │           └─ body/return/expression/switch/
+  │       │               ├─ this = "this"
+  │       │               ├─ arm/
+  │       │               │   ├─ case/name = "RED"
+  │       │               │   └─ expression/int = "0xFF0000"
+  │       │               ├─ arm/
+  │       │               │   ├─ case/name = "GREEN"
+  │       │               │   └─ expression/int = "0x00FF00"
+  │       │               └─ arm/
+  │       │                   ├─ case/name = "BLUE"
+  │       │                   └─ expression/int = "0x0000FF"
+  │       └─ record[public]/
+  │           ├─ name = "Point"
+  │           └─ body/constructor[public]/
+  │               ├─ name = "Point"
+  │               └─ body/if/
+  │                   ├─ condition[expression]/logical/
+  │                   │   ├─ left[expression]/binary/
+  │                   │   │   ├─ left[expression]/name = "x"
+  │                   │   │   ├─ op[operator and less] = "<"
+  │                   │   │   └─ right[expression]/int = "0"
+  │                   │   ├─ op[operator and or] = "||"
+  │                   │   └─ right[expression]/binary/
+  │                   │       ├─ left[expression]/name = "y"
+  │                   │       ├─ op[operator and less] = "<"
+  │                   │       └─ right[expression]/int = "0"
+  │                   └─ body/object_creation/name = "IllegalArgumentException"
+  ├─ class[package]/
+  │   ├─ name = "Base"
+  │   └─ body/method[package]/
+  │       ├─ returns/type[name] = "String"
+  │       ├─ name = "greet"
+  │       └─ body/return/expression/object/
+  │           ├─ name = "String"
+  │           ├─ string = "\"hello from %s\""
+  │           └─ object/call/name = "getClass"
+  ├─ comment = "// Iter 19: new shapes — control flow, expressions, literals, patterns."
+  ├─ comment[leading] = "/** @interface (annotation type) with a constant. */"
+  ├─ interface/
+  │   ├─ name = "Config"
+  │   └─ body/
+  │       ├─ method/
+  │       │   ├─ name = "String"
+  │       │   ├─ name = "value"
+  │       │   └─ string = "\"default\""
+  │       └─ method/
+  │           ├─ name = "int"
+  │           ├─ name = "timeout"
+  │           └─ int = "30"
+  ├─ comment[leading] = "/** Static initializer + try-with-resources + labeled loops + misc. */"
+  └─ class[package]/
+      ├─ name = "Extras"
+      └─ body/
+          ├─ field[package and static and final]/
+          │   ├─ type[name] = "int"
+          │   └─ name = "SEED"
+          ├─ block[static]/expression/assign/
+          │   ├─ expression/name = "SEED"
+          │   └─ expression/int = "42"
+          ├─ comment[leading] = "/** Array initializer, char literal, class literal, method reference. */"
+          ├─ method[package]/
+          │   ├─ returns/type[void]/name = "void"
+          │   ├─ name = "literals"
+          │   └─ body/
+          │       ├─ variable/
+          │       │   ├─ type[array]/
+          │       │   │   ├─ name = "int"
+          │       │   │   └─ type = "[]"
+          │       │   ├─ name = "arr"
+          │       │   └─ value[expression]/array[literal]/
+          │       │       ├─ int = "1"
+          │       │       ├─ int = "2"
+          │       │       └─ int = "3"
+          │       ├─ variable/
+          │       │   ├─ type[name] = "char"
+          │       │   ├─ name = "ch"
+          │       │   └─ value[expression]/string = "'A'"
+          │       ├─ variable/
+          │       │   ├─ type/
+          │       │   │   ├─ name = "Class"
+          │       │   │   └─ type = "?"
+          │       │   ├─ name = "cls"
+          │       │   └─ value[expression]/type/name = "String"
+          │       └─ variable/
+          │           ├─ type/
+          │           │   ├─ name = "java.util.function.Function"
+          │           │   ├─ name = "Object"
+          │           │   └─ name = "String"
+          │           ├─ name = "ref"
+          │           └─ value[expression]/member/
+          │               ├─ name = "String"
+          │               └─ name = "valueOf"
+          ├─ comment[leading] = "/** Cast, instanceof, assert, break/continue with label. */"
+          ├─ method[package]/
+          │   ├─ returns/type[void]/name = "void"
+          │   ├─ name = "controlFlow"
+          │   ├─ parameter/
+          │   │   ├─ type[name] = "Object"
+          │   │   └─ name = "o"
+          │   └─ body/
+          │       ├─ variable/
+          │       │   ├─ type[name] = "int"
+          │       │   ├─ name = "n"
+          │       │   └─ value[expression]/cast/
+          │       │       ├─ name = "int"
+          │       │       └─ int = "0L"
+          │       ├─ assert/
+          │       │   ├─ binary/
+          │       │   │   ├─ left[expression]/name = "n"
+          │       │   │   ├─ op[operator and greater_or_equal] = ">="
+          │       │   │   └─ right[expression]/int = "0"
+          │       │   └─ string = "\"non-negative\""
+          │       ├─ variable/
+          │       │   ├─ type[name] = "boolean"
+          │       │   ├─ name = "isStr"
+          │       │   └─ value[expression]/is/
+          │       │       ├─ name = "o"
+          │       │       └─ name = "String"
+          │       ├─ label/
+          │       │   ├─ name = "outer"
+          │       │   └─ c_for/
+          │       │       ├─ initializer[variable]/
+          │       │       │   ├─ type[name] = "int"
+          │       │       │   ├─ name = "i"
+          │       │       │   └─ value[expression]/int = "0"
+          │       │       ├─ condition[binary]/
+          │       │       │   ├─ left[expression]/name = "i"
+          │       │       │   ├─ op[operator and less] = "<"
+          │       │       │   └─ right[expression]/int = "5"
+          │       │       ├─ unary[postfix]/name = "i"
+          │       │       └─ body/
+          │       │           ├─ if/
+          │       │           │   ├─ condition[expression]/binary/
+          │       │           │   │   ├─ left[expression]/name = "i"
+          │       │           │   │   ├─ op[operator and equal] = "=="
+          │       │           │   │   └─ right[expression]/int = "1"
+          │       │           │   └─ body/name = "outer"
+          │       │           └─ if/
+          │       │               ├─ condition[expression]/binary/
+          │       │               │   ├─ left[expression]/name = "i"
+          │       │               │   ├─ op[operator and equal] = "=="
+          │       │               │   └─ right[expression]/int = "3"
+          │       │               └─ body/name = "outer"
+          │       ├─ variable/
+          │       │   ├─ type[name] = "int"
+          │       │   ├─ name = "k"
+          │       │   └─ value[expression]/int = "0"
+          │       └─ do_while/
+          │           ├─ body/expression/unary[postfix]/name = "k"
+          │           └─ condition[binary]/
+          │               ├─ left[expression]/name = "k"
+          │               ├─ op[operator and less] = "<"
+          │               └─ right[expression]/int = "3"
+          ├─ comment[leading] = "/** Try-with-resources + multi-catch + synchronized block. */"
+          ├─ method[package]/
+          │   ├─ returns/type[void]/name = "void"
+          │   ├─ name = "resources"
+          │   ├─ throws/type/name = "Exception"
+          │   └─ body/
+          │       ├─ try/
+          │       │   ├─ try_body[body]/if/
+          │       │   │   ├─ condition[expression]/binary/
+          │       │   │   │   ├─ left[expression]/name = "s"
+          │       │   │   │   ├─ op[operator and equal] = "=="
+          │       │   │   │   └─ right[expression]/null = "null"
+          │       │   │   └─ body/object_creation/name = "java.io.IOException"
+          │       │   └─ catch/
+          │       │       ├─ type/
+          │       │       │   ├─ name = "java.io.IOException"
+          │       │       │   └─ name = "RuntimeException"
+          │       │       ├─ binding[expression]/name = "e"
+          │       │       └─ body/throw/expression/name = "e"
+          │       └─ lock/
+          │           ├─ this = "this"
+          │           └─ body/expression/name = "SEED"
+          ├─ comment[leading] = "/** Yield in block-switch + switch with underscore/record pattern. */"
+          └─ method[package]/
+              ├─ returns/type[name] = "int"
+              ├─ name = "yieldDemo"
+              ├─ parameter/
+              │   ├─ type[name] = "Object"
+              │   └─ name = "o"
+              └─ body/
+                  ├─ variable/
+                  │   ├─ type[name] = "int"
+                  │   ├─ name = "v"
+                  │   └─ value[expression]/switch/
+                  │       ├─ name = "o"
+                  │       ├─ arm/
+                  │       │   ├─ case/pattern/
+                  │       │   │   ├─ type/name = "Integer"
+                  │       │   │   └─ name = "i"
+                  │       │   └─ expression/name = "i"
+                  │       └─ arm/
+                  │           ├─ case = "default"
+                  │           └─ body/yield/int = "0"
+                  └─ return/expression/name = "v"

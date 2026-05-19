@@ -39,6 +39,11 @@ pub struct RenderOptions {
     /// Source language for syntax highlighting (e.g. "csharp", "rust").
     /// Used by text-format renderers for -v source and -v lines.
     pub language: Option<String>,
+    /// Shape-only rendering: emit element names + queryable markers/attrs
+    /// but suppress source text content. Lets reviewers focus on tree
+    /// structure changes; text preservation is enforced separately by
+    /// `tests/text_preservation.rs`.
+    pub shape_only: bool,
 }
 
 impl RenderOptions {
@@ -51,6 +56,7 @@ impl RenderOptions {
             highlights: None,
             pretty_print: true,
             language: None,
+            shape_only: false,
         }
     }
 
@@ -81,6 +87,11 @@ impl RenderOptions {
 
     pub fn with_language(mut self, language: Option<String>) -> Self {
         self.language = language;
+        self
+    }
+
+    pub fn with_shape_only(mut self, shape_only: bool) -> Self {
+        self.shape_only = shape_only;
         self
     }
 }
@@ -432,12 +443,17 @@ fn render_open_tag(
     for (attr_name_id, attr_value) in attrs.iter() {
         let attr_name = xot.local_name_str(attr_name_id);
 
-        // Skip metadata attributes unless --meta is on
+        // Skip metadata attributes unless --meta is on. `list` is the
+        // renderer-internal cardinality signal (read by xml_to_json
+        // post-iter-139, ignored by everything else): hidden alongside
+        // tree-sitter `field=` and source-location attributes. `id`
+        // is the editable-trees NodeId (S15-Z2) — internal addressing
+        // only, never user-facing.
         if !options.include_meta {
             if matches!(
                 attr_name,
                 "line" | "column" | "end_line" | "end_column"
-                | "kind" | "field"
+                | "kind" | "field" | "list" | "id"
             ) {
                 continue;
             }
@@ -529,7 +545,7 @@ pub fn render_xml_string(xml: &str, options: &RenderOptions) -> String {
 
 /// Render an XmlNode tree to a string with optional colors.
 ///
-/// This is the native-IR equivalent of `render_xml_string` — it renders
+/// This is the native-tree equivalent of `render_xml_string` — it renders
 /// directly from the XmlNode tree without parsing an XML string.
 pub fn render_xml_node(node: &XmlNode, options: &RenderOptions) -> String {
     let mut output = String::new();
@@ -777,7 +793,7 @@ fn render_xml_node_open_tag(
             if matches!(
                 attr_name.as_str(),
                 "line" | "column" | "end_line" | "end_column"
-                | "kind" | "field"
+                | "kind" | "field" | "list" | "id"
             ) {
                 continue;
             }

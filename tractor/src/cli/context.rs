@@ -126,8 +126,13 @@ impl RunContext {
         };
 
         let concurrency = shared.concurrency.unwrap_or_else(|| num_cpus::get());
+        // The 16 MiB rayon worker stack is now load-bearing for the
+        // xee XPath evaluator (recursive AST walks during query
+        // evaluation), not just `render_to_xot` (which has been split
+        // into per-arm helpers). Keeping the bump here.
         rayon::ThreadPoolBuilder::new()
             .num_threads(concurrency)
+            .stack_size(16 * 1024 * 1024)
             .build_global()
             .ok();
 

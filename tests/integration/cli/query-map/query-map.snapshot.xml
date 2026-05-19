@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/sample.cs" line="1" column="1">
+      <tree>
+        {
+          "classes": [
+            {
+              "name": "Calculator",
+              "methods": [
+                "Add",
+                "Subtract",
+                "Multiply"
+              ]
+            },
+            {
+              "name": "Greeter",
+              "methods": [
+                "Hello",
+                "Goodbye",
+                "Reset"
+              ]
+            }
+          ]
+        }
+      </tree>
+    </match>
+  </results>
+</report>

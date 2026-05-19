@@ -56,9 +56,9 @@ Status as of the compaction point.
 
 ## Design Documents Updated
 
-- `specs/tractor-parse/semantic-tree/design.md` - Design goals and guiding principles
-- `specs/tractor-parse/semantic-tree/element-naming.md` - Full names, no abbreviations
-- `specs/tractor-parse/semantic-tree/type-element.md` - Unified type structure spec
+- `specs/tractor-parse/tree/design.md` - Design goals and guiding principles
+- `specs/tractor-parse/tree/element-naming.md` - Full names, no abbreviations
+- `specs/tractor-parse/tree/type-element.md` - Unified type structure spec
 
 ## Resolved Issues
 

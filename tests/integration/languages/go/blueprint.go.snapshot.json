@@ -1,0 +1,2016 @@
+{
+  "$type": "file",
+  "alias": {
+    "exported": true,
+    "name": "Alias",
+    "type": {
+      "name": [
+        "context",
+        "Context"
+      ]
+    }
+  },
+  "comment": [
+    "// Package blueprint is a kitchen-sink Go fixture for tractor snapshot tests.",
+    "// Rendered by `tractor query <file> -p tree --single` with NO depth limit so",
+    "// any design-principle transform change produces a visible snapshot diff.",
+    {
+      "leading": true
+    },
+    "// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere",
+    "// in the blueprint: fixed-length array types, implicit-length array",
+    "// literals, slice expressions, parenthesized type conversions, generic",
+    "// instantiation in value position, variadic argument expansion, and",
+    {
+      "leading": true
+    }
+  ],
+  "const": [
+    {
+      "exported": true,
+      "name": "Pi",
+      "value": {
+        "expression": {
+          "float": "3.14159"
+        }
+      }
+    },
+    {
+      "exported": true,
+      "name": "StatusIdle",
+      "value": {
+        "expression": {
+          "name": "iota"
+        }
+      }
+    },
+    {
+      "exported": true,
+      "name": "StatusRunning"
+    },
+    {
+      "exported": true,
+      "name": "StatusDone"
+    },
+    {
+      "unexported": true,
+      "name": "_"
+    },
+    {
+      "exported": true,
+      "name": "StatusError"
+    }
+  ],
+  "function": [
+    {
+      "unexported": true,
+      "body": {
+        "return": {
+          "expression": {
+            "object": {
+              "name": [
+                "fmt",
+                "err"
+              ],
+              "string": "\"wrap: %w\""
+            }
+          }
+        }
+      },
+      "name": [
+        "wrap",
+        "error"
+      ],
+      "parameter": {
+        "name": [
+          "err",
+          "error"
+        ]
+      }
+    },
+    {
+      "unexported": true,
+      "body": {
+        "return": {
+          "expression": {
+            "nil": "nil"
+          }
+        }
+      },
+      "name": [
+        "doThing",
+        "error"
+      ]
+    },
+    {
+      "unexported": true,
+      "body": {
+        "return": {
+          "expression": [
+            {
+              "int": "0"
+            },
+            {
+              "name": "ErrNotFound"
+            }
+          ]
+        }
+      },
+      "name": "risky",
+      "parameter": [
+        {
+          "name": "int"
+        },
+        {
+          "name": "error"
+        }
+      ]
+    },
+    {
+      "exported": true,
+      "body": {
+        "for": {
+          "body": {
+            "assign": {
+              "expression": [
+                {
+                  "name": "out"
+                },
+                {
+                  "call": {
+                    "call": {
+                      "name": [
+                        "f",
+                        "x"
+                      ]
+                    },
+                    "name": [
+                      "append",
+                      "out"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "range": {
+            "left": {
+              "expression": [
+                {
+                  "name": "_"
+                },
+                {
+                  "name": "x"
+                }
+              ]
+            },
+            "right": {
+              "expression": {
+                "name": "xs"
+              }
+            }
+          }
+        },
+        "return": {
+          "expression": {
+            "name": "out"
+          }
+        },
+        "variable": {
+          "short": true,
+          "left": {
+            "expression": {
+              "name": "out"
+            }
+          },
+          "right": {
+            "expression": {
+              "call": {
+                "call": {
+                  "name": [
+                    "len",
+                    "xs"
+                  ]
+                },
+                "int": "0",
+                "name": "make",
+                "slice": {
+                  "name": "U"
+                }
+              }
+            }
+          }
+        }
+      },
+      "generic": {
+        "name": [
+          "T",
+          "U",
+          "any"
+        ]
+      },
+      "name": "Map",
+      "parameter": [
+        {
+          "name": "xs",
+          "slice": {
+            "name": "T"
+          }
+        },
+        {
+          "name": "f",
+          "type": {
+            "function": true,
+            "name": "U",
+            "parameter": {
+              "name": "T"
+            }
+          }
+        }
+      ],
+      "slice": {
+        "name": "U"
+      }
+    },
+    {
+      "exported": true,
+      "body": {
+        "for": {
+          "body": {
+            "assign": {
+              "expression": [
+                {
+                  "name": "total"
+                },
+                {
+                  "name": "x"
+                }
+              ]
+            }
+          },
+          "range": {
+            "left": {
+              "expression": [
+                {
+                  "name": "_"
+                },
+                {
+                  "name": "x"
+                }
+              ]
+            },
+            "right": {
+              "expression": {
+                "name": "xs"
+              }
+            }
+          }
+        },
+        "return": "return"
+      },
+      "generic": {
+        "name": [
+          "T",
+          "Number"
+        ]
+      },
+      "name": "Sum",
+      "parameter": [
+        {
+          "name": "xs",
+          "slice": {
+            "name": "T"
+          }
+        },
+        {
+          "name": [
+            "total",
+            "T"
+          ]
+        }
+      ]
+    },
+    {
+      "exported": true,
+      "body": {
+        "for": {
+          "body": {
+            "if": {
+              "condition": {
+                "expression": {
+                  "unary": {
+                    "name": "ok"
+                  }
+                }
+              },
+              "then": {
+                "body": {
+                  "assign": [
+                    {
+                      "expression": [
+                        {
+                          "object": {
+                            "name": [
+                              "seen",
+                              "x"
+                            ]
+                          }
+                        },
+                        {
+                          "literal": {
+                            "struct": {}
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "expression": [
+                        {
+                          "name": "out"
+                        },
+                        {
+                          "call": {
+                            "name": [
+                              "append",
+                              "out",
+                              "x"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "variable": {
+                "short": true,
+                "left": {
+                  "expression": {
+                    "name": [
+                      "_",
+                      "ok"
+                    ]
+                  }
+                },
+                "right": {
+                  "expression": {
+                    "object": {
+                      "name": [
+                        "seen",
+                        "x"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "range": {
+            "left": {
+              "expression": [
+                {
+                  "name": "_"
+                },
+                {
+                  "name": "x"
+                }
+              ]
+            },
+            "right": {
+              "expression": {
+                "name": "xs"
+              }
+            }
+          }
+        },
+        "return": "return",
+        "variable": {
+          "short": true,
+          "left": {
+            "expression": {
+              "name": "seen"
+            }
+          },
+          "right": {
+            "expression": {
+              "literal": {
+                "map": {
+                  "name": "T",
+                  "struct": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "generic": {
+        "name": [
+          "T",
+          "comparable"
+        ]
+      },
+      "name": "Uniq",
+      "parameter": [
+        {
+          "name": "xs",
+          "slice": {
+            "name": "T"
+          }
+        },
+        {
+          "name": "out",
+          "slice": {
+            "name": "T"
+          }
+        }
+      ]
+    },
+    {
+      "unexported": true,
+      "body": {
+        "assign": [
+          {
+            "expression": [
+              {
+                "name": "_"
+              },
+              {
+                "call": {
+                  "int": "3",
+                  "name": "multiStmt"
+                }
+              }
+            ]
+          },
+          {
+            "expression": [
+              {
+                "name": "_"
+              },
+              {
+                "call": {
+                  "name": [
+                    "ToUpper",
+                    "prefix"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "defer": {
+          "call": {
+            "closure": {
+              "assign": {
+                "expression": [
+                  {
+                    "name": "_"
+                  },
+                  {
+                    "call": {
+                      "name": "recover"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "for": {
+          "body": {
+            "assign": {
+              "expression": [
+                {
+                  "name": "sum"
+                },
+                {
+                  "name": "v"
+                }
+              ]
+            }
+          },
+          "range": {
+            "left": {
+              "expression": [
+                {
+                  "name": "_"
+                },
+                {
+                  "name": "v"
+                }
+              ]
+            },
+            "right": {
+              "expression": {
+                "name": "vals"
+              }
+            }
+          }
+        },
+        "return": "return",
+        "variable": {
+          "short": true,
+          "left": {
+            "expression": {
+              "name": "multiStmt"
+            }
+          },
+          "right": {
+            "expression": {
+              "closure": {
+                "name": "int",
+                "parameter": {
+                  "name": [
+                    "n",
+                    "int"
+                  ]
+                },
+                "return": {
+                  "expression": {
+                    "binary": {
+                      "left": {
+                        "$type": "expression",
+                        "name": "x"
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "*",
+                        "multiply": true
+                      },
+                      "right": {
+                        "$type": "expression",
+                        "int": "2"
+                      }
+                    }
+                  }
+                },
+                "variable": {
+                  "short": true,
+                  "left": {
+                    "expression": {
+                      "name": "x"
+                    }
+                  },
+                  "right": {
+                    "expression": {
+                      "binary": {
+                        "left": {
+                          "$type": "expression",
+                          "name": "n"
+                        },
+                        "op": {
+                          "$type": "operator",
+                          "text": "+",
+                          "plus": true
+                        },
+                        "right": {
+                          "$type": "expression",
+                          "int": "1"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "name": "variadic",
+      "parameter": [
+        {
+          "name": [
+            "prefix",
+            "string"
+          ]
+        },
+        {
+          "variadic": true,
+          "name": [
+            "vals",
+            "int"
+          ]
+        },
+        {
+          "name": [
+            "sum",
+            "int"
+          ]
+        },
+        {
+          "name": [
+            "err",
+            "error"
+          ]
+        }
+      ]
+    },
+    {
+      "unexported": true,
+      "body": {
+        "assign": [
+          {
+            "expression": [
+              {
+                "name": [
+                  "_",
+                  "_"
+                ]
+              },
+              {
+                "call": {
+                  "name": "variadic",
+                  "spread": {
+                    "index": {
+                      "slice": true,
+                      "object": {
+                        "name": "fixed"
+                      }
+                    }
+                  },
+                  "string": "\"nums\""
+                }
+              }
+            ]
+          },
+          {
+            "expression": [
+              {
+                "name": [
+                  "_",
+                  "_",
+                  "_"
+                ]
+              },
+              {
+                "name": [
+                  "chRecvOnly",
+                  "mapper",
+                  "sub"
+                ]
+              }
+            ]
+          }
+        ],
+        "switch": {
+          "case": [
+            {
+              "fallthrough": "fallthrough",
+              "value": {
+                "expression": {
+                  "int": "10"
+                }
+              }
+            },
+            {
+              "assign": {
+                "expression": [
+                  {
+                    "name": "_"
+                  },
+                  {
+                    "name": "sub"
+                  }
+                ]
+              },
+              "value": {
+                "expression": {
+                  "int": "20"
+                }
+              }
+            }
+          ],
+          "value": {
+            "expression": {
+              "object": {
+                "int": "0",
+                "name": "implicit"
+              }
+            }
+          }
+        },
+        "var": {
+          "unexported": true,
+          "array": {
+            "int": "5",
+            "name": "int"
+          },
+          "name": "fixed",
+          "value": {
+            "expression": {
+              "literal": {
+                "array": {
+                  "int": "5",
+                  "name": "int"
+                },
+                "int": [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5"
+                ]
+              }
+            }
+          }
+        },
+        "variable": [
+          {
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "implicit"
+              }
+            },
+            "right": {
+              "expression": {
+                "literal": {
+                  "array": {
+                    "implicit": true,
+                    "name": "int"
+                  },
+                  "int": [
+                    "10",
+                    "20",
+                    "30"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "sub"
+              }
+            },
+            "right": {
+              "expression": {
+                "object": {
+                  "from": {
+                    "int": "1"
+                  },
+                  "name": "fixed",
+                  "slice": {},
+                  "to": {
+                    "int": "3"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "chRecvOnly"
+              }
+            },
+            "right": {
+              "expression": {
+                "call": {
+                  "type": true,
+                  "chan": {
+                    "name": "int"
+                  },
+                  "nil": "nil"
+                }
+              }
+            }
+          },
+          {
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "mapper"
+              }
+            },
+            "right": {
+              "expression": {
+                "type": {
+                  "generic": true,
+                  "name": [
+                    "Map",
+                    "int",
+                    "string"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "name": "arraysAndCasts"
+    },
+    {
+      "unexported": true,
+      "body": {
+        "switch": {
+          "type": true,
+          "case": [
+            {
+              "return": {
+                "expression": {
+                  "string": "\"nil\""
+                }
+              },
+              "type": {
+                "name": "nil"
+              }
+            },
+            {
+              "return": {
+                "expression": {
+                  "string": "\"int-ish\""
+                }
+              },
+              "type": [
+                {
+                  "name": "int"
+                },
+                {
+                  "name": "int32"
+                },
+                {
+                  "name": "int64"
+                }
+              ]
+            },
+            {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "left": {
+                      "$type": "expression",
+                      "string": "\"string:\""
+                    },
+                    "op": {
+                      "$type": "operator",
+                      "text": "+",
+                      "plus": true
+                    },
+                    "right": {
+                      "$type": "expression",
+                      "name": "v"
+                    }
+                  }
+                }
+              },
+              "type": {
+                "name": "string"
+              }
+            },
+            {
+              "return": {
+                "expression": {
+                  "object": {
+                    "name": "v"
+                  }
+                }
+              },
+              "type": {
+                "name": "Stringer"
+              }
+            }
+          ],
+          "default": {
+            "return": {
+              "expression": {
+                "object": {
+                  "name": [
+                    "fmt",
+                    "v"
+                  ],
+                  "string": "\"%T\""
+                }
+              }
+            }
+          },
+          "name": "v",
+          "value": {
+            "expression": {
+              "name": "x"
+            }
+          }
+        }
+      },
+      "name": [
+        "classify",
+        "string"
+      ],
+      "parameter": {
+        "name": [
+          "x",
+          "any"
+        ]
+      }
+    },
+    {
+      "unexported": true,
+      "body": {
+        "assign": {
+          "expression": [
+            {
+              "name": [
+                "_",
+                "_",
+                "_",
+                "_",
+                "_",
+                "_"
+              ]
+            },
+            {
+              "call": {
+                "int": "42",
+                "name": "UserID"
+              },
+              "name": [
+                "raw",
+                "ch",
+                "pt",
+                "pts",
+                "m"
+              ]
+            }
+          ]
+        },
+        "expression": {
+          "call": {
+            "name": [
+              "close",
+              "buffered"
+            ]
+          }
+        },
+        "for": [
+          {
+            "body": {
+              "if": {
+                "condition": {
+                  "expression": {
+                    "binary": {
+                      "left": {
+                        "$type": "expression",
+                        "name": "i"
+                      },
+                      "op": {
+                        "$type": "operator",
+                        "text": "==",
+                        "equal": true
+                      },
+                      "right": {
+                        "$type": "expression",
+                        "int": "5"
+                      }
+                    }
+                  }
+                },
+                "then": {
+                  "body": {
+                    "continue": "continue"
+                  }
+                }
+              }
+            },
+            "condition": {
+              "expression": {
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "name": "i"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "<",
+                    "less": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "int": "10"
+                  }
+                }
+              }
+            },
+            "unary": {
+              "postfix": true,
+              "name": "i"
+            },
+            "variable": {
+              "short": true,
+              "left": {
+                "expression": {
+                  "name": "i"
+                }
+              },
+              "right": {
+                "expression": {
+                  "int": "0"
+                }
+              }
+            }
+          },
+          {
+            "body": {
+              "assign": {
+                "expression": [
+                  {
+                    "name": "_"
+                  },
+                  {
+                    "name": "i"
+                  }
+                ]
+              }
+            },
+            "range": {
+              "left": {
+                "expression": {
+                  "name": "i"
+                }
+              },
+              "right": {
+                "expression": {
+                  "int": "5"
+                }
+              }
+            }
+          },
+          {
+            "body": {
+              "assign": {
+                "expression": [
+                  {
+                    "name": [
+                      "_",
+                      "_"
+                    ]
+                  },
+                  {
+                    "name": [
+                      "k",
+                      "v"
+                    ]
+                  }
+                ]
+              }
+            },
+            "range": {
+              "left": {
+                "expression": [
+                  {
+                    "name": "k"
+                  },
+                  {
+                    "name": "v"
+                  }
+                ]
+              },
+              "right": {
+                "expression": {
+                  "literal": {
+                    "map": {
+                      "name": [
+                        "string",
+                        "int"
+                      ]
+                    },
+                    "pair": [
+                      {
+                        "string": "\"a\"",
+                        "value": {
+                          "int": "1"
+                        }
+                      },
+                      {
+                        "string": "\"b\"",
+                        "value": {
+                          "int": "2"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "body": {
+              "unary": {
+                "postfix": true,
+                "name": "n"
+              }
+            },
+            "condition": {
+              "expression": {
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "name": "n"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "<",
+                    "less": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "int": "3"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "go": {
+          "call": {
+            "closure": {
+              "expression": {
+                "object": {
+                  "name": "fmt",
+                  "string": "\"bg\""
+                }
+              }
+            }
+          }
+        },
+        "if": [
+          {
+            "condition": {
+              "expression": {
+                "binary": {
+                  "left": {
+                    "$type": "expression",
+                    "name": "err"
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "!=",
+                    "not_equal": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "nil": "nil"
+                  }
+                }
+              }
+            },
+            "else": {
+              "body": {
+                "assign": {
+                  "expression": [
+                    {
+                      "name": "_"
+                    },
+                    {
+                      "name": "x"
+                    }
+                  ]
+                }
+              }
+            },
+            "then": {
+              "body": {
+                "return": {
+                  "expression": {
+                    "call": {
+                      "name": [
+                        "wrap",
+                        "err"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "variable": {
+              "short": true,
+              "left": {
+                "expression": {
+                  "name": [
+                    "x",
+                    "err"
+                  ]
+                }
+              },
+              "right": {
+                "expression": {
+                  "object": {
+                    "name": "io"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "condition": {
+              "expression": {
+                "name": "ok"
+              }
+            },
+            "then": {
+              "body": {
+                "assign": {
+                  "expression": [
+                    {
+                      "name": "_"
+                    },
+                    {
+                      "name": "s"
+                    }
+                  ]
+                }
+              }
+            },
+            "variable": {
+              "short": true,
+              "left": {
+                "expression": {
+                  "name": [
+                    "s",
+                    "ok"
+                  ]
+                }
+              },
+              "right": {
+                "expression": {
+                  "assert": {
+                    "name": [
+                      "r",
+                      "Stringer"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "condition": {
+              "expression": {
+                "logical": {
+                  "left": {
+                    "$type": "expression",
+                    "object": {
+                      "name": [
+                        "errors",
+                        "err"
+                      ],
+                      "unary": {
+                        "name": "target"
+                      }
+                    }
+                  },
+                  "op": {
+                    "$type": "operator",
+                    "text": "||",
+                    "or": true
+                  },
+                  "right": {
+                    "$type": "expression",
+                    "object": {
+                      "name": [
+                        "errors",
+                        "err",
+                        "ErrNotFound"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "body": {
+                "return": {
+                  "expression": {
+                    "name": "err"
+                  }
+                }
+              }
+            },
+            "variable": {
+              "short": true,
+              "left": {
+                "expression": {
+                  "name": "err"
+                }
+              },
+              "right": {
+                "expression": {
+                  "call": {
+                    "name": "doThing"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "labeled": [
+          {
+            "for": {
+              "body": {
+                "select": {
+                  "case": [
+                    {
+                      "if": {
+                        "condition": {
+                          "expression": {
+                            "unary": {
+                              "name": "ok"
+                            }
+                          }
+                        },
+                        "then": {
+                          "body": {
+                            "break": {
+                              "name": "Outer"
+                            }
+                          }
+                        }
+                      },
+                      "receive": {
+                        "name": [
+                          "v",
+                          "ok"
+                        ],
+                        "unary": {
+                          "name": "in"
+                        }
+                      },
+                      "send": {
+                        "name": [
+                          "out",
+                          "v"
+                        ]
+                      }
+                    },
+                    {
+                      "continue": {
+                        "name": "Outer"
+                      },
+                      "send": {
+                        "int": "42",
+                        "name": "out"
+                      }
+                    },
+                    {
+                      "goto": {
+                        "name": "cleanup"
+                      },
+                      "receive": {
+                        "unary": {
+                          "object": {
+                            "name": "ctx"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "name": "Outer"
+          },
+          {
+            "name": "cleanup",
+            "variable": {
+              "short": true,
+              "left": {
+                "expression": {
+                  "name": "buffered"
+                }
+              },
+              "right": {
+                "expression": {
+                  "call": {
+                    "chan": {
+                      "name": "int"
+                    },
+                    "int": "4",
+                    "name": "make"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "return": {
+          "expression": {
+            "nil": "nil"
+          }
+        },
+        "send": {
+          "int": "1",
+          "name": "buffered"
+        },
+        "var": [
+          {
+            "unexported": true,
+            "name": "r",
+            "type": {
+              "name": [
+                "io",
+                "Reader"
+              ]
+            },
+            "value": {
+              "expression": {
+                "call": {
+                  "name": "new",
+                  "type": {
+                    "name": [
+                      "myio",
+                      "PipeReader"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "unexported": true,
+            "name": "target",
+            "pointer": {
+              "name": "MyErr"
+            }
+          }
+        ],
+        "variable": [
+          {
+            "short": true,
+            "left": {
+              "expression": {
+                "name": [
+                  "raw",
+                  "ch"
+                ]
+              }
+            },
+            "right": {
+              "expression": {
+                "char": "'A'",
+                "string": {
+                  "raw": true
+                }
+              }
+            }
+          },
+          {
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "n"
+              }
+            },
+            "right": {
+              "expression": {
+                "int": "0"
+              }
+            }
+          },
+          {
+            "short": true,
+            "left": {
+              "expression": {
+                "name": [
+                  "pt",
+                  "pts"
+                ]
+              }
+            },
+            "right": {
+              "expression": {
+                "literal": {
+                  "pair": [
+                    {
+                      "name": "X",
+                      "value": {
+                        "int": "0"
+                      }
+                    },
+                    {
+                      "name": "X",
+                      "value": {
+                        "int": "1"
+                      }
+                    },
+                    {
+                      "name": "Y",
+                      "value": {
+                        "int": "1"
+                      }
+                    }
+                  ],
+                  "slice": {
+                    "name": "Point"
+                  }
+                },
+                "unary": {
+                  "literal": {
+                    "name": "Point",
+                    "pair": [
+                      {
+                        "name": "X",
+                        "value": {
+                          "int": "1"
+                        }
+                      },
+                      {
+                        "name": "Y",
+                        "value": {
+                          "int": "2"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "m"
+              }
+            },
+            "right": {
+              "expression": {
+                "literal": {
+                  "map": {
+                    "name": [
+                      "string",
+                      "Point"
+                    ]
+                  },
+                  "pair": {
+                    "string": "\"a\"",
+                    "value": {
+                      "pair": {
+                        "name": "X",
+                        "value": {
+                          "int": "1"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "name": [
+        "controlFlow",
+        "error"
+      ],
+      "parameter": [
+        {
+          "name": "ctx",
+          "type": {
+            "name": [
+              "context",
+              "Context"
+            ]
+          }
+        },
+        {
+          "chan": {
+            "name": "int"
+          },
+          "name": "in"
+        },
+        {
+          "chan": {
+            "name": "int"
+          },
+          "name": "out"
+        }
+      ]
+    }
+  ],
+  "import": [
+    {
+      "path": {
+        "name": "fmt"
+      }
+    },
+    {
+      "path": {
+        "name": "context"
+      }
+    },
+    {
+      "path": {
+        "name": "errors"
+      }
+    },
+    {
+      "path": {
+        "name": "io"
+      }
+    },
+    {
+      "alias": true,
+      "aliased": {
+        "name": "myio"
+      },
+      "path": {
+        "name": "io"
+      }
+    },
+    {
+      "dot": true,
+      "path": {
+        "name": "strings"
+      }
+    },
+    {
+      "blank": true,
+      "path": {
+        "name": [
+          "net",
+          "http",
+          "pprof"
+        ]
+      }
+    }
+  ],
+  "interface": [
+    {
+      "exported": true,
+      "extends": {
+        "type": {
+          "type": [
+            {
+              "approximation": true,
+              "name": "int"
+            },
+            {
+              "approximation": true,
+              "name": "float64"
+            }
+          ]
+        }
+      },
+      "name": "Number"
+    },
+    {
+      "exported": true,
+      "method": {
+        "name": "String",
+        "returns": {
+          "type": {
+            "$type": "type",
+            "name": "string"
+          }
+        }
+      },
+      "name": "Stringer"
+    },
+    {
+      "exported": true,
+      "extends": [
+        {
+          "type": {
+            "type": {
+              "name": [
+                "io",
+                "Reader"
+              ]
+            }
+          }
+        },
+        {
+          "type": {
+            "name": "Stringer"
+          }
+        }
+      ],
+      "method": {
+        "name": "Close",
+        "returns": {
+          "type": {
+            "$type": "type",
+            "name": "error"
+          }
+        }
+      },
+      "name": "ReadStringer"
+    }
+  ],
+  "method": [
+    {
+      "exported": true,
+      "body": {
+        "assign": {
+          "expression": [
+            {
+              "object": {
+                "name": "c"
+              }
+            },
+            {
+              "call": {
+                "name": [
+                  "append",
+                  "v"
+                ],
+                "object": {
+                  "name": "c"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "name": "Push",
+      "parameter": [
+        {
+          "name": "c",
+          "pointer": {
+            "type": {
+              "generic": true,
+              "name": [
+                "Container",
+                "T"
+              ]
+            }
+          }
+        },
+        {
+          "name": [
+            "v",
+            "T"
+          ]
+        }
+      ]
+    },
+    {
+      "exported": true,
+      "body": {
+        "return": {
+          "expression": {
+            "object": {
+              "name": "fmt",
+              "object": [
+                {
+                  "name": "p"
+                },
+                {
+                  "name": "p"
+                }
+              ],
+              "string": "\"(%d,%d)\""
+            }
+          }
+        }
+      },
+      "name": [
+        "String",
+        "string"
+      ],
+      "parameter": {
+        "name": [
+          "p",
+          "Point"
+        ]
+      }
+    },
+    {
+      "exported": true,
+      "body": {
+        "assign": [
+          {
+            "expression": [
+              {
+                "object": {
+                  "name": "p"
+                }
+              },
+              {
+                "name": "dx"
+              }
+            ]
+          },
+          {
+            "expression": [
+              {
+                "object": {
+                  "name": "p"
+                }
+              },
+              {
+                "name": "dy"
+              }
+            ]
+          }
+        ]
+      },
+      "name": "Shift",
+      "parameter": [
+        {
+          "name": "p",
+          "pointer": {
+            "name": "Point"
+          }
+        },
+        {
+          "name": [
+            "dx",
+            "dy",
+            "int"
+          ]
+        }
+      ]
+    },
+    {
+      "exported": true,
+      "body": {
+        "return": {
+          "expression": {
+            "object": {
+              "name": "e"
+            }
+          }
+        }
+      },
+      "name": [
+        "Error",
+        "string"
+      ],
+      "parameter": {
+        "name": "e",
+        "pointer": {
+          "name": "MyErr"
+        }
+      }
+    }
+  ],
+  "package": {
+    "name": "blueprint"
+  },
+  "struct": [
+    {
+      "exported": true,
+      "field": {
+        "unexported": true,
+        "name": "items",
+        "slice": {
+          "name": "T"
+        }
+      },
+      "name": "Container"
+    },
+    {
+      "exported": true,
+      "field": {
+        "unexported": true,
+        "name": "msg",
+        "type": {
+          "name": "string"
+        }
+      },
+      "name": "MyErr"
+    },
+    {
+      "exported": true,
+      "field": [
+        {
+          "exported": true,
+          "name": [
+            "X",
+            "Y"
+          ],
+          "string": {
+            "raw": true
+          },
+          "type": {
+            "name": "int"
+          }
+        },
+        {
+          "exported": true,
+          "name": "Name",
+          "string": {
+            "raw": true
+          },
+          "type": {
+            "name": "string"
+          }
+        }
+      ],
+      "name": "Point"
+    },
+    {
+      "exported": true,
+      "field": [
+        {
+          "type": {
+            "name": "Point"
+          }
+        },
+        {
+          "exported": true,
+          "name": "Tag",
+          "type": {
+            "name": "string"
+          }
+        },
+        {
+          "unexported": true,
+          "name": "_",
+          "struct": {}
+        },
+        {
+          "exported": true,
+          "name": "Meta",
+          "struct": {
+            "field": {
+              "exported": true,
+              "name": "Created",
+              "type": {
+                "name": "int64"
+              }
+            }
+          }
+        }
+      ],
+      "name": "Labeled"
+    }
+  ],
+  "type": [
+    {
+      "exported": true,
+      "name": "UserID",
+      "type": {
+        "name": "int64"
+      }
+    },
+    {
+      "exported": true,
+      "name": "Handler",
+      "type": {
+        "function": true,
+        "name": "error",
+        "parameter": [
+          {
+            "name": "ctx",
+            "type": {
+              "name": [
+                "context",
+                "Context"
+              ]
+            }
+          },
+          {
+            "name": [
+              "id",
+              "UserID"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "var": [
+    {
+      "exported": true,
+      "name": "ErrNotFound",
+      "value": {
+        "expression": {
+          "object": {
+            "name": "errors",
+            "string": "\"not found\""
+          }
+        }
+      }
+    },
+    {
+      "unexported": true,
+      "name": "globalCount",
+      "type": {
+        "name": "int"
+      }
+    },
+    {
+      "unexported": true,
+      "name": [
+        "name",
+        "age"
+      ],
+      "value": [
+        {
+          "expression": {
+            "string": "\"alice\""
+          }
+        },
+        {
+          "expression": {
+            "int": "30"
+          }
+        }
+      ]
+    }
+  ]
+}

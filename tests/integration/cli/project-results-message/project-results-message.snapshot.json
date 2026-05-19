@@ -1,0 +1,222 @@
+[
+  {
+    "file": "tests/integration/sample.cs",
+    "line": 2,
+    "tree": {
+      "$type": "class",
+      "public": true,
+      "name": "Calculator",
+      "body": {
+        "method": [
+          {
+            "body": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "name": "b",
+                      "expression": true
+                    },
+                    "left": {
+                      "name": "a",
+                      "expression": true
+                    },
+                    "op": {
+                      "text": "+",
+                      "operator": true,
+                      "plus": true
+                    }
+                  }
+                }
+              }
+            },
+            "public": true,
+            "name": "Add",
+            "parameter": [
+              {
+                "name": "a",
+                "type": {
+                  "text": "int",
+                  "name": true
+                }
+              },
+              {
+                "name": "b",
+                "type": {
+                  "text": "int",
+                  "name": true
+                }
+              }
+            ]
+          },
+          {
+            "body": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "name": "b",
+                      "expression": true
+                    },
+                    "left": {
+                      "name": "a",
+                      "expression": true
+                    },
+                    "op": {
+                      "text": "-",
+                      "operator": true,
+                      "minus": true
+                    }
+                  }
+                }
+              }
+            },
+            "public": true,
+            "name": "Subtract",
+            "parameter": [
+              {
+                "name": "a",
+                "type": {
+                  "text": "int",
+                  "name": true
+                }
+              },
+              {
+                "name": "b",
+                "type": {
+                  "text": "int",
+                  "name": true
+                }
+              }
+            ]
+          },
+          {
+            "body": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "name": "b",
+                      "expression": true
+                    },
+                    "left": {
+                      "name": "a",
+                      "expression": true
+                    },
+                    "op": {
+                      "text": "*",
+                      "operator": true,
+                      "multiply": true
+                    }
+                  }
+                }
+              }
+            },
+            "public": true,
+            "name": "Multiply",
+            "parameter": [
+              {
+                "name": "a",
+                "type": {
+                  "text": "int",
+                  "name": true
+                }
+              },
+              {
+                "name": "b",
+                "type": {
+                  "text": "int",
+                  "name": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "message": "hit"
+  },
+  {
+    "file": "tests/integration/sample.cs",
+    "line": 9,
+    "tree": {
+      "$type": "class",
+      "public": true,
+      "name": "Greeter",
+      "body": {
+        "method": [
+          {
+            "body": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "name": "name",
+                      "expression": true
+                    },
+                    "left": {
+                      "string": "\"Hello, \"",
+                      "expression": true
+                    },
+                    "op": {
+                      "text": "+",
+                      "operator": true,
+                      "plus": true
+                    }
+                  }
+                }
+              }
+            },
+            "public": true,
+            "name": "Hello",
+            "parameter": {
+              "name": "name",
+              "type": {
+                "text": "string",
+                "name": true
+              }
+            }
+          },
+          {
+            "body": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "name": "name",
+                      "expression": true
+                    },
+                    "left": {
+                      "string": "\"Goodbye, \"",
+                      "expression": true
+                    },
+                    "op": {
+                      "text": "+",
+                      "operator": true,
+                      "plus": true
+                    }
+                  }
+                }
+              }
+            },
+            "public": true,
+            "name": "Goodbye",
+            "parameter": {
+              "name": "name",
+              "type": {
+                "text": "string",
+                "name": true
+              }
+            }
+          },
+          {
+            "body": "{ }",
+            "public": true,
+            "name": "Reset"
+          }
+        ]
+      }
+    },
+    "message": "hit"
+  }
+]

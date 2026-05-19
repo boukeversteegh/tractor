@@ -57,13 +57,18 @@ static STRIP_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"\s*(line|column|end_line|end_column)="[^"]*""#).unwrap()
 });
 
-/// Extract location directly from xot node attributes (fast path - no serialization)
-fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
+/// Extract location and (optional) editable-trees `@id` directly from
+/// xot node attributes (fast path — no serialization). The `@id`
+/// attribute is stamped by the typed-tree → xot projection
+/// (S15-Z2) and carries through to XPath matches for the mutation
+/// pipeline.
+fn extract_location_and_id_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32, Option<u32>) {
     if let Value::Element(_) = xot.value(node) {
         let mut line = 1u32;
         let mut col = 1u32;
         let mut end_line = 1u32;
         let mut end_col = 1u32;
+        let mut id: Option<u32> = None;
 
         for (name_id, value) in xot.attributes(node).iter() {
             let name = xot.local_name_str(name_id);
@@ -72,6 +77,13 @@ fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
                 "column" => { if let Ok(v) = value.parse() { col = v; } }
                 "end_line" => { if let Ok(v) = value.parse() { end_line = v; } }
                 "end_column" => { if let Ok(v) = value.parse() { end_col = v; } }
+                "id" => {
+                    if let Ok(v) = value.parse::<u32>() {
+                        if v != 0 {
+                            id = Some(v);
+                        }
+                    }
+                }
                 _ => {}
             }
         }
@@ -82,13 +94,13 @@ fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
             end_col = col;
         }
 
-        (line, col, end_line, end_col)
+        (line, col, end_line, end_col, id)
     } else {
-        (1, 1, 1, 1)
+        (1, 1, 1, 1, None)
     }
 }
 
-/// Walk an xot node tree and build a native `XmlNode` IR.
+/// Walk an xot node tree and build a native `XmlNode` tree.
 pub fn xot_node_to_xml_node(xot: &Xot, node: Node) -> XmlNode {
     match xot.value(node) {
         Value::Element(element) => {
@@ -157,7 +169,7 @@ fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) 
 /// Convert a `serde_json::Value` into an `XmlNode` tree.
 ///
 /// This is the robust bridge between xee's JSON serializer (the only public
-/// API for inspecting map/array contents) and our native IR. The JSON string
+/// API for inspecting map/array contents) and our native tree. The JSON string
 /// is parsed exactly once at query time; downstream renderers work with the
 /// structured `XmlNode` directly.
 ///
@@ -226,12 +238,18 @@ fn tractor_variables(file_path: &str) -> Variables {
 ///
 /// This is the fast path - use when you've built directly into Documents
 /// using XeeBuilder.
+///
+/// `root_tree`, when supplied, is attached to any match whose xot
+/// node is the document root — letting format renderers walk the
+/// typed tree for type-driven cardinality decisions instead of
+/// inferring shape from XML attributes.
 fn execute_direct_query(
     xpath: &str,
     documents: &mut Documents,
     doc_handle: DocumentHandle,
     source_lines: Arc<Vec<String>>,
     file_path: &str,
+    root_tree: Option<&crate::xpath::Tree>,
 ) -> Result<Vec<Match>, XPathError> {
     QUERY_CACHE.with(|cache| {
         let mut cache = cache.borrow_mut();
@@ -281,20 +299,35 @@ fn execute_direct_query(
             match item {
                 xee_xpath::Item::Node(node) => {
                     let xot = documents.xot();
-                    // Extract location directly from xot attributes (fast - no serialization)
-                    let (line, col, end_line, end_col) = extract_location_from_xot(xot, node);
+                    // Extract location and editable-trees @id directly from
+                    // xot attributes (fast - no serialization).
+                    let (line, col, end_line, end_col, node_id) = extract_location_and_id_from_xot(xot, node);
 
                     let ts0 = Instant::now();
                     let value = xot.string_value(node);
                     let ts1 = Instant::now();
-                    // Build native XmlNode IR (no XML string serialization)
+                    // Build native XmlNode tree (no XML string serialization)
                     let xml_node = xot_node_to_xml_node(xot, node);
                     let ts2 = Instant::now();
 
                     string_value_time += (ts1 - ts0).as_micros() as u64;
                     xml_serialize_time += (ts2 - ts1).as_micros() as u64;
 
-                    let m = Match::with_location(
+                    // Detect document-root match — the xot node's
+                    // parent is the document wrapper. Root matches
+                    // attach the typed tree; partial matches keep the
+                    // raw XML subtree (until a xot↔tree mapping lets
+                    // us recover tree for inner nodes).
+                    let is_root = root_tree.is_some()
+                        && xot.parent(node).map(|p| xot.is_document(p)).unwrap_or(false);
+
+                    let tree = if is_root {
+                        root_tree.cloned().unwrap_or(crate::xpath::Tree::Xml(xml_node))
+                    } else {
+                        crate::xpath::Tree::Xml(xml_node)
+                    };
+
+                    let mut m = Match::with_location(
                         file_path.to_string(),
                         line,
                         col,
@@ -302,8 +335,10 @@ fn execute_direct_query(
                         end_col,
                         value,
                         Arc::clone(&source_lines),
-                    ).with_xml_node(xml_node);
-
+                    ).with_tree(tree);
+                    if let Some(id) = node_id {
+                        m = m.with_node_id(id);
+                    }
                     matches.push(m);
                 }
                 xee_xpath::Item::Atomic(atomic) => {
@@ -313,10 +348,10 @@ fn execute_direct_query(
                 xee_xpath::Item::Function(func) => {
                     let json_str = function_to_json_string(&func, documents.xot_mut());
                     let mut m = Match::new(file_path.to_string(), String::new());
-                    // Parse the JSON into structured XmlNode IR — value stays empty,
+                    // Parse the JSON into structured XmlNode tree — value stays empty,
                     // all data lives in the tree field.
                     if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&json_str) {
-                        m.xml_node = Some(json_value_to_xml_node(&parsed));
+                        m.tree = Some(crate::xpath::Tree::Xml(json_value_to_xml_node(&parsed)));
                     } else if let Some(result) = try_normalize_and_serialize_map(&func, documents) {
                         // The direct JSON serialization failed (likely because a
                         // map value is a multi-item sequence). Try normalizing the
@@ -346,7 +381,7 @@ fn execute_direct_query(
                                     );
                                 }
                             }
-                            m.xml_node = Some(json_value_to_xml_node(&parsed));
+                            m.tree = Some(crate::xpath::Tree::Xml(json_value_to_xml_node(&parsed)));
                         }
                     }
                     matches.push(m);
@@ -411,7 +446,24 @@ impl XPathEngine {
         source_lines: Arc<Vec<String>>,
         file_path: &str,
     ) -> Result<Vec<Match>, XPathError> {
-        execute_direct_query(xpath, documents, doc_handle, source_lines, file_path)
+        execute_direct_query(xpath, documents, doc_handle, source_lines, file_path, None)
+    }
+
+    /// Like `query_documents`, but also attaches `root_tree` to any
+    /// match whose xot node is the document root. The format layer
+    /// then walks the typed tree for principled JSON / YAML / etc.
+    /// shape decisions rather than going through the XML→JSON
+    /// inference.
+    pub fn query_documents_with_root_tree(
+        &self,
+        documents: &mut Documents,
+        doc_handle: DocumentHandle,
+        xpath: &str,
+        source_lines: Arc<Vec<String>>,
+        file_path: &str,
+        root_tree: Option<&crate::xpath::Tree>,
+    ) -> Result<Vec<Match>, XPathError> {
+        execute_direct_query(xpath, documents, doc_handle, source_lines, file_path, root_tree)
     }
 
     /// Strip location metadata from XML
@@ -515,7 +567,7 @@ mod tests {
         let m = matches.unwrap();
         assert_eq!(m.len(), 2, "Should get 2 maps");
         // Verify structured tree
-        match &m[0].xml_node {
+        match m[0].xml_node() {
             Some(XmlNode::Map { entries }) => {
                 assert!(entries.iter().any(|(k, _)| k == "n"), "Map should have key 'n'");
                 assert!(entries.iter().any(|(k, _)| k == "v"), "Map should have key 'v'");
@@ -539,7 +591,7 @@ mod tests {
         ).unwrap();
         assert_eq!(matches.len(), 1);
         // Tree should be a structured Map
-        match &matches[0].xml_node {
+        match matches[0].xml_node() {
             Some(XmlNode::Map { entries }) => {
                 let name_entry = entries.iter().find(|(k, _)| k == "name").expect("key 'name'");
                 let val_entry = entries.iter().find(|(k, _)| k == "val").expect("key 'val'");
@@ -565,8 +617,8 @@ mod tests {
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        assert!(matches!(matches[0].xml_node, Some(XmlNode::Map { .. })),
-            "Map results should have XmlNode::Map in tree, got: {:?}", matches[0].xml_node);
+        assert!(matches!(matches[0].xml_node(), Some(XmlNode::Map { .. })),
+            "Map results should have XmlNode::Map in tree, got: {:?}", matches[0].xml_node());
 
         // Node results should have an Element variant
         let matches = engine.query_documents(
@@ -575,7 +627,7 @@ mod tests {
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        assert!(matches!(matches[0].xml_node, Some(XmlNode::Element { .. })),
+        assert!(matches!(matches[0].xml_node(), Some(XmlNode::Element { .. })),
             "Node results should have XmlNode::Element in tree");
 
         // Atomic results should have no tree
@@ -585,7 +637,7 @@ mod tests {
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        assert!(matches[0].xml_node.is_none(),
+        assert!(matches[0].xml_node().is_none(),
             "Atomic results should have no tree");
     }
 
@@ -606,7 +658,7 @@ mod tests {
         ).unwrap();
         assert_eq!(matches.len(), 1);
         // Should have structured Map in tree
-        match &matches[0].xml_node {
+        match matches[0].xml_node() {
             Some(XmlNode::Map { entries }) => {
                 assert_eq!(entries.len(), 2);
                 // Look up by key (order depends on serde_json's BTreeMap)
@@ -648,7 +700,7 @@ mod tests {
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        match &matches[0].xml_node {
+        match matches[0].xml_node() {
             Some(XmlNode::Map { entries }) => {
                 let props = entries.iter().find(|(k, _)| k == "props")
                     .expect("Map should have key 'props'");
@@ -672,7 +724,7 @@ mod tests {
         ).unwrap();
         assert_eq!(matches_arr.len(), 1);
         // Both approaches should produce identical XmlNode trees
-        assert_eq!(matches[0].xml_node, matches_arr[0].xml_node,
+        assert_eq!(matches[0].xml_node(), matches_arr[0].xml_node(),
             "Auto-wrapped and explicit array{{}} should produce identical results");
     }
 
@@ -692,7 +744,7 @@ mod tests {
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        match &matches[0].xml_node {
+        match matches[0].xml_node() {
             Some(XmlNode::Map { entries }) => {
                 let props = entries.iter().find(|(k, _)| k == "properties")
                     .expect("Map should have key 'properties'");
@@ -732,7 +784,7 @@ mod tests {
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        match &matches[0].xml_node {
+        match matches[0].xml_node() {
             Some(XmlNode::Map { entries }) => {
                 let name_entry = entries.iter().find(|(k, _)| k == "name")
                     .expect("Map should have key 'name'");
@@ -764,7 +816,7 @@ mod tests {
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        match &matches[0].xml_node {
+        match matches[0].xml_node() {
             Some(XmlNode::Map { entries }) => {
                 let classes = entries.iter().find(|(k, _)| k == "classes")
                     .expect("Should have 'classes' key");
@@ -865,6 +917,10 @@ mod tests {
         ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one name element");
 
+        // The value field now holds the expression as a marker
+        // (`<expression/>`) plus the inner expression directly, instead
+        // of nesting the value inside an `<expression>` wrapper. So the
+        // number sits directly under `<value>` alongside the marker.
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
             "//value/number", result.source_lines.clone(), "test.ts"

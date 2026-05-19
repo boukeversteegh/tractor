@@ -7,7 +7,7 @@ mod map_normalize;
 mod match_result;
 
 pub use engine::{XPathEngine, print_timing_stats, xot_node_to_xml_node};
-pub use match_result::{Match, XmlNode};
+pub use match_result::{Match, Tree, XmlNode};
 
 // Re-export xee-xpath types needed for direct query API
 pub use xee_xpath::{Documents, DocumentHandle};

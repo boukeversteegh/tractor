@@ -7,6 +7,49 @@ type: note
 
 <!-- TODO: develop into proper personas with goals/frustrations. -->
 
+## Usage Context
+
+Tractor is designed primarily for teams working in **moderately
+large, existing codebases**. These teams have already accumulated
+local conventions, lessons from incidents, and maintainability
+preferences that are worth applying consistently. The codebase
+itself is the reference material rules are written against.
+
+**We optimize for:**
+
+- Repeated patterns that appear many times across an existing
+  codebase — the same convention, applied consistently.
+- Teams with accumulated lessons (post-incident reviews, recurring
+  review feedback, architectural decisions) that need to be
+  enforced going forward.
+- Rules grounded in real code — written against a real codebase,
+  validated against real matches, refined until they capture the
+  intended pattern.
+
+**We do not optimize for:**
+
+- **Small codebases** where rules can't be validated against enough
+  examples — without a body of code to test against, "does this
+  rule actually catch what we want?" is a guess.
+- **Speculative rules** written without grounding in actual code.
+  Rules earn their keep by matching real instances; rules invented
+  in the abstract tend not to.
+- **"Universal" rules** meant to apply to any project regardless of
+  context. Universal-style rules are the domain of language linters;
+  Tractor is for the team-specific conventions a linter can't ship
+  out of the box.
+- **Complex one-off statement shapes unlikely to recur.** The tree
+  shape pays a verbosity cost on deeply nested expressions to keep
+  repeated patterns stable; that trade only pays off when the rule
+  catches many instances.
+
+Stylistic concerns are **not out of scope** per se — if a concern is
+structural and visible in a parse tree, it's expressible as a
+Tractor rule. But Tractor isn't trying to compete with formatters
+(Prettier, .editorconfig) or replace language linters (ESLint,
+Pylint). It fills the gap for team-specific discoveries those tools
+don't ship.
+
 ## Primary: Team Leads & Project Maintainers
 
 People who set technical standards for their teams and contributors.

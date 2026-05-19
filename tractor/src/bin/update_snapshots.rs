@@ -1,542 +1,605 @@
-//! Generate/update or check XML snapshots for integration tests.
+//! Generate/update or check snapshots for integration tests.
 //!
-//! Walks `tests/integration/*/`, finds source files by known extensions,
-//! and runs tractor on each to produce `.xml` and `.raw.xml` snapshots.
+//! Two hardcoded lists drive the snapshots:
 //!
-//! Also handles output-format combination snapshots in
-//! `tests/integration/formats/snapshots/`.
+//! - `BLUEPRINTS`: one kitchen-sink source file per language. Each
+//!   produces a `<source>.snapshot.txt` showing the entire transformed
+//!   shape. Used to spot any cross-cutting transform regression.
+//! - `OUTPUT_FORMAT_CASES`: tractor invocations exercising every
+//!   output format / projection / CLI option combination, against a
+//!   shared `sample.cs` (and a small `sample2.cs` for multi-file
+//!   cases). Each case writes a snapshot under `tests/integration/cli/`.
 //!
 //! Usage:
 //!   cargo run --release --bin update-snapshots          # update snapshots
 //!   cargo run --release --bin update-snapshots -- --check  # check only (no writes)
 
-use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use std::process::{self, Command};
 
-/// File extensions to skip (not source fixtures).
-const SKIP_EXTENSIONS: &[&str] = &["xml", "sh", "md"];
+/// Per-language blueprints. Each entry: (path, xpath, depth, shape_only).
+///
+/// - `xpath` selects the root element to render.
+/// - `depth = 0` means "no limit" (blueprints render at full depth so
+///   every transform change shows up as a visible snapshot diff).
+/// - `shape_only = true` renders via `-p shape` (tree structure +
+///   queryable markers, no source text). Text preservation is enforced
+///   separately by `tests/text_preservation.rs`.
+///
+/// Output: two snapshots per blueprint, both rendering the same tree
+/// at the same depth:
+/// - `<source>.snapshot.txt` — text shape, primary diff for transform
+///   changes (no source text per `-p shape`).
+/// - `<source>.snapshot.json` — JSON tree projection (via `-p tree
+///   --single -f json`), so cardinality decisions (`list=` →
+///   array vs object) are visible in fixtures and shape regressions
+///   that only show up in JSON consumers are caught.
+const BLUEPRINTS: &[(&str, &str, u32, bool)] = &[
+    ("tests/integration/languages/typescript/blueprint.ts", "//program", 0, true),
+    ("tests/integration/languages/java/blueprint.java",     "//program", 0, true),
+    ("tests/integration/languages/csharp/blueprint.cs",     "//unit",    0, true),
+    ("tests/integration/languages/rust/blueprint.rs",       "//file",    0, true),
+    ("tests/integration/languages/python/blueprint.py",     "//module",  0, true),
+    ("tests/integration/languages/go/blueprint.go",         "//file",    0, true),
+    ("tests/integration/languages/php/blueprint.php",       "//program", 0, true),
+    ("tests/integration/languages/ruby/blueprint.rb",       "//program", 0, true),
+    ("tests/integration/languages/tsql/blueprint.sql",      "//file",    0, true),
+];
 
-/// Output-format snapshot cases: (relative path under formats/, tractor args).
-/// Directory = -f value, name = command + params, extension = file format.
+/// CLI snapshot cases: (relative path under cli/, tractor args).
+///
+/// Each scenario has its own folder. All format renderings of one scenario
+/// sit side-by-side as `{scenario}.snapshot.{txt,json,xml,yaml}`. For
+/// non-default-extension formats (gcc, github), the format is encoded in
+/// the filename: `{scenario}.snapshot.gcc.txt`. Configs (when needed) live
+/// alongside the snapshots as `{scenario}.config.yml`.
 const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
-    // -f text
-    ("text/query.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
+    // ---- query: basic query against sample.cs ----
+    ("query/query.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class", "--depth", "2",
     ]),
-    ("text/query-value.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-v", "value",
+    ("query/query.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class", "-f", "json", "--depth", "2",
     ]),
-    ("text/query-count.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-v", "count",
+    ("query/query.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class", "-f", "xml", "--depth", "2",
     ]),
-    ("text/query-message.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-m", "{file}:{line}",
+    ("query/query.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class", "-f", "yaml", "--depth", "2",
     ]),
-    ("text/check.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "text",
+
+    // ---- query-value / count / message / summary / query / location / meta ----
+    ("query-value/query-value.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class", "-v", "value",
     ]),
-    ("text/check-composable.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-v", "tree,reason,severity", "-f", "text",
-    ]),
-    ("text/query-summary.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "summary",
-    ]),
-    ("text/query-query.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "query",
-    ]),
-    ("text/query-location.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "file,line",
-    ]),
-    ("text/query-meta.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "--meta", "--depth", "1",
-    ]),
-    ("text/explore-tree-source.txt", &[
-        "tests/integration/languages/csharp/comments.cs", "-v", "tree,source",
-    ]),
-    ("text/explore-tree-source-color.txt", &[
-        "tests/integration/languages/csharp/comments.cs", "-v", "tree,source",
-        "--color", "always",
-    ]),
-    // -f gcc
-    ("gcc/check.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found",
-    ]),
-    ("gcc/check-no-matches.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "interface",
-        "--reason", "interface found",
-    ]),
-    // -f json
-    ("json/query.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "json",
-    ]),
-    ("json/query-value.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
+    ("query-value/query-value.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
         "-v", "value", "-f", "json",
     ]),
-    ("json/query-message.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-m", "{file}:{line}", "-f", "json",
-    ]),
-    ("json/check.json", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "json",
-    ]),
-    ("json/check-composable.json", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-v", "tree,reason,severity", "-f", "json",
-    ]),
-    ("json/query-summary.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "summary", "-f", "json",
-    ]),
-    ("json/query-query.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "query", "-f", "json",
-    ]),
-    // -f xml
-    ("xml/query.xml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "xml",
-    ]),
-    ("xml/check.xml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "xml",
-    ]),
-    ("xml/query-summary.xml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "summary", "-f", "xml",
-    ]),
-    ("xml/query-query.xml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "query", "-f", "xml",
-    ]),
-    // -f yaml
-    ("yaml/query.yaml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "yaml",
-    ]),
-    ("yaml/check.yaml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "yaml",
-    ]),
-    ("yaml/query-summary.yaml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "summary", "-f", "yaml",
-    ]),
-    ("yaml/query-query.yaml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "query", "-f", "yaml",
-    ]),
-    // --depth snapshots: verify tree truncation at various depths
-    ("text/query-depth1.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "--depth", "1",
-    ]),
-    ("text/query-depth2.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "--depth", "2",
-    ]),
-    ("json/query-depth1.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "tree", "-f", "json", "--depth", "1",
-    ]),
-    ("json/query-depth2.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "tree", "-f", "json", "--depth", "2",
-    ]),
-    ("xml/check-composable-depth1.xml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-v", "tree,reason,severity", "-f", "xml", "--depth", "1",
-    ]),
-    // Projection snapshots
-    ("text/project-tree.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree",
-    ]),
-    ("json/project-tree.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "-f", "json",
-    ]),
-    ("yaml/project-tree.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "-f", "yaml",
-    ]),
-    ("xml/project-tree.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "-f", "xml",
-    ]),
-    ("json/project-tree-single.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "--single", "-f", "json",
-    ]),
-    ("yaml/project-tree-single.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "--single", "-f", "yaml",
-    ]),
-    ("xml/project-tree-single.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "--single", "-f", "xml",
-    ]),
-    ("text/project-tree-single.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "--single",
-    ]),
-    ("text/project-value.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-p", "value",
-    ]),
-    ("text/project-value-single.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-p", "value", "--single",
-    ]),
-    ("json/project-value.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-p", "value", "-f", "json",
-    ]),
-    ("json/project-value-single.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-p", "value", "--single", "-f", "json",
-    ]),
-    ("yaml/project-value.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("query-value/query-value.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "value", "-f", "yaml",
     ]),
-    ("yaml/project-value-single.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-p", "value", "--single", "-f", "yaml",
-    ]),
-    ("xml/project-value.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("query-value/query-value.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "value", "-f", "xml",
     ]),
-    ("xml/project-value-single.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("query-count/query-count.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class", "-v", "count",
+    ]),
+    ("query-message/query-message.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-m", "{file}:{line}",
+    ]),
+    ("query-message/query-message.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-m", "{file}:{line}", "-f", "json", "--depth", "2",
+    ]),
+    ("query-summary/query-summary.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class", "-v", "summary",
+    ]),
+    ("query-summary/query-summary.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-v", "summary", "-f", "json",
+    ]),
+    ("query-summary/query-summary.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-v", "summary", "-f", "xml",
+    ]),
+    ("query-summary/query-summary.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-v", "summary", "-f", "yaml",
+    ]),
+    ("query-query/query-query.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class", "-v", "query",
+    ]),
+    ("query-query/query-query.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-v", "query", "-f", "json",
+    ]),
+    ("query-query/query-query.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-v", "query", "-f", "xml",
+    ]),
+    ("query-query/query-query.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-v", "query", "-f", "yaml",
+    ]),
+    ("query-location/query-location.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-v", "file,line",
+    ]),
+    ("query-meta/query-meta.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "--meta", "--depth", "1",
+    ]),
+
+    // ---- explore-tree-source / -color: combined tree + source view ----
+    ("explore-tree-source/explore-tree-source.snapshot.txt", &[
+        "tests/integration/sample.cs", "-v", "tree,source", "--depth", "2",
+    ]),
+    ("explore-tree-source-color/explore-tree-source-color.snapshot.txt", &[
+        "tests/integration/sample.cs", "-v", "tree,source",
+        "--color", "always", "--depth", "2",
+    ]),
+
+    // ---- check: simple check rule ----
+    ("check/check.snapshot.txt", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-f", "text", "--depth", "2",
+    ]),
+    ("check/check.snapshot.json", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-f", "json", "--depth", "2",
+    ]),
+    ("check/check.snapshot.xml", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-f", "xml", "--depth", "2",
+    ]),
+    ("check/check.snapshot.yaml", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-f", "yaml", "--depth", "2",
+    ]),
+    ("check/check.snapshot.gcc.txt", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found",
+    ]),
+    ("check-composable/check-composable.snapshot.txt", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-v", "tree,reason,severity", "-f", "text", "--depth", "2",
+    ]),
+    ("check-composable/check-composable.snapshot.json", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-v", "tree,reason,severity", "-f", "json", "--depth", "2",
+    ]),
+    ("check-composable-depth1/check-composable-depth1.snapshot.xml", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-v", "tree,reason,severity", "-f", "xml", "--depth", "1",
+    ]),
+    ("check-no-matches/check-no-matches.snapshot.gcc.txt", &[
+        "check", "tests/integration/sample.cs", "-x", "interface",
+        "--reason", "interface found",
+    ]),
+
+    // ---- depth truncation snapshots ----
+    ("query-depth1/query-depth1.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class", "--depth", "1",
+    ]),
+    ("query-depth1/query-depth1.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-v", "tree", "-f", "json", "--depth", "1",
+    ]),
+    ("query-depth2/query-depth2.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class", "--depth", "2",
+    ]),
+    ("query-depth2/query-depth2.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-v", "tree", "-f", "json", "--depth", "2",
+    ]),
+
+    // ---- projection: tree ----
+    ("project-tree/project-tree.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "tree", "--depth", "2",
+    ]),
+    ("project-tree/project-tree.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "tree", "-f", "json", "--depth", "2",
+    ]),
+    ("project-tree/project-tree.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "tree", "-f", "yaml", "--depth", "2",
+    ]),
+    ("project-tree/project-tree.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "tree", "-f", "xml", "--depth", "2",
+    ]),
+    ("project-tree-single/project-tree-single.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "tree", "--single", "--depth", "2",
+    ]),
+    ("project-tree-single/project-tree-single.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "tree", "--single", "-f", "json", "--depth", "2",
+    ]),
+    ("project-tree-single/project-tree-single.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "tree", "--single", "-f", "yaml", "--depth", "2",
+    ]),
+    ("project-tree-single/project-tree-single.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "tree", "--single", "-f", "xml", "--depth", "2",
+    ]),
+
+    // ---- projection: value ----
+    ("project-value/project-value.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "value",
+    ]),
+    ("project-value/project-value.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "value", "-f", "json",
+    ]),
+    ("project-value/project-value.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "value", "-f", "yaml",
+    ]),
+    ("project-value/project-value.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "value", "-f", "xml",
+    ]),
+    ("project-value-single/project-value-single.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "value", "--single",
+    ]),
+    ("project-value-single/project-value-single.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "value", "--single", "-f", "json",
+    ]),
+    ("project-value-single/project-value-single.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "value", "--single", "-f", "yaml",
+    ]),
+    ("project-value-single/project-value-single.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "value", "--single", "-f", "xml",
     ]),
-    ("text/project-source.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+
+    // ---- projection: source ----
+    ("project-source/project-source.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "source",
     ]),
-    ("text/project-source-single.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-p", "source", "--single",
-    ]),
-    ("json/project-source.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-source/project-source.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "source", "-f", "json",
     ]),
-    ("json/project-source-single.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-p", "source", "--single", "-f", "json",
-    ]),
-    ("yaml/project-source.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-source/project-source.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "source", "-f", "yaml",
     ]),
-    ("yaml/project-source-single.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-p", "source", "--single", "-f", "yaml",
-    ]),
-    ("xml/project-source.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-source/project-source.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "source", "-f", "xml",
     ]),
-    ("xml/project-source-single.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-source-single/project-source-single.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "source", "--single",
+    ]),
+    ("project-source-single/project-source-single.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "source", "--single", "-f", "json",
+    ]),
+    ("project-source-single/project-source-single.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "source", "--single", "-f", "yaml",
+    ]),
+    ("project-source-single/project-source-single.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "source", "--single", "-f", "xml",
     ]),
-    ("text/project-lines.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+
+    // ---- projection: lines ----
+    ("project-lines/project-lines.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "lines",
     ]),
-    ("text/project-lines-single.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-p", "lines", "--single",
-    ]),
-    ("json/project-lines.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-lines/project-lines.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "lines", "-f", "json",
     ]),
-    ("json/project-lines-single.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-p", "lines", "--single", "-f", "json",
-    ]),
-    ("yaml/project-lines.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-lines/project-lines.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "lines", "-f", "yaml",
     ]),
-    ("yaml/project-lines-single.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-p", "lines", "--single", "-f", "yaml",
-    ]),
-    ("xml/project-lines.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-lines/project-lines.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "lines", "-f", "xml",
     ]),
-    ("xml/project-lines-single.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-lines-single/project-lines-single.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "lines", "--single",
+    ]),
+    ("project-lines-single/project-lines-single.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "lines", "--single", "-f", "json",
+    ]),
+    ("project-lines-single/project-lines-single.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-p", "lines", "--single", "-f", "yaml",
+    ]),
+    ("project-lines-single/project-lines-single.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-p", "lines", "--single", "-f", "xml",
     ]),
-    ("text/project-schema.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "schema",
+
+    // ---- projection: schema ----
+    ("project-schema/project-schema.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "schema", "--depth", "1",
     ]),
-    ("text/project-schema-color.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "schema", "--color", "always",
+    ("project-schema/project-schema.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "schema", "-f", "json", "--depth", "1",
     ]),
-    ("json/project-schema.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "schema", "-f", "json",
+    ("project-schema/project-schema.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "schema", "-f", "yaml", "--depth", "1",
     ]),
-    ("yaml/project-schema.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "schema", "-f", "yaml",
+    ("project-schema/project-schema.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "schema", "-f", "xml", "--depth", "1",
     ]),
-    ("xml/project-schema.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "schema", "-f", "xml",
+    ("project-schema-color/project-schema-color.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "schema", "--color", "always", "--depth", "1",
     ]),
-    ("json/project-results-message.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-m", "hit", "-p", "results", "-f", "json",
-    ]),
-    ("json/project-summary.json", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-p", "summary", "-f", "json",
-    ]),
-    ("yaml/project-summary.yaml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-p", "summary", "-f", "yaml",
-    ]),
-    ("xml/project-summary.xml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-p", "summary", "-f", "xml",
-    ]),
-    ("text/project-summary.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-p", "summary",
-    ]),
-    ("text/project-results.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+
+    // ---- projection: results / report ----
+    ("project-results/project-results.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-v", "file,value", "-p", "results",
     ]),
-    ("text/project-results-single.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-v", "file,value", "-p", "results", "--single",
-    ]),
-    ("json/project-results.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-results/project-results.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-v", "file,value", "-p", "results", "-f", "json",
     ]),
-    ("json/project-results-single.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-v", "file,value", "-p", "results", "--single", "-f", "json",
-    ]),
-    ("yaml/project-results.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-results/project-results.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-v", "file,value", "-p", "results", "-f", "yaml",
     ]),
-    ("yaml/project-results-single.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
-        "-v", "file,value", "-p", "results", "--single", "-f", "yaml",
-    ]),
-    ("xml/project-results.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-results/project-results.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-v", "file,value", "-p", "results", "-f", "xml",
     ]),
-    ("xml/project-results-single.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-results-single/project-results-single.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-v", "file,value", "-p", "results", "--single",
+    ]),
+    ("project-results-single/project-results-single.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-v", "file,value", "-p", "results", "--single", "-f", "json",
+    ]),
+    ("project-results-single/project-results-single.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
+        "-v", "file,value", "-p", "results", "--single", "-f", "yaml",
+    ]),
+    ("project-results-single/project-results-single.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-v", "file,value", "-p", "results", "--single", "-f", "xml",
     ]),
-    ("text/project-report.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-results-message/project-results-message.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-m", "hit", "-p", "results", "-f", "json",
+    ]),
+    ("project-report/project-report.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-v", "summary,file,value", "-p", "report",
     ]),
-    ("json/project-report.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-report/project-report.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-v", "summary,file,value", "-p", "report", "-f", "json",
     ]),
-    ("yaml/project-report.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-report/project-report.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-v", "summary,file,value", "-p", "report", "-f", "yaml",
     ]),
-    ("xml/project-report.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+    ("project-report/project-report.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class/name",
         "-v", "summary,file,value", "-p", "report", "-f", "xml",
     ]),
-    ("text/project-count.txt", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+
+    // ---- projection: count / summary / totals ----
+    ("project-count/project-count.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
         "-p", "count",
     ]),
-    ("json/project-count.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+    ("project-count/project-count.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
         "-p", "count", "-f", "json",
     ]),
-    ("xml/project-count.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "count", "-f", "xml",
-    ]),
-    ("yaml/project-count.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+    ("project-count/project-count.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
         "-p", "count", "-f", "yaml",
     ]),
-    ("text/project-totals.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
+    ("project-count/project-count.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-p", "count", "-f", "xml",
+    ]),
+    ("project-summary/project-summary.snapshot.txt", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "summary",
+    ]),
+    ("project-summary/project-summary.snapshot.json", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "summary", "-f", "json",
+    ]),
+    ("project-summary/project-summary.snapshot.yaml", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "summary", "-f", "yaml",
+    ]),
+    ("project-summary/project-summary.snapshot.xml", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "summary", "-f", "xml",
+    ]),
+    ("project-totals/project-totals.snapshot.txt", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
         "--reason", "class found", "-p", "totals",
     ]),
-    ("json/project-totals.json", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
+    ("project-totals/project-totals.snapshot.json", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
         "--reason", "class found", "-p", "totals", "-f", "json",
     ]),
-    ("yaml/project-totals.yaml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
+    ("project-totals/project-totals.snapshot.yaml", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
         "--reason", "class found", "-p", "totals", "-f", "yaml",
     ]),
-    ("xml/project-totals.xml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
+    ("project-totals/project-totals.snapshot.xml", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
         "--reason", "class found", "-p", "totals", "-f", "xml",
     ]),
-    // map/array constructor output: XPath 3.1 structured results rendered natively.
-    // Uses sample-classes.cs (Calculator + Greeter, each with multiple methods) so
-    // the output is realistic and easy to inspect visually.
-    // The map is wrapped in { "classes": [...] } so the result mirrors an intuitive
-    // data shape: a single object whose "classes" key holds all class records.
-    ("json/query-map.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+
+    // ---- query-map / query-array: XPath 3.1 map+array constructors ----
+    ("query-map/query-map.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-l", "csharp",
         "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": array { body/method/name/string(.) } } } }"#,
         "-f", "json",
     ]),
-    ("json/query-array.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+    ("query-map/query-map.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-l", "csharp",
+        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": array { body/method/name/string(.) } } } }"#,
+        "-f", "yaml",
+    ]),
+    ("query-map/query-map.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-l", "csharp",
+        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": array { body/method/name/string(.) } } } }"#,
+        "-f", "xml",
+    ]),
+    ("query-array/query-array.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-l", "csharp",
         "-x", r#"//class ! array { string(name) }"#, "-f", "json",
     ]),
-    ("yaml/query-map.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
-        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": array { body/method/name/string(.) } } } }"#,
-        "-f", "yaml",
-    ]),
-    ("yaml/query-array.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+    ("query-array/query-array.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-l", "csharp",
         "-x", r#"//class ! array { string(name) }"#, "-f", "yaml",
     ]),
-    ("xml/query-map.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
-        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": array { body/method/name/string(.) } } } }"#,
-        "-f", "xml",
-    ]),
-    ("xml/query-array.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+    ("query-array/query-array.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-l", "csharp",
         "-x", r#"//class ! array { string(name) }"#, "-f", "xml",
     ]),
-    // Issue #60: map with sequence-valued key (no explicit array{}).
-    // The "methods" value is a bare sequence — previously silently dropped,
-    // now auto-wrapped in an array. Output should match query-map.* above.
-    ("json/query-map-sequence-value.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+    // Issue #60: map with sequence-valued key (no explicit array{}); the bare
+    // sequence is auto-wrapped in an array. Output should match query-map above.
+    ("query-map-sequence-value/query-map-sequence-value.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-l", "csharp",
         "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
         "-f", "json",
     ]),
-    ("yaml/query-map-sequence-value.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+    ("query-map-sequence-value/query-map-sequence-value.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-l", "csharp",
         "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
         "-f", "yaml",
     ]),
-    ("xml/query-map-sequence-value.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+    ("query-map-sequence-value/query-map-sequence-value.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-l", "csharp",
         "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
         "-f", "xml",
     ]),
-    // -g file (group-by) snapshots: query mode with multi-file grouping
-    ("json/query-group-file.json", &[
-        "query", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
-        "-x", "class", "-g", "file", "-f", "json",
+
+    // ---- group-by: multi-file query and check ----
+    ("query-group-file/query-group-file.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "tests/integration/sample2.cs",
+        "-x", "class", "-g", "file", "-f", "json", "--depth", "2",
     ]),
-    ("xml/query-group-file.xml", &[
-        "query", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
-        "-x", "class", "-g", "file", "-f", "xml",
+    ("query-group-file/query-group-file.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "tests/integration/sample2.cs",
+        "-x", "class", "-g", "file", "-f", "xml", "--depth", "2",
     ]),
-    ("json/check-no-group.json", &[
-        "check", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
-        "-x", "class", "--reason", "class found", "-g", "none", "-f", "json",
+    ("check-no-group/check-no-group.snapshot.json", &[
+        "check", "tests/integration/sample.cs", "tests/integration/sample2.cs",
+        "-x", "class", "--reason", "class found", "-g", "none", "-f", "json", "--depth", "2",
     ]),
-    // Color snapshots: ANSI codes rendered as \e so they are visible in text editors.
-    // These document what colored output looks like for each format.
-    ("text/query-color.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "--color", "always",
+
+    // ---- color: ANSI codes rendered as emoji-bracketed spans ----
+    ("query-color/query-color.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "--color", "always", "--depth", "2",
     ]),
-    ("xml/query-color.xml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-f", "xml", "--color", "always",
+    ("query-color/query-color.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "class",
+        "-f", "xml", "--color", "always", "--depth", "2",
     ]),
-    ("xml/check-color.xml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "xml", "--color", "always",
+    ("check-color/check-color.snapshot.xml", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
+        "--reason", "class found", "-f", "xml", "--color", "always", "--depth", "2",
     ]),
-    ("gcc/check-color.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
+    ("check-color/check-color.snapshot.gcc.txt", &[
+        "check", "tests/integration/sample.cs", "-x", "class",
         "--reason", "class found", "--color", "always",
     ]),
-    // Multi-rule check via --config flag
-    ("xml/check-multirule.xml", &[
+
+    // ---- check-multirule: multi-rule check via --config (config alongside snapshots) ----
+    ("check-multirule/check-multirule.snapshot.xml", &[
         "check",
-        "--config", "tests/integration/formats/multirule.yaml", "-f", "xml",
+        "--config", "tests/integration/cli/check-multirule/check-multirule.config.yml",
+        "-f", "xml", "--depth", "2",
     ]),
-    ("json/check-multirule.json", &[
+    ("check-multirule/check-multirule.snapshot.json", &[
         "check",
-        "--config", "tests/integration/formats/multirule.yaml", "-f", "json",
+        "--config", "tests/integration/cli/check-multirule/check-multirule.config.yml",
+        "-f", "json", "--depth", "2",
     ]),
-    ("gcc/check-multirule.txt", &[
+    ("check-multirule/check-multirule.snapshot.gcc.txt", &[
         "check",
-        "--config", "tests/integration/formats/multirule.yaml",
+        "--config", "tests/integration/cli/check-multirule/check-multirule.config.yml",
     ]),
-    // Multi-op run report (check + test in one config)
-    ("xml/run-multiop.xml", &[
-        "run", "--config", "tests/integration/formats/multiop.yaml", "-f", "xml",
+
+    // ---- run-multiop: multi-operation run report (check + test in one config) ----
+    ("run-multiop/run-multiop.snapshot.xml", &[
+        "run",
+        "--config", "tests/integration/cli/run-multiop/run-multiop.config.yml",
+        "-f", "xml", "--depth", "2",
     ]),
-    ("json/run-multiop.json", &[
-        "run", "--config", "tests/integration/formats/multiop.yaml", "-f", "json",
+    ("run-multiop/run-multiop.snapshot.json", &[
+        "run",
+        "--config", "tests/integration/cli/run-multiop/run-multiop.config.yml",
+        "-f", "json", "--depth", "2",
     ]),
-    // --help snapshots: track changes to CLI help text per subcommand
-    ("help/query.txt", &["query", "--help"]),
-    ("help/check.txt", &["check", "--help"]),
-    ("help/test.txt",  &["test",  "--help"]),
-    ("help/run.txt",   &["run",   "--help"]),
-    ("help/init.txt",  &["init",  "--help"]),
-    // Error/diagnostic snapshots: invalid XPath across all output formats.
-    ("errors/xpath-invalid-text.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+
+    // ---- --help snapshots: track CLI help text per subcommand ----
+    ("help-query/help-query.snapshot.txt", &["query", "--help"]),
+    ("help-check/help-check.snapshot.txt", &["check", "--help"]),
+    ("help-test/help-test.snapshot.txt",   &["test",  "--help"]),
+    ("help-run/help-run.snapshot.txt",     &["run",   "--help"]),
+    ("help-init/help-init.snapshot.txt",   &["init",  "--help"]),
+
+    // ---- xpath-invalid: error/diagnostic snapshots across formats ----
+    ("xpath-invalid/xpath-invalid.snapshot.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "//class[bad=(",
         "--no-color",
     ]),
-    ("errors/xpath-invalid.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+    ("xpath-invalid/xpath-invalid.snapshot.json", &[
+        "query", "tests/integration/sample.cs", "-x", "//class[bad=(",
         "-f", "json",
     ]),
-    ("errors/xpath-invalid.yaml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+    ("xpath-invalid/xpath-invalid.snapshot.yaml", &[
+        "query", "tests/integration/sample.cs", "-x", "//class[bad=(",
         "-f", "yaml",
     ]),
-    ("errors/xpath-invalid-gcc.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
-        "-f", "gcc", "--no-color",
-    ]),
-    ("errors/xpath-invalid-github.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
-        "-f", "github",
-    ]),
-    ("errors/xpath-invalid.xml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+    ("xpath-invalid/xpath-invalid.snapshot.xml", &[
+        "query", "tests/integration/sample.cs", "-x", "//class[bad=(",
         "-f", "xml", "--no-color",
     ]),
-    ("errors/xpath-invalid-check.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+    ("xpath-invalid/xpath-invalid.snapshot.gcc.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "//class[bad=(",
+        "-f", "gcc", "--no-color",
+    ]),
+    ("xpath-invalid/xpath-invalid.snapshot.github.txt", &[
+        "query", "tests/integration/sample.cs", "-x", "//class[bad=(",
+        "-f", "github",
+    ]),
+    ("xpath-invalid-check/xpath-invalid-check.snapshot.txt", &[
+        "check", "tests/integration/sample.cs", "-x", "//class[bad=(",
         "--reason", "test", "--no-color",
     ]),
 ];
@@ -652,83 +715,88 @@ fn main() {
     }
 
     let tractor_bin = find_tractor_bin();
-    let skip: HashSet<&str> = SKIP_EXTENSIONS.iter().copied().collect();
 
     let mut processed = 0;
     let mut mismatches: Vec<Mismatch> = Vec::new();
 
-    // --- Language parse-tree snapshots ---
-
-    let languages_dir = tests_dir.join("languages");
-    let mut dirs: Vec<_> = fs::read_dir(&languages_dir)
-        .expect("cannot read tests/integration/languages")
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().map(|t| t.is_dir()).unwrap_or(false))
-        .collect();
-    dirs.sort_by_key(|e| e.file_name());
-
-    for entry in dirs {
-        let lang_dir = entry.path();
-
-        let mut files: Vec<_> = fs::read_dir(&lang_dir)
-            .expect("cannot read language dir")
-            .filter_map(|e| e.ok())
-            .filter(|e| e.file_type().map(|t| t.is_file()).unwrap_or(false))
-            .collect();
-        files.sort_by_key(|e| e.file_name());
-
-        for file_entry in files {
-            let path = file_entry.path();
-            let ext = match path.extension().and_then(|e| e.to_str()) {
-                Some(e) => e,
-                None => continue,
-            };
-
-            if skip.contains(ext) {
-                continue;
-            }
-
-            // Normalize to forward slashes for consistent cross-platform output
-            let path_str = path.to_string_lossy().replace('\\', "/");
-            let lang_name = lang_dir.file_name().unwrap().to_string_lossy();
-            let file_name = path.file_name().unwrap().to_string_lossy();
-
-            // Semantic XML
-            let xml_path = format!("{}.xml", path_str);
-            let output = run_tractor(&tractor_bin, &path_str, &["-f", "xml"]);
-
-            // Raw TreeSitter XML
-            let raw_xml_path = format!("{}.raw.xml", path_str);
-            let raw_output = run_tractor(&tractor_bin, &path_str, &["-t", "raw", "-f", "xml"]);
-
-            if check_mode {
-                match fs::read_to_string(&xml_path) {
-                    Ok(existing) if existing != output => {
-                        mismatches.push(Mismatch::changed(&xml_path, &existing, &output));
-                    }
-                    Err(_) => mismatches.push(Mismatch::missing(&xml_path, &output)),
-                    _ => {}
-                }
-                match fs::read_to_string(&raw_xml_path) {
-                    Ok(existing) if existing != raw_output => {
-                        mismatches.push(Mismatch::changed(&raw_xml_path, &existing, &raw_output));
-                    }
-                    Err(_) => mismatches.push(Mismatch::missing(&raw_xml_path, &raw_output)),
-                    _ => {}
-                }
-            } else {
-                fs::write(&xml_path, &output).expect("cannot write .xml snapshot");
-                fs::write(&raw_xml_path, &raw_output).expect("cannot write .raw.xml snapshot");
-                println!("  {}/{} -> .xml, .raw.xml", lang_name, file_name);
-            }
-
-            processed += 1;
+    // --- Per-language blueprint snapshots ---
+    //
+    // One kitchen-sink fixture per language; the snapshot shows the
+    // full transformed tree (or shape projection). Spot any
+    // cross-cutting transform regression at a glance.
+    for &(source_rel, xpath, depth, shape_only) in BLUEPRINTS {
+        let source_rel = source_rel.replace('\\', "/");
+        let source_path = Path::new(&source_rel);
+        if !source_path.is_file() {
+            eprintln!(
+                "error: blueprint source not found: {} — add the source file before listing it",
+                source_rel
+            );
+            process::exit(1);
         }
+
+        let txt_snap = format!("{}.snapshot.txt", source_rel);
+        let json_snap = format!("{}.snapshot.json", source_rel);
+        let depth_str = depth.to_string();
+        let projection = if shape_only { "shape" } else { "tree" };
+
+        // --- text snapshot: shape projection (existing) ---
+        let mut txt_args: Vec<&str> = vec![
+            "query", &source_rel, "-x", xpath, "-p", projection, "--single",
+        ];
+        if depth > 0 {
+            txt_args.push("--depth");
+            txt_args.push(&depth_str);
+        }
+        let txt_out = run_tractor_args(&tractor_bin, &txt_args);
+
+        if check_mode {
+            match fs::read_to_string(&txt_snap) {
+                Ok(existing) if existing != txt_out => {
+                    mismatches.push(Mismatch::changed(&txt_snap, &existing, &txt_out));
+                }
+                Err(_) => mismatches.push(Mismatch::missing(&txt_snap, &txt_out)),
+                _ => {}
+            }
+        } else {
+            fs::write(&txt_snap, &txt_out).expect("cannot write .snapshot.txt");
+            println!("  blueprint {} -> .snapshot.txt", source_rel);
+        }
+
+        processed += 1;
+
+        // --- json snapshot: tree projection (cardinality fixture) ---
+        // Always uses `-p tree`: shape would lose source text and
+        // primitive values, defeating the purpose of having a JSON
+        // fixture that shows what consumers actually receive.
+        let mut json_args: Vec<&str> = vec![
+            "query", &source_rel, "-x", xpath, "-p", "tree", "--single", "-f", "json",
+        ];
+        if depth > 0 {
+            json_args.push("--depth");
+            json_args.push(&depth_str);
+        }
+        let json_out = run_tractor_args(&tractor_bin, &json_args);
+
+        if check_mode {
+            match fs::read_to_string(&json_snap) {
+                Ok(existing) if existing != json_out => {
+                    mismatches.push(Mismatch::changed(&json_snap, &existing, &json_out));
+                }
+                Err(_) => mismatches.push(Mismatch::missing(&json_snap, &json_out)),
+                _ => {}
+            }
+        } else {
+            fs::write(&json_snap, &json_out).expect("cannot write .snapshot.json");
+            println!("  blueprint {} -> .snapshot.json", source_rel);
+        }
+
+        processed += 1;
     }
 
-    // --- Output-format combination snapshots ---
+    // --- CLI scenario snapshots ---
 
-    let output_formats_dir = tests_dir.join("formats");
+    let output_formats_dir = tests_dir.join("cli");
 
     // Stable CWD prefix for normalizing absolute paths in gcc snapshots.
     let cwd_prefix = std::env::current_dir()
@@ -762,7 +830,7 @@ fn main() {
             }
         } else {
             fs::write(&snap_path, &output).expect("cannot write output-format snapshot");
-            println!("  formats/{}", name);
+            println!("  cli/{}", name);
         }
 
         processed += 1;
@@ -906,26 +974,6 @@ fn find_tractor_bin() -> String {
     found[0].0.clone()
 }
 
-fn run_tractor(bin: &str, fixture: &str, extra_args: &[&str]) -> String {
-    let output = Command::new(bin)
-        .arg(fixture)
-        .args(extra_args)
-        .output()
-        .unwrap_or_else(|e| {
-            eprintln!("error: failed to run {}: {}", bin, e);
-            process::exit(1);
-        });
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!(
-            "warning: tractor failed on {} {:?}: {}",
-            fixture, extra_args, stderr
-        );
-    }
-
-    String::from_utf8(output.stdout).expect("non-UTF8 tractor output")
-}
 
 /// Run tractor with an arbitrary list of args (for output-format cases).
 /// Stdout is captured as-is. Stderr lines are prefixed with ❌.

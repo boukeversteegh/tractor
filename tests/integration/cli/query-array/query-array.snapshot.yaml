@@ -1,0 +1,9 @@
+results:
+- file: tests/integration/sample.cs
+  line: 1
+  tree:
+  - Calculator
+- file: tests/integration/sample.cs
+  line: 1
+  tree:
+  - Greeter

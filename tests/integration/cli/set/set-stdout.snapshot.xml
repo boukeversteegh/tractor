@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <summary>
+    <success>true</success>
+    <totals>
+      <results>1</results>
+      <files>1</files>
+      <updated>1</updated>
+    </totals>
+  </summary>
+  <group-by>file</group-by>
+  <results>
+    <group file="tests/integration/cli/set/sample.yaml">
+      <output>database:
+  host: db.example.com
+  port: 5432
+</output>
+    </group>
+  </results>
+</report>

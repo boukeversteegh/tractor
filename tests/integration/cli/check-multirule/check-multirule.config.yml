@@ -1,0 +1,11 @@
+check:
+  files: ["../../sample.cs"]
+  rules:
+    - id: no-class
+      xpath: "//class"
+      reason: "class declaration found"
+      severity: error
+    - id: no-void-method
+      xpath: "//method[returns/type='void']"
+      reason: "void method found"
+      severity: warning

@@ -1,0 +1,27 @@
+// DO NOT EDIT — regenerate via `task gen:kinds`.
+// Source: this grammar's node-types.json (named, non-supertype kinds only).
+
+use strum_macros::{EnumIter, EnumString, IntoStaticStr};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter, EnumString, IntoStaticStr)]
+#[strum(serialize_all = "snake_case")]
+pub enum IniKind {
+    Comment,
+    Document,
+    Section,
+    SectionName,
+    Setting,
+    SettingName,
+    SettingValue,
+    Text,
+}
+
+impl IniKind {
+    pub fn from_str(s: &str) -> Option<Self> {
+        <Self as std::str::FromStr>::from_str(s).ok()
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        (*self).into()
+    }
+}

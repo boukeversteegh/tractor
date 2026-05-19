@@ -1,296 +1,145 @@
-# Pipeline Architecture (As-Is)
+# Pipeline architecture
 
-This document describes the actual data processing pipeline of the tractor CLI as it exists today, including parallelism, branching points, and standardization gaps.
+This document describes the actual data-processing pipeline of the tractor CLI as it exists today: parallelism, branching points, file paths. For the tree-side architecture (CST→tree lowering, `to_xot`, `to_json`, source renderers), see the doc-comments in `tractor/src/ir/`. For active reorganization work, see `TODO.md`.
 
-## Full Pipeline Diagram
+## High-level diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  CLI ARGS  (clap parse)                                             │
-└───────────────────────────┬─────────────────────────────────────────┘
-                            │
-                  ┌─────────▼──────────┐
-                  │   RunContext::build │  SerFormat, ViewSet,
-                  │   (context.rs)     │  XPath, color, concurrency
-                  └──────┬─────────────┘
-                         │
-          ┌──────────────▼──────────────┐
-          │      resolve_input()        │
-          └──────┬───────────────┬──────┘
-                 │               │
-    ┌────────────▼──┐      ┌─────▼──────────┐
-    │  InlineSource  │      │  Files          │  (glob expand +
-    │  (--string or  │      │  Vec<String>    │   lang filter)
-    │   stdin+lang)  │      └─────┬───────────┘
-    └────────┬───────┘            │
-             │                   │
-   ┌─────────▼──────┐   ┌────────▼──────────────────────────────────┐
-   │ parse_string_  │   │  query_files_batched()                    │
-   │ to_documents() │   │                                           │
-   └─────────┬──────┘   │  batch 0: [files 0..T]    ← T = threads  │
-             │          │  batch 1: [files T..3T]   ← 2×           │
-             │          │  batch 2: [files 3T..7T]  ← 4×           │
-             │          │  ...capped at 8×T per batch               │
-             │          │                                           │
-             │          │  ┌────────────────────────────────────┐  │
-             │          │  │ per batch: rayon par_iter()        │  │
-             │          │  │  ┌──────────┐  ┌──────────┐        │  │
-             │          │  │  │ file A   │  │ file B   │  ...   │  │
-             │          │  │  │ parse()  │  │ parse()  │        │  │
-             │          │  │  │ query()  │  │ query()  │        │  │
-             │          │  │  └────┬─────┘  └────┬─────┘        │  │
-             │          │  │       └──────┬───────┘              │  │
-             │          │  │          flatten                     │  │
-             │          │  │          sort (file,line,col)        │  │
-             │          │  │          truncate to limit           │  │
-             │          │  └────────────────────────────────────┘  │
-             │          └────────────────┬──────────────────────────┘
-             │                          │
-             └──────────────┬───────────┘
-                            │  Vec<Match>
-                            │  { file, line, col, value, xml_fragment, ... }
-             ┌──────────────▼──────────────────────────────────────────┐
-             │                   MODE SPLIT                            │
-             └───┬──────────────┬────────────────┬──────────┬──────────┘
-                 │              │                │          │
-          ┌──────▼──┐    ┌──────▼──┐    ┌───────▼──┐  ┌───▼────┐
-          │  QUERY  │    │  CHECK  │    │   TEST   │  │  SET   │
-          │         │    │         │    │          │  │        │
-          │ wrap as │    │ wrap as │    │ wrap as  │  │apply_  │
-          │ Report- │    │ Report- │    │ Report-  │  │replace-│
-          │ Match + │    │ Match + │    │ Match +  │  │ments() │
-          │ message │    │ reason  │    │ message  │  │(in-    │
-          │ template│    │severity │    │ template │  │ place  │
-          │         │    │ message │    │          │  │ edit)  │
-          └──────┬──┘    └──────┬──┘    └───────┬──┘  └───┬────┘
-                 │              │                │          │
-                 │       .with_groups()          │      print
-                 │       (drains matches         │      summary
-                 │        into FileGroup[])      │
-                 │              │                │
-                 └──────────────┴────────────────┘
-                                │  Report { kind, matches|groups, summary? }
-                                │
-             ┌──────────────────▼──────────────────────────────────────┐
-             │                 SerFormat dispatch                       │
-             └──┬───────┬──────┬──────┬──────────┬──────────┬──────────┘
-                │       │      │      │           │          │
-             Text      Gcc   Github  Json        Yaml       Xml
-                │       │      │      │           │          │
-          format_  render_ render_ render_    render_   render_
-          matches  gcc()  github() json_      yaml_     xml_
-          (core)           report() report()  report()
-                │       │      │      │           │          │
-                │       │      │      └───────────┘          │
-                │       └──────┘            │                │
-                │            │         view-filtered         │
-                │       source ctx     JSON/YAML/XML:        │
-                │       + underline    matches or groups     │
-                │                           │                │
-                └──────────────────────────┴────────────────┘
-                                │
-                           stdout (text/structured)
-                         + stderr (summaries, errors)
+CLI args  (clap, tractor/src/main.rs + tractor/src/cli/run.rs)
+   │
+   ▼
+RunContext::build()  (tractor/src/cli/context.rs)
+   │   resolves OutputFormat, ViewSet, color, verbosity, base_dir
+   │
+   ▼
+Operation planning  (tractor/src/cli/*.rs per command, or tractor/src/cli/run.rs for `tractor run config.yaml`)
+   │   per command: build OperationPlan(s) with Sources, Filters, XPaths
+   │   input resolution: input::resolve_operation_inputs
+   │     (glob expand, CLI intersection, diff filter, language detect,
+   │      inline stdin / -s, virtual paths)
+   │
+   ▼
+executor::execute(plans, ExecCtx, ReportBuilder)
+   │   tractor/src/executor/mod.rs — thin dispatcher
+   │   ┌────────┬────────┬───────┬──────┬────────┐
+   │   ▼        ▼        ▼       ▼      ▼        ▼
+   │  query   check    test    set   update
+   │   │ (executor/query.rs etc — one fn per op type)
+   │   │
+   │   │ All read-only ops route through query_files_multi
+   │   │ (executor/mod.rs:132):
+   │   │   sources.par_iter()  ← rayon parallelism
+   │   │     source.parse(lang, tree_mode, ...)
+   │   │       → tractor::parser::parse  ── tree path or legacy
+   │   │     result.query(xpath)
+   │   │       → XPath eval (xee)
+   │   │   collect Vec<Match>, sort by (file, line, col), apply limit
+   │   │
+   │   │ set / update mutate files; their executors apply
+   │   │ replacements after the query collects target sites.
+   │
+   ▼
+ReportBuilder (tractor/src/report.rs)
+   │   add_all(Vec<ReportMatch>), grouping (check), summary
+   │
+   ▼
+matcher::project_report(report, view)
+   │   tractor/src/matcher.rs:304 — drop fields not in ViewSet
+   │   (Count / Schema fields short-circuit here)
+   │
+   ▼
+matcher::prepare_report_for_output(report, ctx)
+   │   tractor/src/matcher.rs:357 — final shape + apply -m template
+   │
+   ▼
+format::render(report, ctx)
+   │   tractor/src/format/mod.rs — dispatch by OutputFormat
+   │   text / json / yaml / xml / gcc / github / claude-code
+   │
+   ▼
+stdout (matches/report)  +  stderr (summary, diagnostics)
 ```
 
-## Standardization Gaps
+## Parse path (where the tree pipeline lives)
 
-| Gap | Description |
-|-----|-------------|
-| `.with_groups()` | Only called in `check`. `query` and `test` produce a `Report` but skip grouping entirely. |
-| Count / Schema | Short-circuited in `run_query` before the `Report` is built — these views never enter the report pipeline. |
-| `explore_*` (no-XPath) | Completely separate output path in query mode. Bypasses `Vec<Match>`, `Report`, `ReportMatch`, and all format renderers. Produces its own direct stdout output. |
-| `set` mode | Completely bypasses the `Report` pipeline. Unique output path with its own summary print. |
-| Summary always `Some` | `Report` has `summary: Option<Summary>` but all constructors (`query`, `check`, `test`) always set it to `Some`. The renderer suppresses it for query kind, not the model. |
+`source.parse(...)` calls into `tractor::parser::parse` (`tractor/src/parser/mod.rs:1106`). Three tree-family branches plus a legacy branch are gated by `use_ir_pipeline(lang, mode)` (`parser/mod.rs:380`) until `TODO.md`'s S2-Z4 collapses the gate into a registry lookup. Branch-by-branch:
 
-## Parallelism Summary
+| Path | Languages | Where |
+|---|---|---|
+| **tree (programming)** — `SyntaxTree` | csharp, python, java, ts/js/tsx/jsx, rust, go, ruby, php | `parse_with_ir_pipeline_to_xee` |
+| **tree (data)** — `DataTree` | json, yaml, toml, ini, env, markdown (Structure mode) | same fn, data branch |
+| **tree (sql)** — `SqlTree` | tsql | same fn, sql branch |
+| **Legacy imperative** — `XeeBuilder::build_with_options` + `walk_transform` | Raw mode for everything; c, cpp, html, css, bash, scala, lua, haskell, ocaml, r, julia; json/yaml in Data mode | `parser/mod.rs:933` |
+| **WASM** — `XotBuilder` + `walk_transform` | All web-app parses | `tractor/src/wasm/mod.rs` |
+
+The tree path renders to xot, **serialises the xot to a string, and re-parses it into xee `Documents`** (acknowledged "v1 stepping stone" at `parser/mod.rs:641`; TODO.md S7 closes it). After that it runs each language's `post_transform` for residual shape work plus the `list="X"` attribute pass.
+
+### Reverse path (render / set / update value-rewrite)
+
+`tractor render` and `tractor set / update`'s value-rewrite use a separate reverse pipeline: `tractor::render::parse_xml` / `parse_json` → `XmlNode` → `render::render(node, lang, TreeMode::Data, opts)` (`tractor/src/render/mod.rs`). It speaks `XmlNode`, not tree, and supports csharp / json / yaml only. The tree-side reverse renderer (`tractor/src/ir/source/*.rs`) is implemented for 9 languages but not yet wired into production. TODO.md S4 closes the gap.
+
+## Parallelism
 
 | Stage | Parallel? | Notes |
-|-------|-----------|-------|
-| Input resolve | No | Sequential glob expand and lang filter |
-| Parse + Query | **Yes** | `rayon par_iter` per batch, per file |
-| Batch ordering | Partial | Within-batch sort by `(file, line, col)`; cross-batch order is stable only because batches are processed sequentially |
-| Report build | No | Sequential match wrapping and HashMap grouping |
-| Rendering | No | Single-threaded string building |
-| File writes (`set`) | No | Files written sequentially |
+|---|---|---|
+| Input resolve | No | Glob expand + lang filter are sequential |
+| Parse + XPath query | **Yes** | `rayon par_iter()` over `sources` in `executor::query_files_multi` |
+| Sort, truncate | No | After flatten, single-threaded |
+| Per-op dispatch | No | `executor::execute` iterates `OperationPlan`s sequentially |
+| Report build / projection | No | Single-pass |
+| Rendering | No | Single string builder per format |
+| File writes (`set` / `update`) | No | Sequential — preserves predictable error ordering |
 
-## Key Branching Points
+The rayon worker pool uses a 16 MiB stack (`cli/context.rs`) because xee's XPath evaluator has deeply recursive AST walks. This was previously load-bearing for `render_to_xot` too; that recursion was decomposed in iter 38 so the stack-size hack now exists only for xee.
 
-1. **Command type** (`main.rs`): `Query` | `Check` | `Test` | `Set`
-2. **InputMode** (`context.rs`): `Files` vs `InlineSource`
-3. **XPath present or absent** (`run_query`): query path vs explore path
-4. **SerFormat** (`report_output.rs`): 6 output formats — `Text`, `Gcc`, `Github`, `Json`, `Yaml`, `Xml`
-5. **ViewSet fields** (`context.rs`): composable field selection; `Count` and `Schema` short-circuit before report construction
-6. **OutputFormat** (`formatter.rs`): `Xml` | `Lines` | `Source` | `Value` | `Count` | `Schema` (text sub-formats)
-7. **Grouping** (`report.rs`): `matches` present vs `groups` present — mutually exclusive after `.with_groups()`
+## Branching points
 
-## Key Files
+| # | Where | What it switches on |
+|---|---|---|
+| 1 | `main.rs` | Subcommand (`check` / `query` / `test` / `set` / `update` / `run` / `render` / `init` / `languages` / `help`) |
+| 2 | `cli/run.rs` vs `cli/<cmd>.rs` | Single CLI op vs config-file batch |
+| 3 | `cli/context.rs::RunContext::build` | `OutputFormat`, `ViewSet`, color |
+| 4 | `input::Source::parse` (per source) | Disk file vs virtual / inline |
+| 5 | `parser::parse` | tree (programming / data / sql) vs legacy imperative |
+| 6 | `executor::execute` | `OperationPlan` variant — dispatches to `execute_query` / `execute_check` / `execute_test` / `execute_set` / `execute_update` |
+| 7 | `matcher::project_report` | `Count` / `Schema` view → short-circuit; otherwise project per `ViewSet` |
+| 8 | `format::render` | One of seven `OutputFormat`s |
 
-| File | Role |
-|------|------|
-| `tractor/src/main.rs` | Entry point, command routing |
-| `tractor/src/cli.rs` | All argument definitions |
-| `tractor/src/pipeline/context.rs` | `RunContext` builder, `SerFormat`, `ViewSet` |
-| `tractor/src/pipeline/input.rs` | Input mode resolution |
-| `tractor/src/pipeline/query.rs` | Parallel query core, explore functions |
-| `tractor/src/modes/check.rs` | Check mode, violation wrapping |
-| `tractor/src/modes/query.rs` | Query mode, render dispatch |
-| `tractor/src/modes/test.rs` | Test mode, expectation checking |
-| `tractor/src/modes/set.rs` | Set mode, in-place file editing |
-| `tractor/src/pipeline/report_output.rs` | All report renderers |
-| `tractor/src/report.rs` | `Report`, `ReportMatch`, `FileGroup` model |
-| `tractor/src/output/formatter.rs` | `format_matches`, `format_message`, text sub-formats |
-
----
-
-# Pipeline Architecture (After Clean Pipeline Separation)
-
-This section describes the pipeline after the refactor committed in "Clean pipeline separation". Compare with the As-Is diagram above to see what changed.
-
-## What Changed
-
-| Concern | Before | After |
-|---------|--------|-------|
-| `ViewSet` backing type | `HashSet<ViewField>` — unordered | `Vec<ViewField>` — preserves `-v` declaration order |
-| `-v` with `gcc`/`github` | Silently ignored | Errors at `RunContext::build()` |
-| `ReportMatch` shape | Nested: `rm.inner.file`, `rm.inner.line` | Flat: `rm.file`, `rm.line` |
-| Content fields populated | Always all fields | Only fields in resolved `ViewSet` |
-| `source_lines` lifetime | Carried inside `Match` all the way to the renderer | Consumed at report-build time; not in `ReportMatch` |
-| `xml_fragment` in renderers | Passed as part of `Match` inside `ReportMatch` | Stored as `rm.tree: Option<String>` — `None` if not in ViewSet |
-| Field order in JSON/YAML/XML | Fixed canonical order | Follows `-v` declaration order |
-| `view.has()` in renderers | Branching on content fields | Only used for structural decisions (summary, grouping) |
-| `is_count_format` in engine | Rendering concern inside `query_files_batched` | Removed; count short-circuits in command layer |
-| `render_match_text()` | Streaming text render inside matcher | Removed |
-| GCC source context lines | Rendered from `source_lines` in `Match` | Suppressed (source_lines not stored in `ReportMatch`) |
-
-## Full Pipeline Diagram
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  CLI ARGS  (clap parse)                                             │
-└───────────────────────────┬─────────────────────────────────────────┘
-                            │
-                  ┌─────────▼──────────────────────────────────────┐
-                  │   RunContext::build()  (context.rs)            │
-                  │                                                │
-                  │  1. parse -f → OutputFormat                    │
-                  │  2. if gcc/github AND -v given → error         │
-                  │  3. parse -v → ViewSet (Vec, ordered)          │
-                  │     or use command default if -v absent        │
-                  │  ViewSet fully resolved here; never modified   │
-                  └──────┬─────────────────────────────────────────┘
-                         │
-          ┌──────────────▼──────────────┐
-          │      resolve_input()        │
-          └──────┬───────────────┬──────┘
-                 │               │
-    ┌────────────▼──┐      ┌─────▼──────────┐
-    │  InlineSource  │      │  Files          │
-    └────────┬───────┘      └─────┬───────────┘
-             │                   │
-   ┌─────────▼──────┐   ┌────────▼──────────────────────────────────┐
-   │ parse_string_  │   │  query_files_batched()                    │
-   │ to_documents() │   │                                           │
-   └─────────┬──────┘   │  batch 0: [files 0..T]    ← T = threads  │
-             │          │  batch 1: [files T..3T]   ← 2×           │
-             │          │  ...capped at 8×T per batch               │
-             │          │                                           │
-             │          │  ┌────────────────────────────────────┐  │
-             │          │  │ per batch: rayon par_iter()        │  │
-             │          │  │  ┌──────────┐  ┌──────────┐        │  │
-             │          │  │  │ file A   │  │ file B   │  ...   │  │
-             │          │  │  │ parse()  │  │ parse()  │        │  │
-             │          │  │  │ query()  │  │ query()  │        │  │
-             │          │  │  └────┬─────┘  └────┬─────┘        │  │
-             │          │  │       └──────┬───────┘              │  │
-             │          │  │       flatten, sort, truncate        │  │
-             │          │  └────────────────────────────────────┘  │
-             │          └────────────────┬──────────────────────────┘
-             │                          │
-             └──────────────┬───────────┘
-                            │  Vec<Match>
-                            │  { file, line, col, value, source_lines, xml_fragment }
-                            │
-             ┌──────────────▼──────────────────────────────────────────┐
-             │   MODE SPLIT  +  match_to_report_match()               │
-             │   (query.rs / check.rs / test.rs)                      │
-             │                                                         │
-             │   For each Match, populate ONLY ViewSet fields:         │
-             │     tree     → xml_fragment  (if Tree ∈ ViewSet)       │
-             │     value    → m.value       (if Value ∈ ViewSet)      │
-             │     source   → extract_source_snippet()  (if Source)   │
-             │     lines    → get_source_lines_range()  (if Lines)    │
-             │     reason   → from check rule  (None in query/test)   │
-             │     severity → from check rule  (None in query/test)   │
-             │     message  → format_message(template, m)  (if -m)   │
-             │   file/line/column always populated (identity fields)  │
-             │   Match (source_lines, xml_fragment) dropped here ◄─── │
-             └───┬──────────────┬────────────────┬──────────┬──────────┘
-                 │              │                │          │
-          ┌──────▼──┐    ┌──────▼──┐    ┌───────▼──┐  ┌───▼────┐
-          │  QUERY  │    │  CHECK  │    │   TEST   │  │  SET   │
-          │         │    │         │    │          │  │        │
-          │ Count/  │    │ with_   │    │ check_   │  │apply_  │
-          │ Schema  │    │ groups()│    │ expecta- │  │replace-│
-          │ short-  │    │         │    │ tion()   │  │ments() │
-          │ circuit │    │         │    │          │  │        │
-          └──────┬──┘    └──────┬──┘    └───────┬──┘  └───┬────┘
-                 │              │                │          │
-                 └──────────────┴────────────────┘      print
-                                │                       summary
-                                │  Report { kind, matches|groups, summary }
-                                │  ReportMatch: flat struct, Option<> per field
-                                │
-             ┌──────────────────▼──────────────────────────────────────┐
-             │              OutputFormat dispatch  (format/mod.rs)     │
-             └──┬───────┬──────┬──────┬──────────┬──────────┬──────────┘
-                │       │      │      │           │          │
-             Text      Gcc   Github  Json        Yaml       Xml
-                │       │      │      │           │          │
-                │    fixed   fixed  iterate     iterate   attrs +
-                │   template schema view.fields view.fields iterate
-                │       │      │      │           │          │
-                │   rm.file  rm.file  field       field    view.fields
-                │   rm.line  rm.line  Some→emit   Some→emit  for children
-                │   rm.reason rm.reason
-                │   rm.severity rm.severity
-                │       │      │      │           │          │
-                │       │      │      └───────────┘          │
-                │       └──────┘            │                │
-                │                      tree: JSON obj   tree: XML child
-                │                      (xml_fragment    (xml_fragment
-                │                       → json conv)     verbatim)
-                │                           │                │
-                └──────────────────────────┴────────────────┘
-                                │
-                           stdout (text/structured)
-                         + stderr (summaries, errors)
-```
-
-## Remaining Standardization Gaps
-
-| Gap | Description |
-|-----|-------------|
-| Count / Schema | Still short-circuited in `run_query` before `Report` is built. |
-| `set` mode | Completely bypasses the `Report` pipeline. |
-| `.with_groups()` | Still only called in `check`. `query` and `test` use flat `matches`. |
-| GCC source context | `source_lines` not stored in `ReportMatch`; gcc context lines suppressed. Could be restored by adding a `source_context: Option<String>` field computed at build time. |
-| Summary always `Some` | All `Report` constructors always set `summary: Some(...)`. The `Option<>` wrapper is vestigial. |
-
-## Key Files
+## Key files
 
 | File | Role |
-|------|------|
-| `tractor/src/main.rs` | Entry point, command routing |
-| `tractor/src/cli.rs` | All argument definitions |
-| `tractor/src/pipeline/context.rs` | `RunContext::build()` — format+view normalization, gcc/github validation |
-| `tractor/src/pipeline/input.rs` | Input mode resolution |
-| `tractor/src/pipeline/matcher.rs` | `query_files_batched`, `query_inline_source`, `match_to_report_match` |
-| `tractor/src/modes/check.rs` | Check mode — reason/severity injection |
-| `tractor/src/modes/query.rs` | Query mode — count/schema short-circuit, report build |
-| `tractor/src/modes/test.rs` | Test mode — expectation checking |
-| `tractor/src/modes/set.rs` | Set mode — in-place file editing (separate pipeline) |
-| `tractor/src/pipeline/format/mod.rs` | Render dispatch for query/check/test |
-| `tractor/src/pipeline/format/options.rs` | `ViewSet` (ordered Vec), `ViewField`, `OutputFormat` |
-| `tractor/src/report.rs` | `Report`, flat `ReportMatch`, `FileGroup`, `Summary` |
-| `tractor/src/output/formatter.rs` | `render_source_precomputed`, `render_lines_precomputed` |
+|---|---|
+| `tractor/src/main.rs` | Entry point, subcommand routing |
+| `tractor/src/cli/mod.rs` | clap definitions |
+| `tractor/src/cli/run.rs` | `tractor run config.yaml` driver |
+| `tractor/src/cli/{check,query,test,set,update,render,init,languages,help,config}.rs` | per-subcommand CLI handlers |
+| `tractor/src/cli/context.rs` | `RunContext::build()`, `ExecCtx`, format + view normalisation |
+| `tractor/src/input/source.rs` | `Source` (disk + virtual, with `.parse()`) |
+| `tractor/src/input/file_resolver.rs` | glob expansion, language filter |
+| `tractor/src/input/filter.rs` | per-result filtering (severity, tag, …) |
+| `tractor/src/input/git.rs` | diff-files intersection |
+| `tractor/src/input/plan.rs` | `resolve_operation_inputs` — turns CLI/config args into `Vec<Source>` + `Filters` |
+| `tractor/src/parser/mod.rs` | `parse()` (unified) + tree + legacy parse fns |
+| `tractor/src/ir/` | typed tree + `to_xot` / `to_json` / `to_data` / `source` (reverse render, unwired) |
+| `tractor/src/executor/mod.rs` | `execute()` dispatcher, `query_files_multi` (rayon) |
+| `tractor/src/executor/{query,check,test,set,update}.rs` | per-op executors + their `OperationPlan` types |
+| `tractor/src/matcher.rs` | `run_rules`, `project_report`, `prepare_report_for_output`, `apply_message_template` |
+| `tractor/src/report.rs` *(in library: `tractor/src/model/report.rs`)* | `Report`, `ReportBuilder`, `ReportMatch`, `FileGroup`, `Summary` |
+| `tractor/src/format/mod.rs` | render dispatch by `OutputFormat` |
+| `tractor/src/format/{text,json,yaml,xml,gcc,github,claude_code}.rs` | per-format renderers |
+| `tractor/src/format/options.rs` | `OutputFormat`, `ViewSet`, `ViewField` enum |
+| `tractor/src/format/projection.rs` | view-field application onto `ReportMatch` |
+| `tractor/src/render/mod.rs` | reverse renderer (XmlNode → source, csharp/json/yaml only — to be retired by TODO.md S4) |
+| `tractor/src/wasm/mod.rs` | WASM bindings (still on `XotBuilder` + `walk_transform`; TODO.md S6) |
+
+## Standardisation gaps still open
+
+| Gap | Description | Tracked |
+|---|---|---|
+| ~~Two parse APIs~~ | Closed — `parse(ParseInput, ParseOptions)` is the only public entry; the legacy `parse_string_to_xot` / `parse_file_to_xee` / `parse_string_to_xee` functions and `XotParseResult` struct are gone (S9). | TODO.md S9 ✅ |
+| Two reverse renderers | XmlNode-based `render/*.rs` (3 languages, wired) and tree-based `ir/source/*.rs` (9 languages, unwired) | TODO.md S4 |
+| Two JSON projections | `xml_to_json` (legacy), `tree_to_json` (1087 LOC of heuristics), `data_to_json` (principled). Three concurrent paths. | TODO.md S5 |
+| Two language registries | `tractor/src/languages/mod.rs::LANGUAGES` + `tractor/src/languages/info.rs::LANGUAGES`, both claiming SSoT | TODO.md C5 |
+| WASM vs CLI divergence | WASM bypasses `crate::tree`; produces different semantic XML for migrated languages | TODO.md S6 |
+| Post-pass paradigm mix | tree pipeline renders typed → mutates rendered xot with `post_transform` shared helpers | TODO.md S3 |
+| `xot.to_string()` → xee reparse | tree pipeline serialises XML and re-parses into xee Documents | TODO.md S7 |

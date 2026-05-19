@@ -1,9 +1,0 @@
-summary:
-  totals:
-    results: 2
-    files: 1
-results:
-- file: tests/integration/formats/sample-classes.cs
-  value: Calculator
-- file: tests/integration/formats/sample-classes.cs
-  value: Greeter

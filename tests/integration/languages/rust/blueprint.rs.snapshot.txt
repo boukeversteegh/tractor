@@ -1,0 +1,1003 @@
+file/
+  ├─ comment[leading] = "//! Rust kitchen-sink fixture: exhaustive blueprint of language constructs used\n//! by tractor's snapshot tests to catch design-principle regressions."
+  ├─ attribute[inner]/
+  │   ├─ name = "allow"
+  │   ├─ name = "dead_code"
+  │   ├─ name = "unused_variables"
+  │   ├─ name = "unused_imports"
+  │   └─ name = "unused_mut"
+  ├─ use[group]/
+  │   ├─ use/
+  │   │   ├─ path/
+  │   │   │   ├─ name = "std"
+  │   │   │   └─ name = "collections"
+  │   │   └─ name = "HashMap"
+  │   └─ use[alias]/
+  │       ├─ path/
+  │       │   ├─ name = "std"
+  │       │   └─ name = "collections"
+  │       ├─ name = "HashSet"
+  │       └─ aliased/name = "Set"
+  ├─ use[group]/
+  │   ├─ use/
+  │   │   ├─ path/
+  │   │   │   ├─ name = "std"
+  │   │   │   └─ name = "fmt"
+  │   │   └─ name = "self"
+  │   ├─ use/
+  │   │   ├─ path/
+  │   │   │   ├─ name = "std"
+  │   │   │   └─ name = "fmt"
+  │   │   └─ name = "Debug"
+  │   └─ use/
+  │       ├─ path/
+  │       │   ├─ name = "std"
+  │       │   └─ name = "fmt"
+  │       └─ name = "Display"
+  ├─ use/
+  │   ├─ path/
+  │   │   ├─ name = "std"
+  │   │   └─ name = "rc"
+  │   └─ name = "Rc"
+  ├─ use/
+  │   ├─ path/
+  │   │   ├─ name = "std"
+  │   │   └─ name = "sync"
+  │   └─ name = "Arc"
+  ├─ use/
+  │   ├─ path/
+  │   │   ├─ name = "std"
+  │   │   └─ name = "cell"
+  │   └─ name = "RefCell"
+  ├─ use[group]/
+  │   ├─ use[alias]/
+  │   │   ├─ path/
+  │   │   │   ├─ name = "std"
+  │   │   │   └─ name = "io"
+  │   │   ├─ name = "Read"
+  │   │   └─ aliased/name = "IoRead"
+  │   └─ use[alias]/
+  │       ├─ path/
+  │       │   ├─ name = "std"
+  │       │   └─ name = "io"
+  │       ├─ name = "Write"
+  │       └─ aliased/name = "IoWrite"
+  ├─ use[wildcard]/path/
+  │   ├─ name = "std"
+  │   └─ name = "vec"
+  ├─ mod[pub]/
+  │   ├─ name = "outer"
+  │   └─ body/mod/
+  │       ├─ pub/crate = "pub(crate)"
+  │       ├─ name = "inner"
+  │       └─ body/
+  │           ├─ const[pub]/
+  │           │   ├─ name = "INNER_CONST"
+  │           │   ├─ name = "u32"
+  │           │   └─ int = "7"
+  │           └─ function/
+  │               ├─ pub/in = "pub(in crate::outer)"
+  │               ├─ name = "path_vis"
+  │               └─ body = "{}"
+  ├─ comment[leading] = "/// A named-field struct with generics, lifetimes, and a where clause."
+  ├─ attribute/
+  │   ├─ name = "derive"
+  │   ├─ name = "Debug"
+  │   └─ name = "Clone"
+  ├─ struct[pub]/
+  │   ├─ name = "Point"
+  │   ├─ lifetime/name = "a"
+  │   ├─ generic/name = "T"
+  │   ├─ where/bound/
+  │   │   ├─ name = "T"
+  │   │   └─ extends/
+  │   │       ├─ type/name = "Clone"
+  │   │       ├─ type/name = "Send"
+  │   │       └─ lifetime/name = "static"
+  │   └─ body/
+  │       ├─ field[pub]/
+  │       │   ├─ name = "x"
+  │       │   └─ type/name = "T"
+  │       ├─ field[pub]/
+  │       │   ├─ name = "y"
+  │       │   └─ type/name = "T"
+  │       └─ field/
+  │           ├─ name = "label"
+  │           └─ type[borrowed]/
+  │               ├─ lifetime/name = "a"
+  │               └─ type/name = "str"
+  ├─ comment[leading] = "/// A tuple struct."
+  ├─ struct[pub]/
+  │   ├─ name = "Pair"
+  │   ├─ generic/name = "T"
+  │   └─ body/
+  │       ├─ name = "T"
+  │       └─ name = "T"
+  ├─ comment[leading] = "/// A unit struct."
+  ├─ struct[pub]/name = "Marker"
+  ├─ comment[leading] = "/// An enum with every variant flavor and explicit discriminants."
+  ├─ attribute/
+  │   ├─ name = "derive"
+  │   └─ name = "Debug"
+  ├─ enum[pub]/
+  │   ├─ name = "Shape"
+  │   ├─ lifetime/name = "a"
+  │   ├─ variant/name = "Nothing"
+  │   ├─ variant/
+  │   │   ├─ name = "Dot"
+  │   │   └─ body/
+  │   │       ├─ name = "i32"
+  │   │       └─ name = "i32"
+  │   ├─ variant/
+  │   │   ├─ name = "Rect"
+  │   │   └─ body/
+  │   │       ├─ field/
+  │   │       │   ├─ name = "w"
+  │   │       │   └─ type/name = "u32"
+  │   │       └─ field/
+  │   │           ├─ name = "h"
+  │   │           └─ type/name = "u32"
+  │   └─ variant/
+  │       ├─ name = "Labeled"
+  │       ├─ body/type[borrowed]/
+  │       │   ├─ lifetime/name = "a"
+  │       │   └─ type/name = "str"
+  │       └─ int = "10"
+  ├─ trait[pub]/
+  │   ├─ name = "Drawable"
+  │   ├─ extends/type/name = "Debug"
+  │   └─ body/
+  │       ├─ type[associated]/name = "Canvas"
+  │       ├─ const[private]/
+  │       │   ├─ name = "MAX"
+  │       │   ├─ name = "usize"
+  │       │   └─ int = "64"
+  │       ├─ function[private]/
+  │       │   ├─ name = "draw"
+  │       │   ├─ parameter[self]/name = "self"
+  │       │   └─ parameter/
+  │       │       ├─ name = "c"
+  │       │       └─ type[borrowed and mut]/path/
+  │       │           ├─ name = "Self"
+  │       │           └─ name = "Canvas"
+  │       └─ function[private]/
+  │           ├─ name = "name"
+  │           ├─ parameter[self]/name = "self"
+  │           ├─ returns/type[name] = "String"
+  │           └─ body/call/
+  │               ├─ path/
+  │               │   ├─ name = "String"
+  │               │   └─ name = "from"
+  │               └─ string = "\"drawable\""
+  ├─ impl/
+  │   ├─ lifetime/name = "a"
+  │   ├─ generic/
+  │   │   ├─ name = "T"
+  │   │   └─ extends/
+  │   │       ├─ type/name = "Clone"
+  │   │       ├─ type/name = "Send"
+  │   │       └─ lifetime/name = "static"
+  │   ├─ type[generic]/
+  │   │   ├─ name = "Point"
+  │   │   ├─ lifetime/name = "a"
+  │   │   └─ type/name = "T"
+  │   └─ body/
+  │       ├─ const[pub]/
+  │       │   ├─ name = "ORIGIN_LABEL"
+  │       │   ├─ type[borrowed]/
+  │       │   │   ├─ lifetime/name = "static"
+  │       │   │   └─ type/name = "str"
+  │       │   └─ string = "\"origin\""
+  │       ├─ function[pub]/
+  │       │   ├─ name = "new"
+  │       │   ├─ parameter/
+  │       │   │   ├─ name = "x"
+  │       │   │   └─ type/name = "T"
+  │       │   ├─ parameter/
+  │       │   │   ├─ name = "y"
+  │       │   │   └─ type/name = "T"
+  │       │   ├─ parameter/
+  │       │   │   ├─ name = "label"
+  │       │   │   └─ type[borrowed]/
+  │       │   │       ├─ lifetime/name = "a"
+  │       │   │       └─ type/name = "str"
+  │       │   ├─ returns/type[name] = "Self"
+  │       │   └─ body/literal/
+  │       │       ├─ name = "Self"
+  │       │       └─ body/
+  │       │           ├─ field/name = "x"
+  │       │           ├─ field/name = "y"
+  │       │           └─ field/name = "label"
+  │       ├─ function[pub]/
+  │       │   ├─ name = "async_clone"
+  │       │   ├─ parameter[self]/name = "self"
+  │       │   ├─ returns/type[name] = "Self"
+  │       │   └─ body/object = "self.clone()"
+  │       ├─ function[pub]/
+  │       │   ├─ name = "const_fn"
+  │       │   ├─ returns/type[name] = "u32"
+  │       │   └─ body/int = "42"
+  │       └─ function[pub]/
+  │           ├─ name = "unsafe_read"
+  │           ├─ parameter/
+  │           │   ├─ name = "ptr"
+  │           │   └─ type[pointer]/name = "T"
+  │           ├─ returns/type[name] = "T"
+  │           └─ body/object/unary/name = "ptr"
+  ├─ impl/
+  │   ├─ lifetime/name = "a"
+  │   ├─ generic/name = "T"
+  │   ├─ implements/type/name = "Drawable"
+  │   ├─ type[generic]/
+  │   │   ├─ name = "Point"
+  │   │   ├─ lifetime/name = "a"
+  │   │   └─ type/name = "T"
+  │   ├─ where/bound/
+  │   │   ├─ name = "T"
+  │   │   └─ extends/
+  │   │       ├─ type/name = "Clone"
+  │   │       ├─ type/name = "Send"
+  │   │       ├─ type/name = "Debug"
+  │   │       └─ lifetime/name = "static"
+  │   └─ body/
+  │       ├─ alias[private]/
+  │       │   ├─ name = "Canvas"
+  │       │   └─ type[generic]/
+  │       │       ├─ name = "Vec"
+  │       │       └─ type/name = "u8"
+  │       └─ function[private]/
+  │           ├─ name = "draw"
+  │           ├─ parameter[self]/name = "self"
+  │           ├─ parameter/
+  │           │   ├─ name = "_c"
+  │           │   └─ type[borrowed and mut]/path/
+  │           │       ├─ name = "Self"
+  │           │       └─ name = "Canvas"
+  │           └─ body = "{}"
+  ├─ alias[pub]/
+  │   ├─ name = "BoxedDraw"
+  │   ├─ lifetime/name = "a"
+  │   └─ type[generic]/
+  │       ├─ name = "Box"
+  │       └─ type[bounded]/
+  │           ├─ type[dynamic]/type[generic]/
+  │           │   ├─ name = "Drawable"
+  │           │   └─ type[associated]/
+  │           │       ├─ name = "Canvas"
+  │           │       └─ type[generic]/
+  │           │           ├─ name = "Vec"
+  │           │           └─ type/name = "u8"
+  │           └─ lifetime/name = "a"
+  ├─ alias[pub]/
+  │   ├─ name = "Callback"
+  │   └─ type[function]/
+  │       ├─ name = "i32"
+  │       └─ name = "i32"
+  ├─ const[pub]/
+  │   ├─ name = "PI"
+  │   ├─ name = "f64"
+  │   └─ float = "3.141_592_653_589f64"
+  ├─ static[pub]/
+  │   ├─ name = "GREETING"
+  │   ├─ type[borrowed]/type/name = "str"
+  │   └─ string = "\"hello\""
+  ├─ static[private and mut]/
+  │   ├─ name = "COUNTER"
+  │   ├─ name = "u32"
+  │   └─ int = "0"
+  ├─ function[private]/
+  │   ├─ name = "numeric_zoo"
+  │   ├─ returns/type[tuple]/
+  │   │   ├─ name = "u32"
+  │   │   ├─ name = "f64"
+  │   │   ├─ name = "i32"
+  │   │   ├─ name = "i32"
+  │   │   └─ name = "i32"
+  │   └─ body/tuple/
+  │       ├─ int = "1u32"
+  │       ├─ float = "1.0f64"
+  │       ├─ int = "0x1F"
+  │       ├─ int = "0b101"
+  │       └─ int = "1_000"
+  ├─ function[private]/
+  │   ├─ name = "strings_zoo"
+  │   └─ body/
+  │       ├─ let/
+  │       │   ├─ name = "plain"
+  │       │   └─ value/expression/string = "\"hello\""
+  │       ├─ let/
+  │       │   ├─ name = "raw"
+  │       │   └─ value/expression/string[raw] = "r\"C:\\path\""
+  │       ├─ let/
+  │       │   ├─ name = "raw_hash"
+  │       │   └─ value/expression/string[raw] = "r#\"she said \"hi\"\"#"
+  │       ├─ let/
+  │       │   ├─ name = "bytes"
+  │       │   └─ value/expression/string = "b\"raw bytes\""
+  │       └─ let/
+  │           ├─ name = "chr"
+  │           └─ value/expression/char = "'z'"
+  ├─ function[private]/
+  │   ├─ name = "closures_and_refs"
+  │   └─ body/
+  │       ├─ let/
+  │       │   ├─ name = "id"
+  │       │   └─ value/expression/closure/
+  │       │       ├─ name = "x"
+  │       │       └─ name = "x"
+  │       ├─ let/
+  │       │   ├─ name = "add"
+  │       │   ├─ type[function]/
+  │       │   │   ├─ name = "i32"
+  │       │   │   ├─ name = "i32"
+  │       │   │   └─ name = "i32"
+  │       │   └─ value/expression/closure/
+  │       │       ├─ name = "a"
+  │       │       ├─ name = "b"
+  │       │       └─ binary/
+  │       │           ├─ left[expression]/name = "a"
+  │       │           ├─ op[operator and plus] = "+"
+  │       │           └─ right[expression]/name = "b"
+  │       ├─ let/
+  │       │   ├─ name = "s"
+  │       │   └─ value/expression/call/
+  │       │       ├─ path/
+  │       │       │   ├─ name = "String"
+  │       │       │   └─ name = "from"
+  │       │       └─ string = "\"owned\""
+  │       ├─ let/
+  │       │   ├─ name = "moved"
+  │       │   └─ value/expression/closure/
+  │       │       ├─ parameter/
+  │       │       │   ├─ name = "x"
+  │       │       │   └─ type/name = "i32"
+  │       │       ├─ name = "String"
+  │       │       └─ block/macro/
+  │       │           ├─ name = "format"
+  │       │           ├─ string = "\"{}-{}\""
+  │       │           ├─ name = "s"
+  │       │           └─ name = "x"
+  │       └─ let/
+  │           ├─ name = "r"
+  │           ├─ type[borrowed]/type/name = "i32"
+  │           └─ value/expression/ref/int = "5"
+  ├─ function[pub]/
+  │   ├─ name = "smart_pointers"
+  │   └─ body/
+  │       ├─ let/
+  │       │   ├─ name = "b"
+  │       │   ├─ type[generic]/
+  │       │   │   ├─ name = "Box"
+  │       │   │   └─ type/name = "i32"
+  │       │   └─ value/expression/call/
+  │       │       ├─ path/
+  │       │       │   ├─ name = "Box"
+  │       │       │   └─ name = "new"
+  │       │       └─ int = "1"
+  │       ├─ let/
+  │       │   ├─ name = "rc"
+  │       │   ├─ type[generic]/
+  │       │   │   ├─ name = "Rc"
+  │       │   │   └─ type/name = "String"
+  │       │   └─ value/expression/call/
+  │       │       ├─ path/
+  │       │       │   ├─ name = "Rc"
+  │       │       │   └─ name = "new"
+  │       │       └─ call/
+  │       │           ├─ path/
+  │       │           │   ├─ name = "String"
+  │       │           │   └─ name = "from"
+  │       │           └─ string = "\"rc\""
+  │       ├─ let/
+  │       │   ├─ name = "arc"
+  │       │   ├─ type[generic]/
+  │       │   │   ├─ name = "Arc"
+  │       │   │   └─ type/name = "u32"
+  │       │   └─ value/expression/call/
+  │       │       ├─ path/
+  │       │       │   ├─ name = "Arc"
+  │       │       │   └─ name = "new"
+  │       │       └─ int = "9"
+  │       ├─ let/
+  │       │   ├─ name = "cell"
+  │       │   ├─ type[generic]/
+  │       │   │   ├─ name = "RefCell"
+  │       │   │   └─ type[generic]/
+  │       │   │       ├─ name = "Vec"
+  │       │   │       └─ type/name = "i32"
+  │       │   └─ value/expression/call/
+  │       │       ├─ path/
+  │       │       │   ├─ name = "RefCell"
+  │       │       │   └─ name = "new"
+  │       │       └─ macro/
+  │       │           ├─ name = "vec"
+  │       │           ├─ int = "1"
+  │       │           ├─ int = "2"
+  │       │           └─ int = "3"
+  │       └─ let/
+  │           ├─ name = "parsed"
+  │           └─ value/expression/object/
+  │               ├─ call/call[generic]/
+  │               │   ├─ object/string = "\"42\""
+  │               │   └─ name = "i32"
+  │               └─ int = "0"
+  ├─ function[pub]/
+  │   ├─ name = "patterns"
+  │   ├─ parameter/
+  │   │   ├─ name = "s"
+  │   │   └─ type/name = "Shape"
+  │   ├─ returns/type[name] = "i32"
+  │   └─ body/
+  │       ├─ let/
+  │       │   ├─ name = "p"
+  │       │   └─ value/expression/call/
+  │       │       ├─ path/
+  │       │       │   ├─ name = "Point"
+  │       │       │   └─ name = "new"
+  │       │       ├─ int = "1"
+  │       │       ├─ int = "2"
+  │       │       └─ string = "\"p\""
+  │       ├─ let/
+  │       │   ├─ name = "q"
+  │       │   └─ value/expression/literal/
+  │       │       ├─ name = "Point"
+  │       │       └─ body/
+  │       │           ├─ field/
+  │       │           │   ├─ name = "x"
+  │       │           │   └─ value/expression/int = "10"
+  │       │           ├─ field/
+  │       │           │   ├─ name = "y"
+  │       │           │   └─ value/expression/int = "20"
+  │       │           └─ field[base]/object/name = "p"
+  │       ├─ let/
+  │       │   ├─ name = "result"
+  │       │   └─ value/expression/match/
+  │       │       ├─ value/expression/name = "s"
+  │       │       └─ body/
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/path/
+  │       │           │   │   ├─ name = "Shape"
+  │       │           │   │   └─ name = "Nothing"
+  │       │           │   └─ value/int = "0"
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/pattern[or]/
+  │       │           │   │   ├─ path/
+  │       │           │   │   │   ├─ name = "Shape"
+  │       │           │   │   │   └─ name = "Dot"
+  │       │           │   │   ├─ int = "0"
+  │       │           │   │   ├─ name = "y"
+  │       │           │   │   ├─ path/
+  │       │           │   │   │   ├─ name = "Shape"
+  │       │           │   │   │   └─ name = "Dot"
+  │       │           │   │   ├─ name = "y"
+  │       │           │   │   └─ int = "0"
+  │       │           │   └─ value/name = "y"
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/
+  │       │           │   │   ├─ path/
+  │       │           │   │   │   ├─ name = "Shape"
+  │       │           │   │   │   └─ name = "Dot"
+  │       │           │   │   ├─ name = "x"
+  │       │           │   │   ├─ name = "y"
+  │       │           │   │   └─ condition/binary/
+  │       │           │   │       ├─ left[expression]/name = "x"
+  │       │           │   │       ├─ op[operator and equal] = "=="
+  │       │           │   │       └─ right[expression]/name = "y"
+  │       │           │   └─ value/binary/
+  │       │           │       ├─ left[expression]/name = "x"
+  │       │           │       ├─ op[operator and plus] = "+"
+  │       │           │       └─ right[expression]/name = "y"
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/
+  │       │           │   │   ├─ pattern[struct]/
+  │       │           │   │   │   ├─ path/
+  │       │           │   │   │   │   ├─ name = "Shape"
+  │       │           │   │   │   │   └─ name = "Rect"
+  │       │           │   │   │   ├─ pattern[field]/name = "w"
+  │       │           │   │   │   └─ pattern[field]/name = "h"
+  │       │           │   │   └─ condition/binary/
+  │       │           │   │       ├─ left[expression]/name = "w"
+  │       │           │   │       ├─ op[operator and greater] = ">"
+  │       │           │   │       └─ right[expression]/int = "0"
+  │       │           │   └─ value/cast/
+  │       │           │       ├─ value/expression/binary/
+  │       │           │       │   ├─ left[expression]/name = "w"
+  │       │           │       │   ├─ op[operator and multiply] = "*"
+  │       │           │       │   └─ right[expression]/name = "h"
+  │       │           │       └─ type/name = "i32"
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/
+  │       │           │   │   ├─ path/
+  │       │           │   │   │   ├─ name = "Shape"
+  │       │           │   │   │   └─ name = "Labeled"
+  │       │           │   │   └─ pattern[ref]/name = "name"
+  │       │           │   └─ value/cast/
+  │       │           │       ├─ value/expression/object/name = "name"
+  │       │           │       └─ type/name = "i32"
+  │       │           └─ arm/
+  │       │               ├─ pattern = "_"
+  │       │               └─ value/unary/int = "99"
+  │       ├─ let/
+  │       │   ├─ name = "bucket"
+  │       │   └─ value/expression/match/
+  │       │       ├─ value/expression/int = "5"
+  │       │       └─ body/
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/range[inclusive]/
+  │       │           │   │   ├─ from/int = "0"
+  │       │           │   │   └─ to/int = "9"
+  │       │           │   └─ value/string = "\"single\""
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/range[inclusive]/
+  │       │           │   │   ├─ from/int = "10"
+  │       │           │   │   └─ to/int = "99"
+  │       │           │   └─ value/string = "\"double\""
+  │       │           └─ arm/
+  │       │               ├─ pattern = "_"
+  │       │               └─ value/string = "\"many\""
+  │       ├─ if/
+  │       │   ├─ condition/
+  │       │   │   ├─ name = "Some"
+  │       │   │   ├─ name = "v"
+  │       │   │   └─ call/
+  │       │   │       ├─ name = "Some"
+  │       │   │       └─ int = "10"
+  │       │   └─ then/block/let/
+  │       │       ├─ pattern[wildcard] = "_"
+  │       │       └─ value/expression/name = "v"
+  │       ├─ let[mut]/
+  │       │   ├─ name = "it"
+  │       │   └─ value/expression/object/macro/
+  │       │       ├─ name = "vec"
+  │       │       ├─ int = "1"
+  │       │       ├─ int = "2"
+  │       │       └─ int = "3"
+  │       ├─ while/
+  │       │   ├─ condition/expression/
+  │       │   │   ├─ name = "Some"
+  │       │   │   ├─ name = "x"
+  │       │   │   └─ object/name = "it"
+  │       │   └─ body/
+  │       │       ├─ let/
+  │       │       │   ├─ name = "_shadow"
+  │       │       │   └─ value/expression/name = "x"
+  │       │       └─ let/
+  │       │           ├─ name = "_shadow"
+  │       │           └─ value/expression/cast/
+  │       │               ├─ value/expression/name = "x"
+  │       │               └─ type/name = "f64"
+  │       └─ name = "result"
+  ├─ function[pub]/
+  │   ├─ name = "loops_and_flow"
+  │   ├─ returns/type[name] = "i32"
+  │   └─ body/
+  │       ├─ for/
+  │       │   ├─ name = "'outer"
+  │       │   ├─ name = "i"
+  │       │   ├─ value/expression/range[exclusive]/
+  │       │   │   ├─ from/int = "0"
+  │       │   │   └─ to/int = "10"
+  │       │   └─ body/for/
+  │       │       ├─ name = "j"
+  │       │       ├─ value/expression/range[exclusive]/
+  │       │       │   ├─ from/int = "0"
+  │       │       │   └─ to/int = "10"
+  │       │       └─ body/if/
+  │       │           ├─ condition/binary/
+  │       │           │   ├─ left[expression]/binary/
+  │       │           │   │   ├─ left[expression]/name = "i"
+  │       │           │   │   ├─ op[operator and multiply] = "*"
+  │       │           │   │   └─ right[expression]/name = "j"
+  │       │           │   ├─ op[operator and greater] = ">"
+  │       │           │   └─ right[expression]/int = "20"
+  │       │           └─ then/block/expression/break/name = "'outer"
+  │       ├─ let[mut]/
+  │       │   ├─ name = "n"
+  │       │   └─ value/expression/int = "0"
+  │       ├─ while/
+  │       │   ├─ condition/expression/binary/
+  │       │   │   ├─ left[expression]/name = "n"
+  │       │   │   ├─ op[operator and less] = "<"
+  │       │   │   └─ right[expression]/int = "3"
+  │       │   └─ body/expression/assign/
+  │       │       ├─ name = "n"
+  │       │       └─ int = "1"
+  │       ├─ let/
+  │       │   ├─ name = "found"
+  │       │   └─ value/expression/loop/body/expression/break/int = "42"
+  │       └─ name = "found"
+  ├─ function[pub]/
+  │   ├─ name = "try_and_cast"
+  │   ├─ returns/type[generic]/
+  │   │   ├─ name = "Result"
+  │   │   ├─ type/name = "i32"
+  │   │   └─ path/
+  │   │       ├─ path/
+  │   │       │   ├─ name = "std"
+  │   │       │   └─ name = "num"
+  │   │       └─ name = "ParseIntError"
+  │   └─ body/
+  │       ├─ let/
+  │       │   ├─ name = "parsed"
+  │       │   ├─ type/name = "i32"
+  │       │   └─ value/expression/try/object/string = "\"10\""
+  │       ├─ let/
+  │       │   ├─ name = "casted"
+  │       │   └─ value/expression/cast/
+  │       │       ├─ value/expression/cast/
+  │       │       │   ├─ value/expression/name = "parsed"
+  │       │       │   └─ type/name = "u8"
+  │       │       └─ type/name = "i32"
+  │       └─ call/
+  │           ├─ name = "Ok"
+  │           └─ name = "casted"
+  ├─ function[pub]/
+  │   ├─ name = "trait_object_and_impl"
+  │   ├─ lifetime/name = "a"
+  │   ├─ parameter/
+  │   │   ├─ name = "d"
+  │   │   └─ type[borrowed]/
+  │   │       ├─ lifetime/name = "a"
+  │   │       └─ type[dynamic]/type[generic]/
+  │   │           ├─ name = "Drawable"
+  │   │           └─ type[associated]/
+  │   │               ├─ name = "Canvas"
+  │   │               └─ type[generic]/
+  │   │                   ├─ name = "Vec"
+  │   │                   └─ type/name = "u8"
+  │   ├─ returns/type[bounded]/
+  │   │   ├─ type[abstract]/name = "Display"
+  │   │   └─ lifetime/name = "a"
+  │   └─ body/macro/
+  │       ├─ name = "format"
+  │       ├─ string = "\"name={}\""
+  │       ├─ name = "d"
+  │       └─ name = "name"
+  ├─ function[pub]/
+  │   ├─ name = "diverges"
+  │   ├─ returns/type[never] = "!"
+  │   └─ body/macro/
+  │       ├─ name = "panic"
+  │       └─ string = "\"never returns\""
+  ├─ function[pub]/
+  │   ├─ name = "async_demo"
+  │   ├─ returns/type[name] = "u32"
+  │   └─ body/
+  │       ├─ let/
+  │       │   ├─ name = "block"
+  │       │   └─ value/expression/block[async]/binary/
+  │       │       ├─ left[expression]/int = "1u32"
+  │       │       ├─ op[operator and plus] = "+"
+  │       │       └─ right[expression]/int = "2"
+  │       └─ await/name = "block"
+  ├─ function[pub]/
+  │   ├─ name = "unsafe_block"
+  │   └─ body/
+  │       ├─ let/
+  │       │   ├─ name = "x"
+  │       │   └─ value/expression/int = "5"
+  │       ├─ let/
+  │       │   ├─ name = "r"
+  │       │   └─ value/expression/cast/
+  │       │       ├─ value/expression/ref/name = "x"
+  │       │       └─ type[pointer]/name = "i32"
+  │       └─ unsafe/block/
+  │           ├─ let/
+  │           │   ├─ pattern[wildcard] = "_"
+  │           │   └─ value/expression/unary/name = "r"
+  │           └─ expression/assign/
+  │               ├─ name = "COUNTER"
+  │               └─ int = "1"
+  ├─ comment[leading] = "// `extern crate` declaration — legacy import form for the 2015 edition."
+  ├─ use[extern]/
+  │   ├─ name = "crate"
+  │   └─ name = "alloc"
+  ├─ comment[leading] = "// Foreign module / extern modifier — FFI block with variadic parameter."
+  ├─ mod[foreign and extern]/
+  │   ├─ string = "\"C\""
+  │   └─ function[pub]/
+  │       ├─ name = "printf"
+  │       ├─ parameter/
+  │       │   ├─ name = "fmt"
+  │       │   └─ type[pointer]/name = "u8"
+  │       └─ parameter[variadic] = "..."
+  ├─ comment[leading] = "// Union — same shape family as struct/enum."
+  ├─ union[pub]/
+  │   ├─ name = "Either"
+  │   └─ body/
+  │       ├─ field[pub]/
+  │       │   ├─ name = "i"
+  │       │   └─ type/name = "i32"
+  │       └─ field[pub]/
+  │           ├─ name = "f"
+  │           └─ type/name = "f32"
+  ├─ comment[leading] = "// `for<'a>` higher-ranked trait bound + `?Sized` relaxed bound."
+  ├─ function[pub]/
+  │   ├─ name = "hrtb_demo"
+  │   ├─ generic/name = "F"
+  │   ├─ generic/
+  │   │   ├─ name = "T"
+  │   │   └─ extends/bound[optional]/name = "Sized"
+  │   ├─ parameter/
+  │   │   ├─ name = "_f"
+  │   │   └─ type/name = "F"
+  │   ├─ parameter/
+  │   │   ├─ name = "_t"
+  │   │   └─ type[borrowed]/type/name = "T"
+  │   ├─ where/bound/
+  │   │   ├─ name = "F"
+  │   │   └─ extends/bound[higher]/
+  │   │       ├─ lifetime/name = "a"
+  │   │       └─ type[function]/
+  │   │           ├─ name = "Fn"
+  │   │           ├─ type[borrowed]/
+  │   │           │   ├─ lifetime/name = "a"
+  │   │           │   └─ type/name = "i32"
+  │   │           └─ type[borrowed]/
+  │   │               ├─ lifetime/name = "a"
+  │   │               └─ type/name = "i32"
+  │   └─ body = "{}"
+  ├─ comment[leading] = "// Const generic parameter — `<const N: usize>`."
+  ├─ struct[pub]/
+  │   ├─ name = "FixedArray"
+  │   ├─ parameter[const]/
+  │   │   ├─ name = "N"
+  │   │   └─ name = "usize"
+  │   └─ body/field/
+  │       ├─ name = "items"
+  │       └─ type[array]/
+  │           ├─ name = "u32"
+  │           └─ name = "N"
+  ├─ comment = "// `macro_rules!` definition exercises macro_rule / token_repetition_pattern /"
+  ├─ comment[leading] = "// token_binding_pattern / fragment_specifier / token_repetition."
+  ├─ macro[definition]/
+  │   ├─ name = "collect_pairs"
+  │   ├─ arm/
+  │   │   ├─ repetition/
+  │   │   │   ├─ pattern[binding]/
+  │   │   │   │   ├─ name = "$key"
+  │   │   │   │   └─ fragment = "ident"
+  │   │   │   └─ pattern[binding]/
+  │   │   │       ├─ name = "$value"
+  │   │   │       └─ fragment = "expr"
+  │   │   ├─ repetition = "$(,)?"
+  │   │   ├─ name = "vec"
+  │   │   └─ repetition/
+  │   │       ├─ name = "stringify"
+  │   │       ├─ name = "$key"
+  │   │       └─ name = "$value"
+  │   └─ arm/
+  │       ├─ name = "Vec"
+  │       └─ name = "new"
+  ├─ function[pub]/
+  │   ├─ name = "pattern_zoo"
+  │   ├─ parameter/
+  │   │   ├─ name = "p"
+  │   │   └─ type[generic]/
+  │   │       ├─ name = "Point"
+  │   │       ├─ lifetime/name = "_"
+  │   │       └─ type/name = "i32"
+  │   ├─ parameter/
+  │   │   ├─ name = "opt"
+  │   │   └─ type[generic]/
+  │   │       ├─ name = "Option"
+  │   │       └─ type[generic]/
+  │   │           ├─ name = "Point"
+  │   │           ├─ lifetime/name = "_"
+  │   │           └─ type/name = "i32"
+  │   ├─ returns/type[name] = "i32"
+  │   └─ body/
+  │       ├─ comment[leading] = "// remaining_field_pattern — `..`."
+  │       ├─ let/
+  │       │   ├─ pattern[struct]/
+  │       │   │   ├─ name = "Point"
+  │       │   │   ├─ pattern[field]/name = "x"
+  │       │   │   └─ pattern[rest] = ".."
+  │       │   └─ value/expression/name = "p"
+  │       ├─ comment[leading] = "// tuple_pattern + reference_pattern + captured_pattern."
+  │       ├─ let/
+  │       │   ├─ name = "tuple"
+  │       │   └─ value/expression/tuple/
+  │       │       ├─ int = "1"
+  │       │       ├─ int = "2"
+  │       │       └─ int = "3"
+  │       ├─ let/
+  │       │   ├─ name = "total"
+  │       │   └─ value/expression/match/
+  │       │       ├─ value/expression/ref/name = "tuple"
+  │       │       └─ body/
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/pattern[ref]/pattern[tuple]/
+  │       │           │   │   ├─ pattern[capture]/
+  │       │           │   │   │   ├─ name = "a"
+  │       │           │   │   │   └─ range[inclusive]/
+  │       │           │   │   │       ├─ from/int = "1"
+  │       │           │   │   │       └─ to/int = "10"
+  │       │           │   │   ├─ name = "b"
+  │       │           │   │   └─ name = "_c"
+  │       │           │   └─ value/binary/
+  │       │           │       ├─ left[expression]/name = "a"
+  │       │           │       ├─ op[operator and plus] = "+"
+  │       │           │       └─ right[expression]/name = "b"
+  │       │           └─ arm/
+  │       │               ├─ pattern/pattern[tuple]/
+  │       │               │   ├─ name = "a"
+  │       │               │   ├─ name = "b"
+  │       │               │   └─ name = "c"
+  │       │               └─ value/binary/
+  │       │                   ├─ left[expression]/binary/
+  │       │                   │   ├─ left[expression]/name = "a"
+  │       │                   │   ├─ op[operator and plus] = "+"
+  │       │                   │   └─ right[expression]/name = "b"
+  │       │                   ├─ op[operator and plus] = "+"
+  │       │                   └─ right[expression]/name = "c"
+  │       ├─ comment[leading] = "// slice_pattern."
+  │       ├─ let/
+  │       │   ├─ name = "arr"
+  │       │   └─ value/expression/array/
+  │       │       ├─ int = "1"
+  │       │       ├─ int = "2"
+  │       │       ├─ int = "3"
+  │       │       ├─ int = "4"
+  │       │       └─ int = "5"
+  │       ├─ let/
+  │       │   ├─ name = "head_tail"
+  │       │   └─ value/expression/match/
+  │       │       ├─ value/expression/ref/object/
+  │       │       │   ├─ name = "arr"
+  │       │       │   └─ range[exclusive] = ".."
+  │       │       └─ body/
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/pattern[slice]/
+  │       │           │   │   ├─ name = "first"
+  │       │           │   │   ├─ pattern[rest] = ".."
+  │       │           │   │   └─ name = "last"
+  │       │           │   └─ value/binary/
+  │       │           │       ├─ left[expression]/name = "first"
+  │       │           │       ├─ op[operator and plus] = "+"
+  │       │           │       └─ right[expression]/name = "last"
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/pattern[slice]/name = "only"
+  │       │           │   └─ value/unary/name = "only"
+  │       │           └─ arm/
+  │       │               ├─ pattern/pattern[slice] = "[]"
+  │       │               └─ value/int = "0"
+  │       ├─ comment[leading] = "// assignment_expression (non-compound)."
+  │       ├─ let[mut]/
+  │       │   ├─ name = "counter"
+  │       │   └─ value/expression/int = "0"
+  │       ├─ expression/assign/
+  │       │   ├─ name = "counter"
+  │       │   └─ binary/
+  │       │       ├─ left[expression]/name = "total"
+  │       │       ├─ op[operator and plus] = "+"
+  │       │       └─ right[expression]/name = "head_tail"
+  │       ├─ comment[leading] = "// array_expression."
+  │       ├─ let/
+  │       │   ├─ name = "triples"
+  │       │   └─ value/expression/array/
+  │       │       ├─ name = "counter"
+  │       │       ├─ binary/
+  │       │       │   ├─ left[expression]/name = "counter"
+  │       │       │   ├─ op[operator and multiply] = "*"
+  │       │       │   └─ right[expression]/int = "2"
+  │       │       └─ binary/
+  │       │           ├─ left[expression]/name = "counter"
+  │       │           ├─ op[operator and multiply] = "*"
+  │       │           └─ right[expression]/int = "3"
+  │       ├─ comment[leading] = "// unit_expression as value."
+  │       ├─ let/
+  │       │   ├─ name = "unit_val"
+  │       │   └─ value/expression/literal[unit] = "()"
+  │       ├─ let/
+  │       │   ├─ pattern[wildcard] = "_"
+  │       │   └─ value/expression/name = "unit_val"
+  │       ├─ comment[leading] = "// let-chain."
+  │       ├─ if/
+  │       │   ├─ condition/
+  │       │   │   ├─ name = "Some"
+  │       │   │   ├─ name = "inner"
+  │       │   │   ├─ name = "opt"
+  │       │   │   ├─ pattern[struct]/
+  │       │   │   │   ├─ name = "Point"
+  │       │   │   │   ├─ pattern[field]/
+  │       │   │   │   │   ├─ name = "x"
+  │       │   │   │   │   └─ name = "ix"
+  │       │   │   │   └─ pattern[rest] = ".."
+  │       │   │   ├─ name = "inner"
+  │       │   │   └─ binary/
+  │       │   │       ├─ left[expression]/name = "ix"
+  │       │   │       ├─ op[operator and greater] = ">"
+  │       │   │       └─ right[expression]/int = "0"
+  │       │   └─ then/block/expression/return/binary/
+  │       │       ├─ left[expression]/name = "ix"
+  │       │       ├─ op[operator and plus] = "+"
+  │       │       └─ right[expression]/name = "x"
+  │       ├─ comment[leading] = "// negative_literal in pattern position."
+  │       ├─ let/
+  │       │   ├─ name = "signed"
+  │       │   └─ value/expression/match/
+  │       │       ├─ value/expression/unary/int = "1i32"
+  │       │       └─ body/
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/literal[negative]/int = "1"
+  │       │           │   └─ value/string = "\"neg\""
+  │       │           ├─ arm/
+  │       │           │   ├─ pattern/int = "0"
+  │       │           │   └─ value/string = "\"zero\""
+  │       │           └─ arm/
+  │       │               ├─ pattern = "_"
+  │       │               └─ value/string = "\"pos\""
+  │       ├─ let/
+  │       │   ├─ pattern[wildcard] = "_"
+  │       │   └─ value/expression/name = "signed"
+  │       ├─ comment = "// turbofish expression — `parse::<i32>` is generic_function but"
+  │       ├─ comment = "// type-position turbofish like `Vec::<i32>::new` exercises"
+  │       ├─ comment[leading] = "// generic_type_with_turbofish."
+  │       ├─ let/
+  │       │   ├─ name = "v"
+  │       │   └─ value/expression/call/path/
+  │       │       ├─ type[generic]/
+  │       │       │   ├─ name = "Vec"
+  │       │       │   └─ type/name = "i32"
+  │       │       └─ name = "new"
+  │       └─ binary/
+  │           ├─ left[expression]/cast/
+  │           │   ├─ value/expression/object/name = "v"
+  │           │   └─ type/name = "i32"
+  │           ├─ op[operator and plus] = "+"
+  │           └─ right[expression]/object/
+  │               ├─ name = "triples"
+  │               └─ int = "0"
+  └─ function[private]/
+      ├─ name = "main"
+      └─ body/
+          ├─ macro/
+          │   ├─ name = "println"
+          │   ├─ string = "\"hello, {}\""
+          │   └─ name = "GREETING"
+          ├─ let/
+          │   ├─ name = "v"
+          │   └─ value/expression/macro/
+          │       ├─ name = "vec"
+          │       ├─ int = "1"
+          │       ├─ int = "2"
+          │       └─ int = "3"
+          ├─ let/
+          │   ├─ pattern[wildcard] = "_"
+          │   └─ value/expression/call/
+          │       ├─ name = "patterns"
+          │       └─ call/
+          │           ├─ path/
+          │           │   ├─ name = "Shape"
+          │           │   └─ name = "Dot"
+          │           ├─ int = "1"
+          │           └─ int = "1"
+          ├─ let/
+          │   ├─ pattern[wildcard] = "_"
+          │   └─ value/expression/call/name = "loops_and_flow"
+          ├─ let/
+          │   ├─ pattern[wildcard] = "_"
+          │   └─ value/expression/call/
+          │       ├─ name = "pattern_zoo"
+          │       ├─ call/
+          │       │   ├─ path/
+          │       │   │   ├─ name = "Point"
+          │       │   │   └─ name = "new"
+          │       │   ├─ int = "1"
+          │       │   ├─ int = "2"
+          │       │   └─ string = "\"p\""
+          │       └─ name = "None"
+          └─ let/
+              ├─ pattern[wildcard] = "_"
+              ├─ type[generic]/
+              │   ├─ name = "Vec"
+              │   └─ type[tuple]/
+              │       ├─ type[borrowed]/type/name = "str"
+              │       └─ name = "i32"
+              └─ value/expression/macro/
+                  ├─ name = "collect_pairs"
+                  ├─ name = "a"
+                  ├─ int = "1"
+                  ├─ name = "b"
+                  └─ int = "2"

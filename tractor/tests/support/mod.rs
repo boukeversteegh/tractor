@@ -6,6 +6,8 @@
 //! keeps the same layers: suite structure, command capture, assertion parsing,
 //! and execution.
 
+pub mod semantic;
+
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -1160,6 +1162,12 @@ macro_rules! cli_case {
 }
 
 /// Define a fixture-backed module of CLI tests.
+///
+/// Used by `tests/cli.rs` only; `#[allow(unused_macros)]` silences
+/// the warning when this support module is compiled into other test
+/// binaries (`source_lint`, `transform`) that don't reference the
+/// macro.
+#[allow(unused_macros)]
 macro_rules! cli_suite {
     ($module:ident in $fixture:literal { $($cases:tt)* }) => {
         mod $module {

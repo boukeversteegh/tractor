@@ -1,0 +1,409 @@
+//! [`DataTree`] → Xot rendering.
+//!
+//! Two renderers live here, one mechanical and one heuristic:
+//!
+//! * [`render_data_to_xot_json`] — **mechanical** projection that
+//!   routes the tree through the generic variant-blind walker in
+//!   [`crate::tree::walker`]. Same path as `SyntaxTree::to_xot` and
+//!   `SqlTree::to_xot`. Used for JSON / JSON5 where the structural
+//!   round-trip ("object / array / pair / string / number / ...") is
+//!   the natural view. Per-format element-name overrides come from
+//!   [`crate::tree::data::element_naming::element_name_for_format`].
+//!
+//! * [`render_data_to_xot_keyed`] — **heuristic** projection that
+//!   lifts pair keys into element names (`<host>localhost</host>`)
+//!   and unwraps Mapping / Sequence containers. Used by default for
+//!   TOML / INI / Markdown where the "data view" reads more
+//!   naturally than the structural view. Stays hand-written by
+//!   design — its key-lifting, array-of-tables flattening, stream/
+//!   document distinction, and XML-name sanitisation are heuristics
+//!   that don't fit the variant-blind walker contract.
+//!
+//! ## Invariant — round-trip text recovery
+//!
+//! For any same-format render, XPath `string(rendered_root)` over
+//! the result equals `source[range_of_root]` — i.e. concatenating
+//! all descendant text in document order recovers the original
+//! bytes. The generic walker emits gap text between source-derived
+//! children; the keyed walker is text-shape-only (no gap recovery).
+
+use xot::{Node as XotNode, Xot};
+
+use crate::tree::DataTree;
+use crate::tree::types::Span;
+use crate::tree::walker::render_walker_to_xot;
+
+/// Render a [`DataTree`] using the JSON-style structural projection.
+///
+/// Thin wrapper around the generic walker. Per-format element-name
+/// overrides (`mapping → object`, `sequence → array`, `pair →
+/// property`) come from the per-context naming overlay. Same shape
+/// contract as `SyntaxTree::to_xot` / `SqlTree::to_xot`: every shape
+/// decision lives in the typed tree at lowering time.
+pub fn render_data_to_xot_json(
+    xot: &mut Xot,
+    parent: XotNode,
+    tree: &DataTree,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    render_walker_to_xot(xot, parent, tree, source, Some("json"))
+}
+
+// ---------------------------------------------------------------------------
+// Helpers (mirror those in `to_xot.rs`)
+// ---------------------------------------------------------------------------
+
+/// Render a [`DataTree`] tree using the **data-branch** projection:
+/// pair keys become element names rather than `<property><key>...`
+/// wrappers. Used for TOML / INI / Markdown which don't have a
+/// distinct "syntax" XML view.
+///
+/// `[database]` + `host = "localhost"` becomes
+/// `<database><host>localhost</host></database>`.
+///
+/// Element-name sanitization: keys may contain characters not valid
+/// in XML names (dots, dashes, leading digits). We sanitize by
+/// replacing offending characters with `_` and prepending `_` if
+/// the first character is a digit.
+pub fn render_data_to_xot_keyed(
+    xot: &mut Xot,
+    parent: XotNode,
+    tree: &DataTree,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    match tree {
+        DataTree::Document { children, span, .. } => {
+            // YAML's tree-sitter `stream` and `document` both lower to
+            // `DataTree::Document`; when the children are themselves
+            // Documents (multi-doc stream), the outer wrapper is
+            // rendered as `<stream>` to preserve the legacy shape and
+            // keep `//document` queries counting only inner docs.
+            let is_stream = !children.is_empty()
+                && children.iter().all(|c| matches!(c, DataTree::Document { .. }));
+            let element_name = if is_stream { "stream" } else { "document" };
+            let node = element(xot, element_name, *span);
+            xot.append(parent, node)?;
+            for c in children {
+                render_data_to_xot_keyed(xot, node, c, source)?;
+            }
+            Ok(node)
+        }
+        DataTree::Section { name, children, span, .. } => {
+            // Section name (typically Scalar(String)) becomes the
+            // element name. Sanitize for XML.
+            let element_name = scalar_text(name, source).map(sanitize_xml_name)
+                .unwrap_or_else(|| "section".to_string());
+            let node = element(xot, &element_name, *span);
+            xot.append(parent, node)?;
+            // Special case: array-of-tables (TOML `[[x]]`) lowers to
+            // `Section { name, children: [Sequence([Mapping, ...])] }`
+            // — render each Mapping as a direct `<item>` child of
+            // the section, skipping the outer `<array>` wrapper.
+            if children.len() == 1 {
+                if let DataTree::Sequence { items, .. } = &children[0] {
+                    for item in items {
+                        let item_node = element(xot, "item", item.span());
+                        xot.append(node, item_node)?;
+                        render_keyed_value(xot, item_node, item, source)?;
+                    }
+                    return Ok(node);
+                }
+            }
+            for c in children {
+                render_data_to_xot_keyed(xot, node, c, source)?;
+            }
+            Ok(node)
+        }
+        DataTree::Pair { key, value, span: _, .. } => {
+            // Key text → element name; value renders as the element's
+            // content. The element's source location is set to the
+            // VALUE span (not the pair span) so that splice-based
+            // mutation paths can replace just the value bytes when
+            // updating a property — matches the legacy data-branch
+            // shape's convention.
+            //
+            // For Sequence values, produce repeated sibling elements
+            // named after the key (per the data-branch spec —
+            // `{"tags": ["a", "b"]}` renders as
+            // `<tags>a</tags><tags>b</tags>`, not nested `<item>`).
+            //
+            // When sanitization changes the name (e.g. `"first name"`
+            // → `first_name`), add a `key="…original…"` attribute so
+            // the original key text is queryable + recoverable.
+            let raw_key = scalar_text(key, source).unwrap_or_default();
+            let element_name = sanitize_xml_name(raw_key.clone());
+
+            if let DataTree::Sequence { items, .. } = value.as_ref() {
+                // Named array (semantic-tree Principle #12): repeat the
+                // key name as siblings, each tagged `list="<key>"` so
+                // JSON/YAML renderers know the items belong to a single
+                // logical list — even when there's only one item.
+                let mut last = parent;
+                for item in items {
+                    let node = element(xot, &element_name, item.span());
+                    xot.append(parent, node)?;
+                    let list_attr = xot.add_name("list");
+                    xot.attributes_mut(node).insert(list_attr, raw_key.clone());
+                    if !raw_key.is_empty() && raw_key != element_name {
+                        let key_attr = xot.add_name("key");
+                        xot.attributes_mut(node).insert(key_attr, raw_key.clone());
+                    }
+                    render_keyed_value(xot, node, item, source)?;
+                    last = node;
+                }
+                return Ok(last);
+            }
+
+            let node = element(xot, &element_name, value.span());
+            xot.append(parent, node)?;
+            if !raw_key.is_empty() && raw_key != element_name {
+                let key_attr = xot.add_name("key");
+                xot.attributes_mut(node).insert(key_attr, raw_key);
+            }
+            render_keyed_value(xot, node, value, source)?;
+            Ok(node)
+        }
+        DataTree::Mapping { pairs, span: _, .. } => {
+            // Per data-branch spec: object keys become elements
+            // directly under the parent — no `<object>` wrapper.
+            for p in pairs {
+                render_data_to_xot_keyed(xot, parent, p, source)?;
+            }
+            Ok(parent)
+        }
+        DataTree::Sequence { items, span: _, .. } => {
+            // Anonymous array (top-level, or array nested in another
+            // array): each item gets an `<item>` wrapper. Per spec,
+            // there is no `<array>` outer wrapper here.
+            let mut last = parent;
+            for item in items {
+                let item_node = element(xot, "item", item.span());
+                xot.append(parent, item_node)?;
+                render_keyed_value(xot, item_node, item, source)?;
+                last = item_node;
+            }
+            Ok(last)
+        }
+        DataTree::String { value, span, .. } => {
+            let node = element(xot, "string", *span);
+            xot.append(parent, node)?;
+            if !value.is_empty() {
+                let t = xot.new_text(value);
+                xot.append(node, t)?;
+            }
+            Ok(node)
+        }
+        DataTree::Number { text, span, .. } => {
+            let node = element(xot, "number", *span);
+            xot.append(parent, node)?;
+            if !text.is_empty() {
+                let t = xot.new_text(text);
+                xot.append(node, t)?;
+            }
+            Ok(node)
+        }
+        DataTree::Bool { value, span, .. } => {
+            let node = element(xot, "bool", *span);
+            xot.append(parent, node)?;
+            let t = xot.new_text(if *value { "true" } else { "false" });
+            xot.append(node, t)?;
+            Ok(node)
+        }
+        DataTree::Null { span, .. } => {
+            let node = element(xot, "null", *span);
+            xot.append(parent, node)?;
+            Ok(node)
+        }
+        DataTree::Comment { text, span, .. } => {
+            let node = element(xot, "comment", *span);
+            xot.append(parent, node)?;
+            if !text.is_empty() {
+                let t = xot.new_text(text);
+                xot.append(node, t)?;
+            }
+            Ok(node)
+        }
+        DataTree::Directive { extra_markers, children, span, .. } => {
+            let node = element(xot, "directive", *span);
+            xot.append(parent, node)?;
+            // Marker children (`<yaml/>` / `<tag/>` / `<reserved/>`).
+            for marker in extra_markers {
+                let m = element(xot, marker.name, marker.span);
+                xot.append(node, m)?;
+            }
+            // Each pair `key=value` renders as `<key>value</key>`.
+            for c in children {
+                if let DataTree::Pair { key, value, .. } = c {
+                    if let Some(k) = scalar_text(key, source) {
+                        let safe = sanitize_xml_name(k);
+                        let kn = element(xot, &safe, key.span());
+                        xot.append(node, kn)?;
+                        if let Some(v) = scalar_text(value, source) {
+                            let t = xot.new_text(&v);
+                            xot.append(kn, t)?;
+                        }
+                    }
+                }
+            }
+            Ok(node)
+        }
+        DataTree::Element { name, markers, children, span, .. } => {
+            let node = element(xot, name, *span);
+            xot.append(parent, node)?;
+            for m in markers {
+                let mn = element(xot, m, *span);
+                xot.append(node, mn)?;
+            }
+            for c in children {
+                render_data_to_xot_keyed(xot, node, c, source)?;
+            }
+            Ok(node)
+        }
+        DataTree::Unknown { kind, range, span } => {
+            let node = element(xot, "unknown", *span);
+            let kind_attr = xot.add_name("kind");
+            xot.attributes_mut(node).insert(kind_attr, kind.clone());
+            let text = range.slice(source);
+            if !text.is_empty() {
+                let t = xot.new_text(text);
+                xot.append(node, t)?;
+            }
+            xot.append(parent, node)?;
+            Ok(node)
+        }
+    }
+}
+
+/// Render a Pair's value: scalars become text content of the parent
+/// (no nested element wrapping); Mappings/Sequences nest as usual.
+fn render_keyed_value(
+    xot: &mut Xot,
+    parent: XotNode,
+    value: &DataTree,
+    source: &str,
+) -> Result<(), xot::Error> {
+    match value {
+        DataTree::String { value, .. } => {
+            if !value.is_empty() {
+                let t = xot.new_text(value);
+                xot.append(parent, t)?;
+            }
+        }
+        DataTree::Number { text, .. } => {
+            let t = xot.new_text(text);
+            xot.append(parent, t)?;
+        }
+        DataTree::Bool { value, .. } => {
+            let t = xot.new_text(if *value { "true" } else { "false" });
+            xot.append(parent, t)?;
+        }
+        DataTree::Null { range, .. } => {
+            // Per data-branch spec: null renders as a literal text
+            // node so XPath value comparisons (`. = 'null'`) work and
+            // projections show the source keyword. Preserve YAML's
+            // `~` vs `null` distinction by slicing the source range
+            // (DataTree::Null doesn't carry the keyword text).
+            let raw = range.slice(source).trim();
+            let text = if raw.is_empty() { "null" } else { raw };
+            let t = xot.new_text(text);
+            xot.append(parent, t)?;
+        }
+        DataTree::Mapping { pairs, .. } => {
+            for p in pairs {
+                render_data_to_xot_keyed(xot, parent, p, source)?;
+            }
+        }
+        DataTree::Sequence { items, .. } => {
+            // Each array element gets an `<item>` wrapper so the
+            // shape is `<key><item>v1</item><item>v2</item></key>`.
+            // JSON projection then collects them as an array.
+            for item in items {
+                let item_node = element(xot, "item", item.span());
+                xot.append(parent, item_node)?;
+                render_keyed_value(xot, item_node, item, source)?;
+            }
+        }
+        // Recursive nesting for unusual cases.
+        other => {
+            render_data_to_xot_keyed(xot, parent, other, source)?;
+        }
+    }
+    Ok(())
+}
+
+/// Pull the textual content out of a scalar DataTree (for use as a
+/// keyed element name). Returns None for non-scalar IRs.
+fn scalar_text<'a>(tree: &'a DataTree, source: &'a str) -> Option<String> {
+    match tree {
+        DataTree::String { value, .. } => Some(value.clone()),
+        DataTree::Number { text, .. } => Some(text.clone()),
+        DataTree::Bool { value, .. } => Some(value.to_string()),
+        DataTree::Null { .. } => Some("null".to_string()),
+        // Allow any leaf-ish tree by sliding source bytes.
+        _ => Some(tree.range().slice(source).trim().to_string()),
+    }
+}
+
+/// Sanitize a string for use as an XML element name. Replaces
+/// invalid characters with `_` and prepends `_` if the name starts
+/// with a digit. Empty strings become `_`.
+fn sanitize_xml_name(raw: String) -> String {
+    if raw.is_empty() {
+        return "_".to_string();
+    }
+    let mut out = String::with_capacity(raw.len());
+    let mut chars = raw.chars();
+    let first = chars.next().unwrap();
+    if first.is_ascii_digit() {
+        out.push('_');
+    }
+    if is_xml_name_start_char(first) {
+        out.push(first);
+    } else {
+        out.push('_');
+    }
+    for c in chars {
+        if is_xml_name_char(c) {
+            out.push(c);
+        } else {
+            out.push('_');
+        }
+    }
+    out
+}
+
+fn is_xml_name_start_char(c: char) -> bool {
+    c == '_'
+        || c == ':'
+        || c.is_ascii_alphabetic()
+        || (c as u32 > 0x7F)
+}
+
+fn is_xml_name_char(c: char) -> bool {
+    is_xml_name_start_char(c) || c.is_ascii_digit() || c == '-' || c == '.'
+}
+
+fn element(xot: &mut Xot, name: &str, span: Span) -> XotNode {
+    let n = xot.add_name(name);
+    let node = xot.new_element(n);
+    set_span_attrs(xot, node, span);
+    node
+}
+
+fn set_span_attrs(xot: &mut Xot, node: XotNode, span: Span) {
+    let line = xot.add_name("line");
+    let column = xot.add_name("column");
+    let end_line = xot.add_name("end_line");
+    let end_column = xot.add_name("end_column");
+    // Slice 2 (editable trees): expose the typed-tree NodeId on xot
+    // so XPath matches can recover the DataTree node via `find_by_id`.
+    let id_name = (span.id != 0).then(|| xot.add_name("id"));
+    let mut attrs = xot.attributes_mut(node);
+    attrs.insert(line, span.line.to_string());
+    attrs.insert(column, span.column.to_string());
+    attrs.insert(end_line, span.end_line.to_string());
+    attrs.insert(end_column, span.end_column.to_string());
+    if let Some(id_name) = id_name {
+        attrs.insert(id_name, span.id.to_string());
+    }
+}
