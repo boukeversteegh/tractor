@@ -108,7 +108,7 @@ pub(crate) fn execute_test(
         let matches = query_files_multi(
             &op.sources, &[assertion.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            op.limit, ctx.verbose, &op.filters,
+            op.limit, ctx.verbose, &op.filters, &ctx.query_variables(),
         )?;
         if !check_expectation(&assertion.expect, matches.len())? {
             report.fail();

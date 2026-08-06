@@ -112,6 +112,10 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
         params.view_override, params.message, None, false, params.default_group,
     )?;
 
+    // Config-declared variables become part of the run's environmental
+    // state, bound into every query's dynamic context via `ctx.exec_ctx()`.
+    ctx.variables = std::sync::Arc::new(loaded.variables);
+
     // The config-run `base_dir` is the directory of the config file,
     // absolutized. Planted on `RunContext` so the executor and resolver
     // both observe the same value via `ctx.exec_ctx()` — single source of

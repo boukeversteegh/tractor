@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::cli::SharedArgs;
 use crate::format::options::HookType;
@@ -7,7 +8,7 @@ use crate::format::{
     Projection, ViewField, ViewSet,
 };
 use crate::input::{resolve_input, InputMode};
-use tractor::{output::should_use_color, output::RenderOptions, NormalizedXpath, TreeMode};
+use tractor::{output::should_use_color, output::RenderOptions, NormalizedXpath, QueryVariables, TreeMode};
 
 pub struct RunContext {
     pub xpath: Option<NormalizedXpath>,
@@ -35,6 +36,11 @@ pub struct RunContext {
     /// Base directory for resolving relative paths (config root). Set once
     /// per invocation — None for single-op CLI runs, Some for `run --config`.
     pub base_dir: Option<PathBuf>,
+    /// User-defined variables bound into every XPath query of the run.
+    /// Populated from the config file's `variables:` key; empty for
+    /// single-op CLI runs. Shared via `Arc` so rayon workers can attach it
+    /// to each parse result cheaply.
+    pub variables: Arc<QueryVariables>,
     pub lang: Option<String>,
     pub debug: bool,
     pub group_by: Vec<GroupDimension>,
@@ -52,6 +58,17 @@ pub struct RunContext {
 pub struct ExecCtx<'a> {
     pub verbose: bool,
     pub base_dir: Option<&'a Path>,
+    /// User-defined variables for this run. `None` (e.g. in `ExecCtx::default()`)
+    /// is equivalent to an empty set.
+    pub variables: Option<&'a Arc<QueryVariables>>,
+}
+
+impl ExecCtx<'_> {
+    /// The run's user-defined variables as a shareable handle
+    /// (empty when none were configured).
+    pub fn query_variables(&self) -> Arc<QueryVariables> {
+        self.variables.cloned().unwrap_or_default()
+    }
 }
 
 impl RunContext {
@@ -149,6 +166,7 @@ impl RunContext {
             ignore_whitespace: shared.ignore_whitespace,
             verbose: shared.verbose,
             base_dir: None,
+            variables: Arc::default(),
             lang: shared.lang.clone(),
             debug,
             group_by,
@@ -161,6 +179,7 @@ impl RunContext {
         ExecCtx {
             verbose: self.verbose,
             base_dir: self.base_dir.as_deref(),
+            variables: Some(&self.variables),
         }
     }
 

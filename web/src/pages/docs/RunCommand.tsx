@@ -108,6 +108,7 @@ example.js:3:3: error: getAll methods in repositories should use orderBy
           <tr><td><code>include</code></td><td>No</td><td>File patterns for this rule only (relative to config file directory)</td></tr>
           <tr><td><code>exclude</code></td><td>No</td><td>File patterns to exclude for this rule (relative to config file directory)</td></tr>
           <tr><td><code>expect</code></td><td>No</td><td>Test examples (see below)</td></tr>
+          <tr><td><code>variables</code></td><td>No</td><td>Rule-scoped values, available as <code>$rule.variables</code> in the query (see Variables)</td></tr>
         </tbody>
       </table>
 
@@ -133,6 +134,58 @@ example.js:3:3: error: getAll methods in repositories should use orderBy
       <p>
         When you run <code>tractor run</code>, the <code>expect</code> entries are also validated. If a <code>valid</code> example matches the rule (or an <code>invalid</code> example doesn't), the run fails.
       </p>
+
+      <h2>Variables</h2>
+      <p>
+        Declare values once and reference them from any query. Root-level <code>variables</code> are
+        bound as the <code>$variables</code> map in every operation's XPath context; a rule's own{' '}
+        <code>variables</code> are bound as <code>$rule.variables</code>. Both sit alongside the
+        built-in <code>$file</code> (the current file path).
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`variables:
+  env: production
+  banned: [eval, exec]
+
+check:
+  files:
+    - "src/**/*.js"
+  rules:
+    - id: no-banned-calls
+      xpath: "//call/name[. = $variables?banned?*]"
+      reason: "banned function call"
+
+    - id: not-too-many-params
+      xpath: "//function[count(params/param) > $rule.variables?max]"
+      reason: "too many parameters"
+      variables:
+        max: 4`}
+      />
+      <p>
+        Values follow the JSON data model: strings, numbers, booleans, <code>null</code>, lists, and
+        nested mappings. Scalars are read with map lookup (<code>$variables?env</code>), lists expand
+        with <code>?*</code> (<code>$variables?banned?*</code>), and nested mappings chain lookups
+        (<code>$variables?limits?max</code>). Numbers compare numerically; a lookup on a key that
+        isn't configured yields the empty sequence, so predicates simply don't match. Because a
+        typo'd key would silently disable a rule, <code>tractor check</code> emits an advisory
+        warning (never a failure) for literal lookups on keys the config doesn't define.
+      </p>
+      <p>
+        Rules also get <code>$rule.id</code> — the current rule's <code>id</code> string. This makes
+        per-rule escape hatches a single shared pattern instead of hand-written per rule:
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`# a comment \`tractor:allow(<rule-id>)\` in the enclosing function
+# suppresses exactly that rule
+xpath: >-
+  //call//object[.='console']
+  [not(ancestor::function[.//comment[
+    contains(., concat('tractor:allow(', $rule.id, ')'))]])]`}
+      />
 
       <h2>Multiple Operation Types</h2>
       <p>

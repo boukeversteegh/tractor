@@ -114,7 +114,7 @@ pub(crate) fn execute_query(
     let matches = query_files_multi(
         &op.sources, &xpaths, op.language.as_deref(),
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
-        op.limit, ctx.verbose, &op.filters,
+        op.limit, ctx.verbose, &op.filters, &ctx.query_variables(),
     )?;
 
     report.add_all(matches.into_iter().map(|m| match_to_report_match(m, "query")));

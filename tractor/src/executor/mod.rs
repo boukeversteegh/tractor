@@ -129,6 +129,9 @@ pub(crate) fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
 ///
 /// Virtual and disk sources flow through the same loop — `source.parse()`
 /// dispatches on content kind so the caller doesn't branch.
+///
+/// `variables` are the run's user-defined variables, bound into each query's
+/// dynamic context alongside the built-in `$file`.
 pub(crate) fn query_files_multi(
     sources: &[Source],
     xpaths: &[&str],
@@ -139,6 +142,7 @@ pub(crate) fn query_files_multi(
     limit: Option<usize>,
     verbose: bool,
     filters: &Filters,
+    variables: &std::sync::Arc<tractor::QueryVariables>,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut all_matches: Vec<Match> = sources
         .par_iter()
@@ -153,6 +157,7 @@ pub(crate) fn query_files_multi(
                     return None;
                 }
             };
+            result.variables = std::sync::Arc::clone(variables);
 
             let mut file_matches = Vec::new();
             for xpath_expr in xpaths {
@@ -340,6 +345,169 @@ mod tests {
         let report = run(&ops);
         assert!(report.success.unwrap());
         assert_eq!(report.all_matches().len(), 0);
+    }
+
+    /// Variables from the run context are bound as the $variables map in
+    /// rule queries, alongside the built-in $file.
+    #[test]
+    fn check_binds_user_variables() {
+        use tractor::variables::{QueryVariables, VariableValue};
+
+        let (_dir, path) = temp_json_file(r#"{"debug": true}"#);
+        let ops = vec![OperationPlan::Check(CheckOperationPlan {
+            sources: disk_sources(&[&path]),
+            filters: Filters::default(),
+            compiled_rules: compile(
+                vec![
+                    Rule::new("no-debug-in-prod", "//debug[.='true'][$variables?env = 'production']")
+                        .with_reason("debug must be off in production"),
+                ],
+                None,
+            ),
+            tree_mode: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+        })];
+
+        let mut vars = QueryVariables::new();
+        vars.insert("env", VariableValue::String("production".into()));
+        let vars = std::sync::Arc::new(vars);
+        let ctx = ExecCtx { variables: Some(&vars), ..ExecCtx::default() };
+
+        let mut builder = ReportBuilder::new();
+        execute(&ops, &ctx, &mut builder).unwrap();
+        let report = builder.build();
+        assert!(!report.success.unwrap(), "rule should fire when env = 'production'");
+        assert_eq!(report.all_matches().len(), 1);
+
+        // Same op with env bound differently → rule predicate is false
+        let mut vars = QueryVariables::new();
+        vars.insert("env", VariableValue::String("dev".into()));
+        let vars = std::sync::Arc::new(vars);
+        let ctx = ExecCtx { variables: Some(&vars), ..ExecCtx::default() };
+
+        let mut builder = ReportBuilder::new();
+        execute(&ops, &ctx, &mut builder).unwrap();
+        let report = builder.build();
+        assert!(report.success.unwrap(), "rule should not fire when env = 'dev'");
+    }
+
+    /// Rule-level variables are bound as $rule.variables, independent of the
+    /// run-level $variables map.
+    #[test]
+    fn check_binds_rule_variables() {
+        use tractor::variables::{QueryVariables, VariableValue};
+
+        let (_dir, path) = temp_json_file(r#"{"debug": true}"#);
+        let mut rule_vars = QueryVariables::new();
+        rule_vars.insert("flag", VariableValue::String("debug".into()));
+
+        let ops = vec![OperationPlan::Check(CheckOperationPlan {
+            sources: disk_sources(&[&path]),
+            filters: Filters::default(),
+            compiled_rules: compile(
+                vec![
+                    // Matches the element whose *name* equals the rule-level
+                    // "flag" variable; also asserts run-level lookup is empty.
+                    Rule::new(
+                        "flag-off",
+                        "//*[local-name() = $rule.variables?flag][empty($variables?flag)]",
+                    ),
+                ],
+                None,
+            ),
+            tree_mode: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+        })]
+        .into_iter()
+        .map(|op| match op {
+            OperationPlan::Check(mut plan) => {
+                plan.compiled_rules[0].variables = std::sync::Arc::new(rule_vars.clone());
+                OperationPlan::Check(plan)
+            }
+            other => other,
+        })
+        .collect::<Vec<_>>();
+
+        let report = run(&ops);
+        assert!(!report.success.unwrap(), "$rule.variables?flag should select //debug");
+        // One error match; the deliberate $variables?flag probe (undefined at
+        // run level) additionally produces an advisory warning.
+        let errors: Vec<_> = report.all_matches().into_iter()
+            .filter(|m| m.severity == Some(Severity::Error))
+            .collect();
+        assert_eq!(errors.len(), 1);
+    }
+
+    /// A literal lookup on a key that isn't defined produces an advisory
+    /// warning (never a failure): the lookup legally yields the empty
+    /// sequence, but a typo'd key silently disables a rule.
+    #[test]
+    fn check_warns_on_undefined_variable_keys() {
+        use tractor::variables::{QueryVariables, VariableValue};
+
+        let (_dir, path) = temp_json_file(r#"{"debug": true}"#);
+        let ops = vec![OperationPlan::Check(CheckOperationPlan {
+            sources: disk_sources(&[&path]),
+            filters: Filters::default(),
+            compiled_rules: compile(
+                vec![Rule::new(
+                    "r",
+                    // `env` is defined (but != 'production', so no match);
+                    // `evn` (typo) and `max` (rule-level) are undefined
+                    "//debug[$variables?env = 'production' or $variables?evn = 'production' or $rule.variables?max > 1]",
+                )],
+                None,
+            ),
+            tree_mode: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+        })];
+
+        let mut vars = QueryVariables::new();
+        vars.insert("env", VariableValue::String("prod".into()));
+        let vars = std::sync::Arc::new(vars);
+        let ctx = ExecCtx { variables: Some(&vars), ..ExecCtx::default() };
+
+        let mut builder = ReportBuilder::new();
+        execute(&ops, &ctx, &mut builder).unwrap();
+        let report = builder.build();
+
+        let warnings: Vec<_> = report.all_matches().into_iter()
+            .filter(|m| m.severity == Some(Severity::Warning))
+            .collect();
+        assert_eq!(warnings.len(), 2, "one warning per undefined key: {:?}",
+            report.all_matches().iter().map(|m| &m.reason).collect::<Vec<_>>());
+        assert!(warnings.iter().any(|m| m.reason.as_deref().unwrap_or("").contains("'evn'")));
+        assert!(warnings.iter().any(|m| m.reason.as_deref().unwrap_or("").contains("'max'")));
+        // Warnings are advisory — the run still succeeds (rule matched nothing)
+        assert_eq!(report.success, Some(true), "warnings must not fail the run");
+    }
+
+    /// A rule referencing an undeclared XPath variable (anything other than
+    /// the built-ins $file / $variables / $rule.variables) fails validation
+    /// with a fatal diagnostic instead of executing.
+    #[test]
+    fn check_unknown_variable_is_fatal() {
+        let (_dir, path) = temp_json_file(r#"{"debug": true}"#);
+        let ops = vec![OperationPlan::Check(CheckOperationPlan {
+            sources: disk_sources(&[&path]),
+            filters: Filters::default(),
+            compiled_rules: compile(
+                vec![Rule::new("r", "//debug[$undeclared = 'x']")],
+                None,
+            ),
+            tree_mode: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+        })];
+        let mut builder = ReportBuilder::new();
+        execute(&ops, &ExecCtx::default(), &mut builder).unwrap();
+        let report = builder.build();
+        assert!(report.all_matches().iter().any(|m|
+            m.severity == Some(Severity::Fatal)),
+            "undeclared variable should produce a fatal diagnostic");
     }
 
     #[test]

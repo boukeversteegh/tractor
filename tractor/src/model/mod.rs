@@ -4,3 +4,4 @@ pub mod report;
 pub mod rule;
 pub mod tree_mode;
 pub mod normalized_xpath;
+pub mod variables;

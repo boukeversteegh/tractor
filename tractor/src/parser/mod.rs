@@ -396,21 +396,38 @@ pub struct XeeParseResult {
     pub file_path: String,
     /// Language used for parsing
     pub language: String,
+    /// Run-level user variables, bound as the `$variables` map in every
+    /// query on this result. Defaults to empty; callers that run
+    /// config-declared variables (the executor) assign this after parsing.
+    pub variables: std::sync::Arc<crate::variables::QueryVariables>,
+    /// Rule-level user variables, bound as the `$rule.variables` map.
+    /// Defaults to empty; the check executor reassigns this per rule while
+    /// iterating a parsed file's applicable rules.
+    pub rule_variables: std::sync::Arc<crate::variables::QueryVariables>,
+    /// The current rule's id, bound as `$rule.id`. `None` (the default)
+    /// binds the empty sequence; the check executor sets it per rule.
+    pub rule_id: Option<String>,
 }
 
 impl XeeParseResult {
     /// Execute an XPath query on the parsed document.
     ///
     /// This is a convenience method that creates an XPathEngine and calls
-    /// `query_documents`, avoiding the need to destructure the parse result.
+    /// `query_documents_with_variables`, avoiding the need to destructure
+    /// the parse result. `$variables` comes from `self.variables`,
+    /// `$rule.variables` from `self.rule_variables`, `$rule.id` from
+    /// `self.rule_id`.
     pub fn query(&mut self, xpath: &str) -> Result<Vec<crate::xpath::Match>, crate::xpath::XPathError> {
         let engine = crate::xpath::XPathEngine::new();
-        engine.query_documents(
+        engine.query_documents_with_variables(
             &mut self.documents,
             self.doc_handle,
             xpath,
             self.source_lines.clone(),
             &self.file_path,
+            &self.variables,
+            &self.rule_variables,
+            self.rule_id.as_deref(),
         )
     }
 }
@@ -514,6 +531,9 @@ pub fn parse_string_to_xee_with_options(
         source_lines,
         file_path,
         language: lang.to_string(),
+        variables: Default::default(),
+        rule_variables: Default::default(),
+        rule_id: None,
     })
 }
 
@@ -563,6 +583,9 @@ pub fn load_xml_string_to_documents(xml: &str, file_path: String) -> Result<XeeP
         source_lines: std::sync::Arc::new(Vec::new()), // XML passthrough doesn't have source lines
         file_path,
         language: "xml".to_string(),
+        variables: Default::default(),
+        rule_variables: Default::default(),
+        rule_id: None,
     })
 }
 

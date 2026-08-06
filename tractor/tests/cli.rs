@@ -1794,3 +1794,163 @@ fn set_inline_with_path_plus_diff_lines_is_accepted_at_plan_time() {
     let on_disk = std::fs::read_to_string(src_dir.join("x.yaml")).expect("read baseline");
     assert_eq!(on_disk, baseline, "working tree must be untouched");
 }
+
+// ---------------------------------------------------------------------------
+// Config variables (`variables:` root and rule keys)
+//
+// Root-level `variables:` in tractor.yml are bound as the `$variables` map
+// in every query of the run; a check rule's own `variables:` are bound as
+// `$rule.variables`. Both live alongside the built-in `$file`.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn config_variables_bound_in_check_rules() {
+    // $variables?env = 'production' -> the predicate holds and the rule fires.
+    let config = "variables:
+  env: production
+check:
+  files: [\"app.js\"]
+  rules:
+    - id: no-console-in-prod
+      xpath: \"//call//object[.='console'][$variables?env = 'production']\"
+      severity: error
+      reason: \"no console in production\"
+";
+    cli_case!({
+        tractor check --config "tractor.yml";
+        expect => exit 1;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("app.js", "console.log('hi');
+")
+    .run();
+}
+
+#[test]
+fn config_variables_different_value_disables_rule() {
+    // Same rule, env = 'dev' -> predicate is false, no violations.
+    let config = "variables:
+  env: dev
+check:
+  files: [\"app.js\"]
+  rules:
+    - id: no-console-in-prod
+      xpath: \"//call//object[.='console'][$variables?env = 'production']\"
+      severity: error
+      reason: \"no console in production\"
+";
+    cli_case!({
+        tractor check --config "tractor.yml";
+        expect => exit 0;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("app.js", "console.log('hi');
+")
+    .run();
+}
+
+#[test]
+fn config_rule_variables_bound_per_rule() {
+    // Two rules sharing one config: each sees its own $rule.variables while
+    // $variables stays global. Rule A's flag matches an element name in the
+    // file, rule B's does not -> exactly rule A fires (exit 1 with one match).
+    let config = "variables:
+  env: production
+check:
+  files: [\"data.json\"]
+  rules:
+    - id: rule-a
+      xpath: \"//*[local-name() = $rule.variables?flag][$variables?env = 'production']\"
+      variables:
+        flag: debug
+    - id: rule-b
+      xpath: \"//*[local-name() = $rule.variables?flag]\"
+      variables:
+        flag: nonexistent
+";
+    let result = command(["check", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("data.json", "{\"debug\": true}")
+        .capture();
+
+    assert_eq!(1, result.status, "rule-a should fire: {}{}", result.stdout, result.stderr);
+    assert!(
+        result.stdout.contains("rule-a"),
+        "rule-a should be reported: {}",
+        result.stdout
+    );
+    assert!(
+        !result.stdout.contains("rule-b"),
+        "rule-b must not fire (its flag matches nothing): {}",
+        result.stdout
+    );
+}
+
+#[test]
+fn config_variables_numeric_comparison_in_test_assertion() {
+    // Numeric variable used in a test assertion with an exact expected count:
+    // among leaf values only b(3) exceeds min(2), so `expect: 1` passes iff
+    // $variables?min binds. (Leaf-only: container elements' concatenated
+    // string values would also parse as numbers.)
+    let config = "variables:
+  min: 2
+test:
+  files: [\"data.json\"]
+  assertions:
+    - xpath: \"//*[not(*)][number(.) > $variables?min]\"
+      expect: 1
+";
+    cli_case!({
+        tractor run --config "tractor.yml";
+        expect => exit 0;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("data.json", "{\"a\": 1, \"b\": 3}")
+    .run();
+}
+
+#[test]
+fn config_rule_id_bound_for_allow_markers() {
+    // $rule.id lets one shared predicate implement per-rule escape hatches:
+    // a comment `tractor:allow(<rule-id>)` inside the enclosing function
+    // suppresses that rule only. First console.log is allowed, second fires.
+    let config = "check:
+  files: [\"app.js\"]
+  rules:
+    - id: no-console
+      reason: \"no console\"
+      xpath: \"//call//object[.='console'][not(ancestor::function[.//comment[contains(., concat('tractor:allow(', $rule.id, ')'))]])]\"
+";
+    let source = "function ok() {
+  // tractor:allow(no-console)
+  console.log('hi');
+}
+console.log('bye');
+";
+    let result = command(["check", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("app.js", source)
+        .capture();
+
+    assert_eq!(1, result.status, "unallowed console.log should fire: {}{}", result.stdout, result.stderr);
+    assert!(
+        result.stdout.contains("5"),
+        "only the line-5 console.log should be reported: {}",
+        result.stdout
+    );
+    assert!(
+        !result.stdout.contains("console.log('hi')"),
+        "allowed call must be suppressed: {}",
+        result.stdout
+    );
+}

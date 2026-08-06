@@ -126,7 +126,7 @@ pub(crate) fn execute_update(
         let matches = query_files_multi(
             &fallback_sources, &[op.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            None, ctx.verbose, &op.filters,
+            None, ctx.verbose, &op.filters, &ctx.query_variables(),
         )?;
         if !matches.is_empty() {
             let summary = apply_replacements(&matches, &op.value)?;

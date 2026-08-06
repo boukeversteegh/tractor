@@ -25,6 +25,7 @@
 use crate::normalized_xpath::NormalizedXpath;
 use crate::report::Severity;
 use crate::tree_mode::TreeMode;
+use crate::variables::QueryVariables;
 
 // ---------------------------------------------------------------------------
 // GlobMatcher (native only — needs the glob crate for Pattern)
@@ -193,6 +194,11 @@ mod compiled {
         pub valid_examples: Vec<String>,
         /// Code examples that should fail the check.
         pub invalid_examples: Vec<String>,
+        /// Rule-level variables, bound as the `$rule.variables` map for this
+        /// rule's queries. Run-level variables stay separate (`$variables`) —
+        /// no merging. `Arc` so `run_rules` can attach them to each parse
+        /// result without cloning the map per file.
+        pub variables: std::sync::Arc<crate::variables::QueryVariables>,
         /// Compiled glob matcher combining ruleset and rule layers.
         pub glob: GlobMatcher,
     }
@@ -250,6 +256,7 @@ mod compiled {
                     tree_mode: rule.tree_mode.or(ruleset_default_tree_mode),
                     valid_examples: rule.valid_examples,
                     invalid_examples: rule.invalid_examples,
+                    variables: std::sync::Arc::new(rule.variables),
                     glob,
                 })
             })
@@ -302,6 +309,11 @@ pub struct Rule {
     /// Code examples that should fail the check (1+ matches expected).
     /// In config files: `expect: [{invalid: "..."}]`, CLI: `--expect-invalid`.
     pub invalid_examples: Vec<String>,
+
+    /// Rule-level variables, bound as the `$rule.variables` map in this
+    /// rule's XPath queries. Run-level variables are bound separately as
+    /// `$variables`.
+    pub variables: QueryVariables,
 }
 
 impl Rule {
@@ -319,6 +331,7 @@ impl Rule {
             tree_mode: None,
             valid_examples: Vec::new(),
             invalid_examples: Vec::new(),
+            variables: QueryVariables::new(),
         }
     }
 
@@ -373,6 +386,12 @@ impl Rule {
     /// Set invalid examples (code that SHOULD trigger the check).
     pub fn with_invalid_examples(mut self, examples: Vec<String>) -> Self {
         self.invalid_examples = examples;
+        self
+    }
+
+    /// Set rule-level variables (bound as `$rule.variables` in queries).
+    pub fn with_variables(mut self, variables: QueryVariables) -> Self {
+        self.variables = variables;
         self
     }
 

@@ -8,6 +8,7 @@ use tractor::{
     parse, ParseInput, ParseOptions,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
     rule::CompiledRule,
+    variables::QueryVariables,
     xpath::validate_xpath,
 };
 use crate::input::filter::Filters;
@@ -61,6 +62,72 @@ pub fn validate_xpath_diagnostic(xpath_expr: &NormalizedXpath, command: &str) ->
         status: None,
         output: None,
     })
+}
+
+/// Advisory check: warn about literal `$variables?key` / `$rule.variables?key`
+/// lookups whose key is not defined in the corresponding variable set.
+///
+/// A missing key is legal XPath — the lookup yields the empty sequence, and
+/// rules may rely on that (optional flags, `(lookup, default)[1]` idioms) —
+/// so this produces `Severity::Warning` diagnostics that never fail the run.
+/// Only literal keys are checked; dynamic lookups (`?($expr)`, `?*`) are
+/// skipped. Nested keys (`$variables?limits?max`) are checked at the top
+/// level only.
+pub fn undefined_variable_key_diagnostics(
+    rule_id: &str,
+    xpath_expr: &NormalizedXpath,
+    run_variables: &QueryVariables,
+    rule_variables: &QueryVariables,
+) -> Vec<ReportMatch> {
+    use once_cell::sync::Lazy;
+    use regex::Regex;
+
+    // NCName-ish key after the lookup operator. `$rule\.variables` is matched
+    // first so the plain `\$variables` pattern can't fire inside it (the
+    // preceding char there is `.`, not `$`, so it can't anyway).
+    static RUN_LOOKUP: Lazy<Regex> =
+        Lazy::new(|| Regex::new(r"\$variables\s*\?\s*([A-Za-z_][A-Za-z0-9_.\-]*)").unwrap());
+    static RULE_LOOKUP: Lazy<Regex> =
+        Lazy::new(|| Regex::new(r"\$rule\.variables\s*\?\s*([A-Za-z_][A-Za-z0-9_.\-]*)").unwrap());
+
+    let xpath = xpath_expr.as_str();
+    let mut diagnostics = Vec::new();
+
+    let mut check = |re: &Regex, defined: &QueryVariables, scope: &str| {
+        for caps in re.captures_iter(xpath) {
+            let key = caps.get(1).unwrap();
+            if defined.get(key.as_str()).is_some() {
+                continue;
+            }
+            diagnostics.push(ReportMatch {
+                file: String::new(),
+                line: 1,
+                column: key.start() as u32 + 1,
+                end_line: 1,
+                end_column: key.end() as u32 + 1,
+                command: "check".to_string(),
+                tree: None,
+                value: None,
+                source: Some(xpath.to_string()),
+                lines: Some(vec![xpath.to_string()]),
+                reason: Some(format!(
+                    "[{}] unknown variable key '{}': not defined {} (the lookup yields the empty sequence)",
+                    rule_id, key.as_str(), scope,
+                )),
+                severity: Some(Severity::Warning),
+                message: None,
+                origin: Some(DiagnosticOrigin::Xpath),
+                rule_id: Some(rule_id.to_string()),
+                status: None,
+                output: None,
+            });
+        }
+    };
+
+    check(&RUN_LOOKUP, run_variables, "under the config's `variables:`");
+    check(&RULE_LOOKUP, rule_variables, "in this rule's `variables:`");
+
+    diagnostics
 }
 
 // ---------------------------------------------------------------------------
@@ -189,6 +256,10 @@ fn rule_language_matches_source(
 /// - The source's pre-resolved language (from `-l` or extension detection)
 ///
 /// `verbose` controls whether parse/query warnings are printed to stderr.
+///
+/// `variables` is the run-level variable set (bound as `$variables`); each
+/// rule's own `variables` field is bound as `$rule.variables` per query.
+#[allow(clippy::too_many_arguments)] // execution knobs + the run-level variables
 pub fn run_rules(
     rules: &[CompiledRule],
     sources: &[Source],
@@ -197,6 +268,7 @@ pub fn run_rules(
     parse_depth: Option<usize>,
     verbose: bool,
     filters: &Filters,
+    variables: &std::sync::Arc<QueryVariables>,
 ) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
     // Process sources in parallel. Each source is parsed once using either:
     // - The source's detected language (when no rules specify a language override)
@@ -245,11 +317,16 @@ pub fn run_rules(
                     return None;
                 }
             };
+            result.variables = std::sync::Arc::clone(variables);
 
             let mut file_matches = Vec::new();
 
-            // Run all applicable rules against the parsed result
+            // Run all applicable rules against the parsed result, binding
+            // each rule's own variables as $rule.variables and its id as
+            // $rule.id.
             for rule_idx in applicable {
+                result.rule_variables = std::sync::Arc::clone(&rules[rule_idx].variables);
+                result.rule_id = Some(rules[rule_idx].id.clone());
                 match result.query(rules[rule_idx].xpath.as_str()) {
                     Ok(matches) => {
                         for m in matches {
@@ -412,6 +489,39 @@ mod tests {
     use tractor::NormalizedXpath;
 
     #[test]
+    fn undefined_key_diagnostics_extraction() {
+        use tractor::variables::{QueryVariables, VariableValue};
+
+        let mut run_vars = QueryVariables::new();
+        run_vars.insert("env", VariableValue::String("prod".into()));
+        run_vars.insert("limits", VariableValue::Map(Default::default()));
+        let mut rule_vars = QueryVariables::new();
+        rule_vars.insert("prefixes", VariableValue::Array(vec![]));
+
+        // Defined keys, wildcard expansion, and nested lookups: no warnings.
+        // (`limits?max` is checked at the top level only.)
+        let xpath = NormalizedXpath::new(
+            "//a[$variables?env = 'p' and $variables?limits?max > 1 \
+             and (some $p in $rule.variables?prefixes?* satisfies starts-with(., $p))]",
+        );
+        assert!(undefined_variable_key_diagnostics("r", &xpath, &run_vars, &rule_vars).is_empty());
+
+        // Undefined keys in both namespaces: one warning each, correct scope.
+        let xpath = NormalizedXpath::new("//a[$variables?evn or $rule.variables?prefix]");
+        let diags = undefined_variable_key_diagnostics("r", &xpath, &run_vars, &rule_vars);
+        assert_eq!(diags.len(), 2);
+        assert!(diags[0].reason.as_deref().unwrap().contains("'evn'"));
+        assert!(diags[0].reason.as_deref().unwrap().contains("config's"));
+        assert!(diags[1].reason.as_deref().unwrap().contains("'prefix'"));
+        assert!(diags[1].reason.as_deref().unwrap().contains("rule's"));
+        assert!(diags.iter().all(|d| d.severity == Some(Severity::Warning)));
+
+        // Dynamic lookups are skipped
+        let xpath = NormalizedXpath::new("//a[$variables?($name) or $variables?*]");
+        assert!(undefined_variable_key_diagnostics("r", &xpath, &run_vars, &rule_vars).is_empty());
+    }
+
+    #[test]
     fn test_language_parsing() {
         // Test that language parsing handles aliases correctly
         assert_eq!(parse_language("js"), Language::JavaScript);
@@ -554,6 +664,7 @@ mod tests {
             ignore_whitespace: false,
             verbose: false,
             base_dir: None,
+            variables: std::sync::Arc::default(),
             lang: None,
             debug: false,
             group_by: vec![],

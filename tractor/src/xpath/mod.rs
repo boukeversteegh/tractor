@@ -85,7 +85,8 @@ pub fn validate_xpath(xpath: &str) -> ValidationResult {
         return ValidationResult::err("XPath expression is empty".to_string());
     }
 
-    // Try to compile the query (with tractor's built-in variables like $file)
+    // Try to compile the query (with tractor's built-in variables:
+    // $file, $variables, $rule.variables)
     let queries = Queries::new(tractor_static_context());
     match queries.sequence(xpath) {
         Ok(_) => ValidationResult::ok(),

@@ -31,6 +31,7 @@ use std::path::Path;
 use serde::Deserialize;
 use tractor::declarative_set::parse_set_expr;
 use tractor::normalized_xpath::NormalizedXpath;
+use tractor::variables::QueryVariables;
 use tractor::report::Severity;
 use tractor::rule::Rule;
 use tractor::tree_mode::TreeMode;
@@ -67,6 +68,13 @@ struct ConfigFile {
     /// Root-level git diff spec: only include matches in changed hunks.
     #[serde(default, rename = "diff-lines")]
     diff_lines: Option<String>,
+
+    /// User-defined variables, bound as the `$variables` map in the XPath
+    /// dynamic context of every query in this config run (e.g.
+    /// `$variables?env`). Values may be scalars, lists, or nested mappings
+    /// (bound as XPath arrays/maps with JSON semantics).
+    #[serde(default)]
+    variables: QueryVariables,
 
     /// Root-level check shorthand (single check operation).
     #[serde(default)]
@@ -152,6 +160,11 @@ struct CheckRuleConfig {
     tree_mode: Option<String>,
     #[serde(default)]
     expect: Vec<CheckExpectEntry>,
+    /// Rule-level variables, bound as the `$rule.variables` map in this
+    /// rule's queries (e.g. `$rule.variables?max`). The root-level
+    /// `variables:` stay separately reachable as `$variables`.
+    #[serde(default)]
+    variables: QueryVariables,
 }
 
 /// A single expectation entry for check rules in tractor config files.
@@ -482,6 +495,9 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<ConfigOperati
         if !invalid_examples.is_empty() {
             rule = rule.with_invalid_examples(invalid_examples);
         }
+        if !r.variables.is_empty() {
+            rule = rule.with_variables(r.variables);
+        }
         Ok::<Rule, Box<dyn std::error::Error>>(rule)
     }).collect::<Result<_, _>>()?;
 
@@ -749,6 +765,7 @@ fn config_to_operations(config: ConfigFile) -> Result<LoadedConfig, Box<dyn std:
 
     Ok(LoadedConfig {
         root_files,
+        variables: config.variables,
         operations: ops,
     })
 }
@@ -766,6 +783,10 @@ pub struct LoadedConfig {
     /// `None` when the key is missing (unrestricted); `Some(vec![])` when
     /// explicitly empty.
     pub root_files: Option<Vec<String>>,
+    /// User-defined variables from the root-level `variables:` key, bound
+    /// as `$variables` in every query of the run. A future `variables-file:`
+    /// key merges into this same map (inline wins).
+    pub variables: QueryVariables,
     /// Parsed operations paired with their per-op input-resolution data.
     /// Sources/filters are filled in by the runner once the shared
     /// `FileResolver` has resolved each operation's file set.
@@ -776,6 +797,7 @@ impl std::fmt::Debug for LoadedConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LoadedConfig")
             .field("root_files", &self.root_files)
+            .field("variables", &self.variables)
             .field("operations", &self.operations)
             .finish()
     }
@@ -1419,6 +1441,83 @@ check:
         let (_, c) = as_check(&ops[0]);
         assert_eq!(c.rules[0].valid_examples, vec!["fn main() {}"]);
         assert_eq!(c.rules[0].invalid_examples, vec!["// TODO: fix"]);
+    }
+
+    // -- Variables --
+
+    #[test]
+    fn parse_yaml_variables() {
+        use tractor::variables::VariableValue;
+        let yaml = r#"
+variables:
+  env: production
+  max-lines: 500
+  strict: true
+  allowed: [a, b]
+check:
+  rules:
+    - id: env-gate
+      xpath: "//comment[$variables?env = 'production']"
+"#;
+        let loaded = parse_config_yaml(yaml).unwrap();
+        assert_eq!(loaded.variables.get("env"), Some(&VariableValue::String("production".into())));
+        assert_eq!(loaded.variables.get("max-lines"), Some(&VariableValue::Int(500)));
+        assert_eq!(loaded.variables.get("strict"), Some(&VariableValue::Bool(true)));
+        assert!(matches!(loaded.variables.get("allowed"), Some(VariableValue::Array(_))));
+    }
+
+    #[test]
+    fn parse_yaml_variables_absent_is_empty() {
+        let yaml = r#"
+check:
+  rules:
+    - id: r
+      xpath: "//x"
+"#;
+        let loaded = parse_config_yaml(yaml).unwrap();
+        assert!(loaded.variables.is_empty());
+    }
+
+    #[test]
+    fn parse_yaml_rule_level_variables() {
+        use tractor::variables::VariableValue;
+        let yaml = r#"
+variables:
+  env: production
+check:
+  rules:
+    - id: with-vars
+      xpath: "//function[count(param) > $rule.variables?max]"
+      variables:
+        max: 4
+    - id: without-vars
+      xpath: "//x"
+"#;
+        let loaded = parse_config_yaml(yaml).unwrap();
+        let (_, c) = as_check(&loaded.operations[0]);
+        assert_eq!(c.rules[0].variables.get("max"), Some(&VariableValue::Int(4)));
+        assert!(c.rules[1].variables.is_empty());
+        // Root-level variables stay at the config level, not copied per rule
+        assert_eq!(loaded.variables.get("env"), Some(&VariableValue::String("production".into())));
+    }
+
+    #[test]
+    fn parse_toml_variables() {
+        use tractor::variables::VariableValue;
+        let toml = r#"
+[variables]
+env = "production"
+max = 10
+
+[query]
+files = ["*.json"]
+
+[[query.queries]]
+xpath = "//name"
+"#;
+        let loaded = parse_config_toml(toml).unwrap();
+        assert_eq!(loaded.variables.get("env"), Some(&VariableValue::String("production".into())));
+        assert_eq!(loaded.variables.get("max"), Some(&VariableValue::Int(10)));
     }
 
     // -- XPath normalization (implicit // prefix) --

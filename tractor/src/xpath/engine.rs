@@ -3,6 +3,7 @@
 use super::{Match, XPathError};
 use super::map_normalize::{try_normalize_and_serialize_map, extract_map_value_expr};
 use super::match_result::XmlNode;
+use crate::variables::QueryVariables;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::cell::RefCell;
@@ -206,20 +207,97 @@ fn json_value_to_xml_node(val: &serde_json::Value) -> XmlNode {
 // Each thread gets its own compiled query to avoid RefCell conflicts
 thread_local! {
     static QUERY_CACHE: RefCell<Option<(String, SequenceQuery)>> = const { RefCell::new(None) };
+    // Compiled helper query used to bind user-variable maps — see
+    // `variables_map_sequence`.
+    static PARSE_JSON_QUERY: RefCell<Option<SequenceQuery>> = const { RefCell::new(None) };
 }
 
-/// Build a StaticContextBuilder that declares the built-in tractor variables ($file).
+/// Build a StaticContextBuilder that declares the built-in tractor variables:
+/// `$file` (current file path), `$variables` (config-level user variables as
+/// a map), `$rule.variables` (rule-level user variables as a map; empty
+/// outside a rule context), and `$rule.id` (the current rule's id string;
+/// empty sequence outside a rule context).
 pub fn tractor_static_context() -> StaticContextBuilder<'static> {
     let mut scb = StaticContextBuilder::default();
-    scb.variable_names([OwnedName::name("file")]);
+    scb.variable_names([
+        OwnedName::name("file"),
+        OwnedName::name("variables"),
+        OwnedName::name("rule.variables"),
+        OwnedName::name("rule.id"),
+    ]);
     scb
 }
 
-/// Build a Variables map binding $file to the given path.
-fn tractor_variables(file_path: &str) -> Variables {
+/// Convert a user-variable map into a single XPath `map(*)` item by
+/// serializing it to JSON and evaluating `parse-json($json)`.
+///
+/// This is the only public-API bridge xee offers for constructing `map(*)` /
+/// `array(*)` items from Rust data — their constructors are crate-private.
+/// The resulting sequence contains only atomics/maps/arrays (never nodes),
+/// so it is safe to bind into queries over any document. JSON semantics
+/// apply to the values: numbers become `xs:double`, `null` becomes the
+/// empty sequence.
+fn variables_map_sequence(
+    variables: &QueryVariables,
+    documents: &mut Documents,
+) -> Result<Sequence, XPathError> {
+    let json = variables.to_json().to_string();
+    PARSE_JSON_QUERY.with(|cell| {
+        let mut cell = cell.borrow_mut();
+        if cell.is_none() {
+            let mut scb = StaticContextBuilder::default();
+            scb.variable_names([OwnedName::name("json")]);
+            let queries = Queries::new(scb);
+            *cell = Some(
+                queries
+                    .sequence("parse-json($json)")
+                    .map_err(|e| XPathError::Compile(e.to_string()))?,
+            );
+        }
+        let query = cell.as_ref().unwrap();
+        let mut vars = Variables::default();
+        vars.insert(OwnedName::name("json"), Sequence::from(json));
+        query
+            .execute_build_context(documents, |builder| {
+                builder.variables(vars);
+            })
+            .map_err(|e| XPathError::Execute(format!("invalid variable value: {}", e)))
+    })
+}
+
+/// Build a Variables map binding the built-in tractor variables:
+/// `$file`, `$variables`, `$rule.variables`, and `$rule.id`.
+///
+/// Rebuilt per query execution: xee sequences are `Rc`-based and cannot cross
+/// threads, and $file changes per file anyway. The map conversions each run
+/// one small `parse-json` evaluation — microseconds for typical configs.
+fn tractor_variables(
+    file_path: &str,
+    run_variables: &QueryVariables,
+    rule_variables: &QueryVariables,
+    rule_id: Option<&str>,
+    documents: &mut Documents,
+) -> Result<Variables, XPathError> {
     let mut vars = Variables::default();
     vars.insert(OwnedName::name("file"), Sequence::from(file_path.to_string()));
-    vars
+    vars.insert(
+        OwnedName::name("variables"),
+        variables_map_sequence(run_variables, documents)?,
+    );
+    vars.insert(
+        OwnedName::name("rule.variables"),
+        variables_map_sequence(rule_variables, documents)?,
+    );
+    // $rule.id: the current rule's id, or the empty sequence outside a rule
+    // context (so predicates like `contains(., $rule.id)` simply don't match).
+    vars.insert(
+        OwnedName::name("rule.id"),
+        match rule_id {
+            Some(id) => Sequence::from(id.to_string()),
+            None => Sequence::default(),
+        },
+    );
+    Ok(vars)
 }
 
 /// Execute a query directly on Documents (no XML parsing needed)
@@ -232,36 +310,34 @@ fn execute_direct_query(
     doc_handle: DocumentHandle,
     source_lines: Arc<Vec<String>>,
     file_path: &str,
+    run_variables: &QueryVariables,
+    rule_variables: &QueryVariables,
+    rule_id: Option<&str>,
 ) -> Result<Vec<Match>, XPathError> {
+    // Bind $file / $variables / $rule.variables / $rule.id up front — the
+    // map bindings execute a small `parse-json` query against `documents`.
+    let vars = tractor_variables(file_path, run_variables, rule_variables, rule_id, documents)?;
+
     QUERY_CACHE.with(|cache| {
         let mut cache = cache.borrow_mut();
 
         // Check if we have a cached query for this XPath
-        let query = if let Some((cached_xpath, cached_query)) = cache.as_ref() {
-            if cached_xpath == xpath {
-                cached_query
-            } else {
-                // Different XPath, need to recompile
-                let queries = Queries::new(tractor_static_context());
-                let new_query = queries
-                    .sequence(xpath)
-                    .map_err(|e| XPathError::Compile(e.to_string()))?;
-                *cache = Some((xpath.to_string(), new_query));
-                &cache.as_ref().unwrap().1
-            }
-        } else {
-            // No cached query, compile it
+        let cache_hit = matches!(
+            cache.as_ref(),
+            Some((cached_xpath, _)) if cached_xpath == xpath
+        );
+        if !cache_hit {
+            // Different XPath, need to recompile
             let queries = Queries::new(tractor_static_context());
             let new_query = queries
                 .sequence(xpath)
                 .map_err(|e| XPathError::Compile(e.to_string()))?;
             *cache = Some((xpath.to_string(), new_query));
-            &cache.as_ref().unwrap().1
-        };
+        }
+        let query = &cache.as_ref().unwrap().1;
 
-        // Execute the query with $file variable bound
+        // Execute the query with the tractor variables bound
         let t1 = Instant::now();
-        let vars = tractor_variables(file_path);
         let context_item = doc_handle.to_item(documents)
             .map_err(|e| XPathError::Execute(e.to_string()))?;
         let results = query
@@ -411,7 +487,33 @@ impl XPathEngine {
         source_lines: Arc<Vec<String>>,
         file_path: &str,
     ) -> Result<Vec<Match>, XPathError> {
-        execute_direct_query(xpath, documents, doc_handle, source_lines, file_path)
+        execute_direct_query(
+            xpath, documents, doc_handle, source_lines, file_path,
+            &QueryVariables::new(), &QueryVariables::new(), None,
+        )
+    }
+
+    /// Execute an XPath query on Documents with user-defined variables bound
+    /// in the dynamic context alongside the built-in `$file`:
+    /// `run_variables` becomes `$variables`, `rule_variables` becomes
+    /// `$rule.variables`, and `rule_id` becomes `$rule.id` (pass empty/None
+    /// outside a rule context).
+    #[allow(clippy::too_many_arguments)] // mirrors query_documents + the rule context
+    pub fn query_documents_with_variables(
+        &self,
+        documents: &mut Documents,
+        doc_handle: DocumentHandle,
+        xpath: &str,
+        source_lines: Arc<Vec<String>>,
+        file_path: &str,
+        run_variables: &QueryVariables,
+        rule_variables: &QueryVariables,
+        rule_id: Option<&str>,
+    ) -> Result<Vec<Match>, XPathError> {
+        execute_direct_query(
+            xpath, documents, doc_handle, source_lines, file_path,
+            run_variables, rule_variables, rule_id,
+        )
     }
 
     /// Strip location metadata from XML
@@ -801,6 +903,170 @@ mod tests {
             }
             other => panic!("Expected XmlNode::Map, got: {:?}", other),
         }
+    }
+
+    /// User-defined variables are reachable through the `$variables` map.
+    #[test]
+    fn test_query_with_scalar_variables() {
+        use crate::parser::load_xml_string_to_documents;
+        use crate::variables::{QueryVariables, VariableValue};
+
+        let xml = r#"<root><item level="3">a</item><item level="7">b</item></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        let mut vars = QueryVariables::new();
+        vars.insert("min-level", VariableValue::Int(5));
+        vars.insert("env", VariableValue::String("prod".into()));
+        vars.insert("strict", VariableValue::Bool(true));
+        let none = QueryVariables::new();
+
+        let matches = engine.query_documents_with_variables(
+            &mut result.documents, result.doc_handle,
+            "//item[number(@level) > $variables?min-level]", Arc::new(vec![]), "test.xml",
+            &vars, &none, None,
+        ).unwrap();
+        assert_eq!(matches.len(), 1, "only level 7 exceeds min-level=5");
+        assert_eq!(matches[0].value, "b");
+
+        let matches = engine.query_documents_with_variables(
+            &mut result.documents, result.doc_handle,
+            r#"if ($variables?strict and $variables?env = 'prod') then //item else ()"#,
+            Arc::new(vec![]), "test.xml", &vars, &none, None,
+        ).unwrap();
+        assert_eq!(matches.len(), 2, "strict/env condition should hold");
+    }
+
+    /// Structured variables (lists / nested maps) bind as XPath arrays and maps.
+    #[test]
+    fn test_query_with_structured_variables() {
+        use crate::parser::load_xml_string_to_documents;
+        use crate::variables::{QueryVariables, VariableValue};
+
+        let xml = r#"<root><name>alpha</name><name>gamma</name></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        let vars: QueryVariables = serde_yaml::from_str(
+            "allowed: [alpha, beta]\nlimits:\n  max: 1\n",
+        ).unwrap();
+        assert!(matches!(vars.get("allowed"), Some(VariableValue::Array(_))));
+        let none = QueryVariables::new();
+
+        // Array membership test via the general comparison over the array items
+        let matches = engine.query_documents_with_variables(
+            &mut result.documents, result.doc_handle,
+            "//name[not(. = $variables?allowed?*)]", Arc::new(vec![]), "test.xml",
+            &vars, &none, None,
+        ).unwrap();
+        assert_eq!(matches.len(), 1, "only 'gamma' is outside the allowed list");
+        assert_eq!(matches[0].value, "gamma");
+
+        // Nested map lookup
+        let matches = engine.query_documents_with_variables(
+            &mut result.documents, result.doc_handle,
+            "//name[count(//name) > $variables?limits?max]", Arc::new(vec![]), "test.xml",
+            &vars, &none, None,
+        ).unwrap();
+        assert_eq!(matches.len(), 2, "count(2) > limits.max(1)");
+    }
+
+    /// Null values and missing keys both yield the empty sequence.
+    #[test]
+    fn test_query_with_null_and_missing_keys() {
+        use crate::parser::load_xml_string_to_documents;
+        use crate::variables::{QueryVariables, VariableValue};
+
+        let xml = r#"<root><a>1</a></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        let mut vars = QueryVariables::new();
+        vars.insert("nothing", VariableValue::Null);
+        let none = QueryVariables::new();
+
+        let matches = engine.query_documents_with_variables(
+            &mut result.documents, result.doc_handle,
+            "//a[empty($variables?nothing) and empty($variables?not-configured)]",
+            Arc::new(vec![]), "test.xml", &vars, &none, None,
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+    }
+
+    /// $variables and $rule.variables are independent namespaces.
+    #[test]
+    fn test_rule_variables_separate_from_run_variables() {
+        use crate::parser::load_xml_string_to_documents;
+        use crate::variables::{QueryVariables, VariableValue};
+
+        let xml = r#"<root><a>x</a></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        let mut run_vars = QueryVariables::new();
+        run_vars.insert("v", VariableValue::String("global".into()));
+        let mut rule_vars = QueryVariables::new();
+        rule_vars.insert("v", VariableValue::String("rule".into()));
+
+        let matches = engine.query_documents_with_variables(
+            &mut result.documents, result.doc_handle,
+            "//a[$variables?v = 'global' and $rule.variables?v = 'rule']",
+            Arc::new(vec![]), "test.xml", &run_vars, &rule_vars, None,
+        ).unwrap();
+        assert_eq!(matches.len(), 1, "same key resolves per namespace");
+
+        // Without rule variables, $rule.variables is an empty map
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "//a[empty($rule.variables?v)]", Arc::new(vec![]), "test.xml",
+        ).unwrap();
+        assert_eq!(matches.len(), 1, "$rule.variables lookup is empty outside a rule");
+    }
+
+    /// $rule.id binds the current rule's id; empty sequence outside a rule.
+    #[test]
+    fn test_rule_id_binding() {
+        use crate::parser::load_xml_string_to_documents;
+        use crate::variables::QueryVariables;
+
+        let xml = r#"<root><comment>tractor:allow(my-rule)</comment><a>x</a></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+        let none = QueryVariables::new();
+
+        // The canonical escape-hatch pattern: marker derived from $rule.id
+        let matches = engine.query_documents_with_variables(
+            &mut result.documents, result.doc_handle,
+            "//a[not(//comment[contains(., concat('tractor:allow(', $rule.id, ')'))])]",
+            Arc::new(vec![]), "test.xml", &none, &none, Some("my-rule"),
+        ).unwrap();
+        assert_eq!(matches.len(), 0, "allow-marker for my-rule suppresses the match");
+
+        let matches = engine.query_documents_with_variables(
+            &mut result.documents, result.doc_handle,
+            "//a[not(//comment[contains(., concat('tractor:allow(', $rule.id, ')'))])]",
+            Arc::new(vec![]), "test.xml", &none, &none, Some("other-rule"),
+        ).unwrap();
+        assert_eq!(matches.len(), 1, "marker for a different rule does not suppress");
+
+        // Outside a rule context $rule.id is the empty sequence
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "//a[empty($rule.id)]", Arc::new(vec![]), "test.xml",
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+    }
+
+    /// The built-in variables always validate; undeclared ones never do.
+    #[test]
+    fn test_validate_builtin_variables() {
+        use crate::xpath::validate_xpath;
+
+        assert!(validate_xpath("//a[$variables?env = 'prod']").valid);
+        assert!(validate_xpath("//a[$rule.variables?max > 1]").valid);
+        assert!(validate_xpath("//a[$rule.id]").valid);
+        assert!(validate_xpath("//a[$file]").valid);
+        assert!(!validate_xpath("//a[. = $undeclared]").valid);
     }
 
     #[test]
