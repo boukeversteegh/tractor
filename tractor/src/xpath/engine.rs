@@ -3,7 +3,7 @@
 use super::{Match, XPathError};
 use super::map_normalize::{try_normalize_and_serialize_map, extract_map_value_expr};
 use super::match_result::XmlNode;
-use crate::variables::QueryVariables;
+use crate::variables::{EntryContext, EntryKind, QueryVariables};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::cell::RefCell;
@@ -214,17 +214,17 @@ thread_local! {
 
 /// Build a StaticContextBuilder that declares the built-in tractor variables:
 /// `$file` (current file path), `$variables` (config-level user variables as
-/// a map), `$rule.variables` (rule-level user variables as a map; empty
-/// outside a rule context), and `$rule.id` (the current rule's id string;
-/// empty sequence outside a rule context).
+/// a map), one `$<entry>.variables` map per operation-entry kind
+/// (`$rule.variables`, `$mapping.variables`, `$query.variables`,
+/// `$assertion.variables` — only the current entry's is populated, the rest
+/// are empty maps), and `$rule.id` (the current rule's id string; empty
+/// sequence outside a rule context).
 pub fn tractor_static_context() -> StaticContextBuilder<'static> {
     let mut scb = StaticContextBuilder::default();
-    scb.variable_names([
-        OwnedName::name("file"),
-        OwnedName::name("variables"),
-        OwnedName::name("rule.variables"),
-        OwnedName::name("rule.id"),
-    ]);
+    let mut names = vec![OwnedName::name("file"), OwnedName::name("variables")];
+    names.extend(EntryKind::ALL.iter().map(|k| OwnedName::name(k.variables_name())));
+    names.push(OwnedName::name("rule.id"));
+    scb.variable_names(names);
     scb
 }
 
@@ -265,8 +265,11 @@ fn variables_map_sequence(
     })
 }
 
-/// Build a Variables map binding the built-in tractor variables:
-/// `$file`, `$variables`, `$rule.variables`, and `$rule.id`.
+/// Build a Variables map binding the built-in tractor variables: `$file`,
+/// `$variables`, one `$<entry>.variables` map per [`EntryKind`], and
+/// `$rule.id`. The current entry's namespace gets its `variables:`; every
+/// other entry namespace is an empty map, so a lookup there yields the
+/// empty sequence — the same semantics as an undefined key.
 ///
 /// Rebuilt per query execution: xee sequences are `Rc`-based and cannot cross
 /// threads, and $file changes per file anyway. The map conversions each run
@@ -274,8 +277,7 @@ fn variables_map_sequence(
 fn tractor_variables(
     file_path: &str,
     run_variables: &QueryVariables,
-    rule_variables: &QueryVariables,
-    rule_id: Option<&str>,
+    entry: Option<&EntryContext>,
     documents: &mut Documents,
 ) -> Result<Variables, XPathError> {
     let mut vars = Variables::default();
@@ -284,15 +286,22 @@ fn tractor_variables(
         OwnedName::name("variables"),
         variables_map_sequence(run_variables, documents)?,
     );
-    vars.insert(
-        OwnedName::name("rule.variables"),
-        variables_map_sequence(rule_variables, documents)?,
-    );
+    let empty = QueryVariables::new();
+    for kind in EntryKind::ALL {
+        let entry_variables = match entry {
+            Some(e) if e.kind == kind => &*e.variables,
+            _ => &empty,
+        };
+        vars.insert(
+            OwnedName::name(kind.variables_name()),
+            variables_map_sequence(entry_variables, documents)?,
+        );
+    }
     // $rule.id: the current rule's id, or the empty sequence outside a rule
     // context (so predicates like `contains(., $rule.id)` simply don't match).
     vars.insert(
         OwnedName::name("rule.id"),
-        match rule_id {
+        match entry.and_then(|e| e.id.as_deref()) {
             Some(id) => Sequence::from(id.to_string()),
             None => Sequence::default(),
         },
@@ -311,12 +320,11 @@ fn execute_direct_query(
     source_lines: Arc<Vec<String>>,
     file_path: &str,
     run_variables: &QueryVariables,
-    rule_variables: &QueryVariables,
-    rule_id: Option<&str>,
+    entry: Option<&EntryContext>,
 ) -> Result<Vec<Match>, XPathError> {
-    // Bind $file / $variables / $rule.variables / $rule.id up front — the
-    // map bindings execute a small `parse-json` query against `documents`.
-    let vars = tractor_variables(file_path, run_variables, rule_variables, rule_id, documents)?;
+    // Bind $file / $variables / the entry namespaces / $rule.id up front —
+    // the map bindings execute a small `parse-json` query against `documents`.
+    let vars = tractor_variables(file_path, run_variables, entry, documents)?;
 
     QUERY_CACHE.with(|cache| {
         let mut cache = cache.borrow_mut();
@@ -489,16 +497,16 @@ impl XPathEngine {
     ) -> Result<Vec<Match>, XPathError> {
         execute_direct_query(
             xpath, documents, doc_handle, source_lines, file_path,
-            &QueryVariables::new(), &QueryVariables::new(), None,
+            &QueryVariables::new(), None,
         )
     }
 
     /// Execute an XPath query on Documents with user-defined variables bound
     /// in the dynamic context alongside the built-in `$file`:
-    /// `run_variables` becomes `$variables`, `rule_variables` becomes
-    /// `$rule.variables`, and `rule_id` becomes `$rule.id` (pass empty/None
-    /// outside a rule context).
-    #[allow(clippy::too_many_arguments)] // mirrors query_documents + the rule context
+    /// `run_variables` becomes `$variables`, and `entry` (the current
+    /// operation entry, if any) provides `$rule.variables` /
+    /// `$mapping.variables` / `$query.variables` / `$assertion.variables`
+    /// plus `$rule.id`.
     pub fn query_documents_with_variables(
         &self,
         documents: &mut Documents,
@@ -507,12 +515,11 @@ impl XPathEngine {
         source_lines: Arc<Vec<String>>,
         file_path: &str,
         run_variables: &QueryVariables,
-        rule_variables: &QueryVariables,
-        rule_id: Option<&str>,
+        entry: Option<&EntryContext>,
     ) -> Result<Vec<Match>, XPathError> {
         execute_direct_query(
             xpath, documents, doc_handle, source_lines, file_path,
-            run_variables, rule_variables, rule_id,
+            run_variables, entry,
         )
     }
 
@@ -919,12 +926,11 @@ mod tests {
         vars.insert("min-level", VariableValue::Int(5));
         vars.insert("env", VariableValue::String("prod".into()));
         vars.insert("strict", VariableValue::Bool(true));
-        let none = QueryVariables::new();
 
         let matches = engine.query_documents_with_variables(
             &mut result.documents, result.doc_handle,
             "//item[number(@level) > $variables?min-level]", Arc::new(vec![]), "test.xml",
-            &vars, &none, None,
+            &vars, None,
         ).unwrap();
         assert_eq!(matches.len(), 1, "only level 7 exceeds min-level=5");
         assert_eq!(matches[0].value, "b");
@@ -932,7 +938,7 @@ mod tests {
         let matches = engine.query_documents_with_variables(
             &mut result.documents, result.doc_handle,
             r#"if ($variables?strict and $variables?env = 'prod') then //item else ()"#,
-            Arc::new(vec![]), "test.xml", &vars, &none, None,
+            Arc::new(vec![]), "test.xml", &vars, None,
         ).unwrap();
         assert_eq!(matches.len(), 2, "strict/env condition should hold");
     }
@@ -951,13 +957,12 @@ mod tests {
             "allowed: [alpha, beta]\nlimits:\n  max: 1\n",
         ).unwrap();
         assert!(matches!(vars.get("allowed"), Some(VariableValue::Array(_))));
-        let none = QueryVariables::new();
 
         // Array membership test via the general comparison over the array items
         let matches = engine.query_documents_with_variables(
             &mut result.documents, result.doc_handle,
             "//name[not(. = $variables?allowed?*)]", Arc::new(vec![]), "test.xml",
-            &vars, &none, None,
+            &vars, None,
         ).unwrap();
         assert_eq!(matches.len(), 1, "only 'gamma' is outside the allowed list");
         assert_eq!(matches[0].value, "gamma");
@@ -966,7 +971,7 @@ mod tests {
         let matches = engine.query_documents_with_variables(
             &mut result.documents, result.doc_handle,
             "//name[count(//name) > $variables?limits?max]", Arc::new(vec![]), "test.xml",
-            &vars, &none, None,
+            &vars, None,
         ).unwrap();
         assert_eq!(matches.len(), 2, "count(2) > limits.max(1)");
     }
@@ -983,12 +988,11 @@ mod tests {
 
         let mut vars = QueryVariables::new();
         vars.insert("nothing", VariableValue::Null);
-        let none = QueryVariables::new();
 
         let matches = engine.query_documents_with_variables(
             &mut result.documents, result.doc_handle,
             "//a[empty($variables?nothing) and empty($variables?not-configured)]",
-            Arc::new(vec![]), "test.xml", &vars, &none, None,
+            Arc::new(vec![]), "test.xml", &vars, None,
         ).unwrap();
         assert_eq!(matches.len(), 1);
     }
@@ -1007,11 +1011,12 @@ mod tests {
         run_vars.insert("v", VariableValue::String("global".into()));
         let mut rule_vars = QueryVariables::new();
         rule_vars.insert("v", VariableValue::String("rule".into()));
+        let entry = EntryContext::rule(Arc::new(rule_vars), "r");
 
         let matches = engine.query_documents_with_variables(
             &mut result.documents, result.doc_handle,
             "//a[$variables?v = 'global' and $rule.variables?v = 'rule']",
-            Arc::new(vec![]), "test.xml", &run_vars, &rule_vars, None,
+            Arc::new(vec![]), "test.xml", &run_vars, Some(&entry),
         ).unwrap();
         assert_eq!(matches.len(), 1, "same key resolves per namespace");
 
@@ -1035,17 +1040,19 @@ mod tests {
         let none = QueryVariables::new();
 
         // The canonical escape-hatch pattern: marker derived from $rule.id
+        let my_rule = EntryContext::rule(Arc::default(), "my-rule");
         let matches = engine.query_documents_with_variables(
             &mut result.documents, result.doc_handle,
             "//a[not(//comment[contains(., concat('tractor:allow(', $rule.id, ')'))])]",
-            Arc::new(vec![]), "test.xml", &none, &none, Some("my-rule"),
+            Arc::new(vec![]), "test.xml", &none, Some(&my_rule),
         ).unwrap();
         assert_eq!(matches.len(), 0, "allow-marker for my-rule suppresses the match");
 
+        let other_rule = EntryContext::rule(Arc::default(), "other-rule");
         let matches = engine.query_documents_with_variables(
             &mut result.documents, result.doc_handle,
             "//a[not(//comment[contains(., concat('tractor:allow(', $rule.id, ')'))])]",
-            Arc::new(vec![]), "test.xml", &none, &none, Some("other-rule"),
+            Arc::new(vec![]), "test.xml", &none, Some(&other_rule),
         ).unwrap();
         assert_eq!(matches.len(), 1, "marker for a different rule does not suppress");
 
@@ -1064,9 +1071,54 @@ mod tests {
 
         assert!(validate_xpath("//a[$variables?env = 'prod']").valid);
         assert!(validate_xpath("//a[$rule.variables?max > 1]").valid);
+        assert!(validate_xpath("//a[$mapping.variables?max > 1]").valid);
+        assert!(validate_xpath("//a[$query.variables?max > 1]").valid);
+        assert!(validate_xpath("//a[$assertion.variables?max > 1]").valid);
         assert!(validate_xpath("//a[$rule.id]").valid);
         assert!(validate_xpath("//a[$file]").valid);
         assert!(!validate_xpath("//a[. = $undeclared]").valid);
+    }
+
+    /// Each entry kind binds its own namespace; the other namespaces are
+    /// empty maps regardless of which entry is current.
+    #[test]
+    fn test_entry_kind_namespaces() {
+        use crate::parser::load_xml_string_to_documents;
+        use crate::variables::{QueryVariables, VariableValue};
+
+        let xml = r#"<root><a>x</a></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+        let none = QueryVariables::new();
+
+        let mut entry_vars = QueryVariables::new();
+        entry_vars.insert("max", VariableValue::Int(3));
+        let entry_vars = Arc::new(entry_vars);
+
+        for (entry, own, others) in [
+            (
+                EntryContext::mapping(Arc::clone(&entry_vars)),
+                "$mapping.variables?max = 3",
+                "empty($rule.variables?max) and empty($query.variables?max) and empty($assertion.variables?max)",
+            ),
+            (
+                EntryContext::query(Arc::clone(&entry_vars)),
+                "$query.variables?max = 3",
+                "empty($rule.variables?max) and empty($mapping.variables?max) and empty($assertion.variables?max)",
+            ),
+            (
+                EntryContext::assertion(Arc::clone(&entry_vars)),
+                "$assertion.variables?max = 3",
+                "empty($rule.variables?max) and empty($mapping.variables?max) and empty($query.variables?max)",
+            ),
+        ] {
+            let xpath = format!("//a[{} and {}]", own, others);
+            let matches = engine.query_documents_with_variables(
+                &mut result.documents, result.doc_handle,
+                &xpath, Arc::new(vec![]), "test.xml", &none, Some(&entry),
+            ).unwrap();
+            assert_eq!(matches.len(), 1, "{:?} should bind only its own namespace", entry.kind);
+        }
     }
 
     #[test]

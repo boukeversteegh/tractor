@@ -3,7 +3,7 @@
 use tractor::report::{ReportBuilder, ReportMatch, ReportOutput};
 use tractor::tree_mode::TreeMode;
 use tractor::{parse, ParseInput, ParseOptions, Match};
-use tractor::xpath_upsert::upsert_typed;
+use tractor::xpath_upsert::upsert_typed_with_variables;
 
 use crate::input::filter::Filters;
 use crate::input::source::SourceDisposition;
@@ -84,6 +84,9 @@ pub struct SetMapping {
     pub xpath: String,
     pub value: String,
     pub value_kind: Option<String>,
+    /// Mapping-level variables, bound as the `$mapping.variables` map in
+    /// this mapping's xpath (e.g. `//port[. = $mapping.variables?from]`).
+    pub variables: std::sync::Arc<tractor::QueryVariables>,
 }
 
 /// Write policy for set operations.
@@ -107,11 +110,28 @@ pub enum SetReportMode {
 
 pub(crate) fn execute_set(
     op: &SetOperationPlan,
-    _ctx: &ExecCtx<'_>,
+    ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if op.mappings.is_empty() {
         return Ok(());
+    }
+
+    // Run-level variables (bound as $variables); each mapping's own set is
+    // bound as $mapping.variables per query.
+    let variables = ctx.query_variables();
+
+    // Advisory: warn about variable lookups that silently yield the empty
+    // sequence (unknown keys, namespaces of other entry kinds).
+    for (i, mapping) in op.mappings.iter().enumerate() {
+        report.add_all(crate::matcher::undefined_variable_key_diagnostics(
+            "set",
+            &format!("mapping {}", i + 1),
+            &mapping.xpath,
+            &variables,
+            Some(tractor::EntryKind::Mapping),
+            &mapping.variables,
+        ));
     }
 
     for source in &op.sources {
@@ -151,6 +171,7 @@ pub(crate) fn execute_set(
             op,
             effective_write_mode,
             &op.filters,
+            &variables,
         )?;
 
         if outcome.changed
@@ -188,6 +209,7 @@ fn execute_set_target(
     op: &SetOperationPlan,
     effective_write_mode: SetWriteMode,
     filters: &Filters,
+    variables: &std::sync::Arc<tractor::QueryVariables>,
 ) -> Result<SetTargetOutcome, Box<dyn std::error::Error>> {
     let file_label = source.path_str();
     let lang = source.language.as_str();
@@ -197,12 +219,12 @@ fn execute_set_target(
 
     for mapping in &op.mappings {
         let before_matches = if matches!(op.report_mode, SetReportMode::PerMatch) {
-            query_set_matches(&current, file_label, lang, mapping, op, filters)?
+            query_set_matches(&current, file_label, lang, mapping, op, filters, variables)?
         } else {
             Vec::new()
         };
 
-        let result = apply_set_mapping(&current, file_label, lang, mapping, op, filters, &before_matches)?;
+        let result = apply_set_mapping(&current, file_label, lang, mapping, op, filters, &before_matches, variables)?;
         let was_modified = result.source != current;
         changed |= was_modified;
 
@@ -210,7 +232,7 @@ fn execute_set_target(
             let mut report_matches = if !result.matches.is_empty() {
                 result.matches
             } else if was_modified {
-                query_set_matches(&result.source, file_label, lang, mapping, op, filters)?
+                query_set_matches(&result.source, file_label, lang, mapping, op, filters, variables)?
             } else {
                 before_matches
             };
@@ -283,6 +305,7 @@ struct SetMappingResult {
     matches: Vec<Match>,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn apply_set_mapping(
     source: &str,
     file_label: &str,
@@ -291,14 +314,18 @@ fn apply_set_mapping(
     op: &SetOperationPlan,
     filters: &Filters,
     before_matches: &[Match],
+    variables: &std::sync::Arc<tractor::QueryVariables>,
 ) -> Result<SetMappingResult, Box<dyn std::error::Error>> {
-    match upsert_typed(
+    let entry = tractor::EntryContext::mapping(std::sync::Arc::clone(&mapping.variables));
+    match upsert_typed_with_variables(
         source,
         lang,
         &mapping.xpath,
         &mapping.value,
         op.limit,
         mapping.value_kind.as_deref(),
+        variables,
+        Some(&entry),
     ) {
         Ok(result) => Ok(SetMappingResult {
             source: result.source,
@@ -316,7 +343,7 @@ fn apply_set_mapping(
             }
 
             let fallback_matches = if before_matches.is_empty() {
-                query_set_matches(source, file_label, lang, mapping, op, filters)?
+                query_set_matches(source, file_label, lang, mapping, op, filters, variables)?
             } else {
                 before_matches.to_vec()
             };
@@ -338,6 +365,7 @@ fn apply_set_mapping(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn query_set_matches(
     source: &str,
     file_label: &str,
@@ -345,6 +373,7 @@ fn query_set_matches(
     mapping: &SetMapping,
     op: &SetOperationPlan,
     filters: &Filters,
+    variables: &std::sync::Arc<tractor::QueryVariables>,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut result = parse(
         ParseInput::Inline {
@@ -358,6 +387,8 @@ fn query_set_matches(
             parse_depth: None,
         },
     )?;
+    result.variables = std::sync::Arc::clone(variables);
+    result.entry = Some(tractor::EntryContext::mapping(std::sync::Arc::clone(&mapping.variables)));
     let mut matches = result.query(&mapping.xpath)?;
     if !filters.is_empty() {
         matches.retain(|m| filters.include(m));
@@ -405,6 +436,7 @@ mod tests {
             xpath: xpath.into(),
             value: value.into(),
             value_kind: Some("string".into()),
+            variables: Default::default(),
         }
     }
 

@@ -400,13 +400,12 @@ pub struct XeeParseResult {
     /// query on this result. Defaults to empty; callers that run
     /// config-declared variables (the executor) assign this after parsing.
     pub variables: std::sync::Arc<crate::variables::QueryVariables>,
-    /// Rule-level user variables, bound as the `$rule.variables` map.
-    /// Defaults to empty; the check executor reassigns this per rule while
-    /// iterating a parsed file's applicable rules.
-    pub rule_variables: std::sync::Arc<crate::variables::QueryVariables>,
-    /// The current rule's id, bound as `$rule.id`. `None` (the default)
-    /// binds the empty sequence; the check executor sets it per rule.
-    pub rule_id: Option<String>,
+    /// The current operation entry (rule / mapping / query / assertion),
+    /// providing its `variables:` under the matching `$<entry>.variables`
+    /// namespace and (for rules) `$rule.id`. `None` (the default) binds
+    /// empty maps everywhere; executors reassign it per entry while
+    /// iterating a parsed file's entries.
+    pub entry: Option<crate::variables::EntryContext>,
 }
 
 impl XeeParseResult {
@@ -414,9 +413,8 @@ impl XeeParseResult {
     ///
     /// This is a convenience method that creates an XPathEngine and calls
     /// `query_documents_with_variables`, avoiding the need to destructure
-    /// the parse result. `$variables` comes from `self.variables`,
-    /// `$rule.variables` from `self.rule_variables`, `$rule.id` from
-    /// `self.rule_id`.
+    /// the parse result. `$variables` comes from `self.variables`; the
+    /// entry namespaces and `$rule.id` come from `self.entry`.
     pub fn query(&mut self, xpath: &str) -> Result<Vec<crate::xpath::Match>, crate::xpath::XPathError> {
         let engine = crate::xpath::XPathEngine::new();
         engine.query_documents_with_variables(
@@ -426,8 +424,7 @@ impl XeeParseResult {
             self.source_lines.clone(),
             &self.file_path,
             &self.variables,
-            &self.rule_variables,
-            self.rule_id.as_deref(),
+            self.entry.as_ref(),
         )
     }
 }
@@ -532,8 +529,7 @@ pub fn parse_string_to_xee_with_options(
         file_path,
         language: lang.to_string(),
         variables: Default::default(),
-        rule_variables: Default::default(),
-        rule_id: None,
+        entry: None,
     })
 }
 
@@ -584,8 +580,7 @@ pub fn load_xml_string_to_documents(xml: &str, file_path: String) -> Result<XeeP
         file_path,
         language: "xml".to_string(),
         variables: Default::default(),
-        rule_variables: Default::default(),
-        rule_id: None,
+        entry: None,
     })
 }
 

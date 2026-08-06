@@ -21,6 +21,7 @@
 use crate::parser::{parse, ParseInput, ParseOptions, XeeParseResult};
 use crate::render::{self, RenderOptions};
 use crate::tree_mode::TreeMode;
+use crate::variables::{EntryContext, QueryVariables};
 use crate::xpath::xot_node_to_xml_node;
 pub use crate::xpath::Match;
 use crate::xot_transform::helpers::*;
@@ -76,6 +77,21 @@ pub fn update_only(
     value: &str,
     limit: Option<usize>,
 ) -> Result<UpsertResult, UpsertError> {
+    update_only_with_variables(source, lang, xpath, value, limit, &Default::default(), None)
+}
+
+/// Like [`update_only`], but with user-defined variables bound in the
+/// query's dynamic context: `run_variables` becomes `$variables` and `entry`
+/// (if any) provides the `$<entry>.variables` namespace.
+pub fn update_only_with_variables(
+    source: &str,
+    lang: &str,
+    xpath: &str,
+    value: &str,
+    limit: Option<usize>,
+    run_variables: &std::sync::Arc<QueryVariables>,
+    entry: Option<&EntryContext>,
+) -> Result<UpsertResult, UpsertError> {
     // Verify the language has a renderer that supports data mode
     let test_render = render::render(
         &crate::xpath::XmlNode::Element {
@@ -105,6 +121,8 @@ pub fn update_only(
         },
     )
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
+    result.variables = std::sync::Arc::clone(run_variables);
+    result.entry = entry.cloned();
 
     // Query with XPath
     let existing = result.query(xpath)
@@ -162,6 +180,23 @@ pub fn upsert_typed(
     limit: Option<usize>,
     value_kind: Option<&str>,
 ) -> Result<UpsertResult, UpsertError> {
+    upsert_typed_with_variables(source, lang, xpath, value, limit, value_kind, &Default::default(), None)
+}
+
+/// Like [`upsert_typed`], but with user-defined variables bound in the
+/// query's dynamic context: `run_variables` becomes `$variables` and `entry`
+/// (if any) provides the `$<entry>.variables` namespace.
+#[allow(clippy::too_many_arguments)]
+pub fn upsert_typed_with_variables(
+    source: &str,
+    lang: &str,
+    xpath: &str,
+    value: &str,
+    limit: Option<usize>,
+    value_kind: Option<&str>,
+    run_variables: &std::sync::Arc<QueryVariables>,
+    entry: Option<&EntryContext>,
+) -> Result<UpsertResult, UpsertError> {
     // Verify the language has a renderer that supports data mode
     let test_render = render::render(
         &crate::xpath::XmlNode::Element {
@@ -191,6 +226,8 @@ pub fn upsert_typed(
         },
     )
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
+    result.variables = std::sync::Arc::clone(run_variables);
+    result.entry = entry.cloned();
 
     // Query with XPath to determine update vs insert
     let existing = result.query(xpath)

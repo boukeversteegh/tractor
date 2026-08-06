@@ -131,10 +131,12 @@ pub(crate) fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
 /// dispatches on content kind so the caller doesn't branch.
 ///
 /// `variables` are the run's user-defined variables, bound into each query's
-/// dynamic context alongside the built-in `$file`.
+/// dynamic context alongside the built-in `$file`. Each query carries its
+/// own optional entry context (e.g. a query entry's `variables:` bound as
+/// `$query.variables`), applied per expression.
 pub(crate) fn query_files_multi(
     sources: &[Source],
-    xpaths: &[&str],
+    queries: &[(&str, Option<tractor::EntryContext>)],
     lang: Option<&str>,
     tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
@@ -160,7 +162,8 @@ pub(crate) fn query_files_multi(
             result.variables = std::sync::Arc::clone(variables);
 
             let mut file_matches = Vec::new();
-            for xpath_expr in xpaths {
+            for (xpath_expr, entry) in queries {
+                result.entry = entry.clone();
                 match result.query(xpath_expr) {
                     Ok(matches) => file_matches.extend(matches),
                     Err(e) => {
@@ -540,6 +543,7 @@ mod tests {
                     xpath: "//host".into(),
                     value: "new-host".into(),
                     value_kind: Some("string".into()),
+                    variables: Default::default(),
                 }],
                 tree_mode: None,
                 limit: None,

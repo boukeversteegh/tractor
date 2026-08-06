@@ -80,9 +80,11 @@ pub(crate) fn execute_check(
     // files) — but a typo'd key silently disables a rule, so surface it.
     for rule in &op.compiled_rules {
         report.add_all(crate::matcher::undefined_variable_key_diagnostics(
+            "check",
             &rule.id,
-            &rule.xpath,
+            rule.xpath.as_str(),
             &variables,
+            Some(tractor::EntryKind::Rule),
             &rule.variables,
         ));
     }
@@ -172,8 +174,10 @@ fn validate_rule_examples(
                 },
             )?;
             result.variables = std::sync::Arc::clone(variables);
-            result.rule_variables = std::sync::Arc::clone(&rule.variables);
-            result.rule_id = Some(rule.id.clone());
+            result.entry = Some(tractor::EntryContext::rule(
+                std::sync::Arc::clone(&rule.variables),
+                rule.id.clone(),
+            ));
             let matches = result.query(rule.xpath.as_str())?;
             if !super::check_expectation("none", matches.len())? {
                 report.add(example_failure_match(
@@ -201,8 +205,10 @@ fn validate_rule_examples(
                 },
             )?;
             result.variables = std::sync::Arc::clone(variables);
-            result.rule_variables = std::sync::Arc::clone(&rule.variables);
-            result.rule_id = Some(rule.id.clone());
+            result.entry = Some(tractor::EntryContext::rule(
+                std::sync::Arc::clone(&rule.variables),
+                rule.id.clone(),
+            ));
             let matches = result.query(rule.xpath.as_str())?;
             if !super::check_expectation("some", matches.len())? {
                 report.add(example_failure_match(

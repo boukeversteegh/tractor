@@ -83,6 +83,9 @@ pub struct TestAssertion {
     pub xpath: NormalizedXpath,
     /// Expected match count: "none", "some", or a number.
     pub expect: String,
+    /// Assertion-level variables, bound as the `$assertion.variables` map
+    /// in this assertion (e.g. `count(//user) <= $assertion.variables?max`).
+    pub variables: std::sync::Arc<tractor::QueryVariables>,
 }
 
 // ---------------------------------------------------------------------------
@@ -94,6 +97,21 @@ pub(crate) fn execute_test(
     ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let variables = ctx.query_variables();
+
+    // Advisory: warn about variable lookups that silently yield the empty
+    // sequence (unknown keys, namespaces of other entry kinds).
+    for (i, assertion) in op.assertions.iter().enumerate() {
+        report.add_all(crate::matcher::undefined_variable_key_diagnostics(
+            "test",
+            &format!("assertion {}", i + 1),
+            assertion.xpath.as_str(),
+            &variables,
+            Some(tractor::EntryKind::Assertion),
+            &assertion.variables,
+        ));
+    }
+
     if op.sources.is_empty() {
         for assertion in &op.assertions {
             if !check_expectation(&assertion.expect, 0)? {
@@ -105,10 +123,11 @@ pub(crate) fn execute_test(
 
     // Query each assertion's xpath individually to get per-assertion counts.
     for assertion in &op.assertions {
+        let entry = tractor::EntryContext::assertion(std::sync::Arc::clone(&assertion.variables));
         let matches = query_files_multi(
-            &op.sources, &[assertion.xpath.as_str()], op.language.as_deref(),
+            &op.sources, &[(assertion.xpath.as_str(), Some(entry))], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            op.limit, ctx.verbose, &op.filters, &ctx.query_variables(),
+            op.limit, ctx.verbose, &op.filters, &variables,
         )?;
         if !check_expectation(&assertion.expect, matches.len())? {
             report.fail();

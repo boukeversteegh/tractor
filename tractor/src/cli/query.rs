@@ -104,7 +104,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let op = Operation::Query(QueryOperation {
-        queries: vec![QueryExpr { xpath: xpath_expr.clone() }],
+        queries: vec![QueryExpr { xpath: xpath_expr.clone(), variables: Default::default() }],
         tree_mode: ctx.tree_mode,
         language: op_language,
         limit: ctx.limit,

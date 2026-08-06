@@ -8,7 +8,7 @@ use tractor::{
     parse, ParseInput, ParseOptions,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
     rule::CompiledRule,
-    variables::QueryVariables,
+    variables::{EntryKind, QueryVariables},
     xpath::validate_xpath,
 };
 use crate::input::filter::Filters;
@@ -64,68 +64,114 @@ pub fn validate_xpath_diagnostic(xpath_expr: &NormalizedXpath, command: &str) ->
     })
 }
 
-/// Advisory check: warn about literal `$variables?key` / `$rule.variables?key`
-/// lookups whose key is not defined in the corresponding variable set.
+/// Advisory check: warn about variable usage that will silently yield the
+/// empty sequence — a `$variables?key` / `$<entry>.variables?key` lookup on
+/// an undefined key, or a reference to an entry namespace that is not bound
+/// in the current operation (e.g. `$rule.variables` inside a set mapping).
 ///
 /// A missing key is legal XPath — the lookup yields the empty sequence, and
-/// rules may rely on that (optional flags, `(lookup, default)[1]` idioms) —
+/// entries may rely on that (optional flags, `(lookup, default)[1]` idioms) —
 /// so this produces `Severity::Warning` diagnostics that never fail the run.
 /// Only literal keys are checked; dynamic lookups (`?($expr)`, `?*`) are
 /// skipped. Nested keys (`$variables?limits?max`) are checked at the top
 /// level only.
+///
+/// `label` names the entry in messages (the rule id, or e.g. "mapping 1");
+/// `entry_kind` is the current entry's kind (`None` outside any entry, e.g.
+/// CLI update) and `entry_variables` its `variables:`.
 pub fn undefined_variable_key_diagnostics(
-    rule_id: &str,
-    xpath_expr: &NormalizedXpath,
+    command: &str,
+    label: &str,
+    xpath: &str,
     run_variables: &QueryVariables,
-    rule_variables: &QueryVariables,
+    entry_kind: Option<EntryKind>,
+    entry_variables: &QueryVariables,
 ) -> Vec<ReportMatch> {
     use once_cell::sync::Lazy;
     use regex::Regex;
 
-    // NCName-ish key after the lookup operator. `$rule\.variables` is matched
-    // first so the plain `\$variables` pattern can't fire inside it (the
-    // preceding char there is `.`, not `$`, so it can't anyway).
+    // NCName-ish key after the lookup operator. The plain `\$variables`
+    // pattern can't fire inside `$rule.variables` etc. — the character
+    // before `variables` there is `.`, not `$`.
     static RUN_LOOKUP: Lazy<Regex> =
         Lazy::new(|| Regex::new(r"\$variables\s*\?\s*([A-Za-z_][A-Za-z0-9_.\-]*)").unwrap());
-    static RULE_LOOKUP: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"\$rule\.variables\s*\?\s*([A-Za-z_][A-Za-z0-9_.\-]*)").unwrap());
+    // Per entry kind: a key-lookup regex and a bare-reference regex.
+    static ENTRY_PATTERNS: Lazy<Vec<(EntryKind, Regex, Regex)>> = Lazy::new(|| {
+        EntryKind::ALL
+            .iter()
+            .map(|&kind| {
+                let name = regex::escape(kind.variables_name());
+                (
+                    kind,
+                    Regex::new(&format!(r"\${}\s*\?\s*([A-Za-z_][A-Za-z0-9_.\-]*)", name)).unwrap(),
+                    Regex::new(&format!(r"\${}", name)).unwrap(),
+                )
+            })
+            .collect()
+    });
+    static RULE_ID: Lazy<Regex> = Lazy::new(|| Regex::new(r"\$rule\.id").unwrap());
 
-    let xpath = xpath_expr.as_str();
     let mut diagnostics = Vec::new();
+    let mut warn = |start: usize, end: usize, reason: String| {
+        diagnostics.push(ReportMatch {
+            file: String::new(),
+            line: 1,
+            column: start as u32 + 1,
+            end_line: 1,
+            end_column: end as u32 + 1,
+            command: command.to_string(),
+            tree: None,
+            value: None,
+            source: Some(xpath.to_string()),
+            lines: Some(vec![xpath.to_string()]),
+            reason: Some(reason),
+            severity: Some(Severity::Warning),
+            message: None,
+            origin: Some(DiagnosticOrigin::Xpath),
+            rule_id: (entry_kind == Some(EntryKind::Rule)).then(|| label.to_string()),
+            status: None,
+            output: None,
+        });
+    };
 
-    let mut check = |re: &Regex, defined: &QueryVariables, scope: &str| {
+    let check_keys = |re: &Regex, defined: &QueryVariables, scope: &str, warn: &mut dyn FnMut(usize, usize, String)| {
         for caps in re.captures_iter(xpath) {
             let key = caps.get(1).unwrap();
-            if defined.get(key.as_str()).is_some() {
-                continue;
-            }
-            diagnostics.push(ReportMatch {
-                file: String::new(),
-                line: 1,
-                column: key.start() as u32 + 1,
-                end_line: 1,
-                end_column: key.end() as u32 + 1,
-                command: "check".to_string(),
-                tree: None,
-                value: None,
-                source: Some(xpath.to_string()),
-                lines: Some(vec![xpath.to_string()]),
-                reason: Some(format!(
+            if defined.get(key.as_str()).is_none() {
+                warn(key.start(), key.end(), format!(
                     "[{}] unknown variable key '{}': not defined {} (the lookup yields the empty sequence)",
-                    rule_id, key.as_str(), scope,
-                )),
-                severity: Some(Severity::Warning),
-                message: None,
-                origin: Some(DiagnosticOrigin::Xpath),
-                rule_id: Some(rule_id.to_string()),
-                status: None,
-                output: None,
-            });
+                    label, key.as_str(), scope,
+                ));
+            }
         }
     };
 
-    check(&RUN_LOOKUP, run_variables, "under the config's `variables:`");
-    check(&RULE_LOOKUP, rule_variables, "in this rule's `variables:`");
+    check_keys(&RUN_LOOKUP, run_variables, "under the config's `variables:`", &mut warn);
+
+    for (kind, lookup, bare) in ENTRY_PATTERNS.iter() {
+        if Some(*kind) == entry_kind {
+            let scope = format!("in this {}'s `variables:`", kind.label());
+            check_keys(lookup, entry_variables, &scope, &mut warn);
+        } else {
+            // A namespace belonging to a different entry kind is always an
+            // empty map here — flag every reference, bare or lookup.
+            for m in bare.find_iter(xpath) {
+                warn(m.start(), m.end(), format!(
+                    "[{}] ${} is only bound in {}; here it is an empty map",
+                    label, kind.variables_name(), kind.config_home(),
+                ));
+            }
+        }
+    }
+
+    if entry_kind != Some(EntryKind::Rule) {
+        for m in RULE_ID.find_iter(xpath) {
+            warn(m.start(), m.end(), format!(
+                "[{}] $rule.id is only bound in check rules; here it is the empty sequence",
+                label,
+            ));
+        }
+    }
 
     diagnostics
 }
@@ -325,8 +371,10 @@ pub fn run_rules(
             // each rule's own variables as $rule.variables and its id as
             // $rule.id.
             for rule_idx in applicable {
-                result.rule_variables = std::sync::Arc::clone(&rules[rule_idx].variables);
-                result.rule_id = Some(rules[rule_idx].id.clone());
+                result.entry = Some(tractor::EntryContext::rule(
+                    std::sync::Arc::clone(&rules[rule_idx].variables),
+                    rules[rule_idx].id.clone(),
+                ));
                 match result.query(rules[rule_idx].xpath.as_str()) {
                     Ok(matches) => {
                         for m in matches {
@@ -500,15 +548,17 @@ mod tests {
 
         // Defined keys, wildcard expansion, and nested lookups: no warnings.
         // (`limits?max` is checked at the top level only.)
-        let xpath = NormalizedXpath::new(
-            "//a[$variables?env = 'p' and $variables?limits?max > 1 \
-             and (some $p in $rule.variables?prefixes?* satisfies starts-with(., $p))]",
-        );
-        assert!(undefined_variable_key_diagnostics("r", &xpath, &run_vars, &rule_vars).is_empty());
+        let xpath = "//a[$variables?env = 'p' and $variables?limits?max > 1 \
+             and (some $p in $rule.variables?prefixes?* satisfies starts-with(., $p))]";
+        assert!(undefined_variable_key_diagnostics(
+            "check", "r", xpath, &run_vars, Some(EntryKind::Rule), &rule_vars,
+        ).is_empty());
 
         // Undefined keys in both namespaces: one warning each, correct scope.
-        let xpath = NormalizedXpath::new("//a[$variables?evn or $rule.variables?prefix]");
-        let diags = undefined_variable_key_diagnostics("r", &xpath, &run_vars, &rule_vars);
+        let xpath = "//a[$variables?evn or $rule.variables?prefix]";
+        let diags = undefined_variable_key_diagnostics(
+            "check", "r", xpath, &run_vars, Some(EntryKind::Rule), &rule_vars,
+        );
         assert_eq!(diags.len(), 2);
         assert!(diags[0].reason.as_deref().unwrap().contains("'evn'"));
         assert!(diags[0].reason.as_deref().unwrap().contains("config's"));
@@ -517,8 +567,45 @@ mod tests {
         assert!(diags.iter().all(|d| d.severity == Some(Severity::Warning)));
 
         // Dynamic lookups are skipped
-        let xpath = NormalizedXpath::new("//a[$variables?($name) or $variables?*]");
-        assert!(undefined_variable_key_diagnostics("r", &xpath, &run_vars, &rule_vars).is_empty());
+        let xpath = "//a[$variables?($name) or $variables?*]";
+        assert!(undefined_variable_key_diagnostics(
+            "check", "r", xpath, &run_vars, Some(EntryKind::Rule), &rule_vars,
+        ).is_empty());
+    }
+
+    #[test]
+    fn cross_namespace_diagnostics() {
+        use tractor::variables::{QueryVariables, VariableValue};
+
+        let run_vars = QueryVariables::new();
+        let mut mapping_vars = QueryVariables::new();
+        mapping_vars.insert("from", VariableValue::Int(8080));
+
+        // The current entry's namespace checks keys; a defined key is fine.
+        let xpath = "//port[. = $mapping.variables?from]";
+        assert!(undefined_variable_key_diagnostics(
+            "set", "mapping 1", xpath, &run_vars, Some(EntryKind::Mapping), &mapping_vars,
+        ).is_empty());
+
+        // A different entry's namespace is an empty map here: warn on any
+        // reference, and $rule.id is likewise unbound outside check rules.
+        let xpath = "//port[. = $rule.variables?from and contains(., $rule.id)]";
+        let diags = undefined_variable_key_diagnostics(
+            "set", "mapping 1", xpath, &run_vars, Some(EntryKind::Mapping), &mapping_vars,
+        );
+        assert_eq!(diags.len(), 2, "{:?}", diags.iter().map(|d| d.reason.clone()).collect::<Vec<_>>());
+        assert!(diags[0].reason.as_deref().unwrap().contains("only bound in check rules"));
+        assert!(diags[1].reason.as_deref().unwrap().contains("$rule.id is only bound in check rules"));
+        assert!(diags.iter().all(|d| d.severity == Some(Severity::Warning)));
+        assert!(diags.iter().all(|d| d.rule_id.is_none()), "non-rule entries carry no rule_id");
+
+        // Outside any entry (e.g. CLI update), every entry namespace warns.
+        let xpath = "//a[$assertion.variables?x]";
+        let diags = undefined_variable_key_diagnostics(
+            "update", "update", xpath, &run_vars, None, &QueryVariables::new(),
+        );
+        assert_eq!(diags.len(), 1);
+        assert!(diags[0].reason.as_deref().unwrap().contains("only bound in test assertions"));
     }
 
     #[test]

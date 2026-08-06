@@ -138,8 +138,11 @@ example.js:3:3: error: getAll methods in repositories should use orderBy
       <h2>Variables</h2>
       <p>
         Declare values once and reference them from any query. Root-level <code>variables</code> are
-        bound as the <code>$variables</code> map in every operation's XPath context; a rule's own{' '}
-        <code>variables</code> are bound as <code>$rule.variables</code>. Both sit alongside the
+        bound as the <code>$variables</code> map in every operation's XPath context. Each operation
+        entry can also declare its own <code>variables</code>, bound under a namespace that mirrors
+        the config key the entry lives under: <code>$rule.variables</code> for check rules,{' '}
+        <code>$mapping.variables</code> for set mappings, <code>$query.variables</code> for query
+        entries, and <code>$assertion.variables</code> for test assertions. All sit alongside the
         built-in <code>$file</code> (the current file path).
       </p>
       <CodeBlock
@@ -169,9 +172,34 @@ check:
         with <code>?*</code> (<code>$variables?banned?*</code>), and nested mappings chain lookups
         (<code>$variables?limits?max</code>). Numbers compare numerically; a lookup on a key that
         isn't configured yields the empty sequence, so predicates simply don't match. Because a
-        typo'd key would silently disable a rule, <code>tractor check</code> emits an advisory
-        warning (never a failure) for literal lookups on keys the config doesn't define.
+        typo'd key would silently disable a rule, every operation emits an advisory warning (never
+        a failure) for literal lookups on keys the config doesn't define — and for references to an
+        entry namespace that isn't bound in the current operation (e.g.{' '}
+        <code>$rule.variables</code> inside a set mapping, which is an empty map there).
       </p>
+      <p>
+        The same pattern works in every operation. A set mapping can select its targets through its
+        own values, and a test assertion can parameterize its threshold:
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`set:
+  files: ["config/*.json"]
+  mappings:
+    - xpath: "//port[. = $mapping.variables?from]"
+      value: "3000"
+      variables:
+        from: 8080
+
+test:
+  files: ["src/**/*.js"]
+  assertions:
+    - xpath: "//function[count(params/param) > $assertion.variables?max]"
+      expect: none
+      variables:
+        max: 4`}
+      />
       <p>
         Rules also get <code>$rule.id</code> — the current rule's <code>id</code> string. This makes
         per-rule escape hatches a single shared pattern instead of hand-written per rule:

@@ -1,12 +1,15 @@
 //! User-defined variables for the XPath dynamic context.
 //!
 //! Config files can declare named values that are bound into every query of
-//! the run as two well-known map-valued XPath variables, alongside the
-//! built-in `$file`:
+//! the run as well-known map-valued XPath variables, alongside the built-in
+//! `$file`:
 //!
 //! - `$variables` — the config root's `variables:` mapping
-//! - `$rule.variables` — the current check rule's `variables:` mapping
-//!   (an empty map outside a rule context)
+//! - `$rule.variables` / `$mapping.variables` / `$query.variables` /
+//!   `$assertion.variables` — the current operation entry's `variables:`
+//!   mapping, named after the config key the entry lives under (`rules:`,
+//!   `mappings:`, `queries:`, `assertions:`). Only the namespace matching
+//!   the current entry is populated; the others are empty maps.
 //!
 //! ```yaml
 //! variables:
@@ -152,6 +155,93 @@ impl QueryVariables {
 impl FromIterator<(String, VariableValue)> for QueryVariables {
     fn from_iter<I: IntoIterator<Item = (String, VariableValue)>>(iter: I) -> Self {
         Self(iter.into_iter().collect())
+    }
+}
+
+/// The kind of operation entry a query runs under. Each kind owns one XPath
+/// namespace for its `variables:` — named after the config key the entry
+/// lives under, so the XPath name mirrors the YAML right above it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EntryKind {
+    /// A check rule (`check: rules:`) — `$rule.variables`, `$rule.id`.
+    Rule,
+    /// A set mapping (`set: mappings:`) — `$mapping.variables`.
+    Mapping,
+    /// A query expression (`query: queries:`) — `$query.variables`.
+    Query,
+    /// A test assertion (`test: assertions:`) — `$assertion.variables`.
+    Assertion,
+}
+
+impl EntryKind {
+    /// Every kind, in declaration order. The engine binds one map per kind
+    /// on every query so the static context can stay constant.
+    pub const ALL: [EntryKind; 4] = [
+        EntryKind::Rule,
+        EntryKind::Mapping,
+        EntryKind::Query,
+        EntryKind::Assertion,
+    ];
+
+    /// The XPath variable name this kind's `variables:` bind to.
+    pub fn variables_name(self) -> &'static str {
+        match self {
+            EntryKind::Rule => "rule.variables",
+            EntryKind::Mapping => "mapping.variables",
+            EntryKind::Query => "query.variables",
+            EntryKind::Assertion => "assertion.variables",
+        }
+    }
+
+    /// The entry noun as it appears in config and diagnostics.
+    pub fn label(self) -> &'static str {
+        match self {
+            EntryKind::Rule => "rule",
+            EntryKind::Mapping => "mapping",
+            EntryKind::Query => "query",
+            EntryKind::Assertion => "assertion",
+        }
+    }
+
+    /// Where entries of this kind live, for "only bound in …" diagnostics.
+    pub fn config_home(self) -> &'static str {
+        match self {
+            EntryKind::Rule => "check rules",
+            EntryKind::Mapping => "set mappings",
+            EntryKind::Query => "query entries",
+            EntryKind::Assertion => "test assertions",
+        }
+    }
+}
+
+/// The operation entry a query is executing for: which kind it is, its
+/// `variables:`, and (for rules) its id. Binding is all-or-nothing — the
+/// pairing of kind, variables, and id is structural, not a set of loose
+/// fields kept in sync by convention.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EntryContext {
+    pub kind: EntryKind,
+    /// The entry's own `variables:`, bound under `kind.variables_name()`.
+    pub variables: std::sync::Arc<QueryVariables>,
+    /// The entry's id, bound as `$rule.id`. Only check rules have ids.
+    pub id: Option<String>,
+}
+
+impl EntryContext {
+    pub fn rule(variables: std::sync::Arc<QueryVariables>, id: impl Into<String>) -> Self {
+        Self { kind: EntryKind::Rule, variables, id: Some(id.into()) }
+    }
+
+    pub fn mapping(variables: std::sync::Arc<QueryVariables>) -> Self {
+        Self { kind: EntryKind::Mapping, variables, id: None }
+    }
+
+    pub fn query(variables: std::sync::Arc<QueryVariables>) -> Self {
+        Self { kind: EntryKind::Query, variables, id: None }
+    }
+
+    pub fn assertion(variables: std::sync::Arc<QueryVariables>) -> Self {
+        Self { kind: EntryKind::Assertion, variables, id: None }
     }
 }
 

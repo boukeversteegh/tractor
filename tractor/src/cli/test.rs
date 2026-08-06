@@ -103,6 +103,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         assertions: vec![TestAssertion {
             xpath: xpath_expr.clone(),
             expect: expect.clone(),
+            variables: Default::default(),
         }],
         tree_mode: ctx.tree_mode,
         language: op_language,

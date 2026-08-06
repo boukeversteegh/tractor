@@ -225,6 +225,10 @@ struct SetMappingConfig {
     value: String,
     #[serde(default, rename = "value-kind", alias = "kind", alias = "type")]
     value_kind: Option<String>,
+    /// Mapping-level variables, bound as the `$mapping.variables` map in
+    /// this mapping's xpath.
+    #[serde(default)]
+    variables: QueryVariables,
 }
 
 #[derive(Deserialize, Debug)]
@@ -252,6 +256,10 @@ struct QueryConfig {
 #[serde(deny_unknown_fields)]
 struct QueryExprConfig {
     xpath: NormalizedXpath,
+    /// Query-level variables, bound as the `$query.variables` map in this
+    /// expression.
+    #[serde(default)]
+    variables: QueryVariables,
 }
 
 #[derive(Deserialize, Debug)]
@@ -281,6 +289,10 @@ struct TestAssertionConfig {
     xpath: NormalizedXpath,
     #[serde(default = "default_expect")]
     expect: String,
+    /// Assertion-level variables, bound as the `$assertion.variables` map
+    /// in this assertion.
+    #[serde(default)]
+    variables: QueryVariables,
 }
 
 fn default_expect() -> String {
@@ -545,6 +557,7 @@ fn normalize_set_expression(
             xpath: selector_xpath(expr),
             value: value.to_string(),
             value_kind: Some("string".to_string()),
+            variables: Default::default(),
         }]);
     }
 
@@ -552,6 +565,7 @@ fn normalize_set_expression(
         xpath: op.xpath,
         value: op.value.text().to_string(),
         value_kind: Some(op.value.kind().to_string()),
+        variables: Default::default(),
     }).collect())
 }
 
@@ -563,6 +577,7 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, 
             xpath: m.xpath,
             value: m.value,
             value_kind: m.value_kind,
+            variables: std::sync::Arc::new(m.variables),
         }
     }).collect::<Vec<_>>();
 
@@ -628,7 +643,10 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let queries = config.queries.into_iter().map(|q| {
-        QueryExpr { xpath: q.xpath }
+        QueryExpr {
+            xpath: q.xpath,
+            variables: std::sync::Arc::new(q.variables),
+        }
     }).collect();
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
@@ -661,6 +679,7 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation
         TestAssertion {
             xpath: a.xpath,
             expect: a.expect,
+            variables: std::sync::Arc::new(a.variables),
         }
     }).collect();
 
@@ -1499,6 +1518,37 @@ check:
         assert!(c.rules[1].variables.is_empty());
         // Root-level variables stay at the config level, not copied per rule
         assert_eq!(loaded.variables.get("env"), Some(&VariableValue::String("production".into())));
+    }
+
+    #[test]
+    fn parse_yaml_entry_level_variables() {
+        use tractor::variables::VariableValue;
+        let yaml = r#"
+set:
+  mappings:
+    - xpath: "//port[. = $mapping.variables?from]"
+      value: "3000"
+      variables:
+        from: 8080
+query:
+  queries:
+    - xpath: "//user[@role = $query.variables?role]"
+      variables:
+        role: admin
+test:
+  assertions:
+    - xpath: "count(//user) <= $assertion.variables?max"
+      expect: some
+      variables:
+        max: 100
+"#;
+        let loaded = parse_config_yaml(yaml).unwrap();
+        let (_, s) = as_set(&loaded.operations[0]);
+        assert_eq!(s.mappings[0].variables.get("from"), Some(&VariableValue::Int(8080)));
+        let (_, q) = as_query(&loaded.operations[1]);
+        assert_eq!(q.queries[0].variables.get("role"), Some(&VariableValue::String("admin".into())));
+        let (_, t) = as_test(&loaded.operations[2]);
+        assert_eq!(t.assertions[0].variables.get("max"), Some(&VariableValue::Int(100)));
     }
 
     #[test]

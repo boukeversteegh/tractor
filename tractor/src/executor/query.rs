@@ -85,6 +85,9 @@ impl QueryOperation {
 pub struct QueryExpr {
     /// XPath expression to evaluate.
     pub xpath: NormalizedXpath,
+    /// Query-level variables, bound as the `$query.variables` map in this
+    /// expression (e.g. `//user[@role = $query.variables?role]`).
+    pub variables: std::sync::Arc<tractor::QueryVariables>,
 }
 
 // ---------------------------------------------------------------------------
@@ -105,16 +108,36 @@ pub(crate) fn execute_query(
         return Ok(());
     }
 
+    let variables = ctx.query_variables();
+
+    // Advisory: warn about variable lookups that silently yield the empty
+    // sequence (unknown keys, namespaces of other entry kinds).
+    for (i, query) in op.queries.iter().enumerate() {
+        report.add_all(crate::matcher::undefined_variable_key_diagnostics(
+            "query",
+            &format!("query {}", i + 1),
+            query.xpath.as_str(),
+            &variables,
+            Some(tractor::EntryKind::Query),
+            &query.variables,
+        ));
+    }
+
     if op.sources.is_empty() {
         return Ok(());
     }
 
-    let xpaths: Vec<&str> = op.queries.iter().map(|q| q.xpath.as_str()).collect();
+    let queries: Vec<(&str, Option<tractor::EntryContext>)> = op.queries.iter()
+        .map(|q| (
+            q.xpath.as_str(),
+            Some(tractor::EntryContext::query(std::sync::Arc::clone(&q.variables))),
+        ))
+        .collect();
 
     let matches = query_files_multi(
-        &op.sources, &xpaths, op.language.as_deref(),
+        &op.sources, &queries, op.language.as_deref(),
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
-        op.limit, ctx.verbose, &op.filters, &ctx.query_variables(),
+        op.limit, ctx.verbose, &op.filters, &variables,
     )?;
 
     report.add_all(matches.into_iter().map(|m| match_to_report_match(m, "query")));
@@ -160,7 +183,7 @@ mod tests {
         let ops = vec![OperationPlan::Query(QueryOperationPlan {
             sources: vec![disk_source(&path)],
             filters: Filters::default(),
-            queries: vec![QueryExpr { xpath: "//name".into() }],
+            queries: vec![QueryExpr { xpath: "//name".into(), variables: Default::default() }],
             tree_mode: None,
             language: None,
             limit: None,
@@ -179,7 +202,7 @@ mod tests {
         let ops = vec![OperationPlan::Query(QueryOperationPlan {
             sources: vec![disk_source(&path)],
             filters: Filters::default(),
-            queries: vec![QueryExpr { xpath: "//*[number(.) > 0]".into() }],
+            queries: vec![QueryExpr { xpath: "//*[number(.) > 0]".into(), variables: Default::default() }],
             tree_mode: None,
             language: None,
             limit: Some(2),
@@ -190,12 +213,43 @@ mod tests {
         assert!(report.all_matches().len() <= 2);
     }
 
+    /// Referencing another entry kind's namespace (or $rule.id) in a query
+    /// produces an advisory warning — it silently evaluates against an
+    /// empty map there.
+    #[test]
+    fn query_warns_on_cross_namespace_reference() {
+        use tractor::report::Severity;
+
+        let (_dir, path) = temp_json_file(r#"{"debug": true}"#);
+        let ops = vec![OperationPlan::Query(QueryOperationPlan {
+            sources: vec![disk_source(&path)],
+            filters: Filters::default(),
+            queries: vec![QueryExpr {
+                xpath: "//debug[$rule.variables?max > 1]".into(),
+                variables: Default::default(),
+            }],
+            tree_mode: None,
+            language: None,
+            limit: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+        })];
+        let report = run_query_ops(&ops);
+        let warnings: Vec<_> = report.all_matches().into_iter()
+            .filter(|m| m.severity == Some(Severity::Warning))
+            .collect();
+        assert_eq!(warnings.len(), 1, "{:?}", report.all_matches());
+        assert!(warnings[0].reason.as_deref().unwrap().contains("only bound in check rules"));
+        // The query itself still runs and matches nothing (empty lookup).
+        assert!(report.all_matches().iter().all(|m| m.severity == Some(Severity::Warning)));
+    }
+
     #[test]
     fn query_empty_sources() {
         let ops = vec![OperationPlan::Query(QueryOperationPlan {
             sources: vec![],
             filters: Filters::default(),
-            queries: vec![QueryExpr { xpath: "//x".into() }],
+            queries: vec![QueryExpr { xpath: "//x".into(), variables: Default::default() }],
             tree_mode: None,
             language: None,
             limit: None,

@@ -1796,11 +1796,13 @@ fn set_inline_with_path_plus_diff_lines_is_accepted_at_plan_time() {
 }
 
 // ---------------------------------------------------------------------------
-// Config variables (`variables:` root and rule keys)
+// Config variables (`variables:` root and per-entry keys)
 //
 // Root-level `variables:` in tractor.yml are bound as the `$variables` map
-// in every query of the run; a check rule's own `variables:` are bound as
-// `$rule.variables`. Both live alongside the built-in `$file`.
+// in every query of the run; an operation entry's own `variables:` are
+// bound under the namespace matching its config key ($rule.variables,
+// $mapping.variables, $query.variables, $assertion.variables). All live
+// alongside the built-in `$file`.
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -1953,4 +1955,81 @@ console.log('bye');
         "allowed call must be suppressed: {}",
         result.stdout
     );
+}
+
+#[test]
+fn config_mapping_variables_bound_in_set() {
+    // A set mapping's own `variables:` bind as $mapping.variables in its
+    // xpath — including through the upsert mutation path. The mapping only
+    // selects //port when $mapping.variables?from binds to 8080; the test
+    // operation then verifies the rewritten value on disk.
+    let config = "set:
+  files: [\"data.json\"]
+  mappings:
+    - xpath: \"//port[. = $mapping.variables?from]\"
+      value: \"3000\"
+      variables:
+        from: 8080
+test:
+  files: [\"data.json\"]
+  assertions:
+    - xpath: \"//port[number(.) = 3000]\"
+      expect: 1
+";
+    cli_case!({
+        tractor run --config "tractor.yml";
+        expect => exit 0;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("data.json", "{\"port\": 8080, \"backup\": 9090}")
+    .run();
+}
+
+#[test]
+fn config_query_variables_bound_per_query() {
+    // A query entry's own `variables:` bind as $query.variables in that
+    // expression only.
+    let config = "query:
+  files: [\"data.json\"]
+  queries:
+    - xpath: \"//role[. = $query.variables?role]\"
+      variables:
+        role: admin
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("data.json", "{\"users\": [{\"role\": \"admin\"}, {\"role\": \"guest\"}]}")
+        .capture();
+
+    assert_eq!(0, result.status, "query run should succeed: {}{}", result.stdout, result.stderr);
+    assert!(result.stdout.contains("admin"), "admin role should match: {}", result.stdout);
+    assert!(!result.stdout.contains("guest"), "guest role must not match: {}", result.stdout);
+}
+
+#[test]
+fn config_assertion_variables_bound_in_test() {
+    // A test assertion's own `variables:` bind as $assertion.variables:
+    // among leaf values only b(3) exceeds max(2), so `expect: 1` passes
+    // iff the assertion-level variable binds.
+    let config = "test:
+  files: [\"data.json\"]
+  assertions:
+    - xpath: \"//*[not(*)][number(.) > $assertion.variables?max]\"
+      expect: 1
+      variables:
+        max: 2
+";
+    cli_case!({
+        tractor run --config "tractor.yml";
+        expect => exit 0;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("data.json", "{\"a\": 1, \"b\": 3}")
+    .run();
 }

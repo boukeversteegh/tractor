@@ -93,6 +93,7 @@ fn normalize_set_mappings(
             xpath: xpath.to_string(),
             value: value.to_string(),
             value_kind: Some("string".to_string()),
+            variables: Default::default(),
         }]);
     }
 
@@ -102,6 +103,7 @@ fn normalize_set_mappings(
             xpath: selector_xpath(expr),
             value: value.to_string(),
             value_kind: Some("string".to_string()),
+            variables: Default::default(),
         }]);
     }
 
@@ -109,6 +111,7 @@ fn normalize_set_mappings(
         xpath: op.xpath,
         value: op.value.text().to_string(),
         value_kind: Some(op.value.kind().to_string()),
+        variables: Default::default(),
     }).collect())
 }
 
