@@ -1988,6 +1988,41 @@ test:
 }
 
 #[test]
+fn config_set_error_still_renders_advisory_warnings() {
+    // $rule.variables in a set mapping is an empty map, so the xpath matches
+    // nothing and the upsert insert path errors on the predicate. The
+    // advisory warning that explains WHY must still render before the error
+    // instead of being dropped with the report.
+    let config = "set:
+  files: [\"data.json\"]
+  mappings:
+    - xpath: \"//backup[. = $rule.variables?from]\"
+      value: \"1\"
+      variables:
+        from: 9090
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("data.json", "{\"backup\": 9090}")
+        .capture();
+
+    assert_ne!(0, result.status, "the failed set must exit non-zero: {}{}", result.stdout, result.stderr);
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("only bound in check rules"),
+        "the cross-namespace warning must render despite the error: {}",
+        combined
+    );
+    assert!(
+        combined.contains("error"),
+        "the underlying error must still be reported: {}",
+        combined
+    );
+}
+
+#[test]
 fn config_query_variables_bound_per_query() {
     // A query entry's own `variables:` bind as $query.variables in that
     // expression only.

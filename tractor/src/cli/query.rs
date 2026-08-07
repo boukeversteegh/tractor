@@ -125,7 +125,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute(&[plan], &env, &mut builder)?;
+        executor::execute_rendering_partial_report(&[plan], &env, &mut builder, &ctx)?;
     }
     let mut report = builder.build();
     prepare_report_for_output(&mut report, &ctx);

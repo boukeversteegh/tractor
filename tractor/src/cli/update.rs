@@ -68,7 +68,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute(&[plan], &env, &mut builder)?;
+        executor::execute_rendering_partial_report(&[plan], &env, &mut builder, &ctx)?;
     }
     let report = builder.build();
     if report.success == Some(false) {

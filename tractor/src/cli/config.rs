@@ -162,7 +162,7 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
             &mut builder,
         )?;
 
-        executor::execute(&plan.operations, &env, &mut builder)?;
+        executor::execute_rendering_partial_report(&plan.operations, &env, &mut builder, &ctx)?;
     }
 
     let mut report = builder.build();

@@ -90,6 +90,29 @@ pub fn execute(
     Ok(())
 }
 
+/// Execute like [`execute`], but when an operation fails, first render the
+/// diagnostics accumulated so far — advisory variable warnings, earlier
+/// operations' matches — before propagating the error. Without this, the
+/// report that often *explains* the failure (e.g. a warning that a set
+/// mapping's variable lookup is an empty map) is silently dropped on the
+/// error path.
+///
+/// Rendering is best-effort: a render failure never masks the original error.
+pub fn execute_rendering_partial_report(
+    operations: &[OperationPlan],
+    ctx: &ExecCtx<'_>,
+    report: &mut ReportBuilder,
+    run_ctx: &crate::cli::context::RunContext,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let result = execute(operations, ctx, report);
+    if result.is_err() {
+        let mut partial = std::mem::replace(report, ReportBuilder::new()).build();
+        crate::matcher::prepare_report_for_output(&mut partial, run_ctx);
+        let _ = crate::format::render_report(&partial, run_ctx, None);
+    }
+    result
+}
+
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------

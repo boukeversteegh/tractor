@@ -210,7 +210,19 @@ thread_local! {
     // Compiled helper query used to bind user-variable maps — see
     // `variables_map_sequence`.
     static PARSE_JSON_QUERY: RefCell<Option<SequenceQuery>> = const { RefCell::new(None) };
+    // Converted variable-map sequences, keyed by their JSON serialization.
+    // The values are pure data items (maps/arrays/atomics from `parse-json`,
+    // never nodes), so a converted sequence is valid across documents and
+    // queries within the thread. Content keying is ABA-safe where pointer
+    // keying (`Arc::as_ptr`) would not be. A run touches only a handful of
+    // distinct variable sets (run-level + one per operation entry), so the
+    // map stays tiny; the cap is a safety valve, not an eviction policy.
+    static VARIABLES_SEQ_CACHE: RefCell<std::collections::HashMap<String, Sequence>> =
+        RefCell::new(std::collections::HashMap::new());
 }
+
+/// Upper bound for `VARIABLES_SEQ_CACHE` before it is cleared wholesale.
+const VARIABLES_SEQ_CACHE_CAP: usize = 64;
 
 /// Build a StaticContextBuilder that declares the built-in tractor variables:
 /// `$file` (current file path), `$variables` (config-level user variables as
@@ -242,7 +254,10 @@ fn variables_map_sequence(
     documents: &mut Documents,
 ) -> Result<Sequence, XPathError> {
     let json = variables.to_json().to_string();
-    PARSE_JSON_QUERY.with(|cell| {
+    if let Some(cached) = VARIABLES_SEQ_CACHE.with(|c| c.borrow().get(&json).cloned()) {
+        return Ok(cached);
+    }
+    let sequence = PARSE_JSON_QUERY.with(|cell| {
         let mut cell = cell.borrow_mut();
         if cell.is_none() {
             let mut scb = StaticContextBuilder::default();
@@ -256,13 +271,21 @@ fn variables_map_sequence(
         }
         let query = cell.as_ref().unwrap();
         let mut vars = Variables::default();
-        vars.insert(OwnedName::name("json"), Sequence::from(json));
+        vars.insert(OwnedName::name("json"), Sequence::from(json.clone()));
         query
             .execute_build_context(documents, |builder| {
                 builder.variables(vars);
             })
             .map_err(|e| XPathError::Execute(format!("invalid variable value: {}", e)))
-    })
+    })?;
+    VARIABLES_SEQ_CACHE.with(|c| {
+        let mut cache = c.borrow_mut();
+        if cache.len() >= VARIABLES_SEQ_CACHE_CAP {
+            cache.clear();
+        }
+        cache.insert(json, sequence.clone());
+    });
+    Ok(sequence)
 }
 
 /// Build a Variables map binding the built-in tractor variables: `$file`,
@@ -974,6 +997,30 @@ mod tests {
             &vars, None,
         ).unwrap();
         assert_eq!(matches.len(), 2, "count(2) > limits.max(1)");
+    }
+
+    /// Converted variable maps are cached per thread by content and reused
+    /// across documents: the same variables queried against two different
+    /// documents (cache hit on the second) must resolve identically.
+    #[test]
+    fn test_variables_sequence_cached_across_documents() {
+        use crate::parser::load_xml_string_to_documents;
+        use crate::variables::{QueryVariables, VariableValue};
+
+        let engine = XPathEngine::new();
+        let mut vars = QueryVariables::new();
+        vars.insert("want", VariableValue::String("x".into()));
+
+        for xml in [r#"<root><a>x</a></root>"#, r#"<root><a>y</a><a>x</a></root>"#] {
+            let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+            let matches = engine.query_documents_with_variables(
+                &mut result.documents, result.doc_handle,
+                "//a[. = $variables?want]", Arc::new(vec![]), "test.xml",
+                &vars, None,
+            ).unwrap();
+            assert_eq!(matches.len(), 1, "lookup must work on every document: {}", xml);
+            assert_eq!(matches[0].value, "x");
+        }
     }
 
     /// Null values and missing keys both yield the empty sequence.

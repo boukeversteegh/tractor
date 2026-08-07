@@ -149,7 +149,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute(&[plan], &env, &mut builder)?;
+        executor::execute_rendering_partial_report(&[plan], &env, &mut builder, &ctx)?;
     }
     let mut report = builder.build();
 

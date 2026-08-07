@@ -124,7 +124,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute(&[plan], &env, &mut builder)?;
+        executor::execute_rendering_partial_report(&[plan], &env, &mut builder, &ctx)?;
     }
     // Set expected value for test summary rendering (test-mode only, not shared with run mode)
     builder.set_expected(expect.clone());
