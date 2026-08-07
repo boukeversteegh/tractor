@@ -194,6 +194,26 @@ pub fn normalize_output_plan(
     }
 
     let mut warnings = Vec::new();
+
+    // Explicitly-requested fields the chosen format cannot express (e.g.
+    // `-v tree -f gcc`). Silently dropping them looks like lost data — the
+    // reason a variables/tree dump appears empty in `run`'s default gcc
+    // output. Defaults are exempt: only what the user asked for warns.
+    let unrenderable: Vec<&'static str> = view
+        .explicit_fields
+        .iter()
+        .filter(|&&field| !output_format.can_render_field(field))
+        .map(|field| field.name())
+        .collect();
+    if !unrenderable.is_empty() {
+        warnings.push(format!(
+            "warning: requested view items {{{}}} cannot be rendered by -f {}.\n  Use `-f text` or `-f json` to see {}.",
+            unrenderable.join(", "),
+            output_format.name(),
+            if unrenderable.len() == 1 { "it" } else { "them" },
+        ));
+    }
+
     let explicit_items = explicit_items(&view, message.is_some());
 
     if let Some(replacement) = projection.view_replacement_field() {
@@ -300,6 +320,77 @@ mod tests {
         ParsedViewSet {
             resolved: ViewSet::new(resolved.to_vec()),
             explicit_fields: explicit.to_vec(),
+        }
+    }
+
+    /// `-v tree -f gcc` warns instead of silently rendering nothing — the
+    /// line-oriented formats have nowhere to put a tree.
+    #[test]
+    fn unrenderable_view_fields_warn_for_line_oriented_formats() {
+        let plan = normalize_output_plan(
+            None,
+            false,
+            None,
+            parsed_view(&[ViewField::Tree], &[ViewField::Tree]),
+            None,
+            OutputFormat::Gcc,
+            false,
+        )
+        .unwrap();
+        assert_eq!(plan.warnings.len(), 1, "{:?}", plan.warnings);
+        assert!(plan.warnings[0].contains("{tree}"), "{}", plan.warnings[0]);
+        assert!(plan.warnings[0].contains("-f gcc"), "{}", plan.warnings[0]);
+        assert!(plan.warnings[0].contains("-f text"), "{}", plan.warnings[0]);
+
+        // Several at once are listed together.
+        let plan = normalize_output_plan(
+            None,
+            false,
+            None,
+            parsed_view(
+                &[ViewField::Tree, ViewField::Source, ViewField::Value],
+                &[ViewField::Tree, ViewField::Source, ViewField::Value],
+            ),
+            None,
+            OutputFormat::Gcc,
+            false,
+        )
+        .unwrap();
+        assert_eq!(plan.warnings.len(), 1);
+        assert!(plan.warnings[0].contains("{tree, source}"), "{}", plan.warnings[0]);
+        assert!(!plan.warnings[0].contains("value"), "gcc renders value: {}", plan.warnings[0]);
+    }
+
+    /// Only *explicitly requested* fields warn — a command's default view
+    /// must never produce noise, and structured formats render everything.
+    #[test]
+    fn unrenderable_warning_skips_defaults_and_structured_formats() {
+        // Tree present in the resolved view but not explicitly requested.
+        let plan = normalize_output_plan(
+            None,
+            false,
+            None,
+            parsed_view(&[ViewField::Tree, ViewField::Value], &[]),
+            None,
+            OutputFormat::Gcc,
+            false,
+        )
+        .unwrap();
+        assert!(plan.warnings.is_empty(), "{:?}", plan.warnings);
+
+        // Same explicit request against a structured format: no warning.
+        for format in [OutputFormat::Text, OutputFormat::Json, OutputFormat::Yaml, OutputFormat::Xml] {
+            let plan = normalize_output_plan(
+                None,
+                false,
+                None,
+                parsed_view(&[ViewField::Tree], &[ViewField::Tree]),
+                None,
+                format,
+                false,
+            )
+            .unwrap();
+            assert!(plan.warnings.is_empty(), "{:?} warned: {:?}", format, plan.warnings);
         }
     }
 
