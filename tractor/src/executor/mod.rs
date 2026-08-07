@@ -74,10 +74,15 @@ pub const DEFAULT_MAX_FILES: usize = 10_000;
 /// of truth per CLI invocation.
 ///
 /// Operations run strictly in order, and `$`-directive variable sources
-/// (`$file`) are resolved at each operation's start — so a file written by
-/// an earlier operation (e.g. a query op's `output:`) is read fresh by the
+/// (`$file`) are loaded at each operation's start — so a file written by an
+/// earlier operation (e.g. a query op's `output:`) is read fresh by the
 /// next one. Each operation sees one consistent snapshot; the ordered
 /// `operations:` list is the dependency mechanism.
+///
+/// *Which* sources load is decided at config load, per entry, and recorded
+/// on [`tractor::EntryVariables`] — this loop reads those flags rather than
+/// inspecting XPath. A source no expression reads is never loaded, so an
+/// operation cannot fail over a file a later operation will write.
 pub fn execute(
     operations: &[OperationPlan],
     ctx: &ExecCtx<'_>,

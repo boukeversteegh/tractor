@@ -63,8 +63,30 @@
 //! `$`-prefixed keys are reserved everywhere outside `$literal`: an unknown
 //! directive or a `$`-key mixed into an ordinary map is a load error, so a
 //! typo'd directive can never silently pass through as literal data.
-//! Directives are resolved once at config load ([`QueryVariables::resolve_sources`]);
-//! everything downstream sees plain resolved data.
+//!
+//! ### When a source is read
+//!
+//! Directives are checked in two stages, because a source may name a file
+//! that an *earlier operation in the same run* has yet to write:
+//!
+//! 1. **At config load**, every directive is validated structurally
+//!    ([`QueryVariables::validate_sources`]) — unknown directives, reserved
+//!    `$query`, `$`-keys in ordinary maps, and non-string `$file` paths all
+//!    fail before any operation runs. No filesystem access happens here.
+//! 2. **At the start of each operation**, the sources that operation reads
+//!    are loaded ([`QueryVariables::resolve_sources`]). Operations run in
+//!    order, so a file written by an earlier operation (e.g. a query op's
+//!    `output:`) is read fresh by the next one, and every entry within one
+//!    operation sees a single consistent snapshot.
+//!
+//! What counts as "reads" is recorded per entry at load time by
+//! [`EntryVariables`] — not re-derived from XPath strings during execution.
+//! Resolution is therefore per entry, not per operation: one rule reading
+//! `$rule.variables` never forces resolution for a sibling rule that
+//! doesn't. A declared-but-unread source is neither resolved (so it cannot
+//! fail the run over a file that does not exist yet) nor bound raw: it
+//! binds an empty map. Downstream code therefore only ever sees plain
+//! resolved data — never an unresolved directive.
 //!
 //! ## Conversion to XPath values
 //!
@@ -346,6 +368,11 @@ fn resolve_value(
 
 /// Load a JSON/YAML/TOML document as a single [`VariableValue`]. The content
 /// is pure data — directives inside loaded files are not processed.
+///
+/// Native-only: reading a file needs a filesystem, and the YAML/TOML parsers
+/// are native-only dependencies. The wasm build has neither, so it reports
+/// the directive as unsupported instead (see the `not(native)` variant).
+#[cfg(feature = "native")]
 fn load_variables_file(
     file: &Path,
     path: &[String],
@@ -370,6 +397,24 @@ fn load_variables_file(
             ),
         )),
     }
+}
+
+/// Builds without the `native` feature (wasm) have no filesystem, so a
+/// `$file` source cannot be loaded. Directive *validation* still works —
+/// only the read is unavailable.
+#[cfg(not(feature = "native"))]
+fn load_variables_file(
+    file: &Path,
+    path: &[String],
+) -> Result<VariableValue, VariableSourceError> {
+    Err(VariableSourceError::new(
+        path,
+        format!(
+            "`$file` variable sources need a filesystem and are unavailable in this build \
+             (tried to load '{}')",
+            file.display()
+        ),
+    ))
 }
 
 /// The kind of operation entry a query runs under. Each kind owns one XPath

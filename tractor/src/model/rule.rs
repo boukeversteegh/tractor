@@ -196,8 +196,10 @@ mod compiled {
         pub invalid_examples: Vec<String>,
         /// Rule-level variables, bound as the `$rule.variables` map for this
         /// rule's queries. Run-level variables stay separate (`$variables`) —
-        /// no merging. `Arc` so `run_rules` can attach them to each parse
-        /// result without cloning the map per file.
+        /// no merging. Internally `Arc`, so `run_rules` can attach them to
+        /// each parse result without cloning the map per file, and carries
+        /// what this rule's xpath reads so the executor never re-derives
+        /// source-resolution policy from strings.
         pub variables: crate::variables::EntryVariables,
         /// Compiled glob matcher combining ruleset and rule layers.
         pub glob: GlobMatcher,

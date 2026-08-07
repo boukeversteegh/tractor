@@ -228,12 +228,17 @@ test:
       </p>
       <p>
         Directives are validated when the config loads — an unknown directive (e.g. a typo like{' '}
-        <code>$fiel</code>) fails before anything runs. The file <em>read</em> happens at the start
-        of each operation that references the variable, and each operation sees one consistent
-        snapshot. Two consequences: an operation that never mentions{' '}
-        <code>$variables</code> cannot fail on a missing source file, and a file written by an{' '}
-        <em>earlier</em> operation in the same run is read fresh by the next one. A referenced
-        source whose file is missing fails the run at that operation.
+        <code>$fiel</code>) fails before anything runs, with no file access. The file{' '}
+        <em>read</em> happens later, at the start of each operation, so a file written by an{' '}
+        <em>earlier</em> operation in the same run is read fresh by the next one; every rule
+        within one operation sees the same snapshot.
+      </p>
+      <p>
+        A source is only read where it is actually used. That is decided per entry: a rule reading{' '}
+        <code>$rule.variables</code> does not force a sibling rule's sources to load. So a source
+        that nothing reads never fails the run — which is what lets a config declare a file that a
+        later operation is about to write. A source that <em>is</em> read and whose file is missing
+        fails the run at that operation.
       </p>
       <p>
         Rules also get <code>$rule.id</code> — the current rule's <code>id</code> string. This makes
