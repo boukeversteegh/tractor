@@ -372,7 +372,7 @@ pub fn run_rules(
             // $rule.id.
             for rule_idx in applicable {
                 result.bindings.entry = Some(tractor::EntryContext::rule(
-                    std::sync::Arc::clone(&rules[rule_idx].variables),
+                    std::sync::Arc::clone(rules[rule_idx].variables.declared()),
                     rules[rule_idx].id.clone(),
                 ));
                 match result.query(rules[rule_idx].xpath.as_str()) {

@@ -596,13 +596,13 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, 
 
     let mut mappings = config.mappings.into_iter().map(|m| {
         Ok(SetMapping {
+            variables: {
+                m.variables.validate_sources()?;
+                tractor::EntryVariables::new(m.variables, tractor::EntryKind::Mapping, &m.xpath)
+            },
             xpath: m.xpath,
             value: m.value,
             value_kind: m.value_kind,
-            variables: {
-                m.variables.validate_sources()?;
-                std::sync::Arc::new(m.variables)
-            },
         })
     }).collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
 
@@ -669,11 +669,11 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
 
     let queries = config.queries.into_iter().map(|q| {
         Ok(QueryExpr {
-            xpath: q.xpath,
             variables: {
                 q.variables.validate_sources()?;
-                std::sync::Arc::new(q.variables)
+                tractor::EntryVariables::new(q.variables, tractor::EntryKind::Query, q.xpath.as_str())
             },
+            xpath: q.xpath,
         })
     }).collect::<Result<_, Box<dyn std::error::Error>>>()?;
 
@@ -721,12 +721,12 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation
 
     let assertions = config.assertions.into_iter().map(|a| {
         Ok(TestAssertion {
-            xpath: a.xpath,
-            expect: a.expect,
             variables: {
                 a.variables.validate_sources()?;
-                std::sync::Arc::new(a.variables)
+                tractor::EntryVariables::new(a.variables, tractor::EntryKind::Assertion, a.xpath.as_str())
             },
+            xpath: a.xpath,
+            expect: a.expect,
         })
     }).collect::<Result<_, Box<dyn std::error::Error>>>()?;
 

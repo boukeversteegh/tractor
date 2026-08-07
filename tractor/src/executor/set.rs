@@ -86,7 +86,7 @@ pub struct SetMapping {
     pub value_kind: Option<String>,
     /// Mapping-level variables, bound as the `$mapping.variables` map in
     /// this mapping's xpath (e.g. `//port[. = $mapping.variables?from]`).
-    pub variables: std::sync::Arc<tractor::QueryVariables>,
+    pub variables: tractor::EntryVariables,
 }
 
 /// Write policy for set operations.
@@ -316,7 +316,7 @@ fn apply_set_mapping(
     before_matches: &[Match],
     variables: &std::sync::Arc<tractor::QueryVariables>,
 ) -> Result<SetMappingResult, Box<dyn std::error::Error>> {
-    let entry = tractor::EntryContext::mapping(std::sync::Arc::clone(&mapping.variables));
+    let entry = tractor::EntryContext::mapping(std::sync::Arc::clone(mapping.variables.declared()));
     match upsert_typed(
         source,
         lang,
@@ -387,7 +387,7 @@ fn query_set_matches(
         },
     )?;
     result.bindings.variables = std::sync::Arc::clone(variables);
-    result.bindings.entry = Some(tractor::EntryContext::mapping(std::sync::Arc::clone(&mapping.variables)));
+    result.bindings.entry = Some(tractor::EntryContext::mapping(std::sync::Arc::clone(mapping.variables.declared())));
     let mut matches = result.query(&mapping.xpath)?;
     if !filters.is_empty() {
         matches.retain(|m| filters.include(m));

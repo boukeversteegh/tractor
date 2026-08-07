@@ -137,7 +137,7 @@ pub struct QueryExpr {
     pub xpath: NormalizedXpath,
     /// Query-level variables, bound as the `$query.variables` map in this
     /// expression (e.g. `//user[@role = $query.variables?role]`).
-    pub variables: std::sync::Arc<tractor::QueryVariables>,
+    pub variables: tractor::EntryVariables,
 }
 
 // ---------------------------------------------------------------------------
@@ -180,7 +180,7 @@ pub(crate) fn execute_query(
     let queries: Vec<(&str, Option<tractor::EntryContext>)> = op.queries.iter()
         .map(|q| (
             q.xpath.as_str(),
-            Some(tractor::EntryContext::query(std::sync::Arc::clone(&q.variables))),
+            Some(tractor::EntryContext::query(std::sync::Arc::clone(q.variables.declared()))),
         ))
         .collect();
 

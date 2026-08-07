@@ -175,7 +175,7 @@ fn validate_rule_examples(
             )?;
             result.bindings.variables = std::sync::Arc::clone(variables);
             result.bindings.entry = Some(tractor::EntryContext::rule(
-                std::sync::Arc::clone(&rule.variables),
+                std::sync::Arc::clone(rule.variables.declared()),
                 rule.id.clone(),
             ));
             let matches = result.query(rule.xpath.as_str())?;
@@ -206,7 +206,7 @@ fn validate_rule_examples(
             )?;
             result.bindings.variables = std::sync::Arc::clone(variables);
             result.bindings.entry = Some(tractor::EntryContext::rule(
-                std::sync::Arc::clone(&rule.variables),
+                std::sync::Arc::clone(rule.variables.declared()),
                 rule.id.clone(),
             ));
             let matches = result.query(rule.xpath.as_str())?;

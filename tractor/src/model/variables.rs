@@ -441,6 +441,122 @@ pub struct EntryContext {
     pub id: Option<String>,
 }
 
+/// An operation entry's `variables:` together with what its expression
+/// actually reads — decided once, where both are known (config load), so
+/// execution never re-derives resolution policy from XPath strings.
+///
+/// Resolving a `$`-directive source has an observable cost: it reads a file
+/// that a *later* operation in the run may not have written yet. Only an
+/// expression that reads a namespace may depend on (and fail on) its
+/// sources, and that question is per entry — one rule referencing
+/// `$rule.variables` must not force resolution for a sibling rule that
+/// doesn't.
+///
+/// The reference test is a literal substring scan, which is sound because
+/// XPath 3.1 has no dynamic variable references (no `eval`, no computed
+/// variable names): a namespace can only be read by writing its name. It
+/// over-approximates — a name inside a string literal counts as a read —
+/// which is the safe direction: an unread source may be resolved need-
+/// lessly, but a read source is never left unresolved.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct EntryVariables {
+    variables: std::sync::Arc<QueryVariables>,
+    /// The expression reads this entry's own `$<entry>.variables`.
+    reads_own: bool,
+    /// The expression reads the run-level `$variables`.
+    reads_run: bool,
+}
+
+impl EntryVariables {
+    /// Bind `variables` to an entry of `kind` whose expression is `xpath`,
+    /// recording what that expression reads.
+    pub fn new(variables: QueryVariables, kind: EntryKind, xpath: &str) -> Self {
+        Self {
+            variables: std::sync::Arc::new(variables),
+            reads_own: xpath.contains(&format!("${}", kind.variables_name())),
+            reads_run: reads_run_variables(xpath),
+        }
+    }
+
+    /// The entry's declared variables, directives unresolved.
+    pub fn declared(&self) -> &std::sync::Arc<QueryVariables> {
+        &self.variables
+    }
+
+    /// Whether the entry's expression reads the run-level `$variables`.
+    pub fn reads_run_variables(&self) -> bool {
+        self.reads_run
+    }
+
+    /// The map to bind as this entry's namespace, with `$`-directive
+    /// sources resolved against `base_dir`.
+    ///
+    /// An entry that never reads its own namespace binds an empty map: its
+    /// sources are neither resolved (so a not-yet-written file cannot fail
+    /// the run) nor bound raw (so an unresolved directive never reaches the
+    /// XPath context as data).
+    pub fn bind(&self, base_dir: &Path) -> Result<std::sync::Arc<QueryVariables>, VariableSourceError> {
+        bind_variables(&self.variables, self.reads_own, base_dir)
+    }
+
+    /// The same entry with its declared variables replaced by an already
+    /// bound (resolved) map — what the executor stores back into the plan
+    /// before running the entry.
+    pub fn with_bound(mut self, bound: std::sync::Arc<QueryVariables>) -> Self {
+        self.variables = bound;
+        self
+    }
+}
+
+impl std::ops::Deref for EntryVariables {
+    type Target = QueryVariables;
+    fn deref(&self) -> &QueryVariables {
+        &self.variables
+    }
+}
+
+/// Whether an XPath expression reads the run-level `$variables`.
+///
+/// `$rule.variables` and friends don't count: the character before
+/// `variables` there is `.`, not `$`.
+pub fn reads_run_variables(xpath: &str) -> bool {
+    xpath.match_indices("$variables").any(|(i, _)| {
+        // Reject `$variables` as a prefix of a longer name (NCNames may
+        // contain `-`, `_`, `.`, and digits).
+        !xpath[i + "$variables".len()..]
+            .starts_with(|c: char| c.is_alphanumeric() || c == '-' || c == '_' || c == '.')
+    })
+}
+
+/// Shared binding policy: resolve when read, empty when not, and never
+/// bind an unresolved directive map.
+fn bind_variables(
+    variables: &std::sync::Arc<QueryVariables>,
+    is_read: bool,
+    base_dir: &Path,
+) -> Result<std::sync::Arc<QueryVariables>, VariableSourceError> {
+    if !variables.has_sources() {
+        return Ok(std::sync::Arc::clone(variables));
+    }
+    if !is_read {
+        return Ok(std::sync::Arc::default());
+    }
+    Ok(std::sync::Arc::new(
+        (**variables).clone().resolve_sources(base_dir)?,
+    ))
+}
+
+/// Resolve the run-level `$variables` for an operation: same policy as
+/// [`EntryVariables::bind`], driven by whether any of the operation's
+/// expressions read it.
+pub fn bind_run_variables(
+    variables: &std::sync::Arc<QueryVariables>,
+    is_read: bool,
+    base_dir: &Path,
+) -> Result<std::sync::Arc<QueryVariables>, VariableSourceError> {
+    bind_variables(variables, is_read, base_dir)
+}
+
 /// Everything user-defined that binds into a query's dynamic context: the
 /// run-level `$variables` map and the current operation entry (which
 /// supplies `$<entry>.variables` and `$rule.id`).
@@ -627,6 +743,78 @@ mod tests {
         // $file expects a string path.
         let err = resolve("x:\n  $file: [a, b]\n", Path::new(".")).unwrap_err();
         assert!(err.to_string().contains("expects a path string"), "{}", err);
+    }
+
+    /// The reference scan decides resolution policy, so its edges are
+    /// pinned here: own vs run namespace, and the deliberate
+    /// over-approximation on string literals.
+    #[test]
+    fn entry_variables_records_what_the_expression_reads() {
+        let vars: QueryVariables = serde_yaml::from_str("max: 4\n").unwrap();
+
+        let reads_own = EntryVariables::new(
+            vars.clone(),
+            EntryKind::Rule,
+            "//f[count(p) > $rule.variables?max]",
+        );
+        assert!(reads_own.bind(Path::new(".")).is_ok());
+        assert!(!reads_own.reads_run_variables());
+
+        let reads_run = EntryVariables::new(vars.clone(), EntryKind::Rule, "//a[$variables?env]");
+        assert!(reads_run.reads_run_variables());
+
+        // Another entry kind's namespace is not this entry's own.
+        let other_kind = EntryVariables::new(
+            vars.clone(),
+            EntryKind::Rule,
+            "//a[$mapping.variables?max]",
+        );
+        assert!(!other_kind.reads_run_variables());
+
+        // `$variables` as a prefix of a longer name is not a read of it.
+        assert!(!EntryVariables::new(vars.clone(), EntryKind::Rule, "//a[$variables-x]")
+            .reads_run_variables());
+        // ...but `$rule.variables` never counts as `$variables` either.
+        assert!(!EntryVariables::new(vars.clone(), EntryKind::Rule, "//a[$rule.variables?max]")
+            .reads_run_variables());
+
+        // Over-approximation: a namespace name inside a string literal
+        // counts as a read. XPath has no dynamic variable references, so
+        // the scan can never MISS a real read; treating a literal as a
+        // read only resolves a source needlessly, which is the safe
+        // direction. This test pins that direction deliberately.
+        assert!(
+            EntryVariables::new(vars, EntryKind::Rule, "//a[. = '$variables?x']")
+                .reads_run_variables(),
+            "a literal occurrence must be treated as a read (conservative)"
+        );
+    }
+
+    /// An entry that never reads its own namespace neither resolves its
+    /// sources nor binds them raw — the invariant that downstream only
+    /// ever sees plain resolved data.
+    #[test]
+    fn unread_sources_bind_empty_and_never_resolve() {
+        let declared: QueryVariables =
+            serde_yaml::from_str("data:\n  $file: does-not-exist.json\n").unwrap();
+
+        // Reads its own namespace: resolution runs, and the missing file
+        // is fatal.
+        let read = EntryVariables::new(declared.clone(), EntryKind::Rule, "//a[$rule.variables?data]");
+        assert!(read.bind(Path::new(".")).is_err(), "a read source must resolve (and fail loudly)");
+
+        // Does not read it: no resolution (so a file a later operation
+        // will write cannot fail this entry) and nothing raw is bound.
+        let unread = EntryVariables::new(declared, EntryKind::Rule, "//a[@x = 1]");
+        let bound = unread.bind(Path::new(".")).expect("unread sources must not resolve");
+        assert!(bound.is_empty(), "unread sources must bind empty, not raw directives: {:?}", bound);
+        assert!(!bound.has_sources(), "a raw `$file` directive must never reach the query context");
+
+        // Plain values are bound as-is whether read or not.
+        let plain: QueryVariables = serde_yaml::from_str("env: prod\n").unwrap();
+        let unread_plain = EntryVariables::new(plain, EntryKind::Rule, "//a[@x = 1]");
+        let bound = unread_plain.bind(Path::new(".")).unwrap();
+        assert_eq!(bound.get("env"), Some(&VariableValue::String("prod".into())));
     }
 
     #[test]

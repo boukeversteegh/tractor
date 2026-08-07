@@ -85,7 +85,7 @@ pub struct TestAssertion {
     pub expect: String,
     /// Assertion-level variables, bound as the `$assertion.variables` map
     /// in this assertion (e.g. `count(//user) <= $assertion.variables?max`).
-    pub variables: std::sync::Arc<tractor::QueryVariables>,
+    pub variables: tractor::EntryVariables,
 }
 
 // ---------------------------------------------------------------------------
@@ -123,7 +123,7 @@ pub(crate) fn execute_test(
 
     // Query each assertion's xpath individually to get per-assertion counts.
     for assertion in &op.assertions {
-        let entry = tractor::EntryContext::assertion(std::sync::Arc::clone(&assertion.variables));
+        let entry = tractor::EntryContext::assertion(std::sync::Arc::clone(assertion.variables.declared()));
         let matches = query_files_multi(
             &op.sources, &[(assertion.xpath.as_str(), Some(entry))], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
