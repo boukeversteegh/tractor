@@ -413,7 +413,17 @@ fn execute_direct_query(
                     matches.push(m);
                 }
                 xee_xpath::Item::Atomic(atomic) => {
-                    let value = atomic.xpath_representation();
+                    // A match's value is text, not an XPath literal: a
+                    // computed string like `concat(name, ':', len)` must land
+                    // as `Name:256`, not `"Name:256"`. Quoting leaks into
+                    // every consumer — reports, `-v value`, and the JSON a
+                    // query op's `output:` writes, where the quotes end up
+                    // inside the JSON string. `string_value` is the XPath
+                    // string value (what `string(...)` would yield), so every
+                    // atomic type renders the same way node matches do.
+                    let value = xee_xpath::Item::Atomic(atomic.clone())
+                        .string_value(documents.xot())
+                        .unwrap_or_else(|_| atomic.xpath_representation());
                     matches.push(Match::new(file_path.to_string(), value));
                 }
                 xee_xpath::Item::Function(func) => {
@@ -997,6 +1007,38 @@ mod tests {
             "//name[count(//name) > $variables?limits?max]", Arc::new(vec![]), "test.xml",
         ).unwrap();
         assert_eq!(matches.len(), 2, "count(2) > limits.max(1)");
+    }
+
+    /// A match's value is the XPath *string value*, never an XPath literal:
+    /// computed strings must not arrive quoted, or the quotes end up inside
+    /// consumers (reports, `-v value`, a query op's materialized JSON).
+    #[test]
+    fn test_atomic_values_are_string_values_not_xpath_literals() {
+        use crate::parser::load_xml_string_to_documents;
+
+        let xml = r#"<root><name>Alpha</name></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        for (xpath, expected) in [
+            // The motivating case: a composite key built with concat().
+            (r#"concat(//name, ':', 256)"#, "Alpha:256"),
+            // string() of a node, and a bare string literal.
+            ("//name/string()", "Alpha"),
+            ("'plain'", "plain"),
+            // Other atomic types keep canonical (unquoted) forms.
+            ("1 + 1", "2"),
+            ("true()", "true"),
+            ("2.5", "2.5"),
+        ] {
+            let matches = engine.query_documents(
+                &mut result.documents, result.doc_handle,
+                xpath, Arc::new(vec![]), "test.xml",
+            ).unwrap();
+            assert_eq!(matches.len(), 1, "{}", xpath);
+            assert_eq!(matches[0].value, expected, "{} should yield {}", xpath, expected);
+            assert!(!matches[0].value.starts_with('"'), "{} must not be quoted", xpath);
+        }
     }
 
     /// Converted variable maps are cached per thread by content and reused

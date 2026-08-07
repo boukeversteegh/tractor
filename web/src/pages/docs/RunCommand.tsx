@@ -297,6 +297,70 @@ operations:
         <code>diff-files</code>) keep their entries, and entries whose file no longer exists are
         pruned — so a diff-scoped gather stays correct without re-querying the whole tree.
       </p>
+      <p>
+        <strong>Reading the index.</strong> Most rules just want the flat set of gathered values,
+        which is <code>?files?*?*</code> — the first <code>?*</code> expands every file key, the
+        second every entry in that file's array:
+      </p>
+      <CodeBlock
+        language="text"
+        code={`$variables?records?files?*?*        all values, provenance discarded
+$variables?records?files?("src/A.cs")?*   values from one specific file
+map:keys($variables?records?files)        the file paths themselves`}
+      />
+      <p>
+        Keep the file keys when a rule is <em>about</em> paths (e.g. "every file with an X must
+        have a matching Y"); use the flat form for plain membership tests.
+      </p>
+
+      <h3>Correspondence rules (composite keys)</h3>
+      <p>
+        The common shape is "this thing over here must agree with that thing over there" — a
+        DTO's <code>[MaxLength]</code> matching its Record's, say. XPath has no join, so build a{' '}
+        <strong>composite key</strong> string on both sides and compare the keys. Gather one side,
+        then test membership from the other:
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`variables:
+  records:
+    $file: "gathered/records.json"
+
+operations:
+  - query:
+      files: ["**/*Record.cs"]
+      queries:
+        # key = property name + ':' + declared length
+        - xpath: "//property[.//attribute/name/ref = 'MaxLength'] ! concat(name, ':', .//argument/int)"
+      output: "gathered/records.json"
+
+  - check:
+      files: ["**/*Dto.cs"]
+      rules:
+        - id: dto-maxlength-drift
+          reason: "DTO MaxLength differs from the Record"
+          xpath: >-
+            //property[.//attribute/name/ref = 'MaxLength']
+            [not(concat(name, ':', .//argument/int) = $variables?records?files?*?*)]
+            /name`}
+      />
+      <p>
+        Both sides must build the key <em>identically</em>; if the names differ between the two
+        shapes, normalize inside the key expression (<code>replace()</code>,{' '}
+        <code>substring-before()</code>) rather than after. Keys are compared as strings, so
+        include a separator that cannot appear in the parts — a bare concatenation makes{' '}
+        <code>a</code>+<code>bc</code> collide with <code>ab</code>+<code>c</code>.
+      </p>
+      <p>
+        <strong>Known limitation:</strong> matching is per file and syntactic, so an inherited
+        member is invisible to the side that inherits it — a property declared on a shared base
+        class in another file will look "missing" to a rule that only inspects the derived
+        declaration. Gathering the base declarations into the same index (a second{' '}
+        <code>query</code> writing to the same <code>output:</code> file, or a wider{' '}
+        <code>files:</code> pattern) covers the common cases; full type resolution across files
+        is out of scope.
+      </p>
 
       <h2>Multiple Operation Types</h2>
       <p>
