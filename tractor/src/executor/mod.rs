@@ -720,12 +720,12 @@ mod tests {
             OperationPlan::Set(set::SetOperationPlan {
                 sources: disk_sources(&[config_path.to_str().unwrap()]),
                 filters: Filters::default(),
-                mappings: vec![set::SetMapping {
-                    xpath: "//host".into(),
-                    value: "new-host".into(),
-                    value_kind: Some("string".into()),
-                    variables: Default::default(),
-                }],
+                mappings: vec![set::SetMapping::new(
+                    "//host",
+                    "new-host",
+                    Some("string".into()),
+                    tractor::QueryVariables::new(),
+                )],
                 tree_mode: None,
                 limit: None,
                 ignore_whitespace: false,

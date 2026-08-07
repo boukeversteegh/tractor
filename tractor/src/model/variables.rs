@@ -503,7 +503,15 @@ pub struct EntryContext {
 /// over-approximates — a name inside a string literal counts as a read —
 /// which is the safe direction: an unread source may be resolved need-
 /// lessly, but a read source is never left unresolved.
-#[derive(Debug, Clone, Default, PartialEq)]
+///
+/// Deliberately **not** `Default`: a default value would claim "reads
+/// nothing" without having seen an expression, and a construction site that
+/// forgot to pass its xpath would silently disable resolution for the whole
+/// operation. Every value must be built from the expression it describes.
+/// Prefer the entry constructors (`SetMapping::new`, `QueryExpr::new`,
+/// `TestAssertion::new`, `Rule::with_variables`), which pass their own
+/// xpath so the two cannot disagree.
+#[derive(Debug, Clone, PartialEq)]
 pub struct EntryVariables {
     variables: std::sync::Arc<QueryVariables>,
     /// The expression reads this entry's own `$<entry>.variables`.

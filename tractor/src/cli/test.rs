@@ -100,11 +100,11 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let op = Operation::Test(TestOperation {
-        assertions: vec![TestAssertion {
-            xpath: xpath_expr.clone(),
-            expect: expect.clone(),
-            variables: Default::default(),
-        }],
+        assertions: vec![TestAssertion::new(
+            xpath_expr.clone(),
+            expect.clone(),
+            tractor::QueryVariables::new(),
+        )],
         tree_mode: ctx.tree_mode,
         language: op_language,
         limit: ctx.limit,

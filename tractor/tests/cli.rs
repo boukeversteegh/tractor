@@ -2017,6 +2017,35 @@ check:
 }
 
 #[test]
+fn config_set_expression_shorthand_reads_run_variables() {
+    // Regression: `expression:` builds its mapping through a different path
+    // than `mappings:`. Both must record that the xpath reads $variables,
+    // or the run-level map binds empty and the predicate silently misses.
+    let config = "variables:
+  settings:
+    $file: \"vars.yml\"
+set:
+  files: [\"data.json\"]
+  expression: \"port[$variables?settings?enable = 'yes']\"
+  value: \"3000\"
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("vars.yml", "enable: yes\n")
+        .seed_file("data.json", "{\"port\": 8080}")
+        .capture();
+
+    assert_eq!(0, result.status, "expression shorthand should apply: {}{}", result.stdout, result.stderr);
+    assert!(
+        !format!("{}{}", result.stdout, result.stderr).contains("unknown variable key"),
+        "the run variables must be bound, not empty: {}{}",
+        result.stdout, result.stderr
+    );
+}
+
+#[test]
 fn config_query_output_feeds_check_in_one_run() {
     // The multi-query pipeline in a single run: the query op materializes
     // repository class names to a JSON index, and the check op — whose

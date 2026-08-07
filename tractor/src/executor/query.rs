@@ -137,7 +137,19 @@ pub struct QueryExpr {
     pub xpath: NormalizedXpath,
     /// Query-level variables, bound as the `$query.variables` map in this
     /// expression (e.g. `//user[@role = $query.variables?role]`).
+    /// Build via [`QueryExpr::new`] so the variables' resolution flags are
+    /// always derived from the xpath that actually runs.
     pub variables: tractor::EntryVariables,
+}
+
+impl QueryExpr {
+    /// Build a query expression, deriving from `xpath` what its variables read.
+    pub fn new(xpath: impl Into<NormalizedXpath>, variables: tractor::QueryVariables) -> Self {
+        let xpath = xpath.into();
+        let variables =
+            tractor::EntryVariables::new(variables, tractor::EntryKind::Query, xpath.as_str());
+        QueryExpr { xpath, variables }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -359,7 +371,7 @@ mod tests {
         let ops = vec![OperationPlan::Query(QueryOperationPlan {
             sources: vec![disk_source(&path)],
             filters: Filters::default(),
-            queries: vec![QueryExpr { xpath: "//name".into(), variables: Default::default() }],
+            queries: vec![QueryExpr::new("//name", tractor::QueryVariables::new())],
             tree_mode: None,
             language: None,
             limit: None,
@@ -379,7 +391,7 @@ mod tests {
         let ops = vec![OperationPlan::Query(QueryOperationPlan {
             sources: vec![disk_source(&path)],
             filters: Filters::default(),
-            queries: vec![QueryExpr { xpath: "//*[number(.) > 0]".into(), variables: Default::default() }],
+            queries: vec![QueryExpr::new("//*[number(.) > 0]", tractor::QueryVariables::new())],
             tree_mode: None,
             language: None,
             limit: Some(2),
@@ -402,10 +414,10 @@ mod tests {
         let ops = vec![OperationPlan::Query(QueryOperationPlan {
             sources: vec![disk_source(&path)],
             filters: Filters::default(),
-            queries: vec![QueryExpr {
-                xpath: "//debug[$rule.variables?max > 1]".into(),
-                variables: Default::default(),
-            }],
+            queries: vec![QueryExpr::new(
+                "//debug[$rule.variables?max > 1]",
+                tractor::QueryVariables::new(),
+            )],
             tree_mode: None,
             language: None,
             limit: None,
@@ -464,7 +476,7 @@ mod tests {
         let ops = vec![OperationPlan::Query(QueryOperationPlan {
             sources: vec![],
             filters: Filters::default(),
-            queries: vec![QueryExpr { xpath: "//x".into(), variables: Default::default() }],
+            queries: vec![QueryExpr::new("//x", tractor::QueryVariables::new())],
             tree_mode: None,
             language: None,
             limit: None,

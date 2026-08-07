@@ -86,7 +86,24 @@ pub struct SetMapping {
     pub value_kind: Option<String>,
     /// Mapping-level variables, bound as the `$mapping.variables` map in
     /// this mapping's xpath (e.g. `//port[. = $mapping.variables?from]`).
+    /// Build via [`SetMapping::new`] so the variables' resolution flags
+    /// are always derived from the xpath that actually runs.
     pub variables: tractor::EntryVariables,
+}
+
+impl SetMapping {
+    /// Build a mapping, deriving from `xpath` what its variables read.
+    pub fn new(
+        xpath: impl Into<String>,
+        value: impl Into<String>,
+        value_kind: Option<String>,
+        variables: tractor::QueryVariables,
+    ) -> Self {
+        let xpath = xpath.into();
+        let variables =
+            tractor::EntryVariables::new(variables, tractor::EntryKind::Mapping, &xpath);
+        SetMapping { xpath, value: value.into(), value_kind, variables }
+    }
 }
 
 /// Write policy for set operations.
@@ -431,12 +448,7 @@ mod tests {
     }
 
     fn string_mapping(xpath: &str, value: &str) -> SetMapping {
-        SetMapping {
-            xpath: xpath.into(),
-            value: value.into(),
-            value_kind: Some("string".into()),
-            variables: Default::default(),
-        }
+        SetMapping::new(xpath, value, Some("string".into()), tractor::QueryVariables::new())
     }
 
     fn set_operation(path: String, mappings: Vec<SetMapping>, write_mode: SetWriteMode) -> OperationPlan {

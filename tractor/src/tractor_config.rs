@@ -575,35 +575,28 @@ fn normalize_set_expression(
     explicit_value: Option<&str>,
 ) -> Result<Vec<SetMapping>, Box<dyn std::error::Error>> {
     if let Some(value) = explicit_value {
-        return Ok(vec![SetMapping {
-            xpath: selector_xpath(expr),
-            value: value.to_string(),
-            value_kind: Some("string".to_string()),
-            variables: Default::default(),
-        }]);
+        return Ok(vec![SetMapping::new(
+            selector_xpath(expr),
+            value,
+            Some("string".to_string()),
+            QueryVariables::new(),
+        )]);
     }
 
-    Ok(parse_set_expr(expr)?.into_iter().map(|op| SetMapping {
-        xpath: op.xpath,
-        value: op.value.text().to_string(),
-        value_kind: Some(op.value.kind().to_string()),
-        variables: Default::default(),
-    }).collect())
+    Ok(parse_set_expr(expr)?.into_iter().map(|op| SetMapping::new(
+        op.xpath,
+        op.value.text(),
+        Some(op.value.kind().to_string()),
+        QueryVariables::new(),
+    )).collect())
 }
 
 fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let mut mappings = config.mappings.into_iter().map(|m| {
-        Ok(SetMapping {
-            variables: {
-                m.variables.validate_sources()?;
-                tractor::EntryVariables::new(m.variables, tractor::EntryKind::Mapping, &m.xpath)
-            },
-            xpath: m.xpath,
-            value: m.value,
-            value_kind: m.value_kind,
-        })
+        m.variables.validate_sources()?;
+        Ok(SetMapping::new(m.xpath, m.value, m.value_kind, m.variables))
     }).collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
 
     if let Some(ref expr) = config.expression {
@@ -668,13 +661,8 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let queries = config.queries.into_iter().map(|q| {
-        Ok(QueryExpr {
-            variables: {
-                q.variables.validate_sources()?;
-                tractor::EntryVariables::new(q.variables, tractor::EntryKind::Query, q.xpath.as_str())
-            },
-            xpath: q.xpath,
-        })
+        q.variables.validate_sources()?;
+        Ok(QueryExpr::new(q.xpath, q.variables))
     }).collect::<Result<_, Box<dyn std::error::Error>>>()?;
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
@@ -720,14 +708,8 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let assertions = config.assertions.into_iter().map(|a| {
-        Ok(TestAssertion {
-            variables: {
-                a.variables.validate_sources()?;
-                tractor::EntryVariables::new(a.variables, tractor::EntryKind::Assertion, a.xpath.as_str())
-            },
-            xpath: a.xpath,
-            expect: a.expect,
-        })
+        a.variables.validate_sources()?;
+        Ok(TestAssertion::new(a.xpath, a.expect, a.variables))
     }).collect::<Result<_, Box<dyn std::error::Error>>>()?;
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);

@@ -85,7 +85,23 @@ pub struct TestAssertion {
     pub expect: String,
     /// Assertion-level variables, bound as the `$assertion.variables` map
     /// in this assertion (e.g. `count(//user) <= $assertion.variables?max`).
+    /// Build via [`TestAssertion::new`] so the variables' resolution flags
+    /// are always derived from the xpath that actually runs.
     pub variables: tractor::EntryVariables,
+}
+
+impl TestAssertion {
+    /// Build an assertion, deriving from `xpath` what its variables read.
+    pub fn new(
+        xpath: impl Into<NormalizedXpath>,
+        expect: impl Into<String>,
+        variables: tractor::QueryVariables,
+    ) -> Self {
+        let xpath = xpath.into();
+        let variables =
+            tractor::EntryVariables::new(variables, tractor::EntryKind::Assertion, xpath.as_str());
+        TestAssertion { xpath, expect: expect.into(), variables }
+    }
 }
 
 // ---------------------------------------------------------------------------
