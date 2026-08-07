@@ -363,7 +363,7 @@ pub fn run_rules(
                     return None;
                 }
             };
-            result.variables = std::sync::Arc::clone(variables);
+            result.bindings.variables = std::sync::Arc::clone(variables);
 
             let mut file_matches = Vec::new();
 
@@ -371,7 +371,7 @@ pub fn run_rules(
             // each rule's own variables as $rule.variables and its id as
             // $rule.id.
             for rule_idx in applicable {
-                result.entry = Some(tractor::EntryContext::rule(
+                result.bindings.entry = Some(tractor::EntryContext::rule(
                     std::sync::Arc::clone(&rules[rule_idx].variables),
                     rules[rule_idx].id.clone(),
                 ));

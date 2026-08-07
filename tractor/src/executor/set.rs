@@ -3,7 +3,7 @@
 use tractor::report::{ReportBuilder, ReportMatch, ReportOutput};
 use tractor::tree_mode::TreeMode;
 use tractor::{parse, ParseInput, ParseOptions, Match};
-use tractor::xpath_upsert::upsert_typed_with_variables;
+use tractor::xpath_upsert::upsert_typed;
 
 use crate::input::filter::Filters;
 use crate::input::source::SourceDisposition;
@@ -317,15 +317,14 @@ fn apply_set_mapping(
     variables: &std::sync::Arc<tractor::QueryVariables>,
 ) -> Result<SetMappingResult, Box<dyn std::error::Error>> {
     let entry = tractor::EntryContext::mapping(std::sync::Arc::clone(&mapping.variables));
-    match upsert_typed_with_variables(
+    match upsert_typed(
         source,
         lang,
         &mapping.xpath,
         &mapping.value,
         op.limit,
         mapping.value_kind.as_deref(),
-        variables,
-        Some(&entry),
+        tractor::QueryBindings::run(std::sync::Arc::clone(variables)).with_entry(entry),
     ) {
         Ok(result) => Ok(SetMappingResult {
             source: result.source,
@@ -387,8 +386,8 @@ fn query_set_matches(
             parse_depth: None,
         },
     )?;
-    result.variables = std::sync::Arc::clone(variables);
-    result.entry = Some(tractor::EntryContext::mapping(std::sync::Arc::clone(&mapping.variables)));
+    result.bindings.variables = std::sync::Arc::clone(variables);
+    result.bindings.entry = Some(tractor::EntryContext::mapping(std::sync::Arc::clone(&mapping.variables)));
     let mut matches = result.query(&mapping.xpath)?;
     if !filters.is_empty() {
         matches.retain(|m| filters.include(m));

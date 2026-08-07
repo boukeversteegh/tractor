@@ -21,7 +21,7 @@
 use crate::parser::{parse, ParseInput, ParseOptions, XeeParseResult};
 use crate::render::{self, RenderOptions};
 use crate::tree_mode::TreeMode;
-use crate::variables::{EntryContext, QueryVariables};
+use crate::variables::QueryBindings;
 use crate::xpath::xot_node_to_xml_node;
 pub use crate::xpath::Match;
 use crate::xot_transform::helpers::*;
@@ -76,21 +76,7 @@ pub fn update_only(
     xpath: &str,
     value: &str,
     limit: Option<usize>,
-) -> Result<UpsertResult, UpsertError> {
-    update_only_with_variables(source, lang, xpath, value, limit, &Default::default(), None)
-}
-
-/// Like [`update_only`], but with user-defined variables bound in the
-/// query's dynamic context: `run_variables` becomes `$variables` and `entry`
-/// (if any) provides the `$<entry>.variables` namespace.
-pub fn update_only_with_variables(
-    source: &str,
-    lang: &str,
-    xpath: &str,
-    value: &str,
-    limit: Option<usize>,
-    run_variables: &std::sync::Arc<QueryVariables>,
-    entry: Option<&EntryContext>,
+    bindings: QueryBindings,
 ) -> Result<UpsertResult, UpsertError> {
     // Verify the language has a renderer that supports data mode
     let test_render = render::render(
@@ -121,8 +107,7 @@ pub fn update_only_with_variables(
         },
     )
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
-    result.variables = std::sync::Arc::clone(run_variables);
-    result.entry = entry.cloned();
+    result.bindings = bindings;
 
     // Query with XPath
     let existing = result.query(xpath)
@@ -163,7 +148,7 @@ pub fn upsert(
     value: &str,
     limit: Option<usize>,
 ) -> Result<UpsertResult, UpsertError> {
-    upsert_typed(source, lang, xpath, value, limit, Some("string"))
+    upsert_typed(source, lang, xpath, value, limit, Some("string"), QueryBindings::default())
 }
 
 /// Like [`upsert`] but with explicit control over the value kind annotation.
@@ -172,6 +157,7 @@ pub fn upsert(
 ///   - `Some("string")` — force string (default for `--value`)
 ///   - `Some("null")` / `Some("number")` etc. — force that kind
 ///   - `None` — let the renderer auto-detect from the value text
+#[allow(clippy::too_many_arguments)]
 pub fn upsert_typed(
     source: &str,
     lang: &str,
@@ -179,23 +165,7 @@ pub fn upsert_typed(
     value: &str,
     limit: Option<usize>,
     value_kind: Option<&str>,
-) -> Result<UpsertResult, UpsertError> {
-    upsert_typed_with_variables(source, lang, xpath, value, limit, value_kind, &Default::default(), None)
-}
-
-/// Like [`upsert_typed`], but with user-defined variables bound in the
-/// query's dynamic context: `run_variables` becomes `$variables` and `entry`
-/// (if any) provides the `$<entry>.variables` namespace.
-#[allow(clippy::too_many_arguments)]
-pub fn upsert_typed_with_variables(
-    source: &str,
-    lang: &str,
-    xpath: &str,
-    value: &str,
-    limit: Option<usize>,
-    value_kind: Option<&str>,
-    run_variables: &std::sync::Arc<QueryVariables>,
-    entry: Option<&EntryContext>,
+    bindings: QueryBindings,
 ) -> Result<UpsertResult, UpsertError> {
     // Verify the language has a renderer that supports data mode
     let test_render = render::render(
@@ -226,8 +196,7 @@ pub fn upsert_typed_with_variables(
         },
     )
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
-    result.variables = std::sync::Arc::clone(run_variables);
-    result.entry = entry.cloned();
+    result.bindings = bindings;
 
     // Query with XPath to determine update vs insert
     let existing = result.query(xpath)
@@ -1086,7 +1055,7 @@ mod tests {
     #[test]
     fn update_only_existing_string() {
         let source = r#"{"name": "Alice", "age": 30}"#;
-        let result = update_only(source, "json", "//name", "Bob", None).unwrap();
+        let result = update_only(source, "json", "//name", "Bob", None, Default::default()).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.matches_updated, 1);
         assert!(result.source.contains("Bob"));
@@ -1096,7 +1065,7 @@ mod tests {
     #[test]
     fn update_only_no_match_returns_unchanged() {
         let source = r#"{"name": "Alice"}"#;
-        let result = update_only(source, "json", "//nonexistent", "value", None).unwrap();
+        let result = update_only(source, "json", "//nonexistent", "value", None, Default::default()).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.matches_updated, 0);
         assert_eq!(result.source, source, "source should be unchanged when no match");
@@ -1105,7 +1074,7 @@ mod tests {
     #[test]
     fn update_only_does_not_create_missing_path() {
         let source = r#"{"name": "Alice"}"#;
-        let result = update_only(source, "json", "//db/host", "localhost", None).unwrap();
+        let result = update_only(source, "json", "//db/host", "localhost", None, Default::default()).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.matches_updated, 0);
         assert_eq!(result.source, source, "should not create //db/host");
@@ -1117,7 +1086,7 @@ mod tests {
     #[test]
     fn update_only_multiple_matches() {
         let source = r#"{"items": [{"val": 1}, {"val": 2}, {"val": 3}]}"#;
-        let result = update_only(source, "json", "//items/val", "99", None).unwrap();
+        let result = update_only(source, "json", "//items/val", "99", None, Default::default()).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.matches_updated, 3);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
@@ -1129,7 +1098,7 @@ mod tests {
     #[test]
     fn update_only_respects_limit() {
         let source = r#"{"items": [{"val": 1}, {"val": 2}, {"val": 3}]}"#;
-        let result = update_only(source, "json", "//items/val", "99", Some(1)).unwrap();
+        let result = update_only(source, "json", "//items/val", "99", Some(1), Default::default()).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.matches_updated, 1);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
@@ -1142,14 +1111,14 @@ mod tests {
 
     #[test]
     fn update_only_unsupported_language() {
-        let result = update_only("{}", "brainfuck", "//x", "1", None);
+        let result = update_only("{}", "brainfuck", "//x", "1", None, Default::default());
         assert!(matches!(result.unwrap_err(), UpsertError::UnsupportedLanguage(_)));
     }
 
     #[test]
     fn yaml_update_only_existing() {
         let source = "name: Alice\nage: 30\n";
-        let result = update_only(source, "yaml", "//name", "Bob", None).unwrap();
+        let result = update_only(source, "yaml", "//name", "Bob", None, Default::default()).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.matches_updated, 1);
         assert!(result.source.contains("Bob"));
@@ -1159,7 +1128,7 @@ mod tests {
     #[test]
     fn yaml_update_only_no_match() {
         let source = "name: Alice\n";
-        let result = update_only(source, "yaml", "//nonexistent", "value", None).unwrap();
+        let result = update_only(source, "yaml", "//nonexistent", "value", None, Default::default()).unwrap();
         assert_eq!(result.matches_updated, 0);
         assert_eq!(result.source, source);
     }
@@ -1167,7 +1136,7 @@ mod tests {
     #[test]
     fn yaml_update_only_does_not_create_missing_path() {
         let source = "name: Alice\n";
-        let result = update_only(source, "yaml", "//db/host", "localhost", None).unwrap();
+        let result = update_only(source, "yaml", "//db/host", "localhost", None, Default::default()).unwrap();
         assert_eq!(result.matches_updated, 0);
         assert_eq!(result.source, source, "should not create //db/host");
         assert!(!result.source.contains("db"), "db key should not be created");
@@ -1177,7 +1146,7 @@ mod tests {
     #[test]
     fn yaml_update_only_nested_existing() {
         let source = "db:\n  host: localhost\n  port: 5432\n";
-        let result = update_only(source, "yaml", "//db/host", "db.example.com", None).unwrap();
+        let result = update_only(source, "yaml", "//db/host", "db.example.com", None, Default::default()).unwrap();
         assert_eq!(result.matches_updated, 1);
         assert!(result.source.contains("db.example.com"));
         assert!(result.source.contains("port: 5432"));
@@ -1187,7 +1156,7 @@ mod tests {
     fn yaml_update_only_partial_path_no_create() {
         // db exists but port doesn't — update_only should NOT create port
         let source = "db:\n  host: localhost\n";
-        let result = update_only(source, "yaml", "//db/port", "5432", None).unwrap();
+        let result = update_only(source, "yaml", "//db/port", "5432", None, Default::default()).unwrap();
         assert_eq!(result.matches_updated, 0);
         assert_eq!(result.source, source, "should not create missing port under existing db");
     }

@@ -293,11 +293,11 @@ pub(crate) fn query_files_multi(
                     return None;
                 }
             };
-            result.variables = std::sync::Arc::clone(variables);
+            result.bindings.variables = std::sync::Arc::clone(variables);
 
             let mut file_matches = Vec::new();
             for (xpath_expr, entry) in queries {
-                result.entry = entry.clone();
+                result.bindings.entry = entry.clone();
                 match result.query(xpath_expr) {
                     Ok(matches) => file_matches.extend(matches),
                     Err(e) => {

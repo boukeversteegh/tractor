@@ -3,7 +3,7 @@
 use tractor::report::{ReportBuilder, ReportMatch};
 use tractor::tree_mode::TreeMode;
 use tractor::{apply_replacements, NormalizedPath};
-use tractor::xpath_upsert::update_only_with_variables;
+use tractor::xpath_upsert::update_only;
 
 use crate::input::filter::Filters;
 use crate::input::Source;
@@ -117,7 +117,7 @@ pub(crate) fn execute_update(
         let file_path: &NormalizedPath = &source.path;
         let disk_bytes = std::fs::read_to_string(file_path)?;
 
-        match update_only_with_variables(&disk_bytes, lang, &op.xpath, &op.value, op.limit, &variables, None) {
+        match update_only(&disk_bytes, lang, &op.xpath, &op.value, op.limit, tractor::QueryBindings::run(std::sync::Arc::clone(&variables))) {
             Ok(result) => {
                 if result.source != disk_bytes {
                     std::fs::write(file_path, &result.source)?;

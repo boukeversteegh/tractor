@@ -173,8 +173,8 @@ fn validate_rule_examples(
                     parse_depth: None,
                 },
             )?;
-            result.variables = std::sync::Arc::clone(variables);
-            result.entry = Some(tractor::EntryContext::rule(
+            result.bindings.variables = std::sync::Arc::clone(variables);
+            result.bindings.entry = Some(tractor::EntryContext::rule(
                 std::sync::Arc::clone(&rule.variables),
                 rule.id.clone(),
             ));
@@ -204,8 +204,8 @@ fn validate_rule_examples(
                     parse_depth: None,
                 },
             )?;
-            result.variables = std::sync::Arc::clone(variables);
-            result.entry = Some(tractor::EntryContext::rule(
+            result.bindings.variables = std::sync::Arc::clone(variables);
+            result.bindings.entry = Some(tractor::EntryContext::rule(
                 std::sync::Arc::clone(&rule.variables),
                 rule.id.clone(),
             ));

@@ -441,6 +441,34 @@ pub struct EntryContext {
     pub id: Option<String>,
 }
 
+/// Everything user-defined that binds into a query's dynamic context: the
+/// run-level `$variables` map and the current operation entry (which
+/// supplies `$<entry>.variables` and `$rule.id`).
+///
+/// One value instead of two loose parameters, so adding a future binding
+/// changes this struct rather than every signature along the way. `Default`
+/// is "nothing bound" — every namespace an empty map.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct QueryBindings {
+    /// Run-level variables, bound as `$variables`.
+    pub variables: std::sync::Arc<QueryVariables>,
+    /// The current operation entry, or `None` outside any entry.
+    pub entry: Option<EntryContext>,
+}
+
+impl QueryBindings {
+    /// Bindings with only the run-level variables set.
+    pub fn run(variables: std::sync::Arc<QueryVariables>) -> Self {
+        Self { variables, entry: None }
+    }
+
+    /// The same bindings with `entry` as the current operation entry.
+    pub fn with_entry(mut self, entry: EntryContext) -> Self {
+        self.entry = Some(entry);
+        self
+    }
+}
+
 impl EntryContext {
     pub fn rule(variables: std::sync::Arc<QueryVariables>, id: impl Into<String>) -> Self {
         Self { kind: EntryKind::Rule, variables, id: Some(id.into()) }
