@@ -474,7 +474,7 @@ pub enum ConfigOperationKind {
     Test,
 }
 
-fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
+fn convert_check(config: CheckConfig, scope: &RootScope, base_dir: &Path) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let rules: Vec<Rule> = config.rules.into_iter().map(|r| {
@@ -508,7 +508,7 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<ConfigOperati
             rule = rule.with_invalid_examples(invalid_examples);
         }
         if !r.variables.is_empty() {
-            rule = rule.with_variables(r.variables);
+            rule = rule.with_variables(r.variables.resolve_sources(base_dir)?);
         }
         Ok::<Rule, Box<dyn std::error::Error>>(rule)
     }).collect::<Result<_, _>>()?;
@@ -569,17 +569,17 @@ fn normalize_set_expression(
     }).collect())
 }
 
-fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
+fn convert_set(config: SetConfig, scope: &RootScope, base_dir: &Path) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let mut mappings = config.mappings.into_iter().map(|m| {
-        SetMapping {
+        Ok(SetMapping {
             xpath: m.xpath,
             value: m.value,
             value_kind: m.value_kind,
-            variables: std::sync::Arc::new(m.variables),
-        }
-    }).collect::<Vec<_>>();
+            variables: std::sync::Arc::new(m.variables.resolve_sources(base_dir)?),
+        })
+    }).collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
 
     if let Some(ref expr) = config.expression {
         mappings.extend(normalize_set_expression(expr, config.value.as_deref())?);
@@ -639,15 +639,15 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, 
     Ok(ConfigOperation::Set { inputs, op })
 }
 
-fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
+fn convert_query(config: QueryConfig, scope: &RootScope, base_dir: &Path) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let queries = config.queries.into_iter().map(|q| {
-        QueryExpr {
+        Ok(QueryExpr {
             xpath: q.xpath,
-            variables: std::sync::Arc::new(q.variables),
-        }
-    }).collect();
+            variables: std::sync::Arc::new(q.variables.resolve_sources(base_dir)?),
+        })
+    }).collect::<Result<_, Box<dyn std::error::Error>>>()?;
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
 
@@ -672,16 +672,16 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
     Ok(ConfigOperation::Query { inputs, op })
 }
 
-fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
+fn convert_test(config: TestConfig, scope: &RootScope, base_dir: &Path) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let assertions = config.assertions.into_iter().map(|a| {
-        TestAssertion {
+        Ok(TestAssertion {
             xpath: a.xpath,
             expect: a.expect,
-            variables: std::sync::Arc::new(a.variables),
-        }
-    }).collect();
+            variables: std::sync::Arc::new(a.variables.resolve_sources(base_dir)?),
+        })
+    }).collect::<Result<_, Box<dyn std::error::Error>>>()?;
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
 
@@ -741,7 +741,7 @@ fn merge_scope(
     (op_files, exclude, diff_files, diff_lines)
 }
 
-fn config_to_operations(config: ConfigFile) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
+fn config_to_operations(config: ConfigFile, base_dir: &Path) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
     let root_files = config.files;
 
     let scope = RootScope {
@@ -754,37 +754,37 @@ fn config_to_operations(config: ConfigFile) -> Result<LoadedConfig, Box<dyn std:
 
     // Root-level shorthand keys first
     if let Some(check) = config.check {
-        ops.push(convert_check(check, &scope)?);
+        ops.push(convert_check(check, &scope, base_dir)?);
     }
     if let Some(set) = config.set {
-        ops.push(convert_set(set, &scope)?);
+        ops.push(convert_set(set, &scope, base_dir)?);
     }
     if let Some(query) = config.query {
-        ops.push(convert_query(query, &scope)?);
+        ops.push(convert_query(query, &scope, base_dir)?);
     }
     if let Some(test) = config.test {
-        ops.push(convert_test(test, &scope)?);
+        ops.push(convert_test(test, &scope, base_dir)?);
     }
 
     // Then explicit operations list
     for entry in config.operations {
         if let Some(c) = entry.check {
-            ops.push(convert_check(c, &scope)?);
+            ops.push(convert_check(c, &scope, base_dir)?);
         }
         if let Some(s) = entry.set {
-            ops.push(convert_set(s, &scope)?);
+            ops.push(convert_set(s, &scope, base_dir)?);
         }
         if let Some(q) = entry.query {
-            ops.push(convert_query(q, &scope)?);
+            ops.push(convert_query(q, &scope, base_dir)?);
         }
         if let Some(t) = entry.test {
-            ops.push(convert_test(t, &scope)?);
+            ops.push(convert_test(t, &scope, base_dir)?);
         }
     }
 
     Ok(LoadedConfig {
         root_files,
-        variables: config.variables,
+        variables: config.variables.resolve_sources(base_dir)?,
         operations: ops,
     })
 }
@@ -803,8 +803,9 @@ pub struct LoadedConfig {
     /// explicitly empty.
     pub root_files: Option<Vec<String>>,
     /// User-defined variables from the root-level `variables:` key, bound
-    /// as `$variables` in every query of the run. A future `variables-file:`
-    /// key merges into this same map (inline wins).
+    /// as `$variables` in every query of the run. `$`-directive sources
+    /// (`$file`, `$literal`) are already resolved — each source's data
+    /// lives under its own name, never merged.
     pub variables: QueryVariables,
     /// Parsed operations paired with their per-op input-resolution data.
     /// Sources/filters are filled in by the runner once the shared
@@ -828,9 +829,15 @@ pub fn load_tractor_config(path: &Path) -> Result<LoadedConfig, Box<dyn std::err
     let content = std::fs::read_to_string(path)
         .map_err(|e| format!("cannot read '{}': {}", path.display(), e))?;
 
+    // `$file` variable sources resolve relative to the config file's
+    // directory, same as globs.
+    let base_dir = path.parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+
     match path.extension().and_then(|e| e.to_str()) {
-        Some("yml") | Some("yaml") => parse_config_yaml(&content),
-        Some("toml") => parse_config_toml(&content),
+        Some("yml") | Some("yaml") => parse_config_yaml_at(&content, base_dir),
+        Some("toml") => parse_config_toml_at(&content, base_dir),
         Some(ext) => Err(format!(
             "unsupported config file extension '.{}': use .yaml, .yml, or .toml",
             ext
@@ -839,18 +846,36 @@ pub fn load_tractor_config(path: &Path) -> Result<LoadedConfig, Box<dyn std::err
     }
 }
 
-/// Parse a tractor config from a YAML string.
+/// Parse a tractor config from a YAML string. `$file` variable sources
+/// resolve relative to the current directory; prefer [`parse_config_yaml_at`]
+/// when the config's own directory is known.
+#[cfg(test)]
 pub fn parse_config_yaml(content: &str) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
-    let config: ConfigFile = serde_yaml::from_str(content)
-        .map_err(|e| format!("invalid tractor config YAML: {}", e))?;
-    config_to_operations(config)
+    parse_config_yaml_at(content, Path::new("."))
 }
 
-/// Parse a tractor config from a TOML string.
+/// Parse a tractor config from a YAML string, resolving `$file` variable
+/// sources against `base_dir`.
+pub fn parse_config_yaml_at(content: &str, base_dir: &Path) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
+    let config: ConfigFile = serde_yaml::from_str(content)
+        .map_err(|e| format!("invalid tractor config YAML: {}", e))?;
+    config_to_operations(config, base_dir)
+}
+
+/// Parse a tractor config from a TOML string. `$file` variable sources
+/// resolve relative to the current directory; prefer [`parse_config_toml_at`]
+/// when the config's own directory is known.
+#[cfg(test)]
 pub fn parse_config_toml(content: &str) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
+    parse_config_toml_at(content, Path::new("."))
+}
+
+/// Parse a tractor config from a TOML string, resolving `$file` variable
+/// sources against `base_dir`.
+pub fn parse_config_toml_at(content: &str, base_dir: &Path) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
     let config: ConfigFile = toml::from_str(content)
         .map_err(|e| format!("invalid tractor config TOML: {}", e))?;
-    config_to_operations(config)
+    config_to_operations(config, base_dir)
 }
 
 // ---------------------------------------------------------------------------
@@ -1549,6 +1574,58 @@ test:
         assert_eq!(q.queries[0].variables.get("role"), Some(&VariableValue::String("admin".into())));
         let (_, t) = as_test(&loaded.operations[2]);
         assert_eq!(t.assertions[0].variables.get("max"), Some(&VariableValue::Int(100)));
+    }
+
+    #[test]
+    fn parse_yaml_variable_file_sources() {
+        use tractor::variables::VariableValue;
+
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("settings.yml"), "db:\n  host: localhost\n").unwrap();
+        std::fs::write(dir.path().join("prefixes.json"), r#"["Assert", "Should"]"#).unwrap();
+
+        let yaml = r#"
+variables:
+  env: production
+  settings:
+    $file: settings.yml
+check:
+  rules:
+    - id: r
+      xpath: "//x"
+      variables:
+        prefixes:
+          $file: prefixes.json
+"#;
+        let loaded = parse_config_yaml_at(yaml, dir.path()).unwrap();
+
+        // Root: inline and file-sourced names coexist, each under its own key.
+        assert_eq!(loaded.variables.get("env"), Some(&VariableValue::String("production".into())));
+        match loaded.variables.get("settings") {
+            Some(VariableValue::Map(m)) => assert!(matches!(m.get("db"), Some(VariableValue::Map(_)))),
+            other => panic!("expected settings map, got {:?}", other),
+        }
+
+        // Entry-level variables resolve sources too.
+        let (_, c) = as_check(&loaded.operations[0]);
+        assert_eq!(
+            c.rules[0].variables.get("prefixes"),
+            Some(&VariableValue::Array(vec![
+                VariableValue::String("Assert".into()),
+                VariableValue::String("Should".into()),
+            ]))
+        );
+    }
+
+    #[test]
+    fn parse_yaml_variable_source_errors_are_fatal() {
+        let yaml = "variables:\n  x:\n    $file: does-not-exist.yml\n";
+        let err = parse_config_yaml(yaml).unwrap_err();
+        assert!(err.to_string().contains("cannot read"), "{}", err);
+
+        let yaml = "variables:\n  x:\n    $query:\n      xpath: //a\n";
+        let err = parse_config_yaml(yaml).unwrap_err();
+        assert!(err.to_string().contains("not implemented"), "{}", err);
     }
 
     #[test]

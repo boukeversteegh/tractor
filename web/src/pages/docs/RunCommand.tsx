@@ -200,6 +200,34 @@ test:
       variables:
         max: 4`}
       />
+      <h3>Variable sources</h3>
+      <p>
+        A value in any <code>variables</code> tree can come from an external source instead of
+        being written inline: a map with a single <code>$</code>-prefixed key names the source.
+        Each source binds under its own key — sources never merge, so two sources cannot collide.
+        Directives may appear at any depth, so one nested key can be file-sourced while its
+        siblings stay inline.
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`variables:
+  env: production            # inline literal
+  settings:
+    $file: "config/vars.yml" # whole file bound under this name
+  team:
+    prefixes:
+      $file: "prefixes.json" # nested directive; siblings stay inline`}
+      />
+      <p>
+        <code>$file</code> loads a JSON, YAML, or TOML document (path relative to the config
+        file's directory); read it with the usual lookups, e.g.{' '}
+        <code>$variables?settings?db?host</code>. File content is pure data — directives inside
+        loaded files are not processed. <code>$literal</code> is the escape hatch for literal data
+        whose keys start with <code>$</code>: it keeps its content verbatim. A missing file or an
+        unknown directive (e.g. a typo like <code>$fiel</code>) fails the run at load time — a
+        declared source is a promise, unlike an optional key lookup.
+      </p>
       <p>
         Rules also get <code>$rule.id</code> — the current rule's <code>id</code> string. This makes
         per-rule escape hatches a single shared pattern instead of hand-written per rule:

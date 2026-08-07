@@ -30,10 +30,41 @@
 //!
 //! [`VariableValue`] mirrors the JSON data model (null, bool, number, string,
 //! array, object) rather than any single config format. This is deliberate:
-//! a future `variables-file:` feature that loads a JSON or YAML document as
-//! variable context deserializes into the exact same type — merging file-based
-//! and inline variables is then a plain [`QueryVariables::merge`], with no new
-//! conversion machinery.
+//! every variable source — inline config values, `$file` documents, future
+//! source kinds — deserializes into the exact same type, so downstream code
+//! never knows or cares where a value came from.
+//!
+//! ## Sources (`$`-directives)
+//!
+//! Any value in a `variables:` tree may be a *source directive* instead of a
+//! literal: a map with exactly one `$`-prefixed key saying where the value
+//! comes from. Each source binds under its own name — there are no merge or
+//! shadowing semantics; two sources cannot collide because they are distinct
+//! keys in one map.
+//!
+//! ```yaml
+//! variables:
+//!   env: production              # inline literal
+//!   settings:
+//!     $file: "config/vars.yml"   # whole file bound under this name
+//!   team:
+//!     prefixes:
+//!       $file: "prefixes.yml"    # directives may appear at any depth
+//! ```
+//!
+//! - **`$file`** — load a JSON/YAML/TOML document (path relative to the
+//!   config file's directory). File content is pure data: directives inside
+//!   loaded files are *not* processed.
+//! - **`$literal`** — the inner value verbatim; the escape hatch for literal
+//!   data whose keys start with `$`.
+//! - **`$query`** — reserved for binding the result of a tractor query;
+//!   errors as "not implemented yet" so it cannot silently become data.
+//!
+//! `$`-prefixed keys are reserved everywhere outside `$literal`: an unknown
+//! directive or a `$`-key mixed into an ordinary map is a load error, so a
+//! typo'd directive can never silently pass through as literal data.
+//! Directives are resolved once at config load ([`QueryVariables::resolve_sources`]);
+//! everything downstream sees plain resolved data.
 //!
 //! ## Conversion to XPath values
 //!
@@ -49,6 +80,7 @@
 //! xee sequences are `Rc`-based and must be built per thread.
 
 use std::collections::BTreeMap;
+use std::path::Path;
 use serde::Deserialize;
 
 /// A single variable value, mirroring the JSON data model.
@@ -136,13 +168,6 @@ impl QueryVariables {
         self.0.keys().map(|k| k.as_str())
     }
 
-    /// Overlay `other` on top of `self` — `other` wins on name clashes.
-    /// This is the extension seam for `variables-file:`: load the file into
-    /// a `QueryVariables`, then merge the inline `variables:` over it.
-    pub fn merge(&mut self, other: QueryVariables) {
-        self.0.extend(other.0);
-    }
-
     /// The whole variable map as a JSON object — the bridge format used to
     /// bind it into the XPath context as a `map(*)` item via `parse-json()`.
     pub fn to_json(&self) -> serde_json::Value {
@@ -155,6 +180,160 @@ impl QueryVariables {
 impl FromIterator<(String, VariableValue)> for QueryVariables {
     fn from_iter<I: IntoIterator<Item = (String, VariableValue)>>(iter: I) -> Self {
         Self(iter.into_iter().collect())
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Source directives ($file, $literal, reserved $query)
+// ---------------------------------------------------------------------------
+
+/// Error while resolving `$`-directive variable sources. Always fatal: a
+/// declared source is a promise, unlike an optional key lookup.
+#[derive(Debug, thiserror::Error)]
+#[error("in variables{path}: {message}")]
+pub struct VariableSourceError {
+    /// Lookup path to the offending value, e.g. `?settings?db`.
+    path: String,
+    message: String,
+}
+
+impl VariableSourceError {
+    fn new(path: &[String], message: impl Into<String>) -> Self {
+        Self {
+            path: path.iter().map(|p| format!("?{}", p)).collect(),
+            message: message.into(),
+        }
+    }
+}
+
+impl QueryVariables {
+    /// Resolve every `$`-directive source in the tree into plain data.
+    /// `base_dir` anchors relative `$file` paths (the config file's
+    /// directory). Called once at config load; downstream code only ever
+    /// sees resolved values.
+    pub fn resolve_sources(self, base_dir: &Path) -> Result<QueryVariables, VariableSourceError> {
+        let mut path = Vec::new();
+        self.0
+            .into_iter()
+            .map(|(name, value)| {
+                path.push(name.clone());
+                let resolved = resolve_value(value, base_dir, &mut path)?;
+                path.pop();
+                Ok((name, resolved))
+            })
+            .collect()
+    }
+}
+
+/// Recursively resolve one value. `path` carries the lookup trail for error
+/// messages and is restored before returning.
+fn resolve_value(
+    value: VariableValue,
+    base_dir: &Path,
+    path: &mut Vec<String>,
+) -> Result<VariableValue, VariableSourceError> {
+    let VariableValue::Map(map) = value else {
+        return match value {
+            VariableValue::Array(items) => {
+                let resolved = items
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, item)| {
+                        path.push(i.to_string());
+                        let resolved = resolve_value(item, base_dir, path)?;
+                        path.pop();
+                        Ok(resolved)
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(VariableValue::Array(resolved))
+            }
+            scalar => Ok(scalar),
+        };
+    };
+
+    // A single-`$`-key map is a source directive.
+    if map.len() == 1 {
+        let directive = map.keys().next().unwrap().strip_prefix('$').map(str::to_owned);
+        if let Some(directive) = directive {
+            let inner = map.into_values().next().unwrap();
+            return match directive.as_str() {
+                // Verbatim escape hatch — no directive processing inside.
+                "literal" => Ok(inner),
+                "file" => {
+                    let VariableValue::String(rel) = inner else {
+                        return Err(VariableSourceError::new(
+                            path,
+                            "`$file` expects a path string",
+                        ));
+                    };
+                    load_variables_file(&base_dir.join(&rel), path)
+                }
+                "query" => Err(VariableSourceError::new(
+                    path,
+                    "`$query` variable sources are not implemented yet",
+                )),
+                other => Err(VariableSourceError::new(
+                    path,
+                    format!(
+                        "unknown variable source directive `${}` (known: $file, $literal; \
+                         wrap literal data in `$literal:` if the `$` key is intentional)",
+                        other
+                    ),
+                )),
+            };
+        }
+    }
+
+    // Ordinary map: `$`-keys are reserved here, so a typo'd or misplaced
+    // directive fails loudly instead of passing through as data.
+    if let Some(stray) = map.keys().find(|k| k.starts_with('$')) {
+        return Err(VariableSourceError::new(
+            path,
+            format!(
+                "`{}` is a reserved directive key inside a map with other keys; \
+                 wrap the map in `$literal:` if it is literal data",
+                stray
+            ),
+        ));
+    }
+
+    let resolved = map
+        .into_iter()
+        .map(|(k, v)| {
+            path.push(k.clone());
+            let resolved = resolve_value(v, base_dir, path)?;
+            path.pop();
+            Ok((k, resolved))
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
+    Ok(VariableValue::Map(resolved))
+}
+
+/// Load a JSON/YAML/TOML document as a single [`VariableValue`]. The content
+/// is pure data — directives inside loaded files are not processed.
+fn load_variables_file(
+    file: &Path,
+    path: &[String],
+) -> Result<VariableValue, VariableSourceError> {
+    let content = std::fs::read_to_string(file).map_err(|e| {
+        VariableSourceError::new(path, format!("cannot read '{}': {}", file.display(), e))
+    })?;
+    let parse_err = |e: String| {
+        VariableSourceError::new(path, format!("invalid variables in '{}': {}", file.display(), e))
+    };
+    match file.extension().and_then(|e| e.to_str()) {
+        Some("json") => serde_json::from_str(&content).map_err(|e| parse_err(e.to_string())),
+        Some("yml") | Some("yaml") => {
+            serde_yaml::from_str(&content).map_err(|e| parse_err(e.to_string()))
+        }
+        Some("toml") => toml::from_str(&content).map_err(|e| parse_err(e.to_string())),
+        _ => Err(VariableSourceError::new(
+            path,
+            format!(
+                "unsupported variables file '{}': use .json, .yml/.yaml, or .toml",
+                file.display()
+            ),
+        )),
     }
 }
 
@@ -289,18 +468,102 @@ mod tests {
         assert_eq!(QueryVariables::new().to_json(), serde_json::json!({}));
     }
 
+    fn resolve(yaml: &str, base_dir: &Path) -> Result<QueryVariables, VariableSourceError> {
+        let vars: QueryVariables = serde_yaml::from_str(yaml).unwrap();
+        vars.resolve_sources(base_dir)
+    }
+
     #[test]
-    fn merge_overlays() {
-        let mut base = QueryVariables::new();
-        base.insert("a", VariableValue::Int(1));
-        base.insert("b", VariableValue::Int(2));
-        let mut over = QueryVariables::new();
-        over.insert("b", VariableValue::Int(20));
-        over.insert("c", VariableValue::Int(3));
-        base.merge(over);
-        assert_eq!(base.get("a"), Some(&VariableValue::Int(1)));
-        assert_eq!(base.get("b"), Some(&VariableValue::Int(20)));
-        assert_eq!(base.get("c"), Some(&VariableValue::Int(3)));
+    fn resolve_sources_passes_literals_through() {
+        let vars = resolve("env: prod\nlimits:\n  max: 4\n", Path::new(".")).unwrap();
+        assert_eq!(vars.get("env"), Some(&VariableValue::String("prod".into())));
+        match vars.get("limits") {
+            Some(VariableValue::Map(m)) => assert_eq!(m.get("max"), Some(&VariableValue::Int(4))),
+            other => panic!("expected map, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn resolve_sources_loads_files_at_any_depth() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("vars.yml"), "db:\n  host: localhost\n").unwrap();
+        std::fs::write(dir.path().join("list.json"), r#"["a", "b"]"#).unwrap();
+        std::fs::write(dir.path().join("vars.toml"), "port = 8080\n").unwrap();
+
+        let vars = resolve(
+            "settings:\n  $file: vars.yml\nteam:\n  prefixes:\n    $file: list.json\nnet:\n  $file: vars.toml\n",
+            dir.path(),
+        )
+        .unwrap();
+
+        // Whole YAML document bound under its name
+        match vars.get("settings") {
+            Some(VariableValue::Map(m)) => match m.get("db") {
+                Some(VariableValue::Map(db)) => {
+                    assert_eq!(db.get("host"), Some(&VariableValue::String("localhost".into())));
+                }
+                other => panic!("expected db map, got {:?}", other),
+            },
+            other => panic!("expected settings map, got {:?}", other),
+        }
+        // Directive nested below the top level
+        match vars.get("team") {
+            Some(VariableValue::Map(m)) => assert_eq!(
+                m.get("prefixes"),
+                Some(&VariableValue::Array(vec![
+                    VariableValue::String("a".into()),
+                    VariableValue::String("b".into()),
+                ]))
+            ),
+            other => panic!("expected team map, got {:?}", other),
+        }
+        // TOML file
+        match vars.get("net") {
+            Some(VariableValue::Map(m)) => assert_eq!(m.get("port"), Some(&VariableValue::Int(8080))),
+            other => panic!("expected net map, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn resolve_sources_literal_escape_hatch() {
+        // $literal keeps its content verbatim — including `$` keys inside.
+        let vars = resolve(
+            "schema:\n  $literal:\n    $file: not-a-directive\n    $ref: kept\n",
+            Path::new("."),
+        )
+        .unwrap();
+        match vars.get("schema") {
+            Some(VariableValue::Map(m)) => {
+                assert_eq!(m.get("$file"), Some(&VariableValue::String("not-a-directive".into())));
+                assert_eq!(m.get("$ref"), Some(&VariableValue::String("kept".into())));
+            }
+            other => panic!("expected map, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn resolve_sources_fails_loudly() {
+        // Unknown directive (e.g. a typo) never passes through as data.
+        let err = resolve("x:\n  $fiel: vars.yml\n", Path::new(".")).unwrap_err();
+        assert!(err.to_string().contains("unknown variable source directive `$fiel`"), "{}", err);
+        assert!(err.to_string().contains("variables?x"), "{}", err);
+
+        // $query is reserved, not silently data.
+        let err = resolve("x:\n  $query:\n    xpath: //a\n", Path::new(".")).unwrap_err();
+        assert!(err.to_string().contains("not implemented"), "{}", err);
+
+        // A `$` key mixed into an ordinary map is reserved.
+        let err = resolve("x:\n  $file: vars.yml\n  other: 1\n", Path::new(".")).unwrap_err();
+        assert!(err.to_string().contains("reserved directive key"), "{}", err);
+
+        // Missing file is fatal, with the lookup path in the message.
+        let err = resolve("deep:\n  nested:\n    $file: nope.yml\n", Path::new(".")).unwrap_err();
+        assert!(err.to_string().contains("variables?deep?nested"), "{}", err);
+        assert!(err.to_string().contains("cannot read"), "{}", err);
+
+        // $file expects a string path.
+        let err = resolve("x:\n  $file: [a, b]\n", Path::new(".")).unwrap_err();
+        assert!(err.to_string().contains("expects a path string"), "{}", err);
     }
 
     #[test]

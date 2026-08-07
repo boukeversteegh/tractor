@@ -1988,6 +1988,59 @@ test:
 }
 
 #[test]
+fn config_variable_file_source_bound_in_check() {
+    // A `$file` variable source loads a document under its own name:
+    // $variables?settings?forbidden drives the rule, while inline
+    // variables coexist untouched. Paths resolve against the config dir.
+    let config = "variables:
+  env: production
+  settings:
+    $file: \"vars/settings.yml\"
+check:
+  files: [\"app.js\"]
+  rules:
+    - id: no-forbidden-call
+      xpath: \"//call/function[. = $variables?settings?forbidden?*][$variables?env = 'production']\"
+      severity: error
+      reason: \"forbidden call\"
+";
+    cli_case!({
+        tractor check --config "tractor.yml";
+        expect => exit 1;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("vars/settings.yml", "forbidden: [alert, eval]\n")
+    .seed_file("app.js", "alert('hi');\n")
+    .run();
+}
+
+#[test]
+fn config_variable_file_source_missing_is_fatal() {
+    let config = "variables:
+  settings:
+    $file: \"nope.yml\"
+check:
+  files: [\"app.js\"]
+  rules:
+    - id: r
+      xpath: \"//x\"
+";
+    let result = command(["check", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("app.js", "let x = 1;\n")
+        .capture();
+
+    assert_ne!(0, result.status, "missing variables file must fail: {}{}", result.stdout, result.stderr);
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(combined.contains("cannot read"), "error should name the failure: {}", combined);
+    assert!(combined.contains("variables?settings"), "error should name the variable: {}", combined);
+}
+
+#[test]
 fn config_set_error_still_renders_advisory_warnings() {
     // $rule.variables in a set mapping is an empty map, so the xpath matches
     // nothing and the upsert insert path errors on the predicate. The
