@@ -41,6 +41,9 @@ pub struct QueryOperationPlan {
     pub ignore_whitespace: bool,
     /// Maximum parse depth.
     pub parse_depth: Option<usize>,
+    /// Materialize results to a JSON file, keyed by source file — the
+    /// artifact later operations consume via a `$file` variable source.
+    pub output: Option<QueryOutput>,
 }
 
 /// Pre-resolution shape for a query operation. Mirrors [`QueryOperationPlan`]
@@ -62,6 +65,8 @@ pub struct QueryOperation {
     pub ignore_whitespace: bool,
     /// Maximum parse depth.
     pub parse_depth: Option<usize>,
+    /// Materialize results to a JSON file (see [`QueryOutput`]).
+    pub output: Option<QueryOutput>,
 }
 
 impl QueryOperation {
@@ -76,6 +81,51 @@ impl QueryOperation {
             limit: self.limit,
             ignore_whitespace: self.ignore_whitespace,
             parse_depth: self.parse_depth,
+            output: self.output,
+        }
+    }
+}
+
+/// Materialized-output settings for a query operation.
+///
+/// The written file is a JSON index keyed by source file:
+/// `{ "files": { "<path>": [ <entry>, ... ] } }`. File keys are relative to
+/// the run's base dir when possible, so the artifact is stable and
+/// committable. The per-file grouping is not optional — it is what makes
+/// incremental merges sound: on each run, entries for every *queried* file
+/// are replaced wholesale (an empty result removes the key), entries for
+/// files outside the queried set (e.g. excluded by `--diff-files`) are
+/// kept, and entries whose file no longer exists are pruned.
+#[derive(Debug, Clone)]
+pub struct QueryOutput {
+    /// Output path, relative to the run's base dir.
+    pub file: String,
+    /// Fields stored per entry. `[Value]` (the default) writes bare value
+    /// strings; anything else writes one JSON object per match.
+    pub view: Vec<QueryOutputField>,
+}
+
+/// A field of a materialized query-output entry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QueryOutputField {
+    Value,
+    Line,
+    Column,
+    Tree,
+}
+
+impl QueryOutputField {
+    /// Parse a config `view:` field name.
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s {
+            "value" => Ok(Self::Value),
+            "line" => Ok(Self::Line),
+            "column" => Ok(Self::Column),
+            "tree" => Ok(Self::Tree),
+            other => Err(format!(
+                "invalid query output view field '{}': use value, line, column, or tree",
+                other
+            )),
         }
     }
 }
@@ -140,9 +190,135 @@ pub(crate) fn execute_query(
         op.limit, ctx.verbose, &op.filters, &variables,
     )?;
 
+    if let Some(output) = &op.output {
+        let base_dir = ctx.base_dir.unwrap_or_else(|| std::path::Path::new("."));
+        write_query_output(output, &matches, &op.sources, base_dir)?;
+    }
+
     report.add_all(matches.into_iter().map(|m| match_to_report_match(m, "query")));
 
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Materialized output
+// ---------------------------------------------------------------------------
+
+/// Write (or incrementally merge) query results into the output file.
+///
+/// Merge semantics: entries for every queried source file are replaced
+/// wholesale by this run's results (zero matches removes the key); entries
+/// for files outside the queried set are kept; entries whose file no longer
+/// exists on disk are pruned. Keys sort deterministically for stable diffs.
+fn write_query_output(
+    output: &super::query::QueryOutput,
+    matches: &[tractor::Match],
+    sources: &[Source],
+    base_dir: &std::path::Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use std::collections::BTreeMap;
+
+    let base_key = normalize_key(&base_dir.to_string_lossy());
+    let relativize = |path: &str| -> String {
+        let p = normalize_key(path);
+        match p.strip_prefix(&format!("{}/", base_key)) {
+            Some(rel) if base_key != "." => rel.to_string(),
+            _ => p,
+        }
+    };
+
+    // This run's results, grouped per file.
+    let mut fresh: BTreeMap<String, Vec<serde_json::Value>> = BTreeMap::new();
+    for m in matches {
+        fresh.entry(relativize(&m.file)).or_default().push(output_entry(output, m));
+    }
+
+    // The queried set: files whose entries this run owns (disk sources
+    // only — virtual inline sources have no stable identity to key on).
+    let queried: std::collections::BTreeSet<String> = sources
+        .iter()
+        .filter(|s| !s.is_virtual())
+        .map(|s| relativize(s.path.as_str()))
+        .collect();
+
+    let out_path = base_dir.join(&output.file);
+
+    // Start from the existing index when merging is possible.
+    let mut files: BTreeMap<String, serde_json::Value> = match std::fs::read_to_string(&out_path) {
+        Ok(existing) => {
+            let parsed: serde_json::Value = serde_json::from_str(&existing).map_err(|e| {
+                format!(
+                    "existing query output '{}' is not valid JSON ({}); delete it to regenerate",
+                    out_path.display(), e
+                )
+            })?;
+            match parsed.get("files").and_then(|f| f.as_object()) {
+                Some(obj) => obj.clone().into_iter().collect(),
+                None => {
+                    return Err(format!(
+                        "existing file '{}' is not a tractor query output (expected a top-level \
+                         \"files\" object); delete it or choose another output path",
+                        out_path.display()
+                    ).into());
+                }
+            }
+        }
+        Err(_) => BTreeMap::new(),
+    };
+
+    // Replace everything this run queried, then overlay fresh results.
+    files.retain(|key, _| !queried.contains(key));
+    for (key, entries) in fresh {
+        files.insert(key, serde_json::Value::Array(entries));
+    }
+
+    // Prune entries whose file no longer exists (deletes / renames).
+    files.retain(|key, _| {
+        let p = std::path::Path::new(key);
+        if p.is_absolute() { p.exists() } else { base_dir.join(p).exists() }
+    });
+
+    if let Some(parent) = out_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let doc = serde_json::json!({ "files": files });
+    std::fs::write(&out_path, format!("{}\n", serde_json::to_string_pretty(&doc)?))?;
+    Ok(())
+}
+
+/// Normalize a path string for use as an index key (forward slashes, no
+/// trailing slash) so keys compare consistently across platforms and runs.
+fn normalize_key(path: &str) -> String {
+    let p = path.replace('\\', "/");
+    p.trim_end_matches('/').to_string()
+}
+
+/// Build one output entry for a match, honoring the configured view.
+/// A bare `value` view writes plain strings; anything else writes objects.
+fn output_entry(output: &QueryOutput, m: &tractor::Match) -> serde_json::Value {
+    if output.view == [QueryOutputField::Value] {
+        return serde_json::Value::String(m.value.clone());
+    }
+    let mut obj = serde_json::Map::new();
+    for field in &output.view {
+        match field {
+            QueryOutputField::Value => {
+                obj.insert("value".into(), serde_json::Value::String(m.value.clone()));
+            }
+            QueryOutputField::Line => {
+                obj.insert("line".into(), serde_json::Value::from(m.line));
+            }
+            QueryOutputField::Column => {
+                obj.insert("column".into(), serde_json::Value::from(m.column));
+            }
+            QueryOutputField::Tree => {
+                if let Some(node) = &m.xml_node {
+                    obj.insert("tree".into(), tractor::xml_node_to_json(node, None));
+                }
+            }
+        }
+    }
+    serde_json::Value::Object(obj)
 }
 
 // ---------------------------------------------------------------------------
@@ -189,6 +365,7 @@ mod tests {
             limit: None,
             ignore_whitespace: false,
             parse_depth: None,
+            output: None,
         })];
         let report = run_query_ops(&ops);
         assert!(report.success.is_none());
@@ -208,6 +385,7 @@ mod tests {
             limit: Some(2),
             ignore_whitespace: false,
             parse_depth: None,
+            output: None,
         })];
         let report = run_query_ops(&ops);
         assert!(report.all_matches().len() <= 2);
@@ -233,6 +411,7 @@ mod tests {
             limit: None,
             ignore_whitespace: false,
             parse_depth: None,
+            output: None,
         })];
         let report = run_query_ops(&ops);
         let warnings: Vec<_> = report.all_matches().into_iter()
@@ -242,6 +421,42 @@ mod tests {
         assert!(warnings[0].reason.as_deref().unwrap().contains("only bound in check rules"));
         // The query itself still runs and matches nothing (empty lookup).
         assert!(report.all_matches().iter().all(|m| m.severity == Some(Severity::Warning)));
+    }
+
+    /// Merge semantics of the materialized output: queried files are
+    /// replaced wholesale, unqueried files keep their entries, and entries
+    /// whose file no longer exists are pruned.
+    #[test]
+    fn query_output_incremental_merge() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("a.json"), "{}").unwrap();
+        std::fs::write(dir.path().join("b.json"), "{}").unwrap();
+        // "gone.json" is referenced by the existing index but no longer exists.
+        std::fs::write(
+            dir.path().join("out.json"),
+            r#"{ "files": { "a.json": ["old-a"], "b.json": ["old-b"], "gone.json": ["x"] } }"#,
+        ).unwrap();
+
+        let output = QueryOutput {
+            file: "out.json".into(),
+            view: vec![QueryOutputField::Value],
+        };
+        // This run queried only b.json and found one match.
+        let b_path = dir.path().join("b.json");
+        let matches = vec![tractor::Match::new(
+            b_path.to_string_lossy().replace('\\', "/"),
+            "new-b".to_string(),
+        )];
+        let sources = vec![disk_source(b_path.to_str().unwrap())];
+
+        write_query_output(&output, &matches, &sources, dir.path()).unwrap();
+
+        let written: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(dir.path().join("out.json")).unwrap()).unwrap();
+        let files = written.get("files").unwrap().as_object().unwrap();
+        assert_eq!(files.get("a.json").unwrap(), &serde_json::json!(["old-a"]), "unqueried file kept");
+        assert_eq!(files.get("b.json").unwrap(), &serde_json::json!(["new-b"]), "queried file replaced");
+        assert!(files.get("gone.json").is_none(), "missing file pruned: {:?}", files);
     }
 
     #[test]
@@ -255,6 +470,7 @@ mod tests {
             limit: None,
             ignore_whitespace: false,
             parse_depth: None,
+            output: None,
         })];
         let report = run_query_ops(&ops);
         assert_eq!(report.all_matches().len(), 0);

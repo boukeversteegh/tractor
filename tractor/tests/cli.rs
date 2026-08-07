@@ -2017,7 +2017,52 @@ check:
 }
 
 #[test]
+fn config_query_output_feeds_check_in_one_run() {
+    // The multi-query pipeline in a single run: the query op materializes
+    // repository class names to a JSON index, and the check op — whose
+    // $file source resolves at ITS start, after the query ran — asserts
+    // every entity class has a matching repository. Invoice has none.
+    let config = "operations:
+  - query:
+      files: [\"src/*.cs\"]
+      queries:
+        - xpath: \"//class/name[contains(., 'Repository')]\"
+      output: \"gathered/repos.json\"
+  - check:
+      files: [\"src/*.cs\"]
+      rules:
+        - id: entity-needs-repository
+          xpath: \"//class/name[not(contains(., 'Repository'))][not(concat(., 'Repository') = $variables?repos?files?*?*)]\"
+          severity: error
+          reason: \"entity class has no matching repository\"
+variables:
+  repos:
+    $file: \"gathered/repos.json\"
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("src/UserRepository.cs", "class UserRepository {}\n")
+        .seed_file("src/User.cs", "class User {}\n")
+        .seed_file("src/Invoice.cs", "class Invoice {}\n")
+        .capture();
+
+    assert_eq!(1, result.status, "Invoice lacks a repository: {}{}", result.stdout, result.stderr);
+    assert!(result.stdout.contains("Invoice"), "Invoice should be flagged: {}", result.stdout);
+    assert!(
+        !result.stdout.contains("User.cs:1"),
+        "User has a repository and must pass: {}",
+        result.stdout
+    );
+}
+
+#[test]
 fn config_variable_file_source_missing_is_fatal() {
+    // Sources resolve when an operation references them — a rule consuming
+    // $variables forces the read, and the missing file fails the run.
+    // (An op that never references $variables skips resolution entirely,
+    // so a producer op can run before the file it creates exists.)
     let config = "variables:
   settings:
     $file: \"nope.yml\"
@@ -2025,7 +2070,7 @@ check:
   files: [\"app.js\"]
   rules:
     - id: r
-      xpath: \"//x\"
+      xpath: \"//x[. = $variables?settings?y]\"
 ";
     let result = command(["check", "--config", "tractor.yml"])
         .in_fixture("replace")

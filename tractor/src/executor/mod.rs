@@ -32,7 +32,7 @@ use crate::cli::context::ExecCtx;
 use crate::input::filter::Filters;
 use crate::input::Source;
 
-pub use query::{QueryOperation, QueryOperationPlan, QueryExpr};
+pub use query::{QueryOperation, QueryOperationPlan, QueryExpr, QueryOutput, QueryOutputField};
 pub use check::CheckOperationPlan;
 pub use test::{TestOperation, TestOperationPlan, TestAssertion};
 pub use set::{SetOperation, SetOperationPlan, SetMapping, SetWriteMode, SetReportMode};
@@ -72,22 +72,133 @@ pub const DEFAULT_MAX_FILES: usize = 10_000;
 /// is a thin dispatcher. The `ExecCtx` carries the environmental state
 /// (verbose, base_dir) that originates in `RunContext` — the single source
 /// of truth per CLI invocation.
+///
+/// Operations run strictly in order, and `$`-directive variable sources
+/// (`$file`) are resolved at each operation's start — so a file written by
+/// an earlier operation (e.g. a query op's `output:`) is read fresh by the
+/// next one. Each operation sees one consistent snapshot; the ordered
+/// `operations:` list is the dependency mechanism.
 pub fn execute(
     operations: &[OperationPlan],
     ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     for op in operations {
-        match op {
-            OperationPlan::Query(q) => query::execute_query(q, ctx, report)?,
-            OperationPlan::Check(c) => check::execute_check(c, ctx, report)?,
-            OperationPlan::Test(t) => test::execute_test(t, ctx, report)?,
-            OperationPlan::Set(s) => set::execute_set(s, ctx, report)?,
-            OperationPlan::Update(u) => update::execute_update(u, ctx, report)?,
+        let base_dir = ctx.base_dir.unwrap_or_else(|| std::path::Path::new("."));
+
+        // Fresh run-level snapshot for this op ($variables) — but only when
+        // the op actually references it. A producer op (e.g. a query with
+        // `output:`) must not fail resolving a $file source that IT is
+        // about to create; only consumers pay for (and depend on) their
+        // sources. `$variables` cannot be referenced dynamically in XPath,
+        // so the literal check is sound; `$rule.variables` etc. don't
+        // contain the substring (the `$` precedes `rule`).
+        let raw = ctx.query_variables();
+        let run_vars = if raw.has_sources() && op_references(op, "$variables") {
+            std::sync::Arc::new((*raw).clone().resolve_sources(base_dir)?)
+        } else {
+            raw
+        };
+        let op_ctx = ExecCtx { variables: Some(&run_vars), ..*ctx };
+
+        // Fresh entry-level snapshots ($rule.variables etc.); borrows the
+        // plan untouched when no entry declares a source.
+        let op = resolve_entry_variables(op, base_dir)?;
+
+        match op.as_ref() {
+            OperationPlan::Query(q) => query::execute_query(q, &op_ctx, report)?,
+            OperationPlan::Check(c) => check::execute_check(c, &op_ctx, report)?,
+            OperationPlan::Test(t) => test::execute_test(t, &op_ctx, report)?,
+            OperationPlan::Set(s) => set::execute_set(s, &op_ctx, report)?,
+            OperationPlan::Update(u) => update::execute_update(u, &op_ctx, report)?,
         }
     }
 
     Ok(())
+}
+
+/// Resolve `$`-directive sources in an operation's entry-level variables
+/// (rule / mapping / query / assertion `variables:`). Returns the plan
+/// unchanged (borrowed) when nothing declares a source — the common case.
+fn resolve_entry_variables<'a>(
+    op: &'a OperationPlan,
+    base_dir: &std::path::Path,
+) -> Result<std::borrow::Cow<'a, OperationPlan>, tractor::variables::VariableSourceError> {
+    use std::borrow::Cow;
+
+    fn resolve_arc(
+        variables: &mut std::sync::Arc<tractor::QueryVariables>,
+        base_dir: &std::path::Path,
+    ) -> Result<(), tractor::variables::VariableSourceError> {
+        if variables.has_sources() {
+            *variables = std::sync::Arc::new((**variables).clone().resolve_sources(base_dir)?);
+        }
+        Ok(())
+    }
+
+    // Same referenced-only rule as for run-level variables: an entry's
+    // sources resolve only when the op's xpaths mention its namespace.
+    let (declares, namespace) = match op {
+        OperationPlan::Check(c) => (
+            c.compiled_rules.iter().any(|r| r.variables.has_sources()),
+            "$rule.variables",
+        ),
+        OperationPlan::Set(s) => (
+            s.mappings.iter().any(|m| m.variables.has_sources()),
+            "$mapping.variables",
+        ),
+        OperationPlan::Query(q) => (
+            q.queries.iter().any(|q| q.variables.has_sources()),
+            "$query.variables",
+        ),
+        OperationPlan::Test(t) => (
+            t.assertions.iter().any(|a| a.variables.has_sources()),
+            "$assertion.variables",
+        ),
+        OperationPlan::Update(_) => (false, ""),
+    };
+    if !declares || !op_references(op, namespace) {
+        return Ok(Cow::Borrowed(op));
+    }
+
+    let mut op = op.clone();
+    match &mut op {
+        OperationPlan::Check(c) => {
+            for rule in &mut c.compiled_rules {
+                resolve_arc(&mut rule.variables, base_dir)?;
+            }
+        }
+        OperationPlan::Set(s) => {
+            for mapping in &mut s.mappings {
+                resolve_arc(&mut mapping.variables, base_dir)?;
+            }
+        }
+        OperationPlan::Query(q) => {
+            for query in &mut q.queries {
+                resolve_arc(&mut query.variables, base_dir)?;
+            }
+        }
+        OperationPlan::Test(t) => {
+            for assertion in &mut t.assertions {
+                resolve_arc(&mut assertion.variables, base_dir)?;
+            }
+        }
+        OperationPlan::Update(_) => {}
+    }
+    Ok(Cow::Owned(op))
+}
+
+/// Whether any of the operation's xpath expressions contains `needle`
+/// literally. XPath has no dynamic variable references, so a literal scan
+/// is a sound usage test for a variable namespace.
+fn op_references(op: &OperationPlan, needle: &str) -> bool {
+    match op {
+        OperationPlan::Check(c) => c.compiled_rules.iter().any(|r| r.xpath.as_str().contains(needle)),
+        OperationPlan::Set(s) => s.mappings.iter().any(|m| m.xpath.contains(needle)),
+        OperationPlan::Query(q) => q.queries.iter().any(|q| q.xpath.as_str().contains(needle)),
+        OperationPlan::Test(t) => t.assertions.iter().any(|a| a.xpath.as_str().contains(needle)),
+        OperationPlan::Update(u) => u.xpath.contains(needle),
+    }
 }
 
 /// Execute like [`execute`], but when an operation fails, first render the

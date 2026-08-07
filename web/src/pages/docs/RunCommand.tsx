@@ -224,9 +224,16 @@ test:
         file's directory); read it with the usual lookups, e.g.{' '}
         <code>$variables?settings?db?host</code>. File content is pure data — directives inside
         loaded files are not processed. <code>$literal</code> is the escape hatch for literal data
-        whose keys start with <code>$</code>: it keeps its content verbatim. A missing file or an
-        unknown directive (e.g. a typo like <code>$fiel</code>) fails the run at load time — a
-        declared source is a promise, unlike an optional key lookup.
+        whose keys start with <code>$</code>: it keeps its content verbatim.
+      </p>
+      <p>
+        Directives are validated when the config loads — an unknown directive (e.g. a typo like{' '}
+        <code>$fiel</code>) fails before anything runs. The file <em>read</em> happens at the start
+        of each operation that references the variable, and each operation sees one consistent
+        snapshot. Two consequences: an operation that never mentions{' '}
+        <code>$variables</code> cannot fail on a missing source file, and a file written by an{' '}
+        <em>earlier</em> operation in the same run is read fresh by the next one. A referenced
+        source whose file is missing fails the run at that operation.
       </p>
       <p>
         Rules also get <code>$rule.id</code> — the current rule's <code>id</code> string. This makes
@@ -242,6 +249,49 @@ xpath: >-
   [not(ancestor::function[.//comment[
     contains(., concat('tractor:allow(', $rule.id, ')'))]])]`}
       />
+
+      <h3>Materialized query results (multi-query rules)</h3>
+      <p>
+        A query operation can write its results to a JSON index with <code>output</code>, and a
+        later operation can consume that file as a variable — cross-file assertions in a single
+        run. Operations run strictly in the order of the <code>operations</code> list (root-level
+        shorthand keys run query first for exactly this reason), and because sources resolve at
+        each operation's start, the check below reads the file the query just wrote:
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`variables:
+  repos:
+    $file: "gathered/repos.json"
+
+operations:
+  - query:
+      files: ["src/**/*.cs"]
+      queries:
+        - xpath: "//class/name[contains(., 'Repository')]"
+      output: "gathered/repos.json"
+
+  - check:
+      files: ["src/**/*.cs"]
+      rules:
+        - id: entity-needs-repository
+          xpath: >-
+            //class/name[not(contains(., 'Repository'))]
+            [not(concat(., 'Repository') = $variables?repos?files?*?*)]
+          reason: "entity class has no matching repository"`}
+      />
+      <p>
+        The written file is an index keyed by source file:{' '}
+        <code>{'{ "files": { "<path>": [ ... ] } }'}</code>, with paths relative to the config
+        directory so the artifact is stable and committable. By default each entry is the match's
+        bare value; <code>{'output: { file: ..., view: [value, line] }'}</code> stores objects with
+        the chosen fields instead (<code>value</code>, <code>line</code>, <code>column</code>,{' '}
+        <code>tree</code>). Updates merge incrementally: entries for every queried file are
+        replaced wholesale, files outside the queried set (e.g. excluded by{' '}
+        <code>diff-files</code>) keep their entries, and entries whose file no longer exists are
+        pruned — so a diff-scoped gather stays correct without re-querying the whole tree.
+      </p>
 
       <h2>Multiple Operation Types</h2>
       <p>

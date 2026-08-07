@@ -209,15 +209,50 @@ impl VariableSourceError {
 impl QueryVariables {
     /// Resolve every `$`-directive source in the tree into plain data.
     /// `base_dir` anchors relative `$file` paths (the config file's
-    /// directory). Called once at config load; downstream code only ever
-    /// sees resolved values.
+    /// directory). Called at *operation start* — not config load — so a
+    /// file written by an earlier operation in the run is read fresh.
+    /// Each operation sees one consistent snapshot.
     pub fn resolve_sources(self, base_dir: &Path) -> Result<QueryVariables, VariableSourceError> {
+        self.walk(&mut |file, path| load_variables_file(&base_dir.join(file), path))
+    }
+
+    /// Statically validate every `$`-directive in the tree without touching
+    /// the filesystem: unknown directives, reserved `$query`, `$`-keys mixed
+    /// into ordinary maps, and non-string `$file` paths all fail here.
+    /// Called at config load, so a typo'd directive fails before any
+    /// operation runs — only the file *read* is deferred to execution.
+    pub fn validate_sources(&self) -> Result<(), VariableSourceError> {
+        self.clone().walk(&mut |_, _| Ok(VariableValue::Null)).map(|_| ())
+    }
+
+    /// Whether the tree contains any `$`-directive (a resolution would
+    /// change it). Used to skip cloning when there is nothing to resolve.
+    pub fn has_sources(&self) -> bool {
+        fn scan(v: &VariableValue) -> bool {
+            match v {
+                VariableValue::Map(m) => {
+                    (m.len() == 1 && m.keys().next().unwrap().starts_with('$'))
+                        || m.values().any(scan)
+                }
+                VariableValue::Array(items) => items.iter().any(scan),
+                _ => false,
+            }
+        }
+        self.0.values().any(scan)
+    }
+
+    /// Shared walk for resolve/validate: `load` supplies a `$file`'s content
+    /// (or a placeholder during validation).
+    fn walk(
+        self,
+        load: &mut dyn FnMut(&str, &[String]) -> Result<VariableValue, VariableSourceError>,
+    ) -> Result<QueryVariables, VariableSourceError> {
         let mut path = Vec::new();
         self.0
             .into_iter()
             .map(|(name, value)| {
                 path.push(name.clone());
-                let resolved = resolve_value(value, base_dir, &mut path)?;
+                let resolved = resolve_value(value, load, &mut path)?;
                 path.pop();
                 Ok((name, resolved))
             })
@@ -229,7 +264,7 @@ impl QueryVariables {
 /// messages and is restored before returning.
 fn resolve_value(
     value: VariableValue,
-    base_dir: &Path,
+    load: &mut dyn FnMut(&str, &[String]) -> Result<VariableValue, VariableSourceError>,
     path: &mut Vec<String>,
 ) -> Result<VariableValue, VariableSourceError> {
     let VariableValue::Map(map) = value else {
@@ -240,7 +275,7 @@ fn resolve_value(
                     .enumerate()
                     .map(|(i, item)| {
                         path.push(i.to_string());
-                        let resolved = resolve_value(item, base_dir, path)?;
+                        let resolved = resolve_value(item, load, path)?;
                         path.pop();
                         Ok(resolved)
                     })
@@ -266,7 +301,7 @@ fn resolve_value(
                             "`$file` expects a path string",
                         ));
                     };
-                    load_variables_file(&base_dir.join(&rel), path)
+                    load(&rel, path)
                 }
                 "query" => Err(VariableSourceError::new(
                     path,
@@ -301,7 +336,7 @@ fn resolve_value(
         .into_iter()
         .map(|(k, v)| {
             path.push(k.clone());
-            let resolved = resolve_value(v, base_dir, path)?;
+            let resolved = resolve_value(v, load, path)?;
             path.pop();
             Ok((k, resolved))
         })

@@ -110,6 +110,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         limit: ctx.limit,
         ignore_whitespace: ctx.ignore_whitespace,
         parse_depth: ctx.parse_depth,
+        output: None,
     });
 
     let mut builder = tractor::ReportBuilder::new();
