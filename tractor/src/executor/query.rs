@@ -88,6 +88,27 @@ impl QueryOperation {
 
 /// Materialized-output settings for a query operation.
 ///
+/// # Writing policy
+///
+/// Two operations write to disk, and they answer "may I write?" differently
+/// on purpose, because they write different things:
+///
+/// - `set` and `update` mutate **their own inputs**, so whether they may
+///   write depends on what those inputs are — an inline or stdin source has
+///   no file to write back to. [`SetWriteMode`](super::SetWriteMode) owns
+///   that decision and routes such a run to `Capture` instead.
+/// - `output:` writes an **artifact the user named**, which exists only
+///   because it was declared. It is the point of the option, not a side
+///   effect of reading, so it is written unconditionally and its path never
+///   depends on the input mode.
+///
+/// The input mode still matters for the *contents*: the index is keyed by
+/// source path, so matches from virtual sources are not indexable and are
+/// left out (see `write_query_output`).
+///
+/// A future `--dry-run` would gate both, and that is where the two meet —
+/// not here.
+///
 /// The written file is a JSON index keyed by source file:
 /// `{ "files": { "<path>": [ <entry>, ... ] } }`. File keys are relative to
 /// the run's base dir when possible, so the artifact is stable and
@@ -230,7 +251,7 @@ pub(crate) fn execute_query(
 /// for files outside the queried set are kept; entries whose file no longer
 /// exists on disk are pruned. Keys sort deterministically for stable diffs.
 fn write_query_output(
-    output: &super::query::QueryOutput,
+    output: &QueryOutput,
     matches: &[tractor::Match],
     sources: &[Source],
     base_dir: &std::path::Path,
@@ -246,14 +267,23 @@ fn write_query_output(
         }
     };
 
+    // Disk sources only, on both sides of the merge. The index is keyed by
+    // path, and a virtual (inline / stdin) source has no path that means
+    // anything to a later run — its matches are not indexable, so they are
+    // left out rather than written and pruned again.
+    let indexable = |path: &str| -> bool {
+        sources
+            .iter()
+            .any(|s| !s.is_virtual() && relativize(s.path.as_str()) == relativize(path))
+    };
+
     // This run's results, grouped per file.
     let mut fresh: BTreeMap<String, Vec<serde_json::Value>> = BTreeMap::new();
-    for m in matches {
+    for m in matches.iter().filter(|m| indexable(&m.file)) {
         fresh.entry(relativize(&m.file)).or_default().push(output_entry(output, m));
     }
 
-    // The queried set: files whose entries this run owns (disk sources
-    // only — virtual inline sources have no stable identity to key on).
+    // The queried set: files whose entries this run owns.
     let queried: std::collections::BTreeSet<String> = sources
         .iter()
         .filter(|s| !s.is_virtual())
