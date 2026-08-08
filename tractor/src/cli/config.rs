@@ -10,7 +10,6 @@
 use tractor::report::{ReportMatch, Severity};
 
 use crate::cli::SharedArgs;
-use crate::executor;
 use crate::cli::context::RunContext;
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::input::{plan_multi, resolve_input, InputMode, MultiOpRequest};
@@ -162,7 +161,7 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
             &mut builder,
         )?;
 
-        executor::execute_rendering_partial_report(&plan.operations, &env, &mut builder, &ctx)?;
+        crate::cli::ops::execute_and_report_failures(&plan.operations, &env, &mut builder, &ctx)?;
     }
 
     let mut report = builder.build();

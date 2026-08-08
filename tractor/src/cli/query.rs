@@ -40,7 +40,7 @@ pub struct QueryArgs {
     #[arg(short = 'V', long = "version", help_heading = "Advanced")]
     pub version: bool,
 }
-use crate::executor::{self, QueryExpr, QueryOperation};
+use crate::executor::{QueryExpr, QueryOperation};
 use crate::cli::context::RunContext;
 use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
 use crate::tractor_config::OperationInputs;
@@ -126,7 +126,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute_rendering_partial_report(&[plan], &env, &mut builder, &ctx)?;
+        crate::cli::ops::execute_and_report_failures(&[plan], &env, &mut builder, &ctx)?;
     }
     let mut report = builder.build();
     prepare_report_for_output(&mut report, &ctx);

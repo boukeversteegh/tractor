@@ -41,7 +41,7 @@ pub struct SetArgs {
     pub format: String,
 }
 use crate::executor::{
-    self, SetMapping, SetOperation, SetReportMode, SetWriteMode,
+    SetMapping, SetOperation, SetReportMode, SetWriteMode,
 };
 use crate::cli::context::RunContext;
 use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
@@ -213,7 +213,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute_rendering_partial_report(&[plan], &env, &mut builder, &ctx)?;
+        crate::cli::ops::execute_and_report_failures(&[plan], &env, &mut builder, &ctx)?;
     }
     let mut report = builder.build();
 

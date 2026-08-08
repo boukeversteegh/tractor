@@ -60,7 +60,6 @@ pub struct CheckArgs {
     #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format")]
     pub format: String,
 }
-use crate::executor;
 use crate::cli::context::RunContext;
 use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
 use crate::tractor_config::{CheckOperation, OperationInputs};
@@ -149,7 +148,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute_rendering_partial_report(&[plan], &env, &mut builder, &ctx)?;
+        crate::cli::ops::execute_and_report_failures(&[plan], &env, &mut builder, &ctx)?;
     }
     let mut report = builder.build();
 

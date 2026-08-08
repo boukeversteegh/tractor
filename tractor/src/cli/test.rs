@@ -40,7 +40,7 @@ pub struct TestArgs {
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
 }
-use crate::executor::{self, TestAssertion, TestOperation};
+use crate::executor::{TestAssertion, TestOperation};
 use crate::cli::context::RunContext;
 use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
 use crate::tractor_config::OperationInputs;
@@ -124,7 +124,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute_rendering_partial_report(&[plan], &env, &mut builder, &ctx)?;
+        crate::cli::ops::execute_and_report_failures(&[plan], &env, &mut builder, &ctx)?;
     }
     // Set expected value for test summary rendering (test-mode only, not shared with run mode)
     builder.set_expected(expect.clone());

@@ -15,7 +15,7 @@ pub struct UpdateArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 }
-use crate::executor::{self, UpdateOperation};
+use crate::executor::{UpdateOperation};
 use crate::cli::context::RunContext;
 use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
 use crate::tractor_config::OperationInputs;
@@ -68,7 +68,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute_rendering_partial_report(&[plan], &env, &mut builder, &ctx)?;
+        crate::cli::ops::execute_and_report_failures(&[plan], &env, &mut builder, &ctx)?;
     }
     let report = builder.build();
     if report.success == Some(false) {
