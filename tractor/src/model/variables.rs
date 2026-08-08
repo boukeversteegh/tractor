@@ -211,9 +211,13 @@ impl FromIterator<(String, VariableValue)> for QueryVariables {
 
 /// Error while resolving `$`-directive variable sources. Always fatal: a
 /// declared source is a promise, unlike an optional key lookup.
-#[derive(Debug, thiserror::Error)]
-#[error("in variables{path}: {message}")]
+#[derive(Debug)]
 pub struct VariableSourceError {
+    /// Which `variables:` block the source is in — `None` for the config
+    /// root, otherwise the entry that owns it (e.g. `rule 'no-console'`).
+    /// The value knows its lookup path but not its owner, so callers
+    /// attach this via [`VariableSourceError::in_scope`].
+    scope: Option<String>,
     /// Lookup path to the offending value, e.g. `?settings?db`.
     path: String,
     message: String,
@@ -222,11 +226,31 @@ pub struct VariableSourceError {
 impl VariableSourceError {
     fn new(path: &[String], message: impl Into<String>) -> Self {
         Self {
+            scope: None,
             path: path.iter().map(|p| format!("?{}", p)).collect(),
             message: message.into(),
         }
     }
+
+    /// Name the `variables:` block this error came from, so a message
+    /// points at one entry instead of at "some variables somewhere".
+    /// Only the outermost scope sticks — resolution never nests.
+    pub fn in_scope(mut self, scope: impl Into<String>) -> Self {
+        self.scope.get_or_insert_with(|| scope.into());
+        self
+    }
 }
+
+impl std::fmt::Display for VariableSourceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.scope {
+            Some(scope) => write!(f, "in {} variables{}: {}", scope, self.path, self.message),
+            None => write!(f, "in variables{}: {}", self.path, self.message),
+        }
+    }
+}
+
+impl std::error::Error for VariableSourceError {}
 
 impl QueryVariables {
     /// Resolve every `$`-directive source in the tree into plain data.
@@ -366,6 +390,13 @@ fn resolve_value(
     Ok(VariableValue::Map(resolved))
 }
 
+/// A path for messages: forward slashes on every platform. A Windows join
+/// puts a backslash before the file name, which in a message like
+/// "cannot read 'dir\nope.json'" reads as an escape sequence.
+fn display_path(p: &Path) -> String {
+    p.display().to_string().replace('\\', "/")
+}
+
 /// Load a JSON/YAML/TOML document as a single [`VariableValue`]. The content
 /// is pure data — directives inside loaded files are not processed.
 ///
@@ -378,10 +409,10 @@ fn load_variables_file(
     path: &[String],
 ) -> Result<VariableValue, VariableSourceError> {
     let content = std::fs::read_to_string(file).map_err(|e| {
-        VariableSourceError::new(path, format!("cannot read '{}': {}", file.display(), e))
+        VariableSourceError::new(path, format!("cannot read '{}': {}", display_path(file), e))
     })?;
     let parse_err = |e: String| {
-        VariableSourceError::new(path, format!("invalid variables in '{}': {}", file.display(), e))
+        VariableSourceError::new(path, format!("invalid variables in '{}': {}", display_path(file), e))
     };
     match file.extension().and_then(|e| e.to_str()) {
         Some("json") => serde_json::from_str(&content).map_err(|e| parse_err(e.to_string())),
@@ -393,7 +424,7 @@ fn load_variables_file(
             path,
             format!(
                 "unsupported variables file '{}': use .json, .yml/.yaml, or .toml",
-                file.display()
+                display_path(file)
             ),
         )),
     }
@@ -412,7 +443,7 @@ fn load_variables_file(
         format!(
             "`$file` variable sources need a filesystem and are unavailable in this build \
              (tried to load '{}')",
-            file.display()
+            display_path(file)
         ),
     ))
 }
@@ -868,6 +899,41 @@ mod tests {
         let unread_plain = EntryVariables::new(plain, EntryKind::Rule, "//a[@x = 1]");
         let bound = unread_plain.bind(Path::new(".")).unwrap();
         assert_eq!(bound.get("env"), Some(&VariableValue::String("prod".into())));
+    }
+
+    /// A source failure names the `variables:` block it came from — a
+    /// rule's sources fail mid-run, so "somewhere in variables" is not
+    /// enough to act on.
+    #[test]
+    fn source_errors_name_their_scope() {
+        let vars: QueryVariables =
+            serde_yaml::from_str("data:\n  $file: nope.json\n").unwrap();
+
+        // Unscoped (config root).
+        let err = vars.clone().resolve_sources(Path::new(".")).unwrap_err();
+        assert!(err.to_string().starts_with("in variables?data:"), "{}", err);
+
+        // Scoped by the owning entry.
+        let err = vars
+            .clone()
+            .resolve_sources(Path::new("."))
+            .unwrap_err()
+            .in_scope("rule 'needs-baseline'");
+        assert!(
+            err.to_string().starts_with("in rule 'needs-baseline' variables?data:"),
+            "{}", err,
+        );
+
+        // The outermost scope wins — an entry label is not overwritten.
+        let err = vars
+            .resolve_sources(Path::new("."))
+            .unwrap_err()
+            .in_scope("set mapping 2")
+            .in_scope("something later");
+        assert!(err.to_string().contains("set mapping 2"), "{}", err);
+
+        // Paths render with forward slashes so they don't read as escapes.
+        assert!(!err.to_string().contains('\\'), "{}", err);
     }
 
     #[test]

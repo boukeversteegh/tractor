@@ -157,12 +157,15 @@ fn resolve_entry_variables<'a>(
         return Ok(Cow::Borrowed(op));
     }
 
-    /// Replace an entry's declared variables with what should be bound.
+    /// Replace an entry's declared variables with what should be bound,
+    /// naming the entry if a source fails — a missing file surfaces here,
+    /// mid-run, so the message has to say which entry declared it.
     fn bind(
         variables: &mut tractor::EntryVariables,
         base_dir: &std::path::Path,
+        scope: impl FnOnce() -> String,
     ) -> Result<(), tractor::variables::VariableSourceError> {
-        let bound = variables.bind(base_dir)?;
+        let bound = variables.bind(base_dir).map_err(|e| e.in_scope(scope()))?;
         *variables = variables.clone().with_bound(bound);
         Ok(())
     }
@@ -171,22 +174,23 @@ fn resolve_entry_variables<'a>(
     match &mut op {
         OperationPlan::Check(c) => {
             for rule in &mut c.compiled_rules {
-                bind(&mut rule.variables, base_dir)?;
+                let id = rule.id.clone();
+                bind(&mut rule.variables, base_dir, || format!("rule '{}'", id))?;
             }
         }
         OperationPlan::Set(s) => {
-            for mapping in &mut s.mappings {
-                bind(&mut mapping.variables, base_dir)?;
+            for (i, mapping) in s.mappings.iter_mut().enumerate() {
+                bind(&mut mapping.variables, base_dir, || format!("set mapping {}", i + 1))?;
             }
         }
         OperationPlan::Query(q) => {
-            for query in &mut q.queries {
-                bind(&mut query.variables, base_dir)?;
+            for (i, query) in q.queries.iter_mut().enumerate() {
+                bind(&mut query.variables, base_dir, || format!("query {}", i + 1))?;
             }
         }
         OperationPlan::Test(t) => {
-            for assertion in &mut t.assertions {
-                bind(&mut assertion.variables, base_dir)?;
+            for (i, assertion) in t.assertions.iter_mut().enumerate() {
+                bind(&mut assertion.variables, base_dir, || format!("test assertion {}", i + 1))?;
             }
         }
         OperationPlan::Update(_) => {}

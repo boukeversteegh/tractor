@@ -529,7 +529,8 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<ConfigOperati
             rule = rule.with_invalid_examples(invalid_examples);
         }
         if !r.variables.is_empty() {
-            r.variables.validate_sources()?;
+            r.variables.validate_sources()
+                .map_err(|e| e.in_scope(format!("rule '{}'", rule.id)))?;
             rule = rule.with_variables(r.variables);
         }
         Ok::<Rule, Box<dyn std::error::Error>>(rule)
@@ -594,8 +595,9 @@ fn normalize_set_expression(
 fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
-    let mut mappings = config.mappings.into_iter().map(|m| {
-        m.variables.validate_sources()?;
+    let mut mappings = config.mappings.into_iter().enumerate().map(|(i, m)| {
+        m.variables.validate_sources()
+            .map_err(|e| e.in_scope(format!("set mapping {}", i + 1)))?;
         Ok(SetMapping::new(m.xpath, m.value, m.value_kind, m.variables))
     }).collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
 
@@ -660,8 +662,9 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, 
 fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
-    let queries = config.queries.into_iter().map(|q| {
-        q.variables.validate_sources()?;
+    let queries = config.queries.into_iter().enumerate().map(|(i, q)| {
+        q.variables.validate_sources()
+            .map_err(|e| e.in_scope(format!("query {}", i + 1)))?;
         Ok(QueryExpr::new(q.xpath, q.variables))
     }).collect::<Result<_, Box<dyn std::error::Error>>>()?;
 
@@ -707,8 +710,9 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
 fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
-    let assertions = config.assertions.into_iter().map(|a| {
-        a.variables.validate_sources()?;
+    let assertions = config.assertions.into_iter().enumerate().map(|(i, a)| {
+        a.variables.validate_sources()
+            .map_err(|e| e.in_scope(format!("test assertion {}", i + 1)))?;
         Ok(TestAssertion::new(a.xpath, a.expect, a.variables))
     }).collect::<Result<_, Box<dyn std::error::Error>>>()?;
 
