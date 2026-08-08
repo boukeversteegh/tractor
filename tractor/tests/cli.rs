@@ -2043,6 +2043,38 @@ set:
         "the run variables must be bound, not empty: {}{}",
         result.stdout, result.stderr
     );
+    // Pin the semantics, not just the diagnostic surface: the predicate has
+    // to have matched, which only happens if $variables?settings resolved.
+    assert!(
+        result.stdout.contains("updated") || result.stderr.contains("updated"),
+        "the mapping should have rewritten the value: {}{}",
+        result.stdout, result.stderr
+    );
+}
+
+#[test]
+fn config_query_output_cannot_escape_the_config_directory() {
+    // The path is joined to the config's directory; `..` would let a config
+    // write anywhere. Refused rather than normalized, so the author sees it.
+    let config = "query:
+  files: [\"data.json\"]
+  queries: [{ xpath: \"//port\" }]
+  output: \"../escaped.json\"
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("data.json", "{\"port\": 8080}")
+        .capture();
+
+    assert_ne!(0, result.status, "an escaping output path must fail: {}{}", result.stdout, result.stderr);
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("must be a relative path inside the config directory"),
+        "error should name the constraint: {}",
+        combined
+    );
 }
 
 #[test]

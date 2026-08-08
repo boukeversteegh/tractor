@@ -688,7 +688,7 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
             None => vec![QueryOutputField::Value],
             Some(fields) => fields
                 .iter()
-                .map(|f| QueryOutputField::from_str(f))
+                .map(|f| f.parse::<QueryOutputField>())
                 .collect::<Result<Vec<_>, _>>()?,
         };
         Ok(QueryOutput { file, view })

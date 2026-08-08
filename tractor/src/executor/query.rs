@@ -146,8 +146,14 @@ impl QueryOutputField {
         }
     }
 
-    /// Parse a config `view:` field name.
-    pub fn from_str(s: &str) -> Result<Self, String> {
+}
+
+impl std::str::FromStr for QueryOutputField {
+    type Err = String;
+
+    /// Parse a config `view:` field name, so the config parser can use
+    /// `parse()` like every other field.
+    fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "value" => Ok(Self::Value),
             "line" => Ok(Self::Line),
@@ -290,7 +296,20 @@ fn write_query_output(
         .map(|s| relativize(s.path.as_str()))
         .collect();
 
-    let out_path = base_dir.join(&output.file);
+    // The path is declared in config and joined to the config's directory,
+    // so `..` would let a config write anywhere on the machine — which the
+    // docs promise it cannot. Refuse rather than normalize: a rejected
+    // path is a typo the author can see, a normalized one is a surprise.
+    let requested = std::path::Path::new(&output.file);
+    if requested.is_absolute()
+        || requested.components().any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Err(format!(
+            "query output '{}' must be a relative path inside the config directory",
+            output.file
+        ).into());
+    }
+    let out_path = base_dir.join(requested);
 
     // Start from the existing index when merging is possible.
     let mut files: BTreeMap<String, serde_json::Value> = match std::fs::read_to_string(&out_path) {
