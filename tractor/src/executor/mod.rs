@@ -95,10 +95,7 @@ pub fn execute(
         // at config load and travels on each entry's `EntryVariables` — the
         // executor only reads those records, it does not re-derive policy.
         // The run-level map serves every entry, so its reads are the union.
-        let run_reads = entry_variables(op)
-            .fold(tractor::variables::NamespaceReads::default(), |acc, v| {
-                acc.union(v.reads().run())
-            });
+        let run_reads = run_variable_reads(op);
         let run_vars = tractor::variables::bind_run_variables(
             &ctx.query_variables(),
             &run_reads,
@@ -121,6 +118,22 @@ pub fn execute(
     }
 
     Ok(())
+}
+
+/// What an operation reads from the run-level `$variables` — the union over
+/// everything in it that can read, since one map serves them all.
+///
+/// Every shape that runs an expression must contribute, or its reads are
+/// silently empty and the keys it looks up get omitted. Operations built
+/// from entries contribute those; `update` has none and carries its own
+/// record instead.
+fn run_variable_reads(op: &OperationPlan) -> tractor::NamespaceReads {
+    let from_entries = entry_variables(op)
+        .fold(tractor::NamespaceReads::default(), |acc, v| acc.union(v.reads().run()));
+    match op {
+        OperationPlan::Update(u) => from_entries.union(&u.reads),
+        _ => from_entries,
+    }
 }
 
 /// Every entry-level `EntryVariables` in an operation, in declaration order.

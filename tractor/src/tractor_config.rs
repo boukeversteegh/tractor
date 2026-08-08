@@ -684,6 +684,18 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
             QueryOutputConfig::Path(file) => (file, None),
             QueryOutputConfig::Full(full) => (full.file, full.view),
         };
+        // The path is a static property of the config, so it is checked here
+        // rather than after the query has run: `..` or an absolute path would
+        // let a config write outside its own directory.
+        let path = Path::new(&file);
+        if path.is_absolute()
+            || path.components().any(|c| matches!(c, std::path::Component::ParentDir))
+        {
+            return Err(format!(
+                "query output '{}' must be a relative path inside the config directory",
+                file
+            ).into());
+        }
         let view = match view {
             None => vec![QueryOutputField::Value],
             Some(fields) => fields
@@ -1659,6 +1671,20 @@ check:
         let yaml = "query:\n  queries:\n    - xpath: \"//name\"\n  output:\n    file: \"names.json\"\n    view: [severity]\n";
         let err = parse_config_yaml(yaml).unwrap_err();
         assert!(err.to_string().contains("invalid query output view field"), "{}", err);
+
+        // The path is knowable at load, so an escaping one fails here —
+        // before any file is parsed, let alone queried.
+        for escaping in ["../outside.json", "a/../../outside.json"] {
+            let yaml = format!(
+                "query:\n  queries:\n    - xpath: \"//name\"\n  output: \"{}\"\n",
+                escaping
+            );
+            let err = parse_config_yaml(&yaml).unwrap_err();
+            assert!(
+                err.to_string().contains("must be a relative path inside the config directory"),
+                "{} should be rejected at load: {}", escaping, err,
+            );
+        }
     }
 
     #[test]

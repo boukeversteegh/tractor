@@ -296,10 +296,10 @@ fn write_query_output(
         .map(|s| relativize(s.path.as_str()))
         .collect();
 
-    // The path is declared in config and joined to the config's directory,
-    // so `..` would let a config write anywhere on the machine — which the
-    // docs promise it cannot. Refuse rather than normalize: a rejected
-    // path is a typo the author can see, a normalized one is a surprise.
+    // Config-loaded plans are checked at load (`convert_query`), where the
+    // path is knowable and an error costs nothing. This guard covers plans
+    // built programmatically, which bypass that path entirely — the write
+    // itself is where the promise has to hold.
     let requested = std::path::Path::new(&output.file);
     if requested.is_absolute()
         || requested.components().any(|c| matches!(c, std::path::Component::ParentDir))
