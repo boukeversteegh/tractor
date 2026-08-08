@@ -289,10 +289,11 @@ operations:
       <p>
         The written file is an index keyed by source file:{' '}
         <code>{'{ "files": { "<path>": [ ... ] } }'}</code>, with paths relative to the config
-        directory so the artifact is stable and committable. By default each entry is the match's
-        bare value; <code>{'output: { file: ..., view: [value, line] }'}</code> stores objects with
-        the chosen fields instead (<code>value</code>, <code>line</code>, <code>column</code>,{' '}
-        <code>tree</code>). Updates merge incrementally: entries for every queried file are
+        directory so the artifact is stable and committable. <code>view:</code> picks what each
+        entry holds — a <em>single</em> field is written directly (the default{' '}
+        <code>[value]</code> gives bare strings, <code>[tree]</code> gives each match's structure
+        itself), while several fields (<code>value</code>, <code>line</code>, <code>column</code>,{' '}
+        <code>tree</code>) are written as a labelled object. Updates merge incrementally: entries for every queried file are
         replaced wholesale, files outside the queried set (e.g. excluded by{' '}
         <code>diff-files</code>) keep their entries, and entries whose file no longer exists are
         pruned — so a diff-scoped gather stays correct without re-querying the whole tree.
@@ -313,12 +314,12 @@ map:keys($variables?records?files)        the file paths themselves`}
         have a matching Y"); use the flat form for plain membership tests.
       </p>
 
-      <h3>Correspondence rules (composite keys)</h3>
+      <h3>Correspondence rules</h3>
       <p>
         The common shape is "this thing over here must agree with that thing over there" — a
-        DTO's <code>[MaxLength]</code> matching its Record's, say. XPath has no join, so build a{' '}
-        <strong>composite key</strong> string on both sides and compare the keys. Gather one side,
-        then test membership from the other:
+        DTO's <code>[MaxLength]</code> matching its Record's, say. Gather one side as{' '}
+        <strong>structured records</strong> with a <code>map{'{}'}</code> constructor and{' '}
+        <code>view: [tree]</code>, then compare field by field from the other side:
       </p>
       <CodeBlock
         language="yaml"
@@ -331,9 +332,12 @@ operations:
   - query:
       files: ["**/*Record.cs"]
       queries:
-        # key = property name + ':' + declared length
-        - xpath: "//property[.//attribute/name/ref = 'MaxLength'] ! concat(name, ':', .//argument/int)"
-      output: "gathered/records.json"
+        - xpath: >-
+            //property[.//attribute/name/ref = 'MaxLength']
+            ! map { 'name': string(name), 'max': string(.//argument/int) }
+      output:
+        file: "gathered/records.json"
+        view: [tree]          # entries are the maps themselves
 
   - check:
       files: ["**/*Dto.cs"]
@@ -342,15 +346,24 @@ operations:
           reason: "DTO MaxLength differs from the Record"
           xpath: >-
             //property[.//attribute/name/ref = 'MaxLength']
-            [not(concat(name, ':', .//argument/int) = $variables?records?files?*?*)]
+            [not(some $r in $variables?records?files?*?*
+                 satisfies $r?name = string(name) and $r?max = string(.//argument/int))]
             /name`}
       />
       <p>
-        Both sides must build the key <em>identically</em>; if the names differ between the two
-        shapes, normalize inside the key expression (<code>replace()</code>,{' '}
-        <code>substring-before()</code>) rather than after. Keys are compared as strings, so
-        include a separator that cannot appear in the parts — a bare concatenation makes{' '}
-        <code>a</code>+<code>bc</code> collide with <code>ab</code>+<code>c</code>.
+        Each field is compared on its own (<code>$r?name</code>, <code>$r?max</code>), so the
+        record stays self-describing and adding a third field doesn't change how the existing
+        ones match.
+      </p>
+      <p>
+        A single scalar per match — <code>concat(name, ':', .//argument/int)</code> with the
+        default <code>view: [value]</code> — is shorter, and fine for a plain membership test
+        against one value. Prefer the structured form for anything with more than one field:
+        packing fields into a string makes the parts positional and invisible to the reader, and
+        the separator becomes load-bearing (with no separator, <code>a</code>+<code>bc</code>{' '}
+        collides with <code>ab</code>+<code>c</code>). If the two sides name things differently,
+        normalize inside the field expression (<code>replace()</code>,{' '}
+        <code>substring-before()</code>) rather than after.
       </p>
       <p>
         <strong>Known limitation:</strong> matching is per file and syntactic, so an inherited

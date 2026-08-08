@@ -115,6 +115,16 @@ pub enum QueryOutputField {
 }
 
 impl QueryOutputField {
+    /// The field's name as written in config and in multi-field entries.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Value => "value",
+            Self::Line => "line",
+            Self::Column => "column",
+            Self::Tree => "tree",
+        }
+    }
+
     /// Parse a config `view:` field name.
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
@@ -305,29 +315,33 @@ fn normalize_key(path: &str) -> String {
     p.trim_end_matches('/').to_string()
 }
 
+/// One field of a match as JSON. `Tree` is `None` for atomic matches, which
+/// carry no node.
+fn field_value(field: QueryOutputField, m: &tractor::Match) -> Option<serde_json::Value> {
+    match field {
+        QueryOutputField::Value => Some(serde_json::Value::String(m.value.clone())),
+        QueryOutputField::Line => Some(serde_json::Value::from(m.line)),
+        QueryOutputField::Column => Some(serde_json::Value::from(m.column)),
+        QueryOutputField::Tree => m.xml_node.as_ref().map(|n| tractor::xml_node_to_json(n, None)),
+    }
+}
+
 /// Build one output entry for a match, honoring the configured view.
-/// A bare `value` view writes plain strings; anything else writes objects.
+///
+/// A **single-field** view writes that field directly, with no wrapper: the
+/// default `[value]` gives bare strings, and `[tree]` gives each match's
+/// structure itself — so a query emitting `map { 'name': ..., 'max': ... }`
+/// is read as `?files?*?*?name`, a keyed lookup, rather than being buried
+/// under a `tree` key. Multi-field views need an object to label which
+/// value is which.
 fn output_entry(output: &QueryOutput, m: &tractor::Match) -> serde_json::Value {
-    if output.view == [QueryOutputField::Value] {
-        return serde_json::Value::String(m.value.clone());
+    if let [only] = output.view.as_slice() {
+        return field_value(*only, m).unwrap_or(serde_json::Value::Null);
     }
     let mut obj = serde_json::Map::new();
     for field in &output.view {
-        match field {
-            QueryOutputField::Value => {
-                obj.insert("value".into(), serde_json::Value::String(m.value.clone()));
-            }
-            QueryOutputField::Line => {
-                obj.insert("line".into(), serde_json::Value::from(m.line));
-            }
-            QueryOutputField::Column => {
-                obj.insert("column".into(), serde_json::Value::from(m.column));
-            }
-            QueryOutputField::Tree => {
-                if let Some(node) = &m.xml_node {
-                    obj.insert("tree".into(), tractor::xml_node_to_json(node, None));
-                }
-            }
+        if let Some(value) = field_value(*field, m) {
+            obj.insert(field.name().to_string(), value);
         }
     }
     serde_json::Value::Object(obj)
@@ -433,6 +447,43 @@ mod tests {
         assert!(warnings[0].reason.as_deref().unwrap().contains("only bound in check rules"));
         // The query itself still runs and matches nothing (empty lookup).
         assert!(report.all_matches().iter().all(|m| m.severity == Some(Severity::Warning)));
+    }
+
+    /// A single-field view writes that field directly, so structured
+    /// records read as `?files?*?*?field` — a keyed lookup, not a string
+    /// key. Several fields need an object to label them.
+    #[test]
+    fn query_output_single_field_view_is_unwrapped() {
+        use tractor::XmlNode;
+
+        let mut m = tractor::Match::new("a.json".to_string(), "Name".to_string());
+        m.line = 7;
+        m.xml_node = Some(XmlNode::Map {
+            entries: vec![
+                ("name".to_string(), XmlNode::Text("Name".into())),
+                ("max".to_string(), XmlNode::Text("256".into())),
+            ],
+        });
+
+        let bare_value = QueryOutput { file: "o.json".into(), view: vec![QueryOutputField::Value] };
+        assert_eq!(output_entry(&bare_value, &m), serde_json::json!("Name"));
+
+        // `[tree]` alone yields the map itself — no `tree` wrapper.
+        let bare_tree = QueryOutput { file: "o.json".into(), view: vec![QueryOutputField::Tree] };
+        assert_eq!(
+            output_entry(&bare_tree, &m),
+            serde_json::json!({"name": "Name", "max": "256"}),
+        );
+
+        // Several fields stay labelled.
+        let labelled = QueryOutput {
+            file: "o.json".into(),
+            view: vec![QueryOutputField::Value, QueryOutputField::Line],
+        };
+        assert_eq!(
+            output_entry(&labelled, &m),
+            serde_json::json!({"value": "Name", "line": 7}),
+        );
     }
 
     /// Merge semantics of the materialized output: queried files are
