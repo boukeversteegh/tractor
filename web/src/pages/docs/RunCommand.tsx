@@ -289,25 +289,26 @@ operations:
       <p>
         The written file is an index keyed by source file:{' '}
         <code>{'{ "files": { "<path>": [ ... ] } }'}</code>, with paths relative to the config
-        directory so the artifact is stable and committable. <code>view:</code> picks what each
-        entry holds — a <em>single</em> field is written directly (the default{' '}
-        <code>[value]</code> gives bare strings, <code>[tree]</code> gives each match's structure
-        itself), while several fields (<code>value</code>, <code>line</code>, <code>column</code>,{' '}
-        <code>tree</code>) are written as a labelled object. Updates merge incrementally: entries for every queried file are
+        directory so the artifact is stable and committable. Each entry is a labelled object;{' '}
+        <code>view:</code> chooses which keys it holds (<code>value</code> by default, plus{' '}
+        <code>line</code>, <code>column</code>, <code>tree</code>) and nothing else — the shape
+        never depends on how many fields you selected or on what a match contains, so adding a
+        field only adds a key. Updates merge incrementally: entries for every queried file are
         replaced wholesale, files outside the queried set (e.g. excluded by{' '}
         <code>diff-files</code>) keep their entries, and entries whose file no longer exists are
         pruned — so a diff-scoped gather stays correct without re-querying the whole tree.
       </p>
       <p>
-        <strong>Reading the index.</strong> Most rules just want the flat set of gathered values,
-        which is <code>?files?*?*</code> — the first <code>?*</code> expands every file key, the
-        second every entry in that file's array:
+        <strong>Reading the index.</strong> Most rules just want the flat set of gathered values.
+        That is <code>?files?*?*?value</code> — the first <code>?*</code> expands every file key,
+        the second every entry in that file's array, and <code>?value</code> takes the field:
       </p>
       <CodeBlock
         language="text"
-        code={`$variables?records?files?*?*        all values, provenance discarded
-$variables?records?files?("src/A.cs")?*   values from one specific file
-map:keys($variables?records?files)        the file paths themselves`}
+        code={`$variables?records?files?*?*?value              all values, provenance discarded
+$variables?records?files?("src/A.cs")?*?value  values from one specific file
+$variables?records?files?*?*?tree              the structured record of each entry
+map:keys($variables?records?files)             the file paths themselves`}
       />
       <p>
         Keep the file keys when a rule is <em>about</em> paths (e.g. "every file with an X must
@@ -337,7 +338,7 @@ operations:
             ! map { 'name': string(name), 'max': string(.//argument/int) }
       output:
         file: "gathered/records.json"
-        view: [tree]          # entries are the maps themselves
+        view: [tree]          # each entry holds its map under "tree"
 
   - check:
       files: ["**/*Dto.cs"]
@@ -346,7 +347,7 @@ operations:
           reason: "DTO MaxLength differs from the Record"
           xpath: >-
             //property[.//attribute/name/ref = 'MaxLength']
-            [not(some $r in $variables?records?files?*?*
+            [not(some $r in $variables?records?files?*?*?tree
                  satisfies $r?name = string(name) and $r?max = string(.//argument/int))]
             /name`}
       />

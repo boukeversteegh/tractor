@@ -326,18 +326,17 @@ fn field_value(field: QueryOutputField, m: &tractor::Match) -> Option<serde_json
     }
 }
 
-/// Build one output entry for a match, honoring the configured view.
+/// Build one output entry for a match: always an object whose keys are the
+/// configured `view:` fields.
 ///
-/// A **single-field** view writes that field directly, with no wrapper: the
-/// default `[value]` gives bare strings, and `[tree]` gives each match's
-/// structure itself — so a query emitting `map { 'name': ..., 'max': ... }`
-/// is read as `?files?*?*?name`, a keyed lookup, rather than being buried
-/// under a `tree` key. Multi-field views need an object to label which
-/// value is which.
+/// The shape never depends on how many fields were selected, or on what a
+/// match happens to contain — `view:` chooses which keys appear, and
+/// nothing else. Unwrapping a lone field would make a config's structure
+/// change silently when a second field is added, and would make the
+/// artifact's shape a function of its content rather than of its
+/// parameters. It also keeps the file consistent with the JSON report,
+/// where a match is always a labelled object.
 fn output_entry(output: &QueryOutput, m: &tractor::Match) -> serde_json::Value {
-    if let [only] = output.view.as_slice() {
-        return field_value(*only, m).unwrap_or(serde_json::Value::Null);
-    }
     let mut obj = serde_json::Map::new();
     for field in &output.view {
         if let Some(value) = field_value(*field, m) {
@@ -449,11 +448,11 @@ mod tests {
         assert!(report.all_matches().iter().all(|m| m.severity == Some(Severity::Warning)));
     }
 
-    /// A single-field view writes that field directly, so structured
-    /// records read as `?files?*?*?field` — a keyed lookup, not a string
-    /// key. Several fields need an object to label them.
+    /// Entries are always labelled objects: `view:` selects which keys
+    /// appear and nothing else, so adding a field never changes the shape
+    /// of the ones already there.
     #[test]
-    fn query_output_single_field_view_is_unwrapped() {
+    fn query_output_entries_are_always_labelled() {
         use tractor::XmlNode;
 
         let mut m = tractor::Match::new("a.json".to_string(), "Name".to_string());
@@ -465,25 +464,23 @@ mod tests {
             ],
         });
 
-        let bare_value = QueryOutput { file: "o.json".into(), view: vec![QueryOutputField::Value] };
-        assert_eq!(output_entry(&bare_value, &m), serde_json::json!("Name"));
+        // The default view — still an object, not a bare string.
+        let default_view = QueryOutput { file: "o.json".into(), view: vec![QueryOutputField::Value] };
+        assert_eq!(output_entry(&default_view, &m), serde_json::json!({"value": "Name"}));
 
-        // `[tree]` alone yields the map itself — no `tree` wrapper.
-        let bare_tree = QueryOutput { file: "o.json".into(), view: vec![QueryOutputField::Tree] };
+        // A structured match keeps its map under the `tree` key.
+        let tree = QueryOutput { file: "o.json".into(), view: vec![QueryOutputField::Tree] };
         assert_eq!(
-            output_entry(&bare_tree, &m),
-            serde_json::json!({"name": "Name", "max": "256"}),
+            output_entry(&tree, &m),
+            serde_json::json!({"tree": {"name": "Name", "max": "256"}}),
         );
 
-        // Several fields stay labelled.
-        let labelled = QueryOutput {
+        // Adding a field only adds a key; `value` is unchanged.
+        let two = QueryOutput {
             file: "o.json".into(),
             view: vec![QueryOutputField::Value, QueryOutputField::Line],
         };
-        assert_eq!(
-            output_entry(&labelled, &m),
-            serde_json::json!({"value": "Name", "line": 7}),
-        );
+        assert_eq!(output_entry(&two, &m), serde_json::json!({"value": "Name", "line": 7}));
     }
 
     /// Merge semantics of the materialized output: queried files are
@@ -518,7 +515,11 @@ mod tests {
             serde_json::from_str(&std::fs::read_to_string(dir.path().join("out.json")).unwrap()).unwrap();
         let files = written.get("files").unwrap().as_object().unwrap();
         assert_eq!(files.get("a.json").unwrap(), &serde_json::json!(["old-a"]), "unqueried file kept");
-        assert_eq!(files.get("b.json").unwrap(), &serde_json::json!(["new-b"]), "queried file replaced");
+        assert_eq!(
+            files.get("b.json").unwrap(),
+            &serde_json::json!([{"value": "new-b"}]),
+            "queried file replaced",
+        );
         assert!(files.get("gone.json").is_none(), "missing file pruned: {:?}", files);
     }
 

@@ -2061,7 +2061,7 @@ fn config_query_output_feeds_check_in_one_run() {
       files: [\"src/*.cs\"]
       rules:
         - id: entity-needs-repository
-          xpath: \"//class/name[not(contains(., 'Repository'))][not(concat(., 'Repository') = $variables?repos?files?*?*)]\"
+          xpath: \"//class/name[not(contains(., 'Repository'))][not(concat(., 'Repository') = $variables?repos?files?*?*?value)]\"
           severity: error
           reason: \"entity class has no matching repository\"
 variables:
