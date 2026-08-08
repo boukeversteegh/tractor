@@ -2046,6 +2046,48 @@ set:
 }
 
 #[test]
+fn config_unread_source_in_a_mixed_variables_map_does_not_block_a_run() {
+    // Inline settings and a gathered artifact commonly share one map. A
+    // rule reading only the inline key must not be killed by the artifact
+    // naming a file a later operation is about to write — resolution is
+    // per key, not per map.
+    let config = "variables:
+  env: production
+  repos:
+    $file: \"gathered/repos.json\"
+operations:
+  - check:
+      files: [\"data.json\"]
+      rules:
+        - id: reads-only-env
+          reason: \"port present in production\"
+          xpath: \"//port[$variables?env = 'production']\"
+  - query:
+      files: [\"data.json\"]
+      queries: [{ xpath: \"//port\" }]
+      output: \"gathered/repos.json\"
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("data.json", "{\"port\": 8080}")
+        .capture();
+
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        !combined.contains("cannot read"),
+        "an unread source must not be resolved: {}",
+        combined
+    );
+    assert!(
+        combined.contains("port present in production"),
+        "the rule reading the inline key should still fire: {}",
+        combined
+    );
+}
+
+#[test]
 fn config_query_output_feeds_check_in_one_run() {
     // The multi-query pipeline in a single run: the query op materializes
     // repository class names to a JSON index, and the check op — whose

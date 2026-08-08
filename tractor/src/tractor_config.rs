@@ -1560,8 +1560,8 @@ check:
 "#;
         let loaded = parse_config_yaml(yaml).unwrap();
         let (_, c) = as_check(&loaded.operations[0]);
-        assert_eq!(c.rules[0].variables.get("max"), Some(&VariableValue::Int(4)));
-        assert!(c.rules[1].variables.is_empty());
+        assert_eq!(c.rules[0].variables.declared().get("max"), Some(&VariableValue::Int(4)));
+        assert!(c.rules[1].variables.declared().is_empty());
         // Root-level variables stay at the config level, not copied per rule
         assert_eq!(loaded.variables.get("env"), Some(&VariableValue::String("production".into())));
     }
@@ -1592,11 +1592,11 @@ test:
         // variables for later operations), then check/set/test.
         let loaded = parse_config_yaml(yaml).unwrap();
         let (_, q) = as_query(&loaded.operations[0]);
-        assert_eq!(q.queries[0].variables.get("role"), Some(&VariableValue::String("admin".into())));
+        assert_eq!(q.queries[0].variables.declared().get("role"), Some(&VariableValue::String("admin".into())));
         let (_, s) = as_set(&loaded.operations[1]);
-        assert_eq!(s.mappings[0].variables.get("from"), Some(&VariableValue::Int(8080)));
+        assert_eq!(s.mappings[0].variables.declared().get("from"), Some(&VariableValue::Int(8080)));
         let (_, t) = as_test(&loaded.operations[2]);
-        assert_eq!(t.assertions[0].variables.get("max"), Some(&VariableValue::Int(100)));
+        assert_eq!(t.assertions[0].variables.declared().get("max"), Some(&VariableValue::Int(100)));
     }
 
     #[test]

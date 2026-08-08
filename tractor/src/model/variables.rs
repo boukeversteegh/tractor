@@ -79,14 +79,20 @@
 //!    `output:`) is read fresh by the next one, and every entry within one
 //!    operation sees a single consistent snapshot.
 //!
-//! What counts as "reads" is recorded per entry at load time by
-//! [`EntryVariables`] — not re-derived from XPath strings during execution.
-//! Resolution is therefore per entry, not per operation: one rule reading
-//! `$rule.variables` never forces resolution for a sibling rule that
-//! doesn't. A declared-but-unread source is neither resolved (so it cannot
-//! fail the run over a file that does not exist yet) nor bound raw: it
-//! binds an empty map. Downstream code therefore only ever sees plain
-//! resolved data — never an unresolved directive.
+//! What counts as "reads" is recorded at load time by [`VariableReads`],
+//! from the expression itself — not re-derived from XPath strings during
+//! execution. Resolution is scoped two ways:
+//!
+//! - **per entry**, so one rule reading `$rule.variables` never forces
+//!   resolution for a sibling rule that doesn't;
+//! - **per top-level key**, so a map holding an inline `env:` beside a
+//!   gathered `repos: {$file: ...}` resolves only what an expression looks
+//!   up. Reading `$variables?env` leaves `repos` alone.
+//!
+//! A declared-but-unread source is neither resolved (so it cannot fail the
+//! run over a file that does not exist yet) nor bound raw: its key is
+//! omitted from the bound map. Downstream code therefore only ever sees
+//! plain resolved data — never an unresolved directive.
 //!
 //! ## Conversion to XPath values
 //!
@@ -269,6 +275,55 @@ impl QueryVariables {
     /// operation runs — only the file *read* is deferred to execution.
     pub fn validate_sources(&self) -> Result<(), VariableSourceError> {
         self.clone().walk(&mut |_, _| Ok(VariableValue::Null)).map(|_| ())
+    }
+
+    /// Bind this map for a query that reads the top-level keys `reads`
+    /// accepts.
+    ///
+    /// Resolution is per key, because a map routinely holds inline settings
+    /// beside a gathered artifact:
+    ///
+    /// ```yaml
+    /// variables:
+    ///   env: production
+    ///   repos: { $file: "gathered/repos.json" }   # written later in the run
+    /// ```
+    ///
+    /// A rule reading only `$variables?env` must not be killed by `repos`
+    /// naming a file a later operation is about to write. So a key is:
+    ///
+    /// - kept as-is when it declares no sources (free, and always safe),
+    /// - resolved when it declares sources *and* is read,
+    /// - **omitted** when it declares sources and is not read — never
+    ///   resolved (it may not exist yet) and never bound raw (a directive
+    ///   map must not reach the query as data).
+    ///
+    /// An omitted key is absent rather than empty, so `map:contains` reports
+    /// it missing — the honest answer, since its value was never determined.
+    pub fn bind_for(
+        &self,
+        reads: &NamespaceReads,
+        base_dir: &Path,
+    ) -> Result<QueryVariables, VariableSourceError> {
+        if !self.has_sources() {
+            return Ok(self.clone());
+        }
+        let mut bound = BTreeMap::new();
+        for (name, value) in &self.0 {
+            let one: QueryVariables =
+                std::iter::once((name.clone(), value.clone())).collect();
+            if !one.has_sources() {
+                bound.insert(name.clone(), value.clone());
+            } else if reads.reads(name) {
+                let resolved = one
+                    .resolve_sources(base_dir)?
+                    .0
+                    .remove(name)
+                    .expect("resolution preserves top-level keys");
+                bound.insert(name.clone(), resolved);
+            }
+        }
+        Ok(QueryVariables(bound))
     }
 
     /// Whether the tree contains any `$`-directive (a resolution would
@@ -517,6 +572,111 @@ pub struct EntryContext {
     pub id: Option<String>,
 }
 
+/// What an expression reads from one variable namespace: which top-level
+/// keys by name, and whether it reaches the namespace in a way that could
+/// touch any key.
+///
+/// `all` covers the cases a key list cannot: `?*`, a computed lookup
+/// `?($expr)`, and a bare `$variables` used as a whole map. Those must
+/// resolve everything, since which key they land on is not knowable
+/// statically.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct NamespaceReads {
+    keys: std::collections::BTreeSet<String>,
+    all: bool,
+}
+
+impl NamespaceReads {
+    /// What `xpath` reads from the namespace named `$<var_name>`.
+    ///
+    /// A lexical scan, sound because XPath 3.1 has no dynamic variable
+    /// references: a namespace can only be read by writing its name. It
+    /// over-approximates (a name inside a string literal counts as a read),
+    /// which is the safe direction — a source may be resolved needlessly,
+    /// but a read source is never left unresolved.
+    pub fn of(xpath: &str, var_name: &str) -> Self {
+        let needle = format!("${}", var_name);
+        let mut reads = NamespaceReads::default();
+        for (at, _) in xpath.match_indices(&needle) {
+            let rest = &xpath[at + needle.len()..];
+            // `$variables` must not match inside a longer name such as
+            // `$variables-x`; NCNames continue with these characters.
+            if rest.starts_with(is_ncname_continuation) {
+                continue;
+            }
+            match rest.trim_start().strip_prefix('?') {
+                Some(lookup) => {
+                    let key: String = lookup
+                        .trim_start()
+                        .chars()
+                        .take_while(|c| is_ncname_continuation(*c))
+                        .collect();
+                    // `?*` and `?(...)` yield no literal key — any key may
+                    // be reached.
+                    if key.is_empty() {
+                        reads.all = true;
+                    } else {
+                        reads.keys.insert(key);
+                    }
+                }
+                // The whole map is used (passed around, counted, dumped).
+                None => reads.all = true,
+            }
+        }
+        reads
+    }
+
+    /// Whether the expression reads this namespace at all.
+    pub fn reads_any(&self) -> bool {
+        self.all || !self.keys.is_empty()
+    }
+
+    /// Whether the expression may read this top-level key.
+    pub fn reads(&self, key: &str) -> bool {
+        self.all || self.keys.contains(key)
+    }
+
+    /// Everything either side reads — for the run-level map, which one
+    /// operation's entries share.
+    pub fn union(mut self, other: &NamespaceReads) -> Self {
+        self.all |= other.all;
+        self.keys.extend(other.keys.iter().cloned());
+        self
+    }
+}
+
+fn is_ncname_continuation(c: char) -> bool {
+    c.is_alphanumeric() || c == '-' || c == '_' || c == '.'
+}
+
+/// What an expression reads from the namespaces available to it: the
+/// run-level `$variables`, and its own entry namespace.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct VariableReads {
+    run: NamespaceReads,
+    own: NamespaceReads,
+}
+
+impl VariableReads {
+    /// What `xpath` reads, for an entry of `kind`.
+    pub fn of(xpath: &str, kind: EntryKind) -> Self {
+        Self {
+            run: NamespaceReads::of(xpath, "variables"),
+            own: NamespaceReads::of(xpath, kind.variables_name()),
+        }
+    }
+
+    /// Reads from the run-level `$variables`.
+    pub fn run(&self) -> &NamespaceReads {
+        &self.run
+    }
+
+    /// Reads from this entry's own `$<entry>.variables`.
+    pub fn own(&self) -> &NamespaceReads {
+        &self.own
+    }
+}
+
 /// An operation entry's `variables:` together with what its expression
 /// actually reads — decided once, where both are known (config load), so
 /// execution never re-derives resolution policy from XPath strings.
@@ -544,11 +704,11 @@ pub struct EntryContext {
 /// xpath so the two cannot disagree.
 #[derive(Debug, Clone, PartialEq)]
 pub struct EntryVariables {
-    variables: std::sync::Arc<QueryVariables>,
-    /// The expression reads this entry's own `$<entry>.variables`.
-    reads_own: bool,
-    /// The expression reads the run-level `$variables`.
-    reads_run: bool,
+    /// The entry's `variables:` as written — pure data.
+    declared: std::sync::Arc<QueryVariables>,
+    /// What the entry's expression reads — facts about a string, kept
+    /// beside the values only so the two cannot be paired wrongly.
+    reads: VariableReads,
 }
 
 impl EntryVariables {
@@ -556,89 +716,56 @@ impl EntryVariables {
     /// recording what that expression reads.
     pub fn new(variables: QueryVariables, kind: EntryKind, xpath: &str) -> Self {
         Self {
-            variables: std::sync::Arc::new(variables),
-            reads_own: xpath.contains(&format!("${}", kind.variables_name())),
-            reads_run: reads_run_variables(xpath),
+            declared: std::sync::Arc::new(variables),
+            reads: VariableReads::of(xpath, kind),
         }
     }
 
     /// The entry's declared variables, directives unresolved.
     pub fn declared(&self) -> &std::sync::Arc<QueryVariables> {
-        &self.variables
+        &self.declared
     }
 
-    /// Whether the entry's expression reads the run-level `$variables`.
-    pub fn reads_run_variables(&self) -> bool {
-        self.reads_run
+    /// What the entry's expression reads.
+    pub fn reads(&self) -> &VariableReads {
+        &self.reads
     }
 
-    /// The map to bind as this entry's namespace, with `$`-directive
-    /// sources resolved against `base_dir`.
-    ///
-    /// An entry that never reads its own namespace binds an empty map: its
-    /// sources are neither resolved (so a not-yet-written file cannot fail
-    /// the run) nor bound raw (so an unresolved directive never reaches the
-    /// XPath context as data).
+    /// Whether the declared variables contain any `$`-directive.
+    pub fn has_sources(&self) -> bool {
+        self.declared.has_sources()
+    }
+
+    /// The map to bind as this entry's namespace, resolving the sources
+    /// under the keys this entry reads (see [`QueryVariables::bind_for`]).
     pub fn bind(&self, base_dir: &Path) -> Result<std::sync::Arc<QueryVariables>, VariableSourceError> {
-        bind_variables(&self.variables, self.reads_own, base_dir)
+        Ok(std::sync::Arc::new(
+            self.declared.bind_for(self.reads.own(), base_dir)?,
+        ))
     }
 
     /// The same entry with its declared variables replaced by an already
     /// bound (resolved) map — what the executor stores back into the plan
     /// before running the entry.
     pub fn with_bound(mut self, bound: std::sync::Arc<QueryVariables>) -> Self {
-        self.variables = bound;
+        self.declared = bound;
         self
     }
 }
 
-impl std::ops::Deref for EntryVariables {
-    type Target = QueryVariables;
-    fn deref(&self) -> &QueryVariables {
-        &self.variables
-    }
-}
-
-/// Whether an XPath expression reads the run-level `$variables`.
-///
-/// `$rule.variables` and friends don't count: the character before
-/// `variables` there is `.`, not `$`.
-pub fn reads_run_variables(xpath: &str) -> bool {
-    xpath.match_indices("$variables").any(|(i, _)| {
-        // Reject `$variables` as a prefix of a longer name (NCNames may
-        // contain `-`, `_`, `.`, and digits).
-        !xpath[i + "$variables".len()..]
-            .starts_with(|c: char| c.is_alphanumeric() || c == '-' || c == '_' || c == '.')
-    })
-}
-
-/// Shared binding policy: resolve when read, empty when not, and never
-/// bind an unresolved directive map.
-fn bind_variables(
+/// Bind the run-level `$variables` for one operation, resolving the sources
+/// under the keys that operation's entries read. Same policy as
+/// [`EntryVariables::bind`], with the reads unioned across entries because
+/// one map serves them all.
+pub fn bind_run_variables(
     variables: &std::sync::Arc<QueryVariables>,
-    is_read: bool,
+    reads: &NamespaceReads,
     base_dir: &Path,
 ) -> Result<std::sync::Arc<QueryVariables>, VariableSourceError> {
     if !variables.has_sources() {
         return Ok(std::sync::Arc::clone(variables));
     }
-    if !is_read {
-        return Ok(std::sync::Arc::default());
-    }
-    Ok(std::sync::Arc::new(
-        (**variables).clone().resolve_sources(base_dir)?,
-    ))
-}
-
-/// Resolve the run-level `$variables` for an operation: same policy as
-/// [`EntryVariables::bind`], driven by whether any of the operation's
-/// expressions read it.
-pub fn bind_run_variables(
-    variables: &std::sync::Arc<QueryVariables>,
-    is_read: bool,
-    base_dir: &Path,
-) -> Result<std::sync::Arc<QueryVariables>, VariableSourceError> {
-    bind_variables(variables, is_read, base_dir)
+    Ok(std::sync::Arc::new(variables.bind_for(reads, base_dir)?))
 }
 
 /// Everything user-defined that binds into a query's dynamic context: the
@@ -842,10 +969,10 @@ mod tests {
             "//f[count(p) > $rule.variables?max]",
         );
         assert!(reads_own.bind(Path::new(".")).is_ok());
-        assert!(!reads_own.reads_run_variables());
+        assert!(!reads_own.reads().run().reads_any());
 
         let reads_run = EntryVariables::new(vars.clone(), EntryKind::Rule, "//a[$variables?env]");
-        assert!(reads_run.reads_run_variables());
+        assert!(reads_run.reads().run().reads_any());
 
         // Another entry kind's namespace is not this entry's own.
         let other_kind = EntryVariables::new(
@@ -853,14 +980,14 @@ mod tests {
             EntryKind::Rule,
             "//a[$mapping.variables?max]",
         );
-        assert!(!other_kind.reads_run_variables());
+        assert!(!other_kind.reads().run().reads_any());
 
         // `$variables` as a prefix of a longer name is not a read of it.
         assert!(!EntryVariables::new(vars.clone(), EntryKind::Rule, "//a[$variables-x]")
-            .reads_run_variables());
+            .reads().run().reads_any());
         // ...but `$rule.variables` never counts as `$variables` either.
         assert!(!EntryVariables::new(vars.clone(), EntryKind::Rule, "//a[$rule.variables?max]")
-            .reads_run_variables());
+            .reads().run().reads_any());
 
         // Over-approximation: a namespace name inside a string literal
         // counts as a read. XPath has no dynamic variable references, so
@@ -869,9 +996,68 @@ mod tests {
         // direction. This test pins that direction deliberately.
         assert!(
             EntryVariables::new(vars, EntryKind::Rule, "//a[. = '$variables?x']")
-                .reads_run_variables(),
+                .reads().run().reads_any(),
             "a literal occurrence must be treated as a read (conservative)"
         );
+    }
+
+    /// The read scan records which top-level keys an expression looks up,
+    /// and when it can reach any key at all.
+    #[test]
+    fn namespace_reads_records_keys_and_wildcards() {
+        let reads = NamespaceReads::of("//a[$variables?env = $variables?limits?max]", "variables");
+        assert!(reads.reads("env"));
+        assert!(reads.reads("limits"), "the top-level key of a nested lookup");
+        assert!(!reads.reads("other"));
+        assert!(reads.reads_any());
+
+        // A wildcard or computed lookup can land on any key.
+        for xpath in ["//a[$variables?*]", "//a[$variables?($name)]"] {
+            let reads = NamespaceReads::of(xpath, "variables");
+            assert!(reads.reads("anything"), "{}", xpath);
+        }
+
+        // The whole map used as a value — also any key.
+        assert!(NamespaceReads::of("$variables", "variables").reads("anything"));
+
+        // A longer name is a different variable.
+        let reads = NamespaceReads::of("//a[$variables-x?env]", "variables");
+        assert!(!reads.reads_any());
+
+        // Namespaces don't bleed into each other.
+        let reads = NamespaceReads::of("//a[$rule.variables?max]", "variables");
+        assert!(!reads.reads_any(), "$rule.variables is not $variables");
+        let own = NamespaceReads::of("//a[$rule.variables?max]", "rule.variables");
+        assert!(own.reads("max"));
+
+        // Nothing read at all.
+        assert!(!NamespaceReads::of("//a[@x = 1]", "variables").reads_any());
+    }
+
+    /// Resolution is per key: an unread source in the same map as a read
+    /// key must not be resolved. This is the shape the docs encourage —
+    /// inline settings beside a gathered artifact.
+    #[test]
+    fn bind_for_resolves_only_the_keys_that_are_read() {
+        let vars: QueryVariables = serde_yaml::from_str(
+            "env: production\nrepos:\n  $file: not-written-yet.json\n",
+        )
+        .unwrap();
+
+        // Reading only `env` leaves `repos` alone — no read, no failure.
+        let reads = NamespaceReads::of("//a[$variables?env = 'production']", "variables");
+        let bound = vars.bind_for(&reads, Path::new(".")).expect("unread source must not resolve");
+        assert_eq!(bound.get("env"), Some(&VariableValue::String("production".into())));
+        assert!(bound.get("repos").is_none(), "an unread source is omitted, not bound raw");
+        assert!(!bound.has_sources(), "no directive may reach the query context");
+
+        // Reading `repos` resolves it — and fails loudly when it cannot.
+        let reads = NamespaceReads::of("//a[$variables?repos?x]", "variables");
+        assert!(vars.bind_for(&reads, Path::new(".")).is_err(), "a read source must resolve");
+
+        // A wildcard reads everything, so it resolves everything.
+        let reads = NamespaceReads::of("//a[$variables?*]", "variables");
+        assert!(vars.bind_for(&reads, Path::new(".")).is_err());
     }
 
     /// An entry that never reads its own namespace neither resolves its

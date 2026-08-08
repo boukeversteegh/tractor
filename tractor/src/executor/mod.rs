@@ -93,10 +93,15 @@ pub fn execute(
 
         // Fresh snapshots for this operation. What gets resolved was decided
         // at config load and travels on each entry's `EntryVariables` — the
-        // executor only reads those flags, it does not re-derive policy.
+        // executor only reads those records, it does not re-derive policy.
+        // The run-level map serves every entry, so its reads are the union.
+        let run_reads = entry_variables(op)
+            .fold(tractor::variables::NamespaceReads::default(), |acc, v| {
+                acc.union(v.reads().run())
+            });
         let run_vars = tractor::variables::bind_run_variables(
             &ctx.query_variables(),
-            entries_read_run_variables(op),
+            &run_reads,
             base_dir,
         )?;
         let op_ctx = ExecCtx { variables: Some(&run_vars), ..*ctx };
@@ -126,18 +131,6 @@ fn entry_variables(op: &OperationPlan) -> Box<dyn Iterator<Item = &tractor::Entr
         OperationPlan::Query(q) => Box::new(q.queries.iter().map(|q| &q.variables)),
         OperationPlan::Test(t) => Box::new(t.assertions.iter().map(|a| &a.variables)),
         OperationPlan::Update(_) => Box::new(std::iter::empty()),
-    }
-}
-
-/// Whether any of the operation's expressions reads the run-level
-/// `$variables`. Reads the flag each entry recorded at config load rather
-/// than re-scanning XPath strings.
-///
-/// `update` has no entries, so its own xpath is consulted directly.
-fn entries_read_run_variables(op: &OperationPlan) -> bool {
-    match op {
-        OperationPlan::Update(u) => tractor::variables::reads_run_variables(&u.xpath),
-        _ => entry_variables(op).any(|v| v.reads_run_variables()),
     }
 }
 
