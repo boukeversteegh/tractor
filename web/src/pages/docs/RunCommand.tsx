@@ -259,9 +259,8 @@ xpath: >-
       <p>
         A query operation can write its results to a JSON index with <code>output</code>, and a
         later operation can consume that file as a variable — cross-file assertions in a single
-        run. Operations run strictly in the order of the <code>operations</code> list (root-level
-        shorthand keys run query first for exactly this reason), and because sources resolve at
-        each operation's start, the check below reads the file the query just wrote:
+        run. Because sources resolve at each operation's start, the check below reads the file
+        the query just wrote:
       </p>
       <CodeBlock
         language="yaml"
@@ -400,6 +399,33 @@ operations:
           expect: some
           message: "At least one class expected"`}
       />
+
+      <h3>Execution order</h3>
+      <p>
+        Operations run one after another, and each sees whatever the previous ones left behind
+        — files a <code>set</code> rewrote, an index a <code>query</code> materialized. Two ways
+        to arrange them:
+      </p>
+      <ul>
+        <li>
+          The <code>operations</code> list runs <strong>exactly in the order written</strong>.
+          This is how you express a dependency, and the only way to run two operations of the
+          same kind.
+        </li>
+        <li>
+          The root-level shorthand keys (<code>query</code>, <code>check</code>, <code>set</code>,{' '}
+          <code>test</code>) are a convenience for at most one operation of each kind. They run
+          in that fixed order — <strong>query first</strong>, so a gathered index is available to
+          the operations that consume it.
+        </li>
+      </ul>
+      <p>
+        <strong>Changed behaviour:</strong> the shorthand order was previously check, set, query.
+        A config that used root-level <code>set</code> and <code>query</code> together therefore
+        had the query observe files <em>after</em> the set rewrote them, and now observes them
+        before. If that ordering mattered, write the two as an explicit{' '}
+        <code>operations</code> list, which says what you mean and is unaffected.
+      </p>
 
       <h2>Set Operations</h2>
       <p>
