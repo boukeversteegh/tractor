@@ -126,6 +126,36 @@ pub struct QueryOutput {
     pub view: Vec<QueryOutputField>,
 }
 
+impl QueryOutput {
+    /// Check that a configured output path stays inside the config
+    /// directory: relative, with no `..`.
+    ///
+    /// Tests components rather than `Path::is_absolute`, which is not
+    /// enough on Windows — `/x` and `\x` have a root but no drive prefix,
+    /// so `is_absolute` reports **false** while `join` still throws away
+    /// the base directory and keeps only its drive, landing the write
+    /// outside the config directory. `C:x` (drive-relative) slips through
+    /// the same way. Rejecting `Prefix`, `RootDir` and `ParentDir` covers
+    /// every rooted or drive-qualified form on both platforms.
+    ///
+    /// One owner, called from config load (so a bad path fails before any
+    /// work) and again at the write (which programmatic plans reach
+    /// without passing through config loading).
+    pub fn validate_path(file: &str) -> Result<(), String> {
+        use std::path::Component;
+        let escapes = std::path::Path::new(file).components().any(|c| {
+            matches!(c, Component::Prefix(_) | Component::RootDir | Component::ParentDir)
+        });
+        if escapes {
+            return Err(format!(
+                "query output '{}' must be a relative path inside the config directory",
+                file
+            ));
+        }
+        Ok(())
+    }
+}
+
 /// A field of a materialized query-output entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QueryOutputField {
@@ -300,16 +330,8 @@ fn write_query_output(
     // path is knowable and an error costs nothing. This guard covers plans
     // built programmatically, which bypass that path entirely — the write
     // itself is where the promise has to hold.
-    let requested = std::path::Path::new(&output.file);
-    if requested.is_absolute()
-        || requested.components().any(|c| matches!(c, std::path::Component::ParentDir))
-    {
-        return Err(format!(
-            "query output '{}' must be a relative path inside the config directory",
-            output.file
-        ).into());
-    }
-    let out_path = base_dir.join(requested);
+    QueryOutput::validate_path(&output.file)?;
+    let out_path = base_dir.join(&output.file);
 
     // Start from the existing index when merging is possible.
     let mut files: BTreeMap<String, serde_json::Value> = match std::fs::read_to_string(&out_path) {
@@ -492,6 +514,30 @@ mod tests {
         assert!(warnings[0].reason.as_deref().unwrap().contains("only bound in check rules"));
         // The query itself still runs and matches nothing (empty lookup).
         assert!(report.all_matches().iter().all(|m| m.severity == Some(Severity::Warning)));
+    }
+
+    /// The output path must stay inside the config directory. `is_absolute`
+    /// alone misses the Windows forms that still escape, so every rooted or
+    /// drive-qualified shape is rejected explicitly.
+    #[test]
+    fn query_output_path_must_stay_inside_the_config_directory() {
+        for ok in ["out.json", "gathered/repos.json", "./a/b.json"] {
+            assert!(QueryOutput::validate_path(ok).is_ok(), "{} should be allowed", ok);
+        }
+        for escaping in [
+            "../outside.json",       // parent traversal
+            "a/../../outside.json",  // traversal after a descent
+            "/rooted.json",          // rooted, no drive: is_absolute() is false on Windows
+            "\\rooted.json",         // the same with a backslash
+            "C:\\abs.json",          // fully absolute
+            "C:rel.json",            // drive-relative
+        ] {
+            let err = match QueryOutput::validate_path(escaping) {
+                Err(e) => e,
+                Ok(()) => panic!("{} should be rejected", escaping),
+            };
+            assert!(err.contains("must be a relative path"), "{}: {}", escaping, err);
+        }
     }
 
     /// Entries are always labelled objects: `view:` selects which keys

@@ -685,17 +685,8 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
             QueryOutputConfig::Full(full) => (full.file, full.view),
         };
         // The path is a static property of the config, so it is checked here
-        // rather than after the query has run: `..` or an absolute path would
-        // let a config write outside its own directory.
-        let path = Path::new(&file);
-        if path.is_absolute()
-            || path.components().any(|c| matches!(c, std::path::Component::ParentDir))
-        {
-            return Err(format!(
-                "query output '{}' must be a relative path inside the config directory",
-                file
-            ).into());
-        }
+        // rather than after the query has run.
+        QueryOutput::validate_path(&file)?;
         let view = match view {
             None => vec![QueryOutputField::Value],
             Some(fields) => fields
