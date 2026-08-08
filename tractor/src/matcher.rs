@@ -8,7 +8,7 @@ use tractor::{
     parse, ParseInput, ParseOptions,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
     rule::CompiledRule,
-    variables::{EntryKind, QueryVariables},
+    variables::{EntryKind, QueryBindings, QueryVariables},
     xpath::validate_xpath,
 };
 use crate::input::filter::Filters;
@@ -76,19 +76,35 @@ pub fn validate_xpath_diagnostic(xpath_expr: &NormalizedXpath, command: &str) ->
 /// skipped. Nested keys (`$variables?limits?max`) are checked at the top
 /// level only.
 ///
-/// `label` names the entry in messages (the rule id, or e.g. "mapping 1");
-/// `entry_kind` is the current entry's kind (`None` outside any entry, e.g.
-/// CLI update) and `entry_variables` its `variables:`.
-pub fn undefined_variable_key_diagnostics(
+/// Driven by the same [`QueryBindings`] the query will actually run with, so
+/// what is diagnosed and what is bound cannot drift apart. Everything else
+/// is derived: the entry's kind and variables from `bindings.entry`, and its
+/// label from the entry's id or, for entries without one, its kind plus
+/// `index` (`mapping 2`). `command` names the operation, which owns no
+/// entry of its own (CLI `update`).
+pub fn variable_diagnostics(
     command: &str,
-    label: &str,
+    bindings: &QueryBindings,
+    index: usize,
     xpath: &str,
-    run_variables: &QueryVariables,
-    entry_kind: Option<EntryKind>,
-    entry_variables: &QueryVariables,
 ) -> Vec<ReportMatch> {
     use once_cell::sync::Lazy;
     use regex::Regex;
+
+    let entry_kind = bindings.entry.as_ref().map(|e| e.kind);
+    let run_variables = &*bindings.variables;
+    let empty = QueryVariables::new();
+    let entry_variables = bindings.entry.as_ref().map_or(&empty, |e| &*e.variables);
+    // Entries name themselves when they can (a rule id); the rest are
+    // identified by position, the way the config reads.
+    let label = match bindings.entry.as_ref() {
+        Some(entry) => entry
+            .id
+            .clone()
+            .unwrap_or_else(|| format!("{} {}", entry.kind.label(), index + 1)),
+        None => command.to_string(),
+    };
+    let label = label.as_str();
 
     // NCName-ish key after the lookup operator. The plain `\$variables`
     // pattern can't fire inside `$rule.variables` etc. — the character
@@ -314,7 +330,7 @@ pub fn run_rules(
     parse_depth: Option<usize>,
     verbose: bool,
     filters: &Filters,
-    variables: &std::sync::Arc<QueryVariables>,
+    bindings: &QueryBindings,
 ) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
     // Process sources in parallel. Each source is parsed once using either:
     // - The source's detected language (when no rules specify a language override)
@@ -363,15 +379,13 @@ pub fn run_rules(
                     return None;
                 }
             };
-            result.bindings.variables = std::sync::Arc::clone(variables);
-
             let mut file_matches = Vec::new();
 
-            // Run all applicable rules against the parsed result, binding
-            // each rule's own variables as $rule.variables and its id as
-            // $rule.id.
+            // Run all applicable rules against the parsed result. Each rule
+            // swaps in its own entry — its variables as $rule.variables and
+            // its id as $rule.id — over the shared run-level bindings.
             for rule_idx in applicable {
-                result.bindings.entry = Some(tractor::EntryContext::rule(
+                result.bindings = bindings.clone().with_entry(tractor::EntryContext::rule(
                     std::sync::Arc::clone(rules[rule_idx].variables.declared()),
                     rules[rule_idx].id.clone(),
                 ));
@@ -536,6 +550,18 @@ mod tests {
     use tractor::language_info::Language;
     use tractor::NormalizedXpath;
 
+    use tractor::variables::EntryContext;
+
+    /// Bindings for the advisory tests: run-level variables plus an
+    /// optional entry, exactly as an executor assembles them.
+    fn bindings(run: &QueryVariables, entry: Option<EntryContext>) -> QueryBindings {
+        let b = QueryBindings::run(std::sync::Arc::new(run.clone()));
+        match entry {
+            Some(e) => b.with_entry(e),
+            None => b,
+        }
+    }
+
     #[test]
     fn undefined_key_diagnostics_extraction() {
         use tractor::variables::{QueryVariables, VariableValue};
@@ -550,15 +576,14 @@ mod tests {
         // (`limits?max` is checked at the top level only.)
         let xpath = "//a[$variables?env = 'p' and $variables?limits?max > 1 \
              and (some $p in $rule.variables?prefixes?* satisfies starts-with(., $p))]";
-        assert!(undefined_variable_key_diagnostics(
-            "check", "r", xpath, &run_vars, Some(EntryKind::Rule), &rule_vars,
-        ).is_empty());
+        let rule = |v: &QueryVariables| {
+            bindings(&run_vars, Some(EntryContext::rule(std::sync::Arc::new(v.clone()), "r")))
+        };
+        assert!(variable_diagnostics("check", &rule(&rule_vars), 0, xpath).is_empty());
 
         // Undefined keys in both namespaces: one warning each, correct scope.
         let xpath = "//a[$variables?evn or $rule.variables?prefix]";
-        let diags = undefined_variable_key_diagnostics(
-            "check", "r", xpath, &run_vars, Some(EntryKind::Rule), &rule_vars,
-        );
+        let diags = variable_diagnostics("check", &rule(&rule_vars), 0, xpath);
         assert_eq!(diags.len(), 2);
         assert!(diags[0].reason.as_deref().unwrap().contains("'evn'"));
         assert!(diags[0].reason.as_deref().unwrap().contains("config's"));
@@ -568,9 +593,7 @@ mod tests {
 
         // Dynamic lookups are skipped
         let xpath = "//a[$variables?($name) or $variables?*]";
-        assert!(undefined_variable_key_diagnostics(
-            "check", "r", xpath, &run_vars, Some(EntryKind::Rule), &rule_vars,
-        ).is_empty());
+        assert!(variable_diagnostics("check", &rule(&rule_vars), 0, xpath).is_empty());
     }
 
     #[test]
@@ -583,16 +606,16 @@ mod tests {
 
         // The current entry's namespace checks keys; a defined key is fine.
         let xpath = "//port[. = $mapping.variables?from]";
-        assert!(undefined_variable_key_diagnostics(
-            "set", "mapping 1", xpath, &run_vars, Some(EntryKind::Mapping), &mapping_vars,
-        ).is_empty());
+        let mapping = bindings(
+            &run_vars,
+            Some(EntryContext::mapping(std::sync::Arc::new(mapping_vars.clone()))),
+        );
+        assert!(variable_diagnostics("set", &mapping, 0, xpath).is_empty());
 
         // A different entry's namespace is an empty map here: warn on any
         // reference, and $rule.id is likewise unbound outside check rules.
         let xpath = "//port[. = $rule.variables?from and contains(., $rule.id)]";
-        let diags = undefined_variable_key_diagnostics(
-            "set", "mapping 1", xpath, &run_vars, Some(EntryKind::Mapping), &mapping_vars,
-        );
+        let diags = variable_diagnostics("set", &mapping, 0, xpath);
         assert_eq!(diags.len(), 2, "{:?}", diags.iter().map(|d| d.reason.clone()).collect::<Vec<_>>());
         assert!(diags[0].reason.as_deref().unwrap().contains("only bound in check rules"));
         assert!(diags[1].reason.as_deref().unwrap().contains("$rule.id is only bound in check rules"));
@@ -601,9 +624,7 @@ mod tests {
 
         // Outside any entry (e.g. CLI update), every entry namespace warns.
         let xpath = "//a[$assertion.variables?x]";
-        let diags = undefined_variable_key_diagnostics(
-            "update", "update", xpath, &run_vars, None, &QueryVariables::new(),
-        );
+        let diags = variable_diagnostics("update", &bindings(&run_vars, None), 0, xpath);
         assert_eq!(diags.len(), 1);
         assert!(diags[0].reason.as_deref().unwrap().contains("only bound in test assertions"));
     }

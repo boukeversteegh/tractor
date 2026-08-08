@@ -91,6 +91,19 @@ pub struct SetMapping {
     pub variables: tractor::EntryVariables,
 }
 
+/// The bindings a mapping's xpath runs with: the run-level `$variables`
+/// plus the mapping's own set as `$mapping.variables`. One definition, used
+/// by the advisory pass, the match query, and the upsert.
+fn mapping_bindings(
+    mapping: &SetMapping,
+    variables: &std::sync::Arc<tractor::QueryVariables>,
+) -> tractor::QueryBindings {
+    tractor::QueryBindings::run(std::sync::Arc::clone(variables))
+        .with_entry(tractor::EntryContext::mapping(
+            std::sync::Arc::clone(mapping.variables.declared()),
+        ))
+}
+
 impl SetMapping {
     /// Build a mapping, deriving from `xpath` what its variables read.
     pub fn new(
@@ -141,13 +154,8 @@ pub(crate) fn execute_set(
     // Advisory: warn about variable lookups that silently yield the empty
     // sequence (unknown keys, namespaces of other entry kinds).
     for (i, mapping) in op.mappings.iter().enumerate() {
-        report.add_all(crate::matcher::undefined_variable_key_diagnostics(
-            "set",
-            &format!("mapping {}", i + 1),
-            &mapping.xpath,
-            &variables,
-            Some(tractor::EntryKind::Mapping),
-            &mapping.variables,
+        report.add_all(crate::matcher::variable_diagnostics(
+            "set", &mapping_bindings(mapping, &variables), i, &mapping.xpath,
         ));
     }
 

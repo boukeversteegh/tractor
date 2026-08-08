@@ -93,17 +93,10 @@ pub(crate) fn execute_update(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let variables = ctx.query_variables();
 
-    // Advisory: warn about variable lookups that silently yield the empty
-    // sequence. Update runs outside any operation entry, so every
-    // `$<entry>.variables` namespace is an empty map here.
-    report.add_all(crate::matcher::undefined_variable_key_diagnostics(
-        "update",
-        "update",
-        &op.xpath,
-        &variables,
-        None,
-        &tractor::QueryVariables::new(),
-    ));
+    // Advisory: update has no config entry, so every `$<entry>.variables` namespace is
+    // an empty map here — the advisory says so rather than leaving it silent.
+    let bindings = tractor::QueryBindings::run(std::sync::Arc::clone(&variables));
+    report.add_all(crate::matcher::variable_diagnostics("update", &bindings, 0, &op.xpath));
 
     let mut fallback_sources: Vec<Source> = Vec::new();
 
@@ -117,7 +110,7 @@ pub(crate) fn execute_update(
         let file_path: &NormalizedPath = &source.path;
         let disk_bytes = std::fs::read_to_string(file_path)?;
 
-        match update_only(&disk_bytes, lang, &op.xpath, &op.value, op.limit, tractor::QueryBindings::run(std::sync::Arc::clone(&variables))) {
+        match update_only(&disk_bytes, lang, &op.xpath, &op.value, op.limit, bindings.clone()) {
             Ok(result) => {
                 if result.source != disk_bytes {
                     std::fs::write(file_path, &result.source)?;
@@ -138,9 +131,9 @@ pub(crate) fn execute_update(
     // Legacy fallback for languages without renderers
     if !fallback_sources.is_empty() {
         let matches = query_files_multi(
-            &fallback_sources, &[(op.xpath.as_str(), None)], op.language.as_deref(),
+            &fallback_sources, &[(op.xpath.as_str(), bindings.clone())], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            None, ctx.verbose, &op.filters, &variables,
+            None, ctx.verbose, &op.filters,
         )?;
         if !matches.is_empty() {
             let summary = apply_replacements(&matches, &op.value)?;

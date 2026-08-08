@@ -238,13 +238,13 @@ pub(crate) fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
 /// Virtual and disk sources flow through the same loop — `source.parse()`
 /// dispatches on content kind so the caller doesn't branch.
 ///
-/// `variables` are the run's user-defined variables, bound into each query's
-/// dynamic context alongside the built-in `$file`. Each query carries its
-/// own optional entry context (e.g. a query entry's `variables:` bound as
-/// `$query.variables`), applied per expression.
+/// Each query carries the [`QueryBindings`](tractor::QueryBindings) it runs
+/// with — the run-level `$variables` plus its own entry context — so the
+/// bindings that were diagnosed are the bindings that execute.
+#[allow(clippy::too_many_arguments)] // parse options, not bindings
 pub(crate) fn query_files_multi(
     sources: &[Source],
-    queries: &[(&str, Option<tractor::EntryContext>)],
+    queries: &[(&str, tractor::QueryBindings)],
     lang: Option<&str>,
     tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
@@ -252,7 +252,6 @@ pub(crate) fn query_files_multi(
     limit: Option<usize>,
     verbose: bool,
     filters: &Filters,
-    variables: &std::sync::Arc<tractor::QueryVariables>,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut all_matches: Vec<Match> = sources
         .par_iter()
@@ -267,11 +266,9 @@ pub(crate) fn query_files_multi(
                     return None;
                 }
             };
-            result.bindings.variables = std::sync::Arc::clone(variables);
-
             let mut file_matches = Vec::new();
-            for (xpath_expr, entry) in queries {
-                result.bindings.entry = entry.clone();
+            for (xpath_expr, bindings) in queries {
+                result.bindings = bindings.clone();
                 match result.query(xpath_expr) {
                     Ok(matches) => file_matches.extend(matches),
                     Err(e) => {

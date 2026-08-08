@@ -180,36 +180,33 @@ pub(crate) fn execute_query(
         return Ok(());
     }
 
+    // The bindings each query runs with, built once and used for both the
+    // advisory pass and execution — what is diagnosed is what is bound.
     let variables = ctx.query_variables();
+    let queries: Vec<(&str, tractor::QueryBindings)> = op.queries.iter()
+        .map(|q| (
+            q.xpath.as_str(),
+            tractor::QueryBindings::run(std::sync::Arc::clone(&variables))
+                .with_entry(tractor::EntryContext::query(
+                    std::sync::Arc::clone(q.variables.declared()),
+                )),
+        ))
+        .collect();
 
     // Advisory: warn about variable lookups that silently yield the empty
     // sequence (unknown keys, namespaces of other entry kinds).
-    for (i, query) in op.queries.iter().enumerate() {
-        report.add_all(crate::matcher::undefined_variable_key_diagnostics(
-            "query",
-            &format!("query {}", i + 1),
-            query.xpath.as_str(),
-            &variables,
-            Some(tractor::EntryKind::Query),
-            &query.variables,
-        ));
+    for (i, (xpath, bindings)) in queries.iter().enumerate() {
+        report.add_all(crate::matcher::variable_diagnostics("query", bindings, i, xpath));
     }
 
     if op.sources.is_empty() {
         return Ok(());
     }
 
-    let queries: Vec<(&str, Option<tractor::EntryContext>)> = op.queries.iter()
-        .map(|q| (
-            q.xpath.as_str(),
-            Some(tractor::EntryContext::query(std::sync::Arc::clone(q.variables.declared()))),
-        ))
-        .collect();
-
     let matches = query_files_multi(
         &op.sources, &queries, op.language.as_deref(),
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
-        op.limit, ctx.verbose, &op.filters, &variables,
+        op.limit, ctx.verbose, &op.filters,
     )?;
 
     if let Some(output) = &op.output {

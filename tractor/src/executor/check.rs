@@ -78,14 +78,14 @@ pub(crate) fn execute_check(
     // Warnings never fail the run — a missing key legally yields the empty
     // sequence and may be intentional (optional flags, external variable
     // files) — but a typo'd key silently disables a rule, so surface it.
-    for rule in &op.compiled_rules {
-        report.add_all(crate::matcher::undefined_variable_key_diagnostics(
-            "check",
-            &rule.id,
-            rule.xpath.as_str(),
-            &variables,
-            Some(tractor::EntryKind::Rule),
-            &rule.variables,
+    for (i, rule) in op.compiled_rules.iter().enumerate() {
+        let bindings = tractor::QueryBindings::run(std::sync::Arc::clone(&variables))
+            .with_entry(tractor::EntryContext::rule(
+                std::sync::Arc::clone(rule.variables.declared()),
+                rule.id.clone(),
+            ));
+        report.add_all(crate::matcher::variable_diagnostics(
+            "check", &bindings, i, rule.xpath.as_str(),
         ));
     }
 
@@ -104,7 +104,7 @@ pub(crate) fn execute_check(
         op.parse_depth,
         ctx.verbose,
         &op.filters,
-        &variables,
+        &tractor::QueryBindings::run(std::sync::Arc::clone(&variables)),
     )?;
 
     for rm in rule_matches {

@@ -113,18 +113,23 @@ pub(crate) fn execute_test(
     ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // The bindings each assertion runs with, built once and used for both
+    // the advisory pass and execution.
     let variables = ctx.query_variables();
+    let bindings: Vec<tractor::QueryBindings> = op.assertions.iter()
+        .map(|a| {
+            tractor::QueryBindings::run(std::sync::Arc::clone(&variables))
+                .with_entry(tractor::EntryContext::assertion(
+                    std::sync::Arc::clone(a.variables.declared()),
+                ))
+        })
+        .collect();
 
     // Advisory: warn about variable lookups that silently yield the empty
     // sequence (unknown keys, namespaces of other entry kinds).
     for (i, assertion) in op.assertions.iter().enumerate() {
-        report.add_all(crate::matcher::undefined_variable_key_diagnostics(
-            "test",
-            &format!("assertion {}", i + 1),
-            assertion.xpath.as_str(),
-            &variables,
-            Some(tractor::EntryKind::Assertion),
-            &assertion.variables,
+        report.add_all(crate::matcher::variable_diagnostics(
+            "test", &bindings[i], i, assertion.xpath.as_str(),
         ));
     }
 
@@ -138,12 +143,11 @@ pub(crate) fn execute_test(
     }
 
     // Query each assertion's xpath individually to get per-assertion counts.
-    for assertion in &op.assertions {
-        let entry = tractor::EntryContext::assertion(std::sync::Arc::clone(assertion.variables.declared()));
+    for (assertion, bindings) in op.assertions.iter().zip(bindings) {
         let matches = query_files_multi(
-            &op.sources, &[(assertion.xpath.as_str(), Some(entry))], op.language.as_deref(),
+            &op.sources, &[(assertion.xpath.as_str(), bindings)], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            op.limit, ctx.verbose, &op.filters, &variables,
+            op.limit, ctx.verbose, &op.filters,
         )?;
         if !check_expectation(&assertion.expect, matches.len())? {
             report.fail();
