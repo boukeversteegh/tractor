@@ -130,27 +130,44 @@ impl QueryOutput {
     /// Check that a configured output path stays inside the config
     /// directory: relative, with no `..`.
     ///
-    /// Tests components rather than `Path::is_absolute`, which is not
-    /// enough on Windows — `/x` and `\x` have a root but no drive prefix,
-    /// so `is_absolute` reports **false** while `join` still throws away
-    /// the base directory and keeps only its drive, landing the write
-    /// outside the config directory. `C:x` (drive-relative) slips through
-    /// the same way. Rejecting `Prefix`, `RootDir` and `ParentDir` covers
-    /// every rooted or drive-qualified form on both platforms.
+    /// The check is **lexical, on the raw string**, deliberately not via
+    /// `Path`. A `tractor.yml` is committed and read on every platform, so
+    /// `output: "C:\gathered.json"` has to mean the same thing everywhere —
+    /// but `Path` is platform-dependent: on Unix that string is a single
+    /// ordinary filename, while on Windows it is a drive-qualified path
+    /// that escapes the config directory. A config's meaning must not
+    /// depend on which machine loaded it.
+    ///
+    /// Rejected: a leading `/` or `\` (rooted — on Windows `join` keeps
+    /// only the drive and drops the base directory, and `is_absolute` does
+    /// not catch it), a `<letter>:` prefix (absolute or drive-relative),
+    /// any `..` segment, and the empty path.
     ///
     /// One owner, called from config load (so a bad path fails before any
     /// work) and again at the write (which programmatic plans reach
     /// without passing through config loading).
     pub fn validate_path(file: &str) -> Result<(), String> {
-        use std::path::Component;
-        let escapes = std::path::Path::new(file).components().any(|c| {
-            matches!(c, Component::Prefix(_) | Component::RootDir | Component::ParentDir)
-        });
-        if escapes {
-            return Err(format!(
-                "query output '{}' must be a relative path inside the config directory",
-                file
-            ));
+        let reject = |why: &str| {
+            Err(format!(
+                "query output '{}' must be a relative path inside the config directory ({})",
+                file, why
+            ))
+        };
+        if file.is_empty() {
+            return reject("it is empty");
+        }
+        if file.starts_with('/') || file.starts_with('\\') {
+            return reject("it starts at a filesystem root");
+        }
+        let mut chars = file.chars();
+        if matches!(
+            (chars.next(), chars.next()),
+            (Some(letter), Some(':')) if letter.is_ascii_alphabetic()
+        ) {
+            return reject("it names a drive");
+        }
+        if file.split(['/', '\\']).any(|segment| segment == "..") {
+            return reject("it walks out with `..`");
         }
         Ok(())
     }
@@ -307,6 +324,14 @@ fn write_query_output(
     // path, and a virtual (inline / stdin) source has no path that means
     // anything to a later run — its matches are not indexable, so they are
     // left out rather than written and pruned again.
+    //
+    // This compares a match's file against the source paths, which works
+    // because `query_files_multi` parses with `source.path.as_str()` and
+    // hands that same string to every match: a match's file *is* its
+    // source's path, not an independently derived spelling of it. Anything
+    // constructing matches by another route (a test fabricating a path from
+    // `tempdir()`, say) can produce a string that normalizes differently
+    // and will silently match nothing.
     let indexable = |path: &str| -> bool {
         sources
             .iter()
@@ -593,13 +618,18 @@ mod tests {
             file: "out.json".into(),
             view: vec![QueryOutputField::Value],
         };
-        // This run queried only b.json and found one match.
+        // This run queried only b.json and found one match. The match path
+        // comes from the source, exactly as `query_files_multi` produces it
+        // — fabricating it from `tempdir()` instead would diverge wherever
+        // the two normalize differently (on a Windows CI runner the source
+        // resolves the 8.3 alias `RUNNER~1` to `runneradmin`, the raw temp
+        // path does not, and nothing matches).
         let b_path = dir.path().join("b.json");
+        let sources = vec![disk_source(b_path.to_str().unwrap())];
         let matches = vec![tractor::Match::new(
-            b_path.to_string_lossy().replace('\\', "/"),
+            sources[0].path.as_str().to_string(),
             "new-b".to_string(),
         )];
-        let sources = vec![disk_source(b_path.to_str().unwrap())];
 
         write_query_output(&output, &matches, &sources, dir.path()).unwrap();
 
