@@ -58,6 +58,7 @@ pub use model::report;
 pub use model::rule;
 pub use model::tree_mode;
 pub use model::normalized_xpath;
+pub use model::variables;
 
 // glob/ modules
 pub use glob::matching as glob_match;
@@ -107,3 +108,4 @@ pub use glob_match::CompiledPattern;
 #[cfg(feature = "native")]
 pub use glob_match::{expand_canonical, pattern_literal_prefix, FilePrune, GlobExpandError};
 pub use tree_mode::TreeMode;
+pub use variables::{QueryVariables, VariableValue, EntryContext, EntryKind, EntryVariables, NamespaceReads, QueryBindings, VariableReads};

@@ -159,35 +159,38 @@ tasks:
   setup:sccache:
     desc: Install sccache for faster Rust builds (compilation cache)
     internal: true
+    vars:
+      TMP_DIR: '{{.ROOT_DIR}}/target/tmp-sccache'
     status:
       - command -v sccache
     cmds:
       - |
         echo "Installing sccache..."
         VERSION="v0.14.0"
+        TMP_DIR="{{.TMP_DIR}}"
+        TAR="$(command -v tar)"
+        mkdir -p "$TMP_DIR"
         case "$(uname -s)" in
           MINGW*|MSYS*|CYGWIN*|*_NT*)
             ARCHIVE="sccache-${VERSION}-x86_64-pc-windows-msvc"
-            curl -fsSL "https://github.com/mozilla/sccache/releases/download/${VERSION}/${ARCHIVE}.tar.gz" -o /tmp/sccache.tar.gz
-            tar -xzf /tmp/sccache.tar.gz -C /tmp/
-            cp "/tmp/${ARCHIVE}/sccache.exe" "$HOME/.cargo/bin/"
-            rm -rf /tmp/sccache.tar.gz "/tmp/${ARCHIVE}"
+            curl -fsSL "https://github.com/mozilla/sccache/releases/download/${VERSION}/${ARCHIVE}.tar.gz" -o "$TMP_DIR/sccache.tar.gz"
+            (cd "$TMP_DIR" && "$TAR" -xzf sccache.tar.gz)
+            cp "$TMP_DIR/${ARCHIVE}/sccache.exe" "$HOME/.cargo/bin/"
             ;;
           Linux*)
             ARCHIVE="sccache-${VERSION}-x86_64-unknown-linux-musl"
-            curl -fsSL "https://github.com/mozilla/sccache/releases/download/${VERSION}/${ARCHIVE}.tar.gz" -o /tmp/sccache.tar.gz
-            tar -xzf /tmp/sccache.tar.gz -C /tmp/
-            cp "/tmp/${ARCHIVE}/sccache" "$HOME/.cargo/bin/"
-            rm -rf /tmp/sccache.tar.gz "/tmp/${ARCHIVE}"
+            curl -fsSL "https://github.com/mozilla/sccache/releases/download/${VERSION}/${ARCHIVE}.tar.gz" -o "$TMP_DIR/sccache.tar.gz"
+            (cd "$TMP_DIR" && "$TAR" -xzf sccache.tar.gz)
+            cp "$TMP_DIR/${ARCHIVE}/sccache" "$HOME/.cargo/bin/"
             ;;
           Darwin*)
             ARCHIVE="sccache-${VERSION}-aarch64-apple-darwin"
-            curl -fsSL "https://github.com/mozilla/sccache/releases/download/${VERSION}/${ARCHIVE}.tar.gz" -o /tmp/sccache.tar.gz
-            tar -xzf /tmp/sccache.tar.gz -C /tmp/
-            cp "/tmp/${ARCHIVE}/sccache" "$HOME/.cargo/bin/"
-            rm -rf /tmp/sccache.tar.gz "/tmp/${ARCHIVE}"
+            curl -fsSL "https://github.com/mozilla/sccache/releases/download/${VERSION}/${ARCHIVE}.tar.gz" -o "$TMP_DIR/sccache.tar.gz"
+            (cd "$TMP_DIR" && "$TAR" -xzf sccache.tar.gz)
+            cp "$TMP_DIR/${ARCHIVE}/sccache" "$HOME/.cargo/bin/"
             ;;
         esac
+        rm -rf "$TMP_DIR"
         echo "sccache installed: $(sccache --version)"
 
   setup:

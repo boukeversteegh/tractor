@@ -40,7 +40,7 @@ pub struct QueryArgs {
     #[arg(short = 'V', long = "version", help_heading = "Advanced")]
     pub version: bool,
 }
-use crate::executor::{self, QueryExpr, QueryOperation};
+use crate::executor::{QueryExpr, QueryOperation};
 use crate::cli::context::RunContext;
 use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
 use crate::tractor_config::OperationInputs;
@@ -104,12 +104,13 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let op = Operation::Query(QueryOperation {
-        queries: vec![QueryExpr { xpath: xpath_expr.clone() }],
+        queries: vec![QueryExpr::new(xpath_expr.clone(), tractor::QueryVariables::new())],
         tree_mode: ctx.tree_mode,
         language: op_language,
         limit: ctx.limit,
         ignore_whitespace: ctx.ignore_whitespace,
         parse_depth: ctx.parse_depth,
+        output: None,
     });
 
     let mut builder = tractor::ReportBuilder::new();
@@ -125,7 +126,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute(&[plan], &env, &mut builder)?;
+        crate::cli::ops::execute_and_report_failures(&[plan], &env, &mut builder, &ctx)?;
     }
     let mut report = builder.build();
     prepare_report_for_output(&mut report, &ctx);

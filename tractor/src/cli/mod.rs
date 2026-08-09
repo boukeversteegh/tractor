@@ -2,6 +2,7 @@
 
 pub mod help;
 pub mod context;
+pub mod ops;
 pub mod query;
 pub mod check;
 pub mod test;

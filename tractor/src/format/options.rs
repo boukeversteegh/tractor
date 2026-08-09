@@ -62,6 +62,32 @@ impl OutputFormat {
         )
     }
 
+    /// Whether this format can render a given view field at all.
+    ///
+    /// The structured formats render everything. The line-oriented and hook
+    /// formats carry only a location plus a one-line message, so structural
+    /// fields have nowhere to go — requesting one is silently a no-op, which
+    /// reads as "tractor lost my data". [`normalize_output_plan`] turns an
+    /// explicit request for such a field into a warning.
+    ///
+    /// [`normalize_output_plan`]: super::normalize_output_plan
+    pub fn can_render_field(&self, field: ViewField) -> bool {
+        match self {
+            OutputFormat::Text | OutputFormat::Json | OutputFormat::Yaml | OutputFormat::Xml => true,
+            // `file:line:col: severity: detail` — plus source lines for
+            // diagnostics. No tree, no schema, and the matched source text
+            // never appears (only whole lines do).
+            OutputFormat::Gcc => !matches!(field, ViewField::Tree | ViewField::Schema | ViewField::Source),
+            // `::error file=...::message` — the message embeds the matched
+            // source for diagnostics, but nothing structural.
+            OutputFormat::Github => !matches!(field, ViewField::Tree | ViewField::Schema),
+            // Hook JSON: a decision plus a message string.
+            OutputFormat::ClaudeCode => {
+                !matches!(field, ViewField::Tree | ViewField::Schema | ViewField::Source)
+            }
+        }
+    }
+
     /// Full `long_help` text for the `-f` / `--format` flag.
     pub fn format_long_help(default: &str) -> String {
         let mut lines = vec![format!("Output format [default: {default}]")];
@@ -584,6 +610,29 @@ mod tests {
 
         assert!(parsed.resolved.fields.is_empty());
         assert!(parsed.explicit_fields.is_empty());
+    }
+
+    #[test]
+    fn can_render_field_marks_structural_fields_unrenderable_in_flat_formats() {
+        // Structured formats render everything.
+        for format in [OutputFormat::Text, OutputFormat::Json, OutputFormat::Yaml, OutputFormat::Xml] {
+            assert!(format.can_render_field(ViewField::Tree), "{:?}", format);
+            assert!(format.can_render_field(ViewField::Schema), "{:?}", format);
+            assert!(format.can_render_field(ViewField::Source), "{:?}", format);
+        }
+        // Flat formats have nowhere to put structure...
+        assert!(!OutputFormat::Gcc.can_render_field(ViewField::Tree));
+        assert!(!OutputFormat::Gcc.can_render_field(ViewField::Schema));
+        assert!(!OutputFormat::Gcc.can_render_field(ViewField::Source));
+        assert!(!OutputFormat::Github.can_render_field(ViewField::Tree));
+        assert!(!OutputFormat::ClaudeCode.can_render_field(ViewField::Tree));
+        // ...but still carry location, severity, and message-ish fields.
+        assert!(OutputFormat::Gcc.can_render_field(ViewField::Value));
+        assert!(OutputFormat::Gcc.can_render_field(ViewField::Reason));
+        assert!(OutputFormat::Gcc.can_render_field(ViewField::Lines));
+        assert!(OutputFormat::Gcc.can_render_field(ViewField::File));
+        // github embeds the matched source in its annotation message.
+        assert!(OutputFormat::Github.can_render_field(ViewField::Source));
     }
 
     #[test]

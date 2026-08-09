@@ -8,6 +8,7 @@ use tractor::{
     parse, ParseInput, ParseOptions,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
     rule::CompiledRule,
+    variables::{EntryKind, QueryBindings, QueryVariables},
     xpath::validate_xpath,
 };
 use crate::input::filter::Filters;
@@ -61,6 +62,134 @@ pub fn validate_xpath_diagnostic(xpath_expr: &NormalizedXpath, command: &str) ->
         status: None,
         output: None,
     })
+}
+
+/// Advisory check: warn about variable usage that will silently yield the
+/// empty sequence — a `$variables?key` / `$<entry>.variables?key` lookup on
+/// an undefined key, or a reference to an entry namespace that is not bound
+/// in the current operation (e.g. `$rule.variables` inside a set mapping).
+///
+/// A missing key is legal XPath — the lookup yields the empty sequence, and
+/// entries may rely on that (optional flags, `(lookup, default)[1]` idioms) —
+/// so this produces `Severity::Warning` diagnostics that never fail the run.
+/// Only literal keys are checked; dynamic lookups (`?($expr)`, `?*`) are
+/// skipped. Nested keys (`$variables?limits?max`) are checked at the top
+/// level only.
+///
+/// Driven by the same [`QueryBindings`] the query will actually run with, so
+/// what is diagnosed and what is bound cannot drift apart. Everything else
+/// is derived: the entry's kind and variables from `bindings.entry`, and its
+/// label from the entry's id or, for entries without one, its kind plus
+/// `index` (`mapping 2`). `command` names the operation, which owns no
+/// entry of its own (CLI `update`).
+pub fn variable_diagnostics(
+    command: &str,
+    bindings: &QueryBindings,
+    index: usize,
+    xpath: &str,
+) -> Vec<ReportMatch> {
+    use once_cell::sync::Lazy;
+    use regex::Regex;
+
+    let entry_kind = bindings.entry.as_ref().map(|e| e.kind);
+    let run_variables = &*bindings.variables;
+    let empty = QueryVariables::new();
+    let entry_variables = bindings.entry.as_ref().map_or(&empty, |e| &*e.variables);
+    // Entries name themselves when they can (a rule id); the rest are
+    // identified by position, the way the config reads.
+    let label = match bindings.entry.as_ref() {
+        Some(entry) => entry
+            .id
+            .clone()
+            .unwrap_or_else(|| format!("{} {}", entry.kind.label(), index + 1)),
+        None => command.to_string(),
+    };
+    let label = label.as_str();
+
+    // NCName-ish key after the lookup operator. The plain `\$variables`
+    // pattern can't fire inside `$rule.variables` etc. — the character
+    // before `variables` there is `.`, not `$`.
+    static RUN_LOOKUP: Lazy<Regex> =
+        Lazy::new(|| Regex::new(r"\$variables\s*\?\s*([A-Za-z_][A-Za-z0-9_.\-]*)").unwrap());
+    // Per entry kind: a key-lookup regex and a bare-reference regex.
+    static ENTRY_PATTERNS: Lazy<Vec<(EntryKind, Regex, Regex)>> = Lazy::new(|| {
+        EntryKind::ALL
+            .iter()
+            .map(|&kind| {
+                let name = regex::escape(kind.variables_name());
+                (
+                    kind,
+                    Regex::new(&format!(r"\${}\s*\?\s*([A-Za-z_][A-Za-z0-9_.\-]*)", name)).unwrap(),
+                    Regex::new(&format!(r"\${}", name)).unwrap(),
+                )
+            })
+            .collect()
+    });
+    static RULE_ID: Lazy<Regex> = Lazy::new(|| Regex::new(r"\$rule\.id").unwrap());
+
+    let mut diagnostics = Vec::new();
+    let mut warn = |start: usize, end: usize, reason: String| {
+        diagnostics.push(ReportMatch {
+            file: String::new(),
+            line: 1,
+            column: start as u32 + 1,
+            end_line: 1,
+            end_column: end as u32 + 1,
+            command: command.to_string(),
+            tree: None,
+            value: None,
+            source: Some(xpath.to_string()),
+            lines: Some(vec![xpath.to_string()]),
+            reason: Some(reason),
+            severity: Some(Severity::Warning),
+            message: None,
+            origin: Some(DiagnosticOrigin::Xpath),
+            rule_id: (entry_kind == Some(EntryKind::Rule)).then(|| label.to_string()),
+            status: None,
+            output: None,
+        });
+    };
+
+    let check_keys = |re: &Regex, defined: &QueryVariables, scope: &str, warn: &mut dyn FnMut(usize, usize, String)| {
+        for caps in re.captures_iter(xpath) {
+            let key = caps.get(1).unwrap();
+            if defined.get(key.as_str()).is_none() {
+                warn(key.start(), key.end(), format!(
+                    "[{}] unknown variable key '{}': not defined {} (the lookup yields the empty sequence)",
+                    label, key.as_str(), scope,
+                ));
+            }
+        }
+    };
+
+    check_keys(&RUN_LOOKUP, run_variables, "under the config's `variables:`", &mut warn);
+
+    for (kind, lookup, bare) in ENTRY_PATTERNS.iter() {
+        if Some(*kind) == entry_kind {
+            let scope = format!("in this {}'s `variables:`", kind.label());
+            check_keys(lookup, entry_variables, &scope, &mut warn);
+        } else {
+            // A namespace belonging to a different entry kind is always an
+            // empty map here — flag every reference, bare or lookup.
+            for m in bare.find_iter(xpath) {
+                warn(m.start(), m.end(), format!(
+                    "[{}] ${} is only bound in {}; here it is an empty map",
+                    label, kind.variables_name(), kind.config_home(),
+                ));
+            }
+        }
+    }
+
+    if entry_kind != Some(EntryKind::Rule) {
+        for m in RULE_ID.find_iter(xpath) {
+            warn(m.start(), m.end(), format!(
+                "[{}] $rule.id is only bound in check rules; here it is the empty sequence",
+                label,
+            ));
+        }
+    }
+
+    diagnostics
 }
 
 // ---------------------------------------------------------------------------
@@ -189,6 +318,10 @@ fn rule_language_matches_source(
 /// - The source's pre-resolved language (from `-l` or extension detection)
 ///
 /// `verbose` controls whether parse/query warnings are printed to stderr.
+///
+/// `variables` is the run-level variable set (bound as `$variables`); each
+/// rule's own `variables` field is bound as `$rule.variables` per query.
+#[allow(clippy::too_many_arguments)] // execution knobs + the run-level variables
 pub fn run_rules(
     rules: &[CompiledRule],
     sources: &[Source],
@@ -197,6 +330,7 @@ pub fn run_rules(
     parse_depth: Option<usize>,
     verbose: bool,
     filters: &Filters,
+    bindings: &QueryBindings,
 ) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
     // Process sources in parallel. Each source is parsed once using either:
     // - The source's detected language (when no rules specify a language override)
@@ -245,11 +379,16 @@ pub fn run_rules(
                     return None;
                 }
             };
-
             let mut file_matches = Vec::new();
 
-            // Run all applicable rules against the parsed result
+            // Run all applicable rules against the parsed result. Each rule
+            // swaps in its own entry — its variables as $rule.variables and
+            // its id as $rule.id — over the shared run-level bindings.
             for rule_idx in applicable {
+                result.bindings = bindings.clone().with_entry(tractor::EntryContext::rule(
+                    std::sync::Arc::clone(rules[rule_idx].variables.declared()),
+                    rules[rule_idx].id.clone(),
+                ));
                 match result.query(rules[rule_idx].xpath.as_str()) {
                     Ok(matches) => {
                         for m in matches {
@@ -411,6 +550,85 @@ mod tests {
     use tractor::language_info::Language;
     use tractor::NormalizedXpath;
 
+    use tractor::variables::EntryContext;
+
+    /// Bindings for the advisory tests: run-level variables plus an
+    /// optional entry, exactly as an executor assembles them.
+    fn bindings(run: &QueryVariables, entry: Option<EntryContext>) -> QueryBindings {
+        let b = QueryBindings::run(std::sync::Arc::new(run.clone()));
+        match entry {
+            Some(e) => b.with_entry(e),
+            None => b,
+        }
+    }
+
+    #[test]
+    fn undefined_key_diagnostics_extraction() {
+        use tractor::variables::{QueryVariables, VariableValue};
+
+        let mut run_vars = QueryVariables::new();
+        run_vars.insert("env", VariableValue::String("prod".into()));
+        run_vars.insert("limits", VariableValue::Map(Default::default()));
+        let mut rule_vars = QueryVariables::new();
+        rule_vars.insert("prefixes", VariableValue::Array(vec![]));
+
+        // Defined keys, wildcard expansion, and nested lookups: no warnings.
+        // (`limits?max` is checked at the top level only.)
+        let xpath = "//a[$variables?env = 'p' and $variables?limits?max > 1 \
+             and (some $p in $rule.variables?prefixes?* satisfies starts-with(., $p))]";
+        let rule = |v: &QueryVariables| {
+            bindings(&run_vars, Some(EntryContext::rule(std::sync::Arc::new(v.clone()), "r")))
+        };
+        assert!(variable_diagnostics("check", &rule(&rule_vars), 0, xpath).is_empty());
+
+        // Undefined keys in both namespaces: one warning each, correct scope.
+        let xpath = "//a[$variables?evn or $rule.variables?prefix]";
+        let diags = variable_diagnostics("check", &rule(&rule_vars), 0, xpath);
+        assert_eq!(diags.len(), 2);
+        assert!(diags[0].reason.as_deref().unwrap().contains("'evn'"));
+        assert!(diags[0].reason.as_deref().unwrap().contains("config's"));
+        assert!(diags[1].reason.as_deref().unwrap().contains("'prefix'"));
+        assert!(diags[1].reason.as_deref().unwrap().contains("rule's"));
+        assert!(diags.iter().all(|d| d.severity == Some(Severity::Warning)));
+
+        // Dynamic lookups are skipped
+        let xpath = "//a[$variables?($name) or $variables?*]";
+        assert!(variable_diagnostics("check", &rule(&rule_vars), 0, xpath).is_empty());
+    }
+
+    #[test]
+    fn cross_namespace_diagnostics() {
+        use tractor::variables::{QueryVariables, VariableValue};
+
+        let run_vars = QueryVariables::new();
+        let mut mapping_vars = QueryVariables::new();
+        mapping_vars.insert("from", VariableValue::Int(8080));
+
+        // The current entry's namespace checks keys; a defined key is fine.
+        let xpath = "//port[. = $mapping.variables?from]";
+        let mapping = bindings(
+            &run_vars,
+            Some(EntryContext::mapping(std::sync::Arc::new(mapping_vars.clone()))),
+        );
+        assert!(variable_diagnostics("set", &mapping, 0, xpath).is_empty());
+
+        // A different entry's namespace is an empty map here: warn on any
+        // reference, and $rule.id is likewise unbound outside check rules.
+        let xpath = "//port[. = $rule.variables?from and contains(., $rule.id)]";
+        let diags = variable_diagnostics("set", &mapping, 0, xpath);
+        assert_eq!(diags.len(), 2, "{:?}", diags.iter().map(|d| d.reason.clone()).collect::<Vec<_>>());
+        assert!(diags[0].reason.as_deref().unwrap().contains("only bound in check rules"));
+        assert!(diags[1].reason.as_deref().unwrap().contains("$rule.id is only bound in check rules"));
+        assert!(diags.iter().all(|d| d.severity == Some(Severity::Warning)));
+        assert!(diags.iter().all(|d| d.rule_id.is_none()), "non-rule entries carry no rule_id");
+
+        // Outside any entry (e.g. CLI update), every entry namespace warns.
+        let xpath = "//a[$assertion.variables?x]";
+        let diags = variable_diagnostics("update", &bindings(&run_vars, None), 0, xpath);
+        assert_eq!(diags.len(), 1);
+        assert!(diags[0].reason.as_deref().unwrap().contains("only bound in test assertions"));
+    }
+
     #[test]
     fn test_language_parsing() {
         // Test that language parsing handles aliases correctly
@@ -554,6 +772,7 @@ mod tests {
             ignore_whitespace: false,
             verbose: false,
             base_dir: None,
+            variables: std::sync::Arc::default(),
             lang: None,
             debug: false,
             group_by: vec![],

@@ -40,7 +40,7 @@ pub struct TestArgs {
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
 }
-use crate::executor::{self, TestAssertion, TestOperation};
+use crate::executor::{TestAssertion, TestOperation};
 use crate::cli::context::RunContext;
 use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
 use crate::tractor_config::OperationInputs;
@@ -100,10 +100,11 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let op = Operation::Test(TestOperation {
-        assertions: vec![TestAssertion {
-            xpath: xpath_expr.clone(),
-            expect: expect.clone(),
-        }],
+        assertions: vec![TestAssertion::new(
+            xpath_expr.clone(),
+            expect.clone(),
+            tractor::QueryVariables::new(),
+        )],
         tree_mode: ctx.tree_mode,
         language: op_language,
         limit: ctx.limit,
@@ -123,7 +124,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute(&[plan], &env, &mut builder)?;
+        crate::cli::ops::execute_and_report_failures(&[plan], &env, &mut builder, &ctx)?;
     }
     // Set expected value for test summary rendering (test-mode only, not shared with run mode)
     builder.set_expected(expect.clone());

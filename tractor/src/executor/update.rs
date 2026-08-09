@@ -40,6 +40,15 @@ pub struct UpdateOperationPlan {
     pub ignore_whitespace: bool,
     /// Maximum parse depth.
     pub parse_depth: Option<usize>,
+    /// What `xpath` reads from the run-level `$variables`, recorded when the
+    /// plan is built.
+    ///
+    /// `update` has no config entries, so nothing else records its reads —
+    /// and an operation whose reads are unrecorded reads *nothing*, which
+    /// would silently omit any key it looks up. Deriving it here keeps the
+    /// operation inside the same mechanism as entries, with neither a
+    /// special case at execution nor a hole.
+    pub reads: tractor::NamespaceReads,
 }
 
 /// Pre-resolution shape for an update operation. Mirrors [`UpdateOperationPlan`]
@@ -71,6 +80,9 @@ impl UpdateOperation {
         UpdateOperationPlan {
             sources,
             filters,
+            // Derived from the expression that will run, at the one place a
+            // plan is built — the same rule the entry constructors follow.
+            reads: tractor::NamespaceReads::of(&self.xpath, "variables"),
             xpath: self.xpath,
             value: self.value,
             tree_mode: self.tree_mode,
@@ -79,6 +91,43 @@ impl UpdateOperation {
             ignore_whitespace: self.ignore_whitespace,
             parse_depth: self.parse_depth,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// An update's reads are recorded when its plan is built, so the
+    /// run-level union covers it like any entry-bearing operation. Without
+    /// this, an update reading `$variables?x` would have empty reads and
+    /// the key would be silently omitted from its bindings.
+    #[test]
+    fn into_plan_records_what_the_xpath_reads() {
+        let op = UpdateOperation {
+            xpath: "//port[. = $variables?from]".to_string(),
+            value: "1".to_string(),
+            tree_mode: None,
+            language: None,
+            limit: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+        };
+        let plan = op.into_plan(Vec::new(), Filters::default());
+        assert!(plan.reads.reads("from"), "the looked-up key must be recorded");
+        assert!(!plan.reads.reads("other"));
+
+        let op = UpdateOperation {
+            xpath: "//port".to_string(),
+            value: "1".to_string(),
+            tree_mode: None,
+            language: None,
+            limit: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+        };
+        let plan = op.into_plan(Vec::new(), Filters::default());
+        assert!(!plan.reads.reads_any(), "an xpath reading nothing records nothing");
     }
 }
 
@@ -91,6 +140,13 @@ pub(crate) fn execute_update(
     ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let variables = ctx.query_variables();
+
+    // Advisory: update has no config entry, so every `$<entry>.variables` namespace is
+    // an empty map here — the advisory says so rather than leaving it silent.
+    let bindings = tractor::QueryBindings::run(std::sync::Arc::clone(&variables));
+    report.add_all(crate::matcher::variable_diagnostics("update", &bindings, 0, &op.xpath));
+
     let mut fallback_sources: Vec<Source> = Vec::new();
 
     for source in &op.sources {
@@ -103,7 +159,7 @@ pub(crate) fn execute_update(
         let file_path: &NormalizedPath = &source.path;
         let disk_bytes = std::fs::read_to_string(file_path)?;
 
-        match update_only(&disk_bytes, lang, &op.xpath, &op.value, op.limit) {
+        match update_only(&disk_bytes, lang, &op.xpath, &op.value, op.limit, bindings.clone()) {
             Ok(result) => {
                 if result.source != disk_bytes {
                     std::fs::write(file_path, &result.source)?;
@@ -124,7 +180,7 @@ pub(crate) fn execute_update(
     // Legacy fallback for languages without renderers
     if !fallback_sources.is_empty() {
         let matches = query_files_multi(
-            &fallback_sources, &[op.xpath.as_str()], op.language.as_deref(),
+            &fallback_sources, &[(op.xpath.as_str(), bindings.clone())], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
             None, ctx.verbose, &op.filters,
         )?;

@@ -83,6 +83,25 @@ pub struct TestAssertion {
     pub xpath: NormalizedXpath,
     /// Expected match count: "none", "some", or a number.
     pub expect: String,
+    /// Assertion-level variables, bound as the `$assertion.variables` map
+    /// in this assertion (e.g. `count(//user) <= $assertion.variables?max`).
+    /// Build via [`TestAssertion::new`] so the variables' resolution flags
+    /// are always derived from the xpath that actually runs.
+    pub variables: tractor::EntryVariables,
+}
+
+impl TestAssertion {
+    /// Build an assertion, deriving from `xpath` what its variables read.
+    pub fn new(
+        xpath: impl Into<NormalizedXpath>,
+        expect: impl Into<String>,
+        variables: tractor::QueryVariables,
+    ) -> Self {
+        let xpath = xpath.into();
+        let variables =
+            tractor::EntryVariables::new(variables, tractor::EntryKind::Assertion, xpath.as_str());
+        TestAssertion { xpath, expect: expect.into(), variables }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -94,6 +113,26 @@ pub(crate) fn execute_test(
     ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // The bindings each assertion runs with, built once and used for both
+    // the advisory pass and execution.
+    let variables = ctx.query_variables();
+    let bindings: Vec<tractor::QueryBindings> = op.assertions.iter()
+        .map(|a| {
+            tractor::QueryBindings::run(std::sync::Arc::clone(&variables))
+                .with_entry(tractor::EntryContext::assertion(
+                    std::sync::Arc::clone(a.variables.declared()),
+                ))
+        })
+        .collect();
+
+    // Advisory: warn about variable lookups that silently yield the empty
+    // sequence (unknown keys, namespaces of other entry kinds).
+    for (i, assertion) in op.assertions.iter().enumerate() {
+        report.add_all(crate::matcher::variable_diagnostics(
+            "test", &bindings[i], i, assertion.xpath.as_str(),
+        ));
+    }
+
     if op.sources.is_empty() {
         for assertion in &op.assertions {
             if !check_expectation(&assertion.expect, 0)? {
@@ -104,9 +143,9 @@ pub(crate) fn execute_test(
     }
 
     // Query each assertion's xpath individually to get per-assertion counts.
-    for assertion in &op.assertions {
+    for (assertion, bindings) in op.assertions.iter().zip(bindings) {
         let matches = query_files_multi(
-            &op.sources, &[assertion.xpath.as_str()], op.language.as_deref(),
+            &op.sources, &[(assertion.xpath.as_str(), bindings)], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
             op.limit, ctx.verbose, &op.filters,
         )?;

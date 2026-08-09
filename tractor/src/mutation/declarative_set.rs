@@ -125,6 +125,7 @@ pub fn declarative_set(
         let result = upsert_typed(
             &current_source, lang, &op.xpath,
             op.value.text(), None, Some(op.value.kind()),
+            Default::default(),
         )?;
         if result.source != current_source {
             ops_applied += 1;

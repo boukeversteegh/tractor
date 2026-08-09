@@ -1794,3 +1794,478 @@ fn set_inline_with_path_plus_diff_lines_is_accepted_at_plan_time() {
     let on_disk = std::fs::read_to_string(src_dir.join("x.yaml")).expect("read baseline");
     assert_eq!(on_disk, baseline, "working tree must be untouched");
 }
+
+// ---------------------------------------------------------------------------
+// Config variables (`variables:` root and per-entry keys)
+//
+// Root-level `variables:` in tractor.yml are bound as the `$variables` map
+// in every query of the run; an operation entry's own `variables:` are
+// bound under the namespace matching its config key ($rule.variables,
+// $mapping.variables, $query.variables, $assertion.variables). All live
+// alongside the built-in `$file`.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn config_variables_bound_in_check_rules() {
+    // $variables?env = 'production' -> the predicate holds and the rule fires.
+    let config = "variables:
+  env: production
+check:
+  files: [\"app.js\"]
+  rules:
+    - id: no-console-in-prod
+      xpath: \"//call//object[.='console'][$variables?env = 'production']\"
+      severity: error
+      reason: \"no console in production\"
+";
+    cli_case!({
+        tractor check --config "tractor.yml";
+        expect => exit 1;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("app.js", "console.log('hi');
+")
+    .run();
+}
+
+#[test]
+fn config_variables_different_value_disables_rule() {
+    // Same rule, env = 'dev' -> predicate is false, no violations.
+    let config = "variables:
+  env: dev
+check:
+  files: [\"app.js\"]
+  rules:
+    - id: no-console-in-prod
+      xpath: \"//call//object[.='console'][$variables?env = 'production']\"
+      severity: error
+      reason: \"no console in production\"
+";
+    cli_case!({
+        tractor check --config "tractor.yml";
+        expect => exit 0;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("app.js", "console.log('hi');
+")
+    .run();
+}
+
+#[test]
+fn config_rule_variables_bound_per_rule() {
+    // Two rules sharing one config: each sees its own $rule.variables while
+    // $variables stays global. Rule A's flag matches an element name in the
+    // file, rule B's does not -> exactly rule A fires (exit 1 with one match).
+    let config = "variables:
+  env: production
+check:
+  files: [\"data.json\"]
+  rules:
+    - id: rule-a
+      xpath: \"//*[local-name() = $rule.variables?flag][$variables?env = 'production']\"
+      variables:
+        flag: debug
+    - id: rule-b
+      xpath: \"//*[local-name() = $rule.variables?flag]\"
+      variables:
+        flag: nonexistent
+";
+    let result = command(["check", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("data.json", "{\"debug\": true}")
+        .capture();
+
+    assert_eq!(1, result.status, "rule-a should fire: {}{}", result.stdout, result.stderr);
+    assert!(
+        result.stdout.contains("rule-a"),
+        "rule-a should be reported: {}",
+        result.stdout
+    );
+    assert!(
+        !result.stdout.contains("rule-b"),
+        "rule-b must not fire (its flag matches nothing): {}",
+        result.stdout
+    );
+}
+
+#[test]
+fn config_variables_numeric_comparison_in_test_assertion() {
+    // Numeric variable used in a test assertion with an exact expected count:
+    // among leaf values only b(3) exceeds min(2), so `expect: 1` passes iff
+    // $variables?min binds. (Leaf-only: container elements' concatenated
+    // string values would also parse as numbers.)
+    let config = "variables:
+  min: 2
+test:
+  files: [\"data.json\"]
+  assertions:
+    - xpath: \"//*[not(*)][number(.) > $variables?min]\"
+      expect: 1
+";
+    cli_case!({
+        tractor run --config "tractor.yml";
+        expect => exit 0;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("data.json", "{\"a\": 1, \"b\": 3}")
+    .run();
+}
+
+#[test]
+fn config_rule_id_bound_for_allow_markers() {
+    // $rule.id lets one shared predicate implement per-rule escape hatches:
+    // a comment `tractor:allow(<rule-id>)` inside the enclosing function
+    // suppresses that rule only. First console.log is allowed, second fires.
+    let config = "check:
+  files: [\"app.js\"]
+  rules:
+    - id: no-console
+      reason: \"no console\"
+      xpath: \"//call//object[.='console'][not(ancestor::function[.//comment[contains(., concat('tractor:allow(', $rule.id, ')'))]])]\"
+";
+    let source = "function ok() {
+  // tractor:allow(no-console)
+  console.log('hi');
+}
+console.log('bye');
+";
+    let result = command(["check", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("app.js", source)
+        .capture();
+
+    assert_eq!(1, result.status, "unallowed console.log should fire: {}{}", result.stdout, result.stderr);
+    assert!(
+        result.stdout.contains("5"),
+        "only the line-5 console.log should be reported: {}",
+        result.stdout
+    );
+    assert!(
+        !result.stdout.contains("console.log('hi')"),
+        "allowed call must be suppressed: {}",
+        result.stdout
+    );
+}
+
+#[test]
+fn config_mapping_variables_bound_in_set() {
+    // A set mapping's own `variables:` bind as $mapping.variables in its
+    // xpath — including through the upsert mutation path. The mapping only
+    // selects //port when $mapping.variables?from binds to 8080; the test
+    // operation then verifies the rewritten value on disk.
+    let config = "set:
+  files: [\"data.json\"]
+  mappings:
+    - xpath: \"//port[. = $mapping.variables?from]\"
+      value: \"3000\"
+      variables:
+        from: 8080
+test:
+  files: [\"data.json\"]
+  assertions:
+    - xpath: \"//port[number(.) = 3000]\"
+      expect: 1
+";
+    cli_case!({
+        tractor run --config "tractor.yml";
+        expect => exit 0;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("data.json", "{\"port\": 8080, \"backup\": 9090}")
+    .run();
+}
+
+#[test]
+fn config_variable_file_source_bound_in_check() {
+    // A `$file` variable source loads a document under its own name:
+    // $variables?settings?forbidden drives the rule, while inline
+    // variables coexist untouched. Paths resolve against the config dir.
+    let config = "variables:
+  env: production
+  settings:
+    $file: \"vars/settings.yml\"
+check:
+  files: [\"app.js\"]
+  rules:
+    - id: no-forbidden-call
+      xpath: \"//call/function[. = $variables?settings?forbidden?*][$variables?env = 'production']\"
+      severity: error
+      reason: \"forbidden call\"
+";
+    cli_case!({
+        tractor check --config "tractor.yml";
+        expect => exit 1;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("vars/settings.yml", "forbidden: [alert, eval]\n")
+    .seed_file("app.js", "alert('hi');\n")
+    .run();
+}
+
+#[test]
+fn config_set_expression_shorthand_reads_run_variables() {
+    // Regression: `expression:` builds its mapping through a different path
+    // than `mappings:`. Both must record that the xpath reads $variables,
+    // or the run-level map binds empty and the predicate silently misses.
+    let config = "variables:
+  settings:
+    $file: \"vars.yml\"
+set:
+  files: [\"data.json\"]
+  expression: \"port[$variables?settings?enable = 'yes']\"
+  value: \"3000\"
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("vars.yml", "enable: yes\n")
+        .seed_file("data.json", "{\"port\": 8080}")
+        .capture();
+
+    assert_eq!(0, result.status, "expression shorthand should apply: {}{}", result.stdout, result.stderr);
+    assert!(
+        !format!("{}{}", result.stdout, result.stderr).contains("unknown variable key"),
+        "the run variables must be bound, not empty: {}{}",
+        result.stdout, result.stderr
+    );
+    // Pin the semantics, not just the diagnostic surface: the predicate has
+    // to have matched, which only happens if $variables?settings resolved.
+    assert!(
+        result.stdout.contains("updated") || result.stderr.contains("updated"),
+        "the mapping should have rewritten the value: {}{}",
+        result.stdout, result.stderr
+    );
+}
+
+#[test]
+fn config_query_output_cannot_escape_the_config_directory() {
+    // The path is joined to the config's directory; `..` would let a config
+    // write anywhere. Refused rather than normalized, so the author sees it.
+    let config = "query:
+  files: [\"data.json\"]
+  queries: [{ xpath: \"//port\" }]
+  output: \"../escaped.json\"
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("data.json", "{\"port\": 8080}")
+        .capture();
+
+    assert_ne!(0, result.status, "an escaping output path must fail: {}{}", result.stdout, result.stderr);
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("must be a relative path inside the config directory"),
+        "error should name the constraint: {}",
+        combined
+    );
+}
+
+#[test]
+fn config_unread_source_in_a_mixed_variables_map_does_not_block_a_run() {
+    // Inline settings and a gathered artifact commonly share one map. A
+    // rule reading only the inline key must not be killed by the artifact
+    // naming a file a later operation is about to write — resolution is
+    // per key, not per map.
+    let config = "variables:
+  env: production
+  repos:
+    $file: \"gathered/repos.json\"
+operations:
+  - check:
+      files: [\"data.json\"]
+      rules:
+        - id: reads-only-env
+          reason: \"port present in production\"
+          xpath: \"//port[$variables?env = 'production']\"
+  - query:
+      files: [\"data.json\"]
+      queries: [{ xpath: \"//port\" }]
+      output: \"gathered/repos.json\"
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("data.json", "{\"port\": 8080}")
+        .capture();
+
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        !combined.contains("cannot read"),
+        "an unread source must not be resolved: {}",
+        combined
+    );
+    assert!(
+        combined.contains("port present in production"),
+        "the rule reading the inline key should still fire: {}",
+        combined
+    );
+}
+
+#[test]
+fn config_query_output_feeds_check_in_one_run() {
+    // The multi-query pipeline in a single run: the query op materializes
+    // repository class names to a JSON index, and the check op — whose
+    // $file source resolves at ITS start, after the query ran — asserts
+    // every entity class has a matching repository. Invoice has none.
+    let config = "operations:
+  - query:
+      files: [\"src/*.cs\"]
+      queries:
+        - xpath: \"//class/name[contains(., 'Repository')]\"
+      output: \"gathered/repos.json\"
+  - check:
+      files: [\"src/*.cs\"]
+      rules:
+        - id: entity-needs-repository
+          xpath: \"//class/name[not(contains(., 'Repository'))][not(concat(., 'Repository') = $variables?repos?files?*?*?value)]\"
+          severity: error
+          reason: \"entity class has no matching repository\"
+variables:
+  repos:
+    $file: \"gathered/repos.json\"
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("src/UserRepository.cs", "class UserRepository {}\n")
+        .seed_file("src/User.cs", "class User {}\n")
+        .seed_file("src/Invoice.cs", "class Invoice {}\n")
+        .capture();
+
+    assert_eq!(1, result.status, "Invoice lacks a repository: {}{}", result.stdout, result.stderr);
+    assert!(result.stdout.contains("Invoice"), "Invoice should be flagged: {}", result.stdout);
+    assert!(
+        !result.stdout.contains("User.cs:1"),
+        "User has a repository and must pass: {}",
+        result.stdout
+    );
+}
+
+#[test]
+fn config_variable_file_source_missing_is_fatal() {
+    // Sources resolve when an operation references them — a rule consuming
+    // $variables forces the read, and the missing file fails the run.
+    // (An op that never references $variables skips resolution entirely,
+    // so a producer op can run before the file it creates exists.)
+    let config = "variables:
+  settings:
+    $file: \"nope.yml\"
+check:
+  files: [\"app.js\"]
+  rules:
+    - id: r
+      xpath: \"//x[. = $variables?settings?y]\"
+";
+    let result = command(["check", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("app.js", "let x = 1;\n")
+        .capture();
+
+    assert_ne!(0, result.status, "missing variables file must fail: {}{}", result.stdout, result.stderr);
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(combined.contains("cannot read"), "error should name the failure: {}", combined);
+    assert!(combined.contains("variables?settings"), "error should name the variable: {}", combined);
+}
+
+#[test]
+fn config_set_error_still_renders_advisory_warnings() {
+    // $rule.variables in a set mapping is an empty map, so the xpath matches
+    // nothing and the upsert insert path errors on the predicate. The
+    // advisory warning that explains WHY must still render before the error
+    // instead of being dropped with the report.
+    let config = "set:
+  files: [\"data.json\"]
+  mappings:
+    - xpath: \"//backup[. = $rule.variables?from]\"
+      value: \"1\"
+      variables:
+        from: 9090
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("data.json", "{\"backup\": 9090}")
+        .capture();
+
+    assert_ne!(0, result.status, "the failed set must exit non-zero: {}{}", result.stdout, result.stderr);
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("only bound in check rules"),
+        "the cross-namespace warning must render despite the error: {}",
+        combined
+    );
+    assert!(
+        combined.contains("error"),
+        "the underlying error must still be reported: {}",
+        combined
+    );
+}
+
+#[test]
+fn config_query_variables_bound_per_query() {
+    // A query entry's own `variables:` bind as $query.variables in that
+    // expression only.
+    let config = "query:
+  files: [\"data.json\"]
+  queries:
+    - xpath: \"//role[. = $query.variables?role]\"
+      variables:
+        role: admin
+";
+    let result = command(["run", "--config", "tractor.yml"])
+        .in_fixture("replace")
+        .temp_fixture()
+        .seed_file("tractor.yml", config)
+        .seed_file("data.json", "{\"users\": [{\"role\": \"admin\"}, {\"role\": \"guest\"}]}")
+        .capture();
+
+    assert_eq!(0, result.status, "query run should succeed: {}{}", result.stdout, result.stderr);
+    assert!(result.stdout.contains("admin"), "admin role should match: {}", result.stdout);
+    assert!(!result.stdout.contains("guest"), "guest role must not match: {}", result.stdout);
+}
+
+#[test]
+fn config_assertion_variables_bound_in_test() {
+    // A test assertion's own `variables:` bind as $assertion.variables:
+    // among leaf values only b(3) exceeds max(2), so `expect: 1` passes
+    // iff the assertion-level variable binds.
+    let config = "test:
+  files: [\"data.json\"]
+  assertions:
+    - xpath: \"//*[not(*)][number(.) > $assertion.variables?max]\"
+      expect: 1
+      variables:
+        max: 2
+";
+    cli_case!({
+        tractor run --config "tractor.yml";
+        expect => exit 0;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .seed_file("data.json", "{\"a\": 1, \"b\": 3}")
+    .run();
+}

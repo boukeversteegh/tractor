@@ -84,6 +84,39 @@ pub struct SetMapping {
     pub xpath: String,
     pub value: String,
     pub value_kind: Option<String>,
+    /// Mapping-level variables, bound as the `$mapping.variables` map in
+    /// this mapping's xpath (e.g. `//port[. = $mapping.variables?from]`).
+    /// Build via [`SetMapping::new`] so the variables' resolution flags
+    /// are always derived from the xpath that actually runs.
+    pub variables: tractor::EntryVariables,
+}
+
+/// The bindings a mapping's xpath runs with: the run-level `$variables`
+/// plus the mapping's own set as `$mapping.variables`. One definition, used
+/// by the advisory pass, the match query, and the upsert.
+fn mapping_bindings(
+    mapping: &SetMapping,
+    variables: &std::sync::Arc<tractor::QueryVariables>,
+) -> tractor::QueryBindings {
+    tractor::QueryBindings::run(std::sync::Arc::clone(variables))
+        .with_entry(tractor::EntryContext::mapping(
+            std::sync::Arc::clone(mapping.variables.declared()),
+        ))
+}
+
+impl SetMapping {
+    /// Build a mapping, deriving from `xpath` what its variables read.
+    pub fn new(
+        xpath: impl Into<String>,
+        value: impl Into<String>,
+        value_kind: Option<String>,
+        variables: tractor::QueryVariables,
+    ) -> Self {
+        let xpath = xpath.into();
+        let variables =
+            tractor::EntryVariables::new(variables, tractor::EntryKind::Mapping, &xpath);
+        SetMapping { xpath, value: value.into(), value_kind, variables }
+    }
 }
 
 /// Write policy for set operations.
@@ -107,11 +140,23 @@ pub enum SetReportMode {
 
 pub(crate) fn execute_set(
     op: &SetOperationPlan,
-    _ctx: &ExecCtx<'_>,
+    ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if op.mappings.is_empty() {
         return Ok(());
+    }
+
+    // Run-level variables (bound as $variables); each mapping's own set is
+    // bound as $mapping.variables per query.
+    let variables = ctx.query_variables();
+
+    // Advisory: warn about variable lookups that silently yield the empty
+    // sequence (unknown keys, namespaces of other entry kinds).
+    for (i, mapping) in op.mappings.iter().enumerate() {
+        report.add_all(crate::matcher::variable_diagnostics(
+            "set", &mapping_bindings(mapping, &variables), i, &mapping.xpath,
+        ));
     }
 
     for source in &op.sources {
@@ -151,6 +196,7 @@ pub(crate) fn execute_set(
             op,
             effective_write_mode,
             &op.filters,
+            &variables,
         )?;
 
         if outcome.changed
@@ -188,6 +234,7 @@ fn execute_set_target(
     op: &SetOperationPlan,
     effective_write_mode: SetWriteMode,
     filters: &Filters,
+    variables: &std::sync::Arc<tractor::QueryVariables>,
 ) -> Result<SetTargetOutcome, Box<dyn std::error::Error>> {
     let file_label = source.path_str();
     let lang = source.language.as_str();
@@ -197,12 +244,12 @@ fn execute_set_target(
 
     for mapping in &op.mappings {
         let before_matches = if matches!(op.report_mode, SetReportMode::PerMatch) {
-            query_set_matches(&current, file_label, lang, mapping, op, filters)?
+            query_set_matches(&current, file_label, lang, mapping, op, filters, variables)?
         } else {
             Vec::new()
         };
 
-        let result = apply_set_mapping(&current, file_label, lang, mapping, op, filters, &before_matches)?;
+        let result = apply_set_mapping(&current, file_label, lang, mapping, op, filters, &before_matches, variables)?;
         let was_modified = result.source != current;
         changed |= was_modified;
 
@@ -210,7 +257,7 @@ fn execute_set_target(
             let mut report_matches = if !result.matches.is_empty() {
                 result.matches
             } else if was_modified {
-                query_set_matches(&result.source, file_label, lang, mapping, op, filters)?
+                query_set_matches(&result.source, file_label, lang, mapping, op, filters, variables)?
             } else {
                 before_matches
             };
@@ -283,6 +330,7 @@ struct SetMappingResult {
     matches: Vec<Match>,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn apply_set_mapping(
     source: &str,
     file_label: &str,
@@ -291,7 +339,9 @@ fn apply_set_mapping(
     op: &SetOperationPlan,
     filters: &Filters,
     before_matches: &[Match],
+    variables: &std::sync::Arc<tractor::QueryVariables>,
 ) -> Result<SetMappingResult, Box<dyn std::error::Error>> {
+    let entry = tractor::EntryContext::mapping(std::sync::Arc::clone(mapping.variables.declared()));
     match upsert_typed(
         source,
         lang,
@@ -299,6 +349,7 @@ fn apply_set_mapping(
         &mapping.value,
         op.limit,
         mapping.value_kind.as_deref(),
+        tractor::QueryBindings::run(std::sync::Arc::clone(variables)).with_entry(entry),
     ) {
         Ok(result) => Ok(SetMappingResult {
             source: result.source,
@@ -316,7 +367,7 @@ fn apply_set_mapping(
             }
 
             let fallback_matches = if before_matches.is_empty() {
-                query_set_matches(source, file_label, lang, mapping, op, filters)?
+                query_set_matches(source, file_label, lang, mapping, op, filters, variables)?
             } else {
                 before_matches.to_vec()
             };
@@ -338,6 +389,7 @@ fn apply_set_mapping(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn query_set_matches(
     source: &str,
     file_label: &str,
@@ -345,6 +397,7 @@ fn query_set_matches(
     mapping: &SetMapping,
     op: &SetOperationPlan,
     filters: &Filters,
+    variables: &std::sync::Arc<tractor::QueryVariables>,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut result = parse(
         ParseInput::Inline {
@@ -358,6 +411,8 @@ fn query_set_matches(
             parse_depth: None,
         },
     )?;
+    result.bindings.variables = std::sync::Arc::clone(variables);
+    result.bindings.entry = Some(tractor::EntryContext::mapping(std::sync::Arc::clone(mapping.variables.declared())));
     let mut matches = result.query(&mapping.xpath)?;
     if !filters.is_empty() {
         matches.retain(|m| filters.include(m));
@@ -401,11 +456,7 @@ mod tests {
     }
 
     fn string_mapping(xpath: &str, value: &str) -> SetMapping {
-        SetMapping {
-            xpath: xpath.into(),
-            value: value.into(),
-            value_kind: Some("string".into()),
-        }
+        SetMapping::new(xpath, value, Some("string".into()), tractor::QueryVariables::new())
     }
 
     fn set_operation(path: String, mappings: Vec<SetMapping>, write_mode: SetWriteMode) -> OperationPlan {

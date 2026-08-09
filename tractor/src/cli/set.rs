@@ -41,7 +41,7 @@ pub struct SetArgs {
     pub format: String,
 }
 use crate::executor::{
-    self, SetMapping, SetOperation, SetReportMode, SetWriteMode,
+    SetMapping, SetOperation, SetReportMode, SetWriteMode,
 };
 use crate::cli::context::RunContext;
 use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
@@ -89,27 +89,30 @@ fn normalize_set_mappings(
     if let Some(xpath) = xpath {
         let value = explicit_value
             .ok_or("set with -x requires --value")?;
-        return Ok(vec![SetMapping {
-            xpath: xpath.to_string(),
-            value: value.to_string(),
-            value_kind: Some("string".to_string()),
-        }]);
+        return Ok(vec![SetMapping::new(
+            xpath.to_string(),
+            value,
+            Some("string".to_string()),
+            tractor::QueryVariables::new(),
+        )]);
     }
 
     let expr = expr.ok_or("set requires either an XPath query (-x) or a path expression")?;
     if let Some(value) = explicit_value {
-        return Ok(vec![SetMapping {
-            xpath: selector_xpath(expr),
-            value: value.to_string(),
-            value_kind: Some("string".to_string()),
-        }]);
+        return Ok(vec![SetMapping::new(
+            selector_xpath(expr),
+            value,
+            Some("string".to_string()),
+            tractor::QueryVariables::new(),
+        )]);
     }
 
-    Ok(parse_set_expr(expr)?.into_iter().map(|op| SetMapping {
-        xpath: op.xpath,
-        value: op.value.text().to_string(),
-        value_kind: Some(op.value.kind().to_string()),
-    }).collect())
+    Ok(parse_set_expr(expr)?.into_iter().map(|op| SetMapping::new(
+        op.xpath,
+        op.value.text(),
+        Some(op.value.kind().to_string()),
+        tractor::QueryVariables::new(),
+    )).collect())
 }
 
 pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -210,7 +213,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     if let Some(plan) = plan {
-        executor::execute(&[plan], &env, &mut builder)?;
+        crate::cli::ops::execute_and_report_failures(&[plan], &env, &mut builder, &ctx)?;
     }
     let mut report = builder.build();
 

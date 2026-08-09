@@ -108,6 +108,7 @@ example.js:3:3: error: getAll methods in repositories should use orderBy
           <tr><td><code>include</code></td><td>No</td><td>File patterns for this rule only (relative to config file directory)</td></tr>
           <tr><td><code>exclude</code></td><td>No</td><td>File patterns to exclude for this rule (relative to config file directory)</td></tr>
           <tr><td><code>expect</code></td><td>No</td><td>Test examples (see below)</td></tr>
+          <tr><td><code>variables</code></td><td>No</td><td>Rule-scoped values, available as <code>$rule.variables</code> in the query (see Variables)</td></tr>
         </tbody>
       </table>
 
@@ -134,6 +135,246 @@ example.js:3:3: error: getAll methods in repositories should use orderBy
         When you run <code>tractor run</code>, the <code>expect</code> entries are also validated. If a <code>valid</code> example matches the rule (or an <code>invalid</code> example doesn't), the run fails.
       </p>
 
+      <h2>Variables</h2>
+      <p>
+        Declare values once and reference them from any query. Root-level <code>variables</code> are
+        bound as the <code>$variables</code> map in every operation's XPath context. Each operation
+        entry can also declare its own <code>variables</code>, bound under a namespace that mirrors
+        the config key the entry lives under: <code>$rule.variables</code> for check rules,{' '}
+        <code>$mapping.variables</code> for set mappings, <code>$query.variables</code> for query
+        entries, and <code>$assertion.variables</code> for test assertions. All sit alongside the
+        built-in <code>$file</code> (the current file path).
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`variables:
+  env: production
+  banned: [eval, exec]
+
+check:
+  files:
+    - "src/**/*.js"
+  rules:
+    - id: no-banned-calls
+      xpath: "//call/name[. = $variables?banned?*]"
+      reason: "banned function call"
+
+    - id: not-too-many-params
+      xpath: "//function[count(params/param) > $rule.variables?max]"
+      reason: "too many parameters"
+      variables:
+        max: 4`}
+      />
+      <p>
+        Values follow the JSON data model: strings, numbers, booleans, <code>null</code>, lists, and
+        nested mappings. Scalars are read with map lookup (<code>$variables?env</code>), lists expand
+        with <code>?*</code> (<code>$variables?banned?*</code>), and nested mappings chain lookups
+        (<code>$variables?limits?max</code>). Numbers compare numerically; a lookup on a key that
+        isn't configured yields the empty sequence, so predicates simply don't match. Because a
+        typo'd key would silently disable a rule, every operation emits an advisory warning (never
+        a failure) for literal lookups on keys the config doesn't define — and for references to an
+        entry namespace that isn't bound in the current operation (e.g.{' '}
+        <code>$rule.variables</code> inside a set mapping, which is an empty map there).
+      </p>
+      <p>
+        The same pattern works in every operation. A set mapping can select its targets through its
+        own values, and a test assertion can parameterize its threshold:
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`set:
+  files: ["config/*.json"]
+  mappings:
+    - xpath: "//port[. = $mapping.variables?from]"
+      value: "3000"
+      variables:
+        from: 8080
+
+test:
+  files: ["src/**/*.js"]
+  assertions:
+    - xpath: "//function[count(params/param) > $assertion.variables?max]"
+      expect: none
+      variables:
+        max: 4`}
+      />
+      <h3>Variable sources</h3>
+      <p>
+        A value in any <code>variables</code> tree can come from an external source instead of
+        being written inline: a map with a single <code>$</code>-prefixed key names the source.
+        Each source binds under its own key — sources never merge, so two sources cannot collide.
+        Directives may appear at any depth, so one nested key can be file-sourced while its
+        siblings stay inline.
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`variables:
+  env: production            # inline literal
+  settings:
+    $file: "config/vars.yml" # whole file bound under this name
+  team:
+    prefixes:
+      $file: "prefixes.json" # nested directive; siblings stay inline`}
+      />
+      <p>
+        <code>$file</code> loads a JSON, YAML, or TOML document (path relative to the config
+        file's directory); read it with the usual lookups, e.g.{' '}
+        <code>$variables?settings?db?host</code>. File content is pure data — directives inside
+        loaded files are not processed. <code>$literal</code> is the escape hatch for literal data
+        whose keys start with <code>$</code>: it keeps its content verbatim.
+      </p>
+      <p>
+        Directives are validated when the config loads — an unknown directive (e.g. a typo like{' '}
+        <code>$fiel</code>) fails before anything runs, with no file access. The file{' '}
+        <em>read</em> happens later, at the start of each operation, so a file written by an{' '}
+        <em>earlier</em> operation in the same run is read fresh by the next one; every rule
+        within one operation sees the same snapshot.
+      </p>
+      <p>
+        A source is only read where it is actually used. That is decided per entry: a rule reading{' '}
+        <code>$rule.variables</code> does not force a sibling rule's sources to load. So a source
+        that nothing reads never fails the run — which is what lets a config declare a file that a
+        later operation is about to write. A source that <em>is</em> read and whose file is missing
+        fails the run at that operation.
+      </p>
+      <p>
+        Rules also get <code>$rule.id</code> — the current rule's <code>id</code> string. This makes
+        per-rule escape hatches a single shared pattern instead of hand-written per rule:
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`# a comment \`tractor:allow(<rule-id>)\` in the enclosing function
+# suppresses exactly that rule
+xpath: >-
+  //call//object[.='console']
+  [not(ancestor::function[.//comment[
+    contains(., concat('tractor:allow(', $rule.id, ')'))]])]`}
+      />
+
+      <h3>Materialized query results (multi-query rules)</h3>
+      <p>
+        A query operation can write its results to a JSON index with <code>output</code>, and a
+        later operation can consume that file as a variable — cross-file assertions in a single
+        run. Because sources resolve at each operation's start, the check below reads the file
+        the query just wrote:
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`variables:
+  repos:
+    $file: "gathered/repos.json"
+
+operations:
+  - query:
+      files: ["src/**/*.cs"]
+      queries:
+        - xpath: "//class/name[contains(., 'Repository')]"
+      output: "gathered/repos.json"
+
+  - check:
+      files: ["src/**/*.cs"]
+      rules:
+        - id: entity-needs-repository
+          xpath: >-
+            //class/name[not(contains(., 'Repository'))]
+            [not(concat(., 'Repository') = $variables?repos?files?*?*)]
+          reason: "entity class has no matching repository"`}
+      />
+      <p>
+        The written file is an index keyed by source file:{' '}
+        <code>{'{ "files": { "<path>": [ ... ] } }'}</code>, with paths relative to the config
+        directory so the artifact is stable and committable. Each entry is a labelled object;{' '}
+        <code>view:</code> chooses which keys it holds (<code>value</code> by default, plus{' '}
+        <code>line</code>, <code>column</code>, <code>tree</code>) and nothing else — the shape
+        never depends on how many fields you selected or on what a match contains, so adding a
+        field only adds a key. Updates merge incrementally: entries for every queried file are
+        replaced wholesale, files outside the queried set (e.g. excluded by{' '}
+        <code>diff-files</code>) keep their entries, and entries whose file no longer exists are
+        pruned — so a diff-scoped gather stays correct without re-querying the whole tree.
+      </p>
+      <p>
+        <strong>Reading the index.</strong> Most rules just want the flat set of gathered values.
+        That is <code>?files?*?*?value</code> — the first <code>?*</code> expands every file key,
+        the second every entry in that file's array, and <code>?value</code> takes the field:
+      </p>
+      <CodeBlock
+        language="text"
+        code={`$variables?records?files?*?*?value              all values, provenance discarded
+$variables?records?files?("src/A.cs")?*?value  values from one specific file
+$variables?records?files?*?*?tree              the structured record of each entry
+map:keys($variables?records?files)             the file paths themselves`}
+      />
+      <p>
+        Keep the file keys when a rule is <em>about</em> paths (e.g. "every file with an X must
+        have a matching Y"); use the flat form for plain membership tests.
+      </p>
+
+      <h3>Correspondence rules</h3>
+      <p>
+        The common shape is "this thing over here must agree with that thing over there" — a
+        DTO's <code>[MaxLength]</code> matching its Record's, say. Gather one side as{' '}
+        <strong>structured records</strong> with a <code>map{'{}'}</code> constructor and{' '}
+        <code>view: [tree]</code>, then compare field by field from the other side:
+      </p>
+      <CodeBlock
+        language="yaml"
+        title="tractor.yml"
+        code={`variables:
+  records:
+    $file: "gathered/records.json"
+
+operations:
+  - query:
+      files: ["**/*Record.cs"]
+      queries:
+        - xpath: >-
+            //property[.//attribute/name/ref = 'MaxLength']
+            ! map { 'name': string(name), 'max': string(.//argument/int) }
+      output:
+        file: "gathered/records.json"
+        view: [tree]          # each entry holds its map under "tree"
+
+  - check:
+      files: ["**/*Dto.cs"]
+      rules:
+        - id: dto-maxlength-drift
+          reason: "DTO MaxLength differs from the Record"
+          xpath: >-
+            //property[.//attribute/name/ref = 'MaxLength']
+            [not(some $r in $variables?records?files?*?*?tree
+                 satisfies $r?name = string(name) and $r?max = string(.//argument/int))]
+            /name`}
+      />
+      <p>
+        Each field is compared on its own (<code>$r?name</code>, <code>$r?max</code>), so the
+        record stays self-describing and adding a third field doesn't change how the existing
+        ones match.
+      </p>
+      <p>
+        A single scalar per match — <code>concat(name, ':', .//argument/int)</code> with the
+        default <code>view: [value]</code> — is shorter, and fine for a plain membership test
+        against one value. Prefer the structured form for anything with more than one field:
+        packing fields into a string makes the parts positional and invisible to the reader, and
+        the separator becomes load-bearing (with no separator, <code>a</code>+<code>bc</code>{' '}
+        collides with <code>ab</code>+<code>c</code>). If the two sides name things differently,
+        normalize inside the field expression (<code>replace()</code>,{' '}
+        <code>substring-before()</code>) rather than after.
+      </p>
+      <p>
+        <strong>Known limitation:</strong> matching is per file and syntactic, so an inherited
+        member is invisible to the side that inherits it — a property declared on a shared base
+        class in another file will look "missing" to a rule that only inspects the derived
+        declaration. Gathering the base declarations into the same index (a second{' '}
+        <code>query</code> writing to the same <code>output:</code> file, or a wider{' '}
+        <code>files:</code> pattern) covers the common cases; full type resolution across files
+        is out of scope.
+      </p>
+
       <h2>Multiple Operation Types</h2>
       <p>
         Use the <code>operations</code> list to mix check, test, query, and set operations:
@@ -158,6 +399,33 @@ operations:
           expect: some
           message: "At least one class expected"`}
       />
+
+      <h3>Execution order</h3>
+      <p>
+        Operations run one after another, and each sees whatever the previous ones left behind
+        — files a <code>set</code> rewrote, an index a <code>query</code> materialized. Two ways
+        to arrange them:
+      </p>
+      <ul>
+        <li>
+          The <code>operations</code> list runs <strong>exactly in the order written</strong>.
+          This is how you express a dependency, and the only way to run two operations of the
+          same kind.
+        </li>
+        <li>
+          The root-level shorthand keys (<code>query</code>, <code>check</code>, <code>set</code>,{' '}
+          <code>test</code>) are a convenience for at most one operation of each kind. They run
+          in that fixed order — <strong>query first</strong>, so a gathered index is available to
+          the operations that consume it.
+        </li>
+      </ul>
+      <p>
+        <strong>Changed behaviour:</strong> the shorthand order was previously check, set, query.
+        A config that used root-level <code>set</code> and <code>query</code> together therefore
+        had the query observe files <em>after</em> the set rewrote them, and now observes them
+        before. If that ordering mattered, write the two as an explicit{' '}
+        <code>operations</code> list, which says what you mean and is unaffected.
+      </p>
 
       <h2>Set Operations</h2>
       <p>

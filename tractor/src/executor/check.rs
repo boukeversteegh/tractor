@@ -61,6 +61,10 @@ pub(crate) fn execute_check(
         return Ok(());
     }
 
+    // Run-level variables (bound as $variables); each rule's own set is
+    // bound as $rule.variables by run_rules / example validation.
+    let variables = ctx.query_variables();
+
     // --- Phase 0: Validate XPath expressions upfront ---
     let diagnostics: Vec<_> = op.compiled_rules.iter()
         .filter_map(|rule| validate_xpath_diagnostic(&rule.xpath, "check"))
@@ -70,8 +74,23 @@ pub(crate) fn execute_check(
         return Ok(());
     }
 
+    // Advisory: warn about `$variables?key` lookups on undefined keys.
+    // Warnings never fail the run — a missing key legally yields the empty
+    // sequence and may be intentional (optional flags, external variable
+    // files) — but a typo'd key silently disables a rule, so surface it.
+    for (i, rule) in op.compiled_rules.iter().enumerate() {
+        let bindings = tractor::QueryBindings::run(std::sync::Arc::clone(&variables))
+            .with_entry(tractor::EntryContext::rule(
+                std::sync::Arc::clone(rule.variables.declared()),
+                rule.id.clone(),
+            ));
+        report.add_all(crate::matcher::variable_diagnostics(
+            "check", &bindings, i, rule.xpath.as_str(),
+        ));
+    }
+
     // --- Phase 1: Validate rule examples inline ---
-    validate_rule_examples(&op.compiled_rules, op.tree_mode, report)?;
+    validate_rule_examples(&op.compiled_rules, op.tree_mode, &variables, report)?;
 
     if op.sources.is_empty() {
         return Ok(());
@@ -85,6 +104,7 @@ pub(crate) fn execute_check(
         op.parse_depth,
         ctx.verbose,
         &op.filters,
+        &tractor::QueryBindings::run(std::sync::Arc::clone(&variables)),
     )?;
 
     for rm in rule_matches {
@@ -123,6 +143,7 @@ pub(crate) fn execute_check(
 fn validate_rule_examples(
     rules: &[CompiledRule],
     default_tree_mode: Option<TreeMode>,
+    variables: &std::sync::Arc<tractor::QueryVariables>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     for rule in rules {
@@ -152,6 +173,11 @@ fn validate_rule_examples(
                     parse_depth: None,
                 },
             )?;
+            result.bindings.variables = std::sync::Arc::clone(variables);
+            result.bindings.entry = Some(tractor::EntryContext::rule(
+                std::sync::Arc::clone(rule.variables.declared()),
+                rule.id.clone(),
+            ));
             let matches = result.query(rule.xpath.as_str())?;
             if !super::check_expectation("none", matches.len())? {
                 report.add(example_failure_match(
@@ -178,6 +204,11 @@ fn validate_rule_examples(
                     parse_depth: None,
                 },
             )?;
+            result.bindings.variables = std::sync::Arc::clone(variables);
+            result.bindings.entry = Some(tractor::EntryContext::rule(
+                std::sync::Arc::clone(rule.variables.declared()),
+                rule.id.clone(),
+            ));
             let matches = result.query(rule.xpath.as_str())?;
             if !super::check_expectation("some", matches.len())? {
                 report.add(example_failure_match(
@@ -243,7 +274,7 @@ mod tests {
             None,
         )];
         let mut builder = ReportBuilder::new();
-        validate_rule_examples(&rules, None, &mut builder).unwrap();
+        validate_rule_examples(&rules, None, &std::sync::Arc::default(), &mut builder).unwrap();
         let report = builder.build();
         assert!(report.all_matches().is_empty(), "expected no failures: {:?}", report.all_matches());
     }
@@ -257,7 +288,7 @@ mod tests {
             None,
         )];
         let mut builder = ReportBuilder::new();
-        validate_rule_examples(&rules, None, &mut builder).unwrap();
+        validate_rule_examples(&rules, None, &std::sync::Arc::default(), &mut builder).unwrap();
         let report = builder.build();
         let matches = report.all_matches();
         assert_eq!(matches.len(), 1);
@@ -273,7 +304,7 @@ mod tests {
             None,
         )];
         let mut builder = ReportBuilder::new();
-        validate_rule_examples(&rules, None, &mut builder).unwrap();
+        validate_rule_examples(&rules, None, &std::sync::Arc::default(), &mut builder).unwrap();
         let report = builder.build();
         let matches = report.all_matches();
         assert_eq!(matches.len(), 1);
@@ -288,7 +319,7 @@ mod tests {
             Some("rust"),
         )];
         let mut builder = ReportBuilder::new();
-        validate_rule_examples(&rules, None, &mut builder).unwrap();
+        validate_rule_examples(&rules, None, &std::sync::Arc::default(), &mut builder).unwrap();
         let report = builder.build();
         assert!(report.all_matches().is_empty());
     }
@@ -301,7 +332,7 @@ mod tests {
             None,
         )];
         let mut builder = ReportBuilder::new();
-        let err = validate_rule_examples(&rules, None, &mut builder).unwrap_err();
+        let err = validate_rule_examples(&rules, None, &std::sync::Arc::default(), &mut builder).unwrap_err();
         assert!(err.to_string().contains("no language specified"));
     }
 
@@ -309,7 +340,7 @@ mod tests {
     fn test_validate_examples_no_examples_is_noop() {
         let rules = vec![compile(Rule::new("simple", "//function"), None)];
         let mut builder = ReportBuilder::new();
-        validate_rule_examples(&rules, None, &mut builder).unwrap();
+        validate_rule_examples(&rules, None, &std::sync::Arc::default(), &mut builder).unwrap();
         let report = builder.build();
         assert!(report.all_matches().is_empty());
     }
