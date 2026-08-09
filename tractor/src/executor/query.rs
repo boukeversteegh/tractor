@@ -311,7 +311,16 @@ fn write_query_output(
 ) -> Result<(), Box<dyn std::error::Error>> {
     use std::collections::BTreeMap;
 
-    let base_key = normalize_key(&base_dir.to_string_lossy());
+    // Normalize the base the same way sources are, or the two spellings of
+    // the same directory won't share a prefix and every key lands as an
+    // absolute path instead of a relative one — an artifact full of
+    // machine-specific paths, which is the opposite of "stable and
+    // committable". `NormalizedPath::absolute` is what glob expansion puts
+    // sources through (it resolves 8.3 aliases such as `RUNNER~1` on
+    // Windows), so applying it here makes both sides agree by construction.
+    let base_key = normalize_key(
+        tractor::NormalizedPath::absolute(&base_dir.to_string_lossy()).as_str(),
+    );
     let relativize = |path: &str| -> String {
         let p = normalize_key(path);
         match p.strip_prefix(&format!("{}/", base_key)) {
@@ -539,6 +548,42 @@ mod tests {
         assert!(warnings[0].reason.as_deref().unwrap().contains("only bound in check rules"));
         // The query itself still runs and matches nothing (empty lookup).
         assert!(report.all_matches().iter().all(|m| m.severity == Some(Severity::Warning)));
+    }
+
+    /// The index must key by relative path even when `base_dir` is spelled
+    /// differently from the sources' own normalization.
+    ///
+    /// On a Windows CI runner the difference is an 8.3 alias (`RUNNER~1` vs
+    /// `runneradmin`); here it is a `.` component, which is the same class
+    /// of divergence and reproduces on every platform. Without normalizing
+    /// the base the way sources are normalized, the prefix does not strip
+    /// and every key lands as an absolute, machine-specific path.
+    #[test]
+    fn query_output_keys_are_relative_when_base_dir_is_spelled_differently() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("b.json"), "{}").unwrap();
+
+        let output = QueryOutput { file: "out.json".into(), view: vec![QueryOutputField::Value] };
+        let sources = vec![disk_source(dir.path().join("b.json").to_str().unwrap())];
+        let matches = vec![tractor::Match::new(
+            sources[0].path.as_str().to_string(),
+            "v".to_string(),
+        )];
+
+        // Same directory, different spelling — as a config's base dir and a
+        // glob-expanded source routinely are.
+        let base = dir.path().join(".");
+        write_query_output(&output, &matches, &sources, &base).unwrap();
+
+        let written: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(dir.path().join("out.json")).unwrap())
+                .unwrap();
+        let files = written.get("files").unwrap().as_object().unwrap();
+        assert!(
+            files.contains_key("b.json"),
+            "keys must be relative to the config directory, got {:?}",
+            files.keys().collect::<Vec<_>>(),
+        );
     }
 
     /// The output path must stay inside the config directory. `is_absolute`
