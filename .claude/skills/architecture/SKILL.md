@@ -214,6 +214,23 @@ Rules for normalization:
 
 If multiple downstream layers must "figure out what the user meant," the normalization is incomplete.
 
+### Who guarantees the value is normalized?
+
+"Normalize once" says *where* normalization happens. It does not say what a function should do when its own correctness depends on having received a normalized value. That is a separate question, and answering it with "the caller will have done it" is how the invariant dies.
+
+If a function is only correct for normalized input, it owns that requirement. Two ways to discharge it, in order of preference:
+
+1. **Encode it in the type.** Accept the type that can only be constructed by normalizing, not the raw one. The compiler then proves what a comment could only assert, and "normalize once" still holds — the single normalizer is the only way to make the value.
+2. **Normalize on entry.** When no such type exists, normalize at the top of the function. Idempotent normalization is cheap, and it converts a caller obligation into a local guarantee.
+
+What not to do is rely on a convention. A function that takes the raw type and is correct only because every current caller happens to normalize first is one new caller away from a silent wrong answer — and that caller will look correct in review, because nothing at the call site says otherwise.
+
+The tell is a value that **some** callers normalize and others do not, flowing into one function. When that function misbehaves, the defect is in the function, not in whichever caller happened to surface it. Fixing the caller leaves the trap armed for the next one.
+
+This is not only about paths. It applies to any precondition a function depends on but does not enforce: sorted input, canonical case, absolute rather than relative, deduplicated sets, UTC rather than local time, validated identifiers, resolved rather than lazy values.
+
+A useful question when reviewing a signature: *if someone passed the un-normalized form tomorrow, would this be loudly wrong or quietly wrong?* Quietly wrong means the guarantee belongs inside.
+
 ---
 
 ## Phase 7: Remove Bypasses Early
@@ -334,6 +351,7 @@ Ask repeatedly:
 - Is this logic duplicated?
 - Is this policy being inferred too late?
 - Am I preserving a shortcut that should disappear?
+- Does this depend on a precondition it does not enforce?
 - If someone adds a related feature later, will this design help or hurt them?
 
 ---
@@ -351,6 +369,7 @@ Ask repeatedly:
 9. Mixing normalization, validation, and rendering decisions across layers.
 10. Counting files changed instead of measuring conceptual simplification.
 11. Fixing a class-level defect in only the instance where it surfaced, leaving the same bug latent in sibling components.
+12. Depending on a precondition the function does not enforce, so correctness rests on every caller remembering to establish it.
 
 ---
 
@@ -381,6 +400,7 @@ Use this before and during implementation:
 - Decide whether the current structure can support the feature cleanly.
 - Refactor first if the structure would otherwise force exceptions.
 - Normalize inputs once into an internal plan.
+- Make each function own the preconditions its correctness depends on — by type where possible.
 - Route behavior through one principled path.
 - Remove bypasses and duplicate shaping.
 - Add semantic tests for tricky contracts.
