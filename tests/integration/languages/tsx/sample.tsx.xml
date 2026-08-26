@@ -33,22 +33,19 @@
             </name>
             <body>
               {
-              <property_signature>
+              <field>
+                <required/>
                 <name>name</name>
-                <typeof>
-                  :
-                  <predefined_type>string</predefined_type>
-                </typeof>
-              </property_signature>
+                :
+                <type>string</type>
+              </field>
               ;
-              <property_signature>
+              <field>
+                <optional/>
                 <name>age</name>
-                ?
-                <typeof>
-                  :
-                  <predefined_type>number</predefined_type>
-                </typeof>
-              </property_signature>
+                ?:
+                <type>number</type>
+              </field>
               ;
         }
             </body>
@@ -68,10 +65,8 @@
                     <shorthand_property_identifier_pattern>age</shorthand_property_identifier_pattern>
                     }
                   </object_pattern>
-                  <typeof>
-                    :
-                    <type>Props</type>
-                  </typeof>
+                  :
+                  <type>Props</type>
                 </param>
                 )
               </params>
